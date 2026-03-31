@@ -2400,7 +2400,7 @@ export class SearchView extends ViewPane {
 	}
 
 	private _saveSearchHistoryService() {
-		if (this.searchWidget === undefined) {
+		if (this.searchWidget === undefined || !this.inputPatternExcludes || !this.inputPatternIncludes) {
 			return;
 		}
 		const history: ISearchHistoryValues = Object.create(null);

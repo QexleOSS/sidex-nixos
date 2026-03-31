@@ -4,15 +4,13 @@
  *  It bootstraps the real VSCode workbench through Tauri instead of Electron
  *--------------------------------------------------------------------------------------------*/
 
-import { localize } from '../../nls.js';
 import product from '../../platform/product/common/product.js';
 import { Workbench } from '../../workbench/browser/workbench.js';
 import { domContentLoaded } from '../../base/browser/dom.js';
 import { onUnexpectedError } from '../../base/common/errors.js';
-import { URI } from '../../base/common/uri.js';
-import { WorkspaceService } from '../../workbench/services/configuration/browser/configurationService.js';
+import { Emitter } from '../../base/common/event.js';
 import { ServiceCollection } from '../../platform/instantiation/common/serviceCollection.js';
-import { ILoggerService, ILogService, LogLevel } from '../../platform/log/common/log.js';
+import { ILogService, LogLevel } from '../../platform/log/common/log.js';
 import { IWorkspaceContextService } from '../../platform/workspace/common/workspace.js';
 import { IWorkbenchConfigurationService } from '../../workbench/services/configuration/common/configuration.js';
 import { IStorageService } from '../../platform/storage/common/storage.js';
@@ -24,10 +22,6 @@ import { IProductService } from '../../platform/product/common/productService.js
 import { IUriIdentityService } from '../../platform/uriIdentity/common/uriIdentity.js';
 import { UriIdentityService } from '../../platform/uriIdentity/common/uriIdentityService.js';
 import { Schemas } from '../../base/common/network.js';
-import { IUserDataProfilesService } from '../../platform/userDataProfile/common/userDataProfile.js';
-import { IUserDataProfileService } from '../../workbench/services/userDataProfile/common/userDataProfile.js';
-import { UserDataProfileService } from '../../workbench/services/userDataProfile/common/userDataProfileService.js';
-import { IConfigurationService } from '../../platform/configuration/common/configuration.js';
 import { mainWindow } from '../../base/browser/window.js';
 import { BrowserStorageService } from '../../workbench/services/storage/browser/storageService.js';
 import { BrowserWorkbenchEnvironmentService } from '../../workbench/services/environment/browser/environmentService.js';
@@ -39,13 +33,23 @@ import { RemoteAuthorityResolverService } from '../../platform/remote/browser/re
 import { IRemoteSocketFactoryService, RemoteSocketFactoryService } from '../../platform/remote/common/remoteSocketFactoryService.js';
 import { BrowserSocketFactory } from '../../platform/remote/browser/browserSocketFactory.js';
 import { ConfigurationCache } from '../../workbench/services/configuration/common/configurationCache.js';
-import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
+import { WorkspaceService } from '../../workbench/services/configuration/browser/configurationService.js';
+import { NullPolicyService } from '../../platform/policy/common/policy.js';
 
-/**
- * TauriMain — the Tauri equivalent of VSCode's DesktopMain.
- * Bootstraps the real VSCode workbench on a Tauri webview.
- */
+class ConsoleLogService extends Disposable implements ILogService {
+	declare readonly _serviceBrand: undefined;
+	private readonly _onDidChangeLogLevel = this._register(new Emitter<LogLevel>());
+	readonly onDidChangeLogLevel = this._onDidChangeLogLevel.event;
+	getLevel() { return LogLevel.Info; }
+	setLevel(_level: LogLevel) { }
+	trace(message: string, ...args: any[]) { console.trace(message, ...args); }
+	debug(message: string, ...args: any[]) { console.debug(message, ...args); }
+	info(message: string, ...args: any[]) { console.info(message, ...args); }
+	warn(message: string, ...args: any[]) { console.warn(message, ...args); }
+	error(message: string | Error, ...args: any[]) { console.error(message, ...args); }
+	flush() { }
+}
+
 export class TauriMain extends Disposable {
 
 	constructor() {
@@ -53,7 +57,7 @@ export class TauriMain extends Disposable {
 	}
 
 	async open(): Promise<void> {
-		const [services, instantiationService] = await this.initServices();
+		const services = this.initServices();
 
 		await domContentLoaded(mainWindow);
 
@@ -69,47 +73,30 @@ export class TauriMain extends Disposable {
 		workbench.startup();
 	}
 
-	private async initServices(): Promise<[{ serviceCollection: ServiceCollection; logService: ILogService }, any]> {
+	private initServices(): { serviceCollection: ServiceCollection; logService: ILogService } {
 		const serviceCollection = new ServiceCollection();
 
-		// Product
-		const productService: IProductService = { _serviceBrand: undefined, ...product };
+		const productService: IProductService = { _serviceBrand: undefined, ...product } as any;
 		serviceCollection.set(IProductService, productService);
 
-		// Environment — use browser environment service since we're in a Tauri webview
 		const environmentService = new BrowserWorkbenchEnvironmentService(
-			productService.nameShort ?? 'SideX',
+			'SideX',
 			productService,
 			undefined,
 			undefined
 		);
 		serviceCollection.set(IWorkbenchEnvironmentService, environmentService);
 
-		// Log
-		const logService = this._register(new class implements ILogService {
-			_serviceBrand: undefined;
-			readonly onDidChangeLogLevel = new (await import('../../base/common/event.js')).Emitter<LogLevel>().event;
-			getLevel() { return LogLevel.Info; }
-			setLevel(_level: LogLevel) { }
-			trace(message: string, ...args: any[]) { console.trace(message, ...args); }
-			debug(message: string, ...args: any[]) { console.debug(message, ...args); }
-			info(message: string, ...args: any[]) { console.info(message, ...args); }
-			warn(message: string, ...args: any[]) { console.warn(message, ...args); }
-			error(message: string | Error, ...args: any[]) { console.error(message, ...args); }
-			flush() { }
-			dispose() { }
-		});
+		const logService = this._register(new ConsoleLogService());
 		serviceCollection.set(ILogService, logService);
 
-		// Sign
 		const signService: ISignService = {
 			_serviceBrand: undefined,
 			async sign(value: string) { return value; },
 			async validate(_signedValue: string, _value: string) { return true; }
-		};
+		} as any;
 		serviceCollection.set(ISignService, signService);
 
-		// Remote
 		const remoteAuthorityResolverService = new RemoteAuthorityResolverService(
 			false, undefined, undefined, productService, logService
 		);
@@ -125,33 +112,30 @@ export class TauriMain extends Disposable {
 		));
 		serviceCollection.set(IRemoteAgentService, remoteAgentService);
 
-		// Files
 		const fileService = this._register(new FileService(logService));
 		serviceCollection.set(IFileService, fileService);
 
-		// URI Identity
 		const uriIdentityService = new UriIdentityService(fileService);
 		serviceCollection.set(IUriIdentityService, uriIdentityService);
 
-		// Configuration
-		const configurationCache = new ConfigurationCache([Schemas.file, Schemas.vscodeUserData, Schemas.tmp], environmentService, fileService);
+		const configurationCache = new ConfigurationCache(
+			[Schemas.file, Schemas.vscodeUserData, Schemas.tmp],
+			environmentService, fileService
+		);
 		const workspaceService = new WorkspaceService(
 			{ remoteAuthority: undefined, configurationCache },
 			environmentService, fileService, remoteAgentService, uriIdentityService,
-			logService, new (await import('../../platform/policy/common/policy.js')).NullPolicyService()
+			logService, new NullPolicyService()
 		);
 		serviceCollection.set(IWorkbenchConfigurationService, workspaceService);
 		serviceCollection.set(IWorkspaceContextService, workspaceService);
 
-		// Storage
 		const storageService = this._register(new BrowserStorageService(
 			{ id: 'sidex-workspace' }, logService
 		));
 		serviceCollection.set(IStorageService, storageService);
 
-		await storageService.initialize();
-
-		return [{ serviceCollection, logService }, null];
+		return { serviceCollection, logService };
 	}
 }
 

@@ -203,10 +203,11 @@ export class IncludePatternInputWidget extends PatternInputWidget {
 	}
 
 	onlySearchInOpenEditors(): boolean {
-		return this.useSearchInEditorsBox.checked;
+		return this.useSearchInEditorsBox?.checked ?? false;
 	}
 
 	setOnlySearchInOpenEditors(value: boolean) {
+		if (!this.useSearchInEditorsBox) { return; }
 		this.useSearchInEditorsBox.checked = value;
 		this._onChangeSearchInEditorsBoxEmitter.fire();
 	}

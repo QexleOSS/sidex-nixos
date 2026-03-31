@@ -4,9 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SideX</title>
+    <script>
+      // MUST run before any VSCode module — sets globals they depend on
+      globalThis._VSCODE_FILE_ROOT = window.location.origin + '/src/';
+      globalThis._VSCODE_NLS_MESSAGES = [];
+      globalThis._VSCODE_NLS_LANGUAGE = 'en';
+      globalThis._VSCODE_PRODUCT_JSON = {
+        nameShort: 'SideX',
+        nameLong: 'SideX',
+        applicationName: 'sidex',
+        dataFolderName: '.sidex',
+        urlProtocol: 'sidex',
+        version: '0.1.0',
+        commit: 'development',
+        date: new Date().toISOString(),
+        quality: 'stable',
+      };
+    </script>
     <script type="module" src="/src/main.ts" defer></script>
     <style>
-      /* Minimal reset — VSCode's workbench.ts renders everything dynamically */
       html, body {
         margin: 0;
         padding: 0;
@@ -18,22 +34,8 @@
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
         font-size: 13px;
       }
-      /* Loading indicator before workbench boots */
-      body::before {
-        content: 'Loading SideX...';
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: fixed;
-        inset: 0;
-        font-size: 14px;
-        color: #666;
-        z-index: -1;
-      }
     </style>
   </head>
   <body aria-label="">
-    <!-- VSCode's Workbench class renders all DOM dynamically into document.body -->
-    <!-- See: src/vs/workbench/browser/workbench.ts -> renderWorkbench() -->
   </body>
 </html>
