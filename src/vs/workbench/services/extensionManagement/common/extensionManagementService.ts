@@ -1029,6 +1029,12 @@ export class ExtensionManagementService extends CommontExtensionManagementServic
 			return;
 		}
 
+		// SideX: when running inside Tauri with a Node.js extension host available,
+		// allow installing non-web extensions — they'll run in the local host.
+		if ((globalThis as any).__SIDEX_TAURI__ === true) {
+			return;
+		}
+
 		const nonWebExtensions = [];
 		if (manifest.extensionPack?.length) {
 			const extensions = await this.extensionGalleryService.getExtensions(manifest.extensionPack.map(id => ({ id })), CancellationToken.None);

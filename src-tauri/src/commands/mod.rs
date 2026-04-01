@@ -1,3 +1,4 @@
+pub mod ext_host;
 pub mod fs;
 pub mod git;
 pub mod os;
@@ -6,6 +7,7 @@ pub mod storage;
 pub mod terminal;
 pub mod window;
 
+pub use ext_host::*;
 pub use fs::*;
 pub use git::*;
 pub use os::*;

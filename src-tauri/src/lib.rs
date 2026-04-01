@@ -1,5 +1,6 @@
 mod commands;
 
+use commands::ext_host::ExtHostProcess;
 use commands::storage::StorageDb;
 use commands::terminal::TerminalStore;
 use std::sync::Arc;
@@ -158,6 +159,7 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
         .manage(Arc::new(TerminalStore::new()))
+        .manage(ExtHostProcess::new())
         .setup(|app| {
             let app_data = app
                 .path()
@@ -237,6 +239,9 @@ pub fn run() {
             commands::git_clone,
             commands::git_reset,
             commands::git_show,
+            commands::start_extension_host,
+            commands::stop_extension_host,
+            commands::extension_host_port,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
