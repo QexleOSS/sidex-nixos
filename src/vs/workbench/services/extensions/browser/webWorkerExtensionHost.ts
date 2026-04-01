@@ -93,6 +93,14 @@ export class WebWorkerExtensionHost extends Disposable implements IExtensionHost
 
 		const iframeModulePath: AppResourcePath = `vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html`;
 		if (platform.isWeb) {
+
+			// In Tauri production builds, the web worker extension host can't load properly
+			// (tauri:// protocol doesn't serve the iframe correctly). Skip it to avoid
+			// memory-consuming retry loops. Our TauriExtensionHost handles extensions instead.
+			if ((globalThis as any).__SIDEX_TAURI__ && typeof window !== 'undefined' && window.location.protocol === 'tauri:') {
+				throw new Error('Web worker extension host disabled in Tauri production build');
+			}
+
 			const webEndpointUrlTemplate = this._productService.webEndpointUrlTemplate;
 			const commit = this._productService.commit;
 			const quality = this._productService.quality;
