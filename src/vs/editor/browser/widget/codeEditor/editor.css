@@ -59,22 +59,6 @@
 .monaco-editor .overflow-guard {
 	position: relative;
 	overflow: hidden;
-	/* OPTIMIZATION: Prevent layout shifts during scroll */
-	contain: layout style;
-	/* OPTIMIZATION: Hardware acceleration for smoother scrolling */
-	will-change: transform;
-	transform: translateZ(0);
-}
-
-/* OPTIMIZATION: Reduce paint during scroll */
-.monaco-editor .view-lines {
-	will-change: top;
-	contain: layout style paint;
-}
-
-/* OPTIMIZATION: Disable text selection during scroll */
-.monaco-editor.scrolling {
-	user-select: none;
 }
 
 .monaco-editor .view-overlays {

@@ -62,9 +62,6 @@
 	box-sizing: border-box;
 	position: absolute;
 	width: 100%;
-	/* OPTIMIZATION: Hint browser that top/height will change during scroll */
-	will-change: top;
-	contain: layout style;
 }
 
 /* There are view-lines in view-zones. We have to make sure this rule does not apply to them, as they don't set a line height */

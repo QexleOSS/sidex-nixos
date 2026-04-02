@@ -6,24 +6,6 @@
 import { Emitter, Event } from './event.js';
 import { Disposable, IDisposable } from './lifecycle.js';
 
-let _wasmSmoothScrollTick: ((now: number, startTime: number, duration: number, fromLeft: number, toLeft: number, fromTop: number, toTop: number, vpW: number, vpH: number) => { scrollLeft: number; scrollTop: number; isDone: boolean } | null) | undefined;
-let _wasmLoading = false;
-function getWasmTick() {
-	if (_wasmSmoothScrollTick !== undefined) {
-		return _wasmSmoothScrollTick;
-	}
-	if (_wasmLoading) {
-		return null;
-	}
-	_wasmLoading = true;
-	import('../../browser/ui/scrollbar/scrollWasm.js').then(mod => {
-		_wasmSmoothScrollTick = mod.wasmSmoothScrollTick;
-	}).catch(() => {
-		_wasmSmoothScrollTick = null;
-	});
-	return null;
-}
-
 export const enum ScrollbarVisibility {
 	Auto = 1,
 	Hidden = 2,
@@ -371,17 +353,11 @@ export class Scrollable extends Disposable {
 	}
 
 	private _performSmoothScrolling(): void {
-		if (!this._smoothScrolling || !this._state) {
+		if (!this._smoothScrolling) {
 			return;
 		}
 		const update = this._smoothScrolling.tick();
-		if (!update) {
-			return;
-		}
 		const newState = this._state.withScrollPosition(update);
-		if (!newState) {
-			return;
-		}
 
 		this._setState(newState, true);
 
@@ -513,19 +489,6 @@ export class SmoothScrollingOperation {
 	}
 
 	protected _tick(now: number): SmoothScrollingUpdate {
-		const wasmTick = getWasmTick();
-		if (wasmTick) {
-			const result = wasmTick(
-				now, this.startTime, this.duration,
-				this.from.scrollLeft, this.to.scrollLeft,
-				this.from.scrollTop, this.to.scrollTop,
-				this.to.width, this.to.height
-			);
-			if (result) {
-				return new SmoothScrollingUpdate(result.scrollLeft, result.scrollTop, result.isDone);
-			}
-		}
-
 		const completion = (now - this.startTime) / this.duration;
 
 		if (completion < 1) {

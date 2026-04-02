@@ -17,12 +17,11 @@ import { Emitter, Event } from '../../../common/event.js';
 import { IDisposable, dispose } from '../../../common/lifecycle.js';
 import * as platform from '../../../common/platform.js';
 import { INewScrollDimensions, INewScrollPosition, IScrollDimensions, IScrollPosition, ScrollEvent, Scrollable, ScrollbarVisibility } from '../../../common/scrollable.js';
-import { wasmProcessWheelDelta, wasmInertialTick, isWasmReady } from './scrollWasm.js';
 import './media/scrollbars.css';
 
 const HIDE_TIMEOUT = 500;
 const SCROLL_WHEEL_SENSITIVITY = 50;
-const SCROLL_WHEEL_SMOOTH_SCROLL_ENABLED = false;
+const SCROLL_WHEEL_SMOOTH_SCROLL_ENABLED = true;
 
 export interface IOverviewRulerLayoutInfo {
 	parent: HTMLElement;
@@ -380,21 +379,16 @@ export abstract class AbstractScrollableElement extends Widget {
 				scrollTop: this._scrollable.getCurrentScrollPosition().scrollTop - this._inertialSpeed.Y * 100,
 				scrollLeft: this._scrollable.getCurrentScrollPosition().scrollLeft - this._inertialSpeed.X * 100
 			});
-
-			if (isWasmReady()) {
-				const result = wasmInertialTick(this._inertialSpeed.X, this._inertialSpeed.Y, 0.9, 0.01);
-				if (result) {
-					this._inertialSpeed.X = result.speedX;
-					this._inertialSpeed.Y = result.speedY;
-					scheduleAgain = result.active;
-				} else {
-					this._applyJsInertialDecay();
-					scheduleAgain = (this._inertialSpeed.X !== 0 || this._inertialSpeed.Y !== 0);
-				}
-			} else {
-				this._applyJsInertialDecay();
-				scheduleAgain = (this._inertialSpeed.X !== 0 || this._inertialSpeed.Y !== 0);
+			this._inertialSpeed.X *= 0.9;
+			this._inertialSpeed.Y *= 0.9;
+			if (Math.abs(this._inertialSpeed.X) < 0.01) {
+				this._inertialSpeed.X = 0;
 			}
+			if (Math.abs(this._inertialSpeed.Y) < 0.01) {
+				this._inertialSpeed.Y = 0;
+			}
+
+			scheduleAgain = (this._inertialSpeed.X !== 0 || this._inertialSpeed.Y !== 0);
 		}
 
 		if (scheduleAgain) {
@@ -405,17 +399,6 @@ export abstract class AbstractScrollableElement extends Widget {
 		} else {
 			this._inertialTimeout?.dispose();
 			this._inertialTimeout = null;
-		}
-	}
-
-	private _applyJsInertialDecay(): void {
-		this._inertialSpeed.X *= 0.9;
-		this._inertialSpeed.Y *= 0.9;
-		if (Math.abs(this._inertialSpeed.X) < 0.01) {
-			this._inertialSpeed.X = 0;
-		}
-		if (Math.abs(this._inertialSpeed.Y) < 0.01) {
-			this._inertialSpeed.Y = 0;
 		}
 	}
 
@@ -452,55 +435,45 @@ export abstract class AbstractScrollableElement extends Widget {
 			classifier.acceptStandardWheelEvent(e);
 		}
 
+		// useful for creating unit tests:
+		// console.log(`${Date.now()}, ${e.deltaY}, ${e.deltaX}`);
+
 		let didScroll = false;
 
 		if (e.deltaY || e.deltaX) {
-			let deltaY: number;
-			let deltaX: number;
+			let deltaY = e.deltaY * this._options.mouseWheelScrollSensitivity;
+			let deltaX = e.deltaX * this._options.mouseWheelScrollSensitivity;
 
-			const wasmResult = isWasmReady() ? wasmProcessWheelDelta(
-				e.deltaX, e.deltaY,
-				this._options.mouseWheelScrollSensitivity,
-				this._options.scrollPredominantAxis,
-				this._options.flipAxes,
-				this._options.scrollYToX,
-				!!(e.browserEvent && e.browserEvent.shiftKey),
-				!!(e.browserEvent && e.browserEvent.altKey),
-				this._options.fastScrollSensitivity,
-				platform.isMacintosh
-			) : null;
-
-			if (wasmResult) {
-				deltaX = wasmResult.deltaX;
-				deltaY = wasmResult.deltaY;
-			} else {
-				deltaY = e.deltaY * this._options.mouseWheelScrollSensitivity;
-				deltaX = e.deltaX * this._options.mouseWheelScrollSensitivity;
-
-				if (this._options.scrollPredominantAxis) {
-					if (this._options.scrollYToX && deltaX + deltaY === 0) {
-						deltaX = deltaY = 0;
-					} else if (Math.abs(deltaY) >= Math.abs(deltaX)) {
-						deltaX = 0;
-					} else {
-						deltaY = 0;
-					}
-				}
-
-				if (this._options.flipAxes) {
-					[deltaY, deltaX] = [deltaX, deltaY];
-				}
-
-				const shiftConvert = !platform.isMacintosh && e.browserEvent && e.browserEvent.shiftKey;
-				if ((this._options.scrollYToX || shiftConvert) && !deltaX) {
-					deltaX = deltaY;
+			if (this._options.scrollPredominantAxis) {
+				if (this._options.scrollYToX && deltaX + deltaY === 0) {
+					// when configured to map Y to X and we both see
+					// no dominant axis and X and Y are competing with
+					// identical values into opposite directions, we
+					// ignore the delta as we cannot make a decision then
+					deltaX = deltaY = 0;
+				} else if (Math.abs(deltaY) >= Math.abs(deltaX)) {
+					deltaX = 0;
+				} else {
 					deltaY = 0;
 				}
+			}
 
-				if (e.browserEvent && e.browserEvent.altKey) {
-					deltaX = deltaX * this._options.fastScrollSensitivity;
-					deltaY = deltaY * this._options.fastScrollSensitivity;
-				}
+			if (this._options.flipAxes) {
+				[deltaY, deltaX] = [deltaX, deltaY];
+			}
+
+			// Convert vertical scrolling to horizontal if shift is held, this
+			// is handled at a higher level on Mac
+			const shiftConvert = !platform.isMacintosh && e.browserEvent && e.browserEvent.shiftKey;
+			if ((this._options.scrollYToX || shiftConvert) && !deltaX) {
+				deltaX = deltaY;
+				deltaY = 0;
+			}
+
+			if (e.browserEvent && e.browserEvent.altKey) {
+				// fastScrolling
+				deltaX = deltaX * this._options.fastScrollSensitivity;
+				deltaY = deltaY * this._options.fastScrollSensitivity;
 			}
 
 			const futureScrollPosition = this._scrollable.getFutureScrollPosition();

@@ -120,14 +120,6 @@ export class ViewLines extends ViewPart implements IViewLines {
 	private readonly _asyncUpdateLineWidths: RunOnceScheduler;
 	private readonly _asyncCheckMonospaceFontAssumptions: RunOnceScheduler;
 
-	// --- scrolling cache
-	private _isScrolling = false;
-	private readonly _scrollEndScheduler: RunOnceScheduler;
-	private _cachedLineWidths = new Map<number, number>();
-	
-	// PERFORMANCE: Limit cache size to prevent memory bloat
-	private readonly _maxCachedLineWidths = 100;
-
 	private _horizontalRevealRequest: HorizontalRevealRequest | null;
 	private readonly _lastRenderedData: LastRenderedData;
 
@@ -176,12 +168,6 @@ export class ViewLines extends ViewPart implements IViewLines {
 
 		this._horizontalRevealRequest = null;
 
-		// --- scrolling cache
-		this._scrollEndScheduler = new RunOnceScheduler(() => {
-			this._isScrolling = false;
-			this._cachedLineWidths.clear(); // Clear after scroll ends
-		}, 150);
-
 		// sticky scroll widget
 		this._stickyScrollEnabled = options.get(EditorOption.stickyScroll).enabled;
 		this._maxNumberStickyLines = options.get(EditorOption.stickyScroll).maxLineCount;
@@ -190,7 +176,6 @@ export class ViewLines extends ViewPart implements IViewLines {
 	public override dispose(): void {
 		this._asyncUpdateLineWidths.dispose();
 		this._asyncCheckMonospaceFontAssumptions.dispose();
-		this._scrollEndScheduler.dispose();
 		super.dispose();
 	}
 
@@ -270,7 +255,6 @@ export class ViewLines extends ViewPart implements IViewLines {
 	public override onFlushed(e: viewEvents.ViewFlushedEvent): boolean {
 		const shouldRender = this._visibleLines.onFlushed(e, this._viewLineOptions.useGpu);
 		this._maxLineWidth = 0;
-		this._cachedLineWidths.clear();
 		return shouldRender;
 	}
 	public override onLinesChanged(e: viewEvents.ViewLinesChangedEvent): boolean {
@@ -320,34 +304,18 @@ export class ViewLines extends ViewPart implements IViewLines {
 	}
 	public override onScrollChanged(e: viewEvents.ViewScrollChangedEvent): boolean {
 		if (this._horizontalRevealRequest && e.scrollLeftChanged) {
+			// cancel any outstanding horizontal reveal request if someone else scrolls horizontally.
 			this._horizontalRevealRequest = null;
 		}
 		if (this._horizontalRevealRequest && e.scrollTopChanged) {
 			const min = Math.min(this._horizontalRevealRequest.startScrollTop, this._horizontalRevealRequest.stopScrollTop);
 			const max = Math.max(this._horizontalRevealRequest.startScrollTop, this._horizontalRevealRequest.stopScrollTop);
 			if (e.scrollTop < min || e.scrollTop > max) {
+				// cancel any outstanding horizontal reveal request if someone else scrolls vertically.
 				this._horizontalRevealRequest = null;
 			}
 		}
-		if (e.scrollTopChanged) {
-			this._isScrolling = true;
-			// DELAY scheduler to reduce overhead during active scrolling
-			this._scrollEndScheduler.schedule();
-			// PERFORMANCE: Aggressive cache cleanup during scroll
-			if (this._cachedLineWidths.size > this._maxCachedLineWidths) {
-				// Delete oldest 50% instead of full clear to maintain some performance
-				const entries = Array.from(this._cachedLineWidths.entries());
-				this._cachedLineWidths.clear();
-				for (let i = Math.floor(entries.length / 2); i < entries.length; i++) {
-					this._cachedLineWidths.set(entries[i][0], entries[i][1]);
-				}
-			}
-		}
-		// PERFORMANCE: Skip width updates during active scrolling
-		// Width will be updated when scroll ends via _scrollEndScheduler
-		if (!this._isScrolling && e.scrollWidthChanged) {
-			this.domNode.setWidth(e.scrollWidth);
-		}
+		this.domNode.setWidth(e.scrollWidth);
 		return this._visibleLines.onScrollChanged(e) || e.scrollTopChanged || e.scrollLeftChanged;
 	}
 
@@ -551,10 +519,6 @@ export class ViewLines extends ViewPart implements IViewLines {
 	 * Returns false if some lines need to be reevaluated (in a slow fashion).
 	 */
 	private _updateLineWidthsFast(): boolean {
-		if (this._isScrolling) {
-			// Use cached widths during scroll
-			return true;
-		}
 		return this._updateLineWidths(true);
 	}
 
@@ -594,9 +558,7 @@ export class ViewLines extends ViewPart implements IViewLines {
 				continue;
 			}
 
-			const width = visibleLine.getWidth(null, this._isScrolling);
-			this._cachedLineWidths.set(lineNumber, width);
-			localMaxLineWidth = Math.max(localMaxLineWidth, width);
+			localMaxLineWidth = Math.max(localMaxLineWidth, visibleLine.getWidth(null));
 		}
 
 		if (allWidthsComputed && rendStartLineNumber === 1 && rendEndLineNumber === this._context.viewModel.getLineCount()) {
@@ -694,8 +656,6 @@ export class ViewLines extends ViewPart implements IViewLines {
 			this._asyncUpdateLineWidths.cancel();
 		}
 
-		// DISABLED: Font check consumes memory and CPU
-		/*
 		if (platform.isLinux && !this._asyncCheckMonospaceFontAssumptions.isScheduled()) {
 			const rendStartLineNumber = this._visibleLines.getStartLineNumber();
 			const rendEndLineNumber = this._visibleLines.getEndLineNumber();
@@ -707,15 +667,13 @@ export class ViewLines extends ViewPart implements IViewLines {
 				}
 			}
 		}
-		*/
 
 		// (3) handle scrolling
 		this._linesContent.setLayerHinting(this._canUseLayerHinting);
 		this._linesContent.setContain('strict');
-		const adjustedScrollTop = (this._context.viewLayout.getCurrentScrollTop() ?? 0) - (viewportData?.bigNumbersDelta ?? 0);
+		const adjustedScrollTop = this._context.viewLayout.getCurrentScrollTop() - viewportData.bigNumbersDelta;
 		this._linesContent.setTop(-adjustedScrollTop);
-		const scrollLeft = this._context.viewLayout.getCurrentScrollLeft() ?? 0;
-		this._linesContent.setLeft(-scrollLeft);
+		this._linesContent.setLeft(-this._context.viewLayout.getCurrentScrollLeft());
 	}
 
 	// --- width

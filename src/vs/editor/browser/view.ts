@@ -10,7 +10,6 @@ import { inputLatency } from '../../base/browser/performance.js';
 import { CodeWindow } from '../../base/browser/window.js';
 import { BugIndicatingError, onUnexpectedError } from '../../base/common/errors.js';
 import { Disposable, DisposableStore, IDisposable } from '../../base/common/lifecycle.js';
-import { RunOnceScheduler } from '../../base/common/async.js';
 import { IPointerHandlerHelper } from './controller/mouseHandler.js';
 import { PointerHandlerLastRenderData } from './controller/mouseTarget.js';
 import { PointerHandler } from './controller/pointerHandler.js';
@@ -131,7 +130,6 @@ export class View extends ViewEventHandler {
 	private _shouldRecomputeGlyphMarginLanes: boolean = false;
 	private _renderAnimationFrame: IDisposable | null;
 	private _ownerID: string;
-	private _scrollThrottler: RunOnceScheduler;
 
 	constructor(
 		editorContainer: HTMLElement,
@@ -303,11 +301,6 @@ export class View extends ViewEventHandler {
 
 		// Pointer handler
 		this._pointerHandler = this._register(new PointerHandler(this._context, this._viewController, this._createPointerHandlerHelper()));
-
-		// Scroll throttler - throttle scroll events to 60fps (16ms)
-		this._scrollThrottler = this._register(new RunOnceScheduler(() => {
-			this._scheduleRender();
-		}, 16));
 	}
 
 	private _instantiateEditContext(): AbstractEditContext {
@@ -471,14 +464,7 @@ export class View extends ViewEventHandler {
 	// --- begin event handlers
 	public override handleEvents(events: viewEvents.ViewEvent[]): void {
 		super.handleEvents(events);
-		// Check if any event is a scroll event
-		const hasScrollEvent = events.some(e => e.type === viewEvents.ViewEventType.ViewScrollChanged);
-		if (hasScrollEvent) {
-			// Use throttler for scroll events to maintain 60fps
-			this._scrollThrottler.schedule();
-		} else {
-			this._scheduleRender();
-		}
+		this._scheduleRender();
 	}
 	public override onConfigurationChanged(e: viewEvents.ViewConfigurationChangedEvent): boolean {
 		this.domNode.setClassName(this._getEditorClassName());
@@ -865,13 +851,8 @@ class EditorRenderingCoordinator {
 
 	private _coordinatedRenderings: ICoordinatedRendering[] = [];
 	private _animationFrameRunners = new Map<CodeWindow, IDisposable>();
-	private _scrollThrottler: RunOnceScheduler;
 
-	private constructor() {
-		this._scrollThrottler = new RunOnceScheduler(() => {
-			this._scheduleThrottledRender();
-		}, 32); // INCREASED to 32ms = ~30fps for smoother scrolling (less CPU/GPU contention)
-	}
+	private constructor() { }
 
 	scheduleCoordinatedRendering(rendering: ICoordinatedRendering): IDisposable {
 		this._coordinatedRenderings.push(rendering);
@@ -903,20 +884,6 @@ class EditorRenderingCoordinator {
 			};
 			this._animationFrameRunners.set(window, dom.runAtThisOrScheduleAtNextAnimationFrame(window, runner, 100));
 		}
-	}
-
-	private _scheduleThrottledRender(): void {
-		for (const [window] of this._animationFrameRunners) {
-			const runner = () => {
-				this._animationFrameRunners.delete(window);
-				this._onRenderScheduled();
-			};
-			this._animationFrameRunners.set(window, dom.runAtThisOrScheduleAtNextAnimationFrame(window, runner, 100));
-		}
-	}
-
-	public scheduleRenderThrottled(): void {
-		this._scrollThrottler.schedule();
 	}
 
 	private _onRenderScheduled(): void {
