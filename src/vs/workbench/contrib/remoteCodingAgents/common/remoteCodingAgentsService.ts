@@ -5,10 +5,9 @@
 
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { Event } from '../../../../base/common/event.js';
-import { ContextKeyExpr, IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { ContextKeyExpr, IContextKey, IContextKeyService, RawContextKey } from '../../../../platform/contextkey/common/contextkey.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
-import { ChatContextKeys } from '../../chat/common/actions/chatContextKeys.js';
 
 export interface IRemoteCodingAgent {
 	id: string;
@@ -28,6 +27,8 @@ export interface IRemoteCodingAgentsService {
 
 export const IRemoteCodingAgentsService = createDecorator<IRemoteCodingAgentsService>('remoteCodingAgentsService');
 
+const ctxHasRemoteCodingAgent = new RawContextKey<boolean>('remoteCodingAgents.hasAgent', false);
+
 export class RemoteCodingAgentsService extends Disposable implements IRemoteCodingAgentsService {
 	readonly _serviceBrand: undefined;
 	private readonly _ctxHasRemoteCodingAgent: IContextKey<boolean>;
@@ -38,7 +39,7 @@ export class RemoteCodingAgentsService extends Disposable implements IRemoteCodi
 		@IContextKeyService private readonly contextKeyService: IContextKeyService
 	) {
 		super();
-		this._ctxHasRemoteCodingAgent = ChatContextKeys.hasRemoteCodingAgent.bindTo(this.contextKeyService);
+		this._ctxHasRemoteCodingAgent = ctxHasRemoteCodingAgent.bindTo(this.contextKeyService);
 
 		// Listen for context changes and re-evaluate agent availability
 		this._register(Event.filter(contextKeyService.onDidChangeContext, e => e.affectsSome(this.contextKeys))(() => {

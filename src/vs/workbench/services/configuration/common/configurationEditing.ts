@@ -161,6 +161,9 @@ export class ConfigurationEditing {
 	}
 
 	async writeConfiguration(target: EditableConfigurationTarget, value: IConfigurationValue, options: IConfigurationEditingOptions = {}): Promise<void> {
+		if (!value.key) {
+			return;
+		}
 		const operation = this.getConfigurationEditOperation(target, value, options.scopes || {});
 		// queue up writes to prevent race conditions
 		return this.queue.queue(async () => {

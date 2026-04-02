@@ -32,8 +32,6 @@ import { Categories } from '../../../../platform/action/common/actionCommonCateg
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { AccessibleViewRegistry } from '../../../../platform/accessibility/browser/accessibleViewRegistry.js';
 import { GettingStartedAccessibleView } from './gettingStartedAccessibleView.js';
-import { AgentSessionsWelcomePage } from '../../welcomeAgentSessions/browser/agentSessionsWelcome.js';
-import { IChatEntitlementService } from '../../../services/chat/common/chatEntitlementService.js';
 
 export * as icons from './gettingStartedIcons.js';
 
@@ -63,52 +61,43 @@ registerAction2(class extends Action2 {
 		const editorService = accessor.get(IEditorService);
 		const commandService = accessor.get(ICommandService);
 		const configurationService = accessor.get(IConfigurationService);
-		const chatEntitlementService = accessor.get(IChatEntitlementService);
 
 		const toSide = typeof optionsOrToSide === 'object' ? optionsOrToSide.toSide : optionsOrToSide;
 		const inactive = typeof optionsOrToSide === 'object' ? optionsOrToSide.inactive : false;
 		const activeEditor = editorService.activeEditor;
 
-		// If no specific walkthrough is requested and agent sessions welcome is preferred, open that instead
-		if (!walkthroughID && !chatEntitlementService.sentiment.hidden && configurationService.getValue<string>('workbench.startupEditor') === 'agentSessionsWelcomePage') {
-			commandService.executeCommand(AgentSessionsWelcomePage.COMMAND_ID);
-			return;
-		} else {
-			if (walkthroughID) {
-				const selectedCategory = typeof walkthroughID === 'string' ? walkthroughID : walkthroughID.category;
-				let selectedStep: string | undefined;
-				if (typeof walkthroughID === 'object' && 'category' in walkthroughID && 'step' in walkthroughID) {
-					selectedStep = `${walkthroughID.category}#${walkthroughID.step}`;
-				} else {
-					selectedStep = undefined;
-				}
-
-				// If the walkthrough is already open just reveal the step
-				if (selectedStep && activeEditor instanceof GettingStartedInput && activeEditor.selectedCategory === selectedCategory) {
-					activeEditor.showWelcome = false;
-					commandService.executeCommand('walkthroughs.selectStep', selectedStep);
-					return;
-				}
-
-				let options: GettingStartedEditorOptions;
-				if (selectedCategory) {
-					// Otherwise open the walkthrough editor with the selected category and step
-					options = { selectedCategory, selectedStep, showWelcome: false, preserveFocus: toSide ?? false, inactive };
-				} else {
-					// Open Welcome page
-					options = { selectedCategory, selectedStep, showWelcome: true, preserveFocus: toSide ?? false, inactive };
-				}
-				editorService.openEditor({
-					resource: GettingStartedInput.RESOURCE,
-					options
-				}, toSide ? SIDE_GROUP : undefined);
-
+		if (walkthroughID) {
+			const selectedCategory = typeof walkthroughID === 'string' ? walkthroughID : walkthroughID.category;
+			let selectedStep: string | undefined;
+			if (typeof walkthroughID === 'object' && 'category' in walkthroughID && 'step' in walkthroughID) {
+				selectedStep = `${walkthroughID.category}#${walkthroughID.step}`;
 			} else {
-				editorService.openEditor({
-					resource: GettingStartedInput.RESOURCE,
-					options: { preserveFocus: toSide ?? false, inactive }
-				}, toSide ? SIDE_GROUP : undefined);
+				selectedStep = undefined;
 			}
+
+			// If the walkthrough is already open just reveal the step
+			if (selectedStep && activeEditor instanceof GettingStartedInput && activeEditor.selectedCategory === selectedCategory) {
+				activeEditor.showWelcome = false;
+				commandService.executeCommand('walkthroughs.selectStep', selectedStep);
+				return;
+			}
+
+			let options: GettingStartedEditorOptions;
+			if (selectedCategory) {
+				options = { selectedCategory, selectedStep, showWelcome: false, preserveFocus: toSide ?? false, inactive };
+			} else {
+				options = { selectedCategory, selectedStep, showWelcome: true, preserveFocus: toSide ?? false, inactive };
+			}
+			editorService.openEditor({
+				resource: GettingStartedInput.RESOURCE,
+				options
+			}, toSide ? SIDE_GROUP : undefined);
+
+		} else {
+			editorService.openEditor({
+				resource: GettingStartedInput.RESOURCE,
+				options: { preserveFocus: toSide ?? false, inactive }
+			}, toSide ? SIDE_GROUP : undefined);
 		}
 	}
 });
@@ -256,14 +245,6 @@ registerAction2(class extends Action2 {
 		}));
 		quickPick.show();
 		quickPick.busy = false;
-	}
-});
-
-CommandsRegistry.registerCommand({
-	id: 'welcome.newWorkspaceChat',
-	handler: (accessor, stepID: string) => {
-		const commandService = accessor.get(ICommandService);
-		commandService.executeCommand('workbench.action.chat.open', { mode: 'agent', query: '#new ', isPartialQuery: true });
 	}
 });
 

@@ -17,8 +17,6 @@ import { Extensions, IExtensionFeatureTableRenderer, IExtensionFeaturesRegistry,
 import { ManageTrustedExtensionsForAccountAction } from './actions/manageTrustedExtensionsForAccountAction.js';
 import { ManageAccountPreferencesForExtensionAction } from './actions/manageAccountPreferencesForExtensionAction.js';
 import { IAuthenticationUsageService } from '../../../services/authentication/browser/authenticationUsageService.js';
-import { ManageAccountPreferencesForMcpServerAction } from './actions/manageAccountPreferencesForMcpServerAction.js';
-import { ManageTrustedMcpServersForAccountAction } from './actions/manageTrustedMcpServersForAccountAction.js';
 import { RemoveDynamicAuthenticationProvidersAction } from './actions/manageDynamicAuthenticationProvidersAction.js';
 import { ManageAccountsAction } from './actions/manageAccountsAction.js';
 
@@ -92,8 +90,6 @@ class AuthenticationContribution extends Disposable implements IWorkbenchContrib
 		this._register(registerAction2(SignOutOfAccountAction));
 		this._register(registerAction2(ManageTrustedExtensionsForAccountAction));
 		this._register(registerAction2(ManageAccountPreferencesForExtensionAction));
-		this._register(registerAction2(ManageTrustedMcpServersForAccountAction));
-		this._register(registerAction2(ManageAccountPreferencesForMcpServerAction));
 		this._register(registerAction2(RemoveDynamicAuthenticationProvidersAction));
 	}
 }
