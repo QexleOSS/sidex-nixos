@@ -87,6 +87,7 @@ async function boot() {
 			'workbench.enableExperiments': false,
 			'workbench.iconTheme': 'vs-seti',
 			'workbench.colorTheme': 'SideX Monochrome Dark',
+			'editor.experimentalGpuAcceleration': 'off',
 			'workbench.productIconTheme': 'Default',
 			'workbench.editor.showTabs': 'multiple',
 			'workbench.editor.enablePreview': true,

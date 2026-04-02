@@ -54,7 +54,8 @@ export function observeDevicePixelDimensions(element: HTMLElement, parentWindow:
 	} catch {
 		observer.disconnect();
 		observer = undefined;
-		throw new BugIndicatingError('Could not observe device pixel dimensions');
+		// Gracefully fall back - device-pixel-content-box not supported (e.g. Tauri webview)
+		return toDisposable(() => { });
 	}
 	return toDisposable(() => observer?.disconnect());
 }
