@@ -163,7 +163,7 @@
 			acquire(responseChannel: string, nonce: string) {
 				if (validateIPC(responseChannel)) {
 					const mc = new MessageChannel();
-					window.postMessage(nonce, '*', [mc.port2]);
+					window.postMessage(nonce, window.location.origin, [mc.port2]);
 
 					tauriInvoke('ipc_acquire_port', { responseChannel, nonce }).catch(err =>
 						console.error(`[Tauri IPC acquirePort] ${responseChannel}:`, err)

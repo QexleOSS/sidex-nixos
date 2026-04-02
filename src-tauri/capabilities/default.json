@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Full permissions for SideX IDE",
-  "windows": ["main", "*"],
+  "description": "SideX IDE permissions",
+  "windows": ["main"],
   "permissions": [
     "core:default",
  
@@ -30,7 +30,6 @@
       "allow": [
         { "path": "$HOME/**" },
         { "path": "$HOME" },
-        { "path": "/**" },
         { "path": "$APPDATA/**" },
         { "path": "$LOCALAPPDATA/**" },
         { "path": "$TEMP/**" },
@@ -48,10 +47,6 @@
 
     "shell:default",
     "shell:allow-open",
-    "shell:allow-execute",
-    "shell:allow-spawn",
-    "shell:allow-stdin-write",
-    "shell:allow-kill",
 
     "notification:default",
     "notification:allow-is-permission-granted",

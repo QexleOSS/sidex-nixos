@@ -314,16 +314,40 @@ pub async fn git_remote_list(path: String) -> Result<Vec<GitRemote>, String> {
 
 #[tauri::command]
 pub async fn git_clone(url: String, path: String) -> Result<(), String> {
+    if let Ok(parsed) = reqwest::Url::parse(&url) {
+        match parsed.scheme() {
+            "https" | "http" | "ssh" | "git" => {}
+            scheme => return Err(format!("git clone: blocked URL scheme '{}'", scheme)),
+        }
+    }
+
+    let canon_path = std::path::Path::new(&path);
+    if canon_path.components().any(|c| c == std::path::Component::ParentDir) {
+        return Err("git clone: path must not contain '..'".to_string());
+    }
+
     let output = Command::new("git")
-        .args(["clone", &url, &path])
+        .args(["clone", "--no-checkout", &url, &path])
         .output()
         .map_err(|e| format!("Failed to execute git clone: {}", e))?;
 
-    if output.status.success() {
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("git clone error: {}", stderr.trim()));
+    }
+
+    // Complete checkout with hooks disabled
+    let checkout = Command::new("git")
+        .current_dir(&path)
+        .args(["-c", "core.hooksPath=/dev/null", "checkout"])
+        .output()
+        .map_err(|e| format!("Failed to execute git checkout: {}", e))?;
+
+    if checkout.status.success() {
         Ok(())
     } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        Err(format!("git clone error: {}", stderr.trim()))
+        let stderr = String::from_utf8_lossy(&checkout.stderr);
+        Err(format!("git checkout error: {}", stderr.trim()))
     }
 }
 
@@ -353,22 +377,40 @@ pub async fn git_show(path: String, file: String) -> Result<Vec<u8>, String> {
     }
 }
 
-const GIT_ALLOWED_SUBCOMMANDS: &[&str] = &[
+const BLOCKED_GIT_FLAGS: &[&str] = &[
+    "-c", "--exec", "--upload-pack", "--receive-pack",
+    "--config", "--exec-path",
+];
+
+const ALLOWED_GIT_SUBCOMMANDS: &[&str] = &[
     "add", "am", "apply", "archive", "bisect", "blame", "branch", "cat-file",
     "cherry-pick", "checkout", "clone", "commit", "describe", "diff", "diff-tree",
     "fetch", "for-each-ref", "format-patch", "gc", "grep", "hash-object",
     "init", "log", "ls-files", "ls-remote", "ls-tree", "merge", "pack-refs",
     "prune", "pull", "push", "rebase", "reflog", "remote", "reset", "revert",
     "rev-parse", "shortlog", "show", "stash", "status", "submodule", "tag",
-    "worktree",
+    "worktree", "clean",
 ];
+
+fn validate_git_args(args: &[String]) -> Result<(), String> {
+    let subcommand = args.first().map(|s| s.as_str()).unwrap_or("");
+    if !ALLOWED_GIT_SUBCOMMANDS.contains(&subcommand) {
+        return Err(format!("git subcommand '{}' is not allowed", subcommand));
+    }
+    for arg in args.iter().skip(1) {
+        let lower = arg.to_lowercase();
+        for blocked in BLOCKED_GIT_FLAGS {
+            if lower == *blocked || lower.starts_with(&format!("{}=", blocked)) {
+                return Err(format!("git flag '{}' is not allowed", arg));
+            }
+        }
+    }
+    Ok(())
+}
 
 #[tauri::command]
 pub async fn git_run(path: String, args: Vec<String>) -> Result<String, String> {
-    let subcommand = args.first().map(|s| s.as_str()).unwrap_or("");
-    if !GIT_ALLOWED_SUBCOMMANDS.contains(&subcommand) {
-        return Err(format!("git subcommand '{}' is not allowed", subcommand));
-    }
+    validate_git_args(&args)?;
     let arg_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
     run_git(&path, &arg_refs)
 }

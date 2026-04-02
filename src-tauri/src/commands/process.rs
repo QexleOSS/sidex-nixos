@@ -1058,6 +1058,14 @@ pub fn term_clear_buffer(
     Ok(())
 }
 
+const ALLOWED_SIGNALS: &[i32] = &[
+    2,  // SIGINT
+    9,  // SIGKILL
+    15, // SIGTERM
+    18, // SIGCONT
+    19, // SIGSTOP
+];
+
 /// Send signal to terminal process (Unix only)
 #[cfg(unix)]
 #[tauri::command]
@@ -1066,20 +1074,27 @@ pub fn term_signal(
     handle: TermHandle,
     signal: i32,
 ) -> Result<(), String> {
+    if !ALLOWED_SIGNALS.contains(&signal) {
+        return Err(format!("Signal {} is not in the allowed list", signal));
+    }
+
     let terminals = state.terminals.lock().map_err(|e| e.to_string())?;
     let terminal = terminals
         .get(&handle)
         .ok_or_else(|| format!("Terminal {:?} not found", handle))?;
 
     if let Some(pid) = terminal.pid() {
+        let pid_i32: i32 = pid
+            .try_into()
+            .map_err(|_| format!("PID {} overflows i32", pid))?;
         unsafe {
-            let result = libc::kill(pid as i32, signal);
+            let result = libc::kill(pid_i32, signal);
             if result != 0 {
                 return Err(format!("Failed to send signal {} to {}", signal, pid));
             }
         }
     }
-    
+
     Ok(())
 }
 

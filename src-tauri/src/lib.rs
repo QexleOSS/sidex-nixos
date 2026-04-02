@@ -227,11 +227,11 @@ pub fn run() {
         })
         .on_menu_event(|app, event| {
             let id = event.id().0.as_str();
-            // Forward menu action to the webview
             if let Some(window) = app.get_webview_window("main") {
+                let escaped = id.replace('\\', "\\\\").replace('\'', "\\'");
                 let _ = window.eval(&format!(
-                    "window.__sidex_menu_action && window.__sidex_menu_action('{}')",
-                    id
+                    "window.dispatchEvent(new CustomEvent('sidex-native-menu', {{ detail: '{}' }}))",
+                    escaped
                 ));
             }
         })

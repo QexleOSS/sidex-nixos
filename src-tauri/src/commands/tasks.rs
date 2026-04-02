@@ -5,6 +5,16 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, State};
 
+fn shell_escape(s: &str) -> String {
+    if s.is_empty() {
+        return "''".to_string();
+    }
+    if s.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '/' || c == ':') {
+        return s.to_string();
+    }
+    format!("'{}'", s.replace('\'', "'\"'\"'"))
+}
+
 struct TaskProcessHandle {
     child: Child,
 }
@@ -36,14 +46,6 @@ struct TaskExitEvent {
     exit_code: Option<i32>,
 }
 
-fn shell_quote(s: &str) -> String {
-    if cfg!(target_os = "windows") {
-        format!("\"{}\"", s.replace('`', "``").replace('"', "\"\""))
-    } else {
-        format!("'{}'", s.replace('\'', "'\\''"))
-    }
-}
-
 /// Spawn a task process (non-PTY) and return its task_id.
 /// Output is emitted as `task-output` events, exit as `task-exit`.
 #[tauri::command]
@@ -68,17 +70,31 @@ pub fn task_spawn(
         let mut c = Command::new(&shell_path);
         if cfg!(target_os = "windows") {
             c.args(&["-NoProfile", "-Command"]);
+            let full_cmd = if let Some(ref a) = args {
+                let mut parts = vec![command.clone()];
+                parts.extend(a.iter().map(|arg| {
+                    if arg.contains(' ') || arg.contains('"') {
+                        format!("\"{}\"", arg.replace('"', "`\""))
+                    } else {
+                        arg.clone()
+                    }
+                }));
+                parts.join(" ")
+            } else {
+                command.clone()
+            };
+            c.arg(&full_cmd);
         } else {
             c.arg("-c");
+            let full_cmd = if let Some(ref a) = args {
+                let mut parts = vec![shell_escape(&command)];
+                parts.extend(a.iter().map(|arg| shell_escape(arg)));
+                parts.join(" ")
+            } else {
+                shell_escape(&command)
+            };
+            c.arg(&full_cmd);
         }
-
-        let full_cmd = if let Some(ref a) = args {
-            let quoted: Vec<String> = a.iter().map(|s| shell_quote(s)).collect();
-            format!("{} {}", command, quoted.join(" "))
-        } else {
-            command.clone()
-        };
-        c.arg(&full_cmd);
 
         #[cfg(windows)]
         {

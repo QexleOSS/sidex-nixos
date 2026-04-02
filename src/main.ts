@@ -44,10 +44,12 @@ async function boot() {
 	const urlParams = new URLSearchParams(window.location.search);
 	const folderParam = urlParams.get('folder');
 
-	// Build the workspace provider — this is how VSCode web knows what folder to open
 	let workspace: any = undefined;
 	if (folderParam) {
-		workspace = { folderUri: URI.parse(folderParam) };
+		const parsed = URI.parse(folderParam);
+		if (parsed.scheme === 'file' || parsed.scheme === 'vscode-remote' || parsed.scheme === 'vscode-vfs') {
+			workspace = { folderUri: parsed };
+		}
 	}
 
 	const options: any = {
@@ -285,14 +287,20 @@ function setupMenuActions() {
 			return;
 		}
 		try {
-			const { CommandsRegistry } = await import('./vs/platform/commands/common/commands.js');
-			// Access the global command service through the workbench
 			const event = new CustomEvent('sidex-command', { detail: { commandId } });
 			window.dispatchEvent(event);
 		} catch (e) {
 			console.error(`[SideX] Failed to execute menu command ${commandId}:`, e);
 		}
 	};
+
+	// Native menu events arrive as CustomEvents from the Rust backend
+	window.addEventListener('sidex-native-menu', ((e: CustomEvent) => {
+		const menuId = e.detail;
+		if (typeof menuId === 'string' && (window as any).__sidex_menu_action) {
+			(window as any).__sidex_menu_action(menuId);
+		}
+	}) as EventListener);
 
 	// Listen for command execution via keyboard shortcuts forwarded from native menu
 	window.addEventListener('sidex-command', async (e: any) => {
@@ -317,8 +325,13 @@ function setupMenuActions() {
 
 boot().catch((err) => {
 	console.error('[SideX] Fatal:', err);
-	document.body.innerHTML = `<div style="padding:40px;color:#ccc;font-family:system-ui">
-		<h2>SideX failed to start</h2>
-		<pre style="color:#f88;white-space:pre-wrap">${(err as Error)?.stack || err}</pre>
-	</div>`;
+	const container = document.createElement('div');
+	container.style.cssText = 'padding:40px;color:#ccc;font-family:system-ui';
+	const h2 = document.createElement('h2');
+	h2.textContent = 'SideX failed to start';
+	const pre = document.createElement('pre');
+	pre.style.cssText = 'color:#f88;white-space:pre-wrap';
+	pre.textContent = (err as Error)?.stack || String(err);
+	container.append(h2, pre);
+	document.body.replaceChildren(container);
 });
