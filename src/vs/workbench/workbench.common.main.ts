@@ -260,6 +260,9 @@ import './contrib/webviewPanel/browser/webviewPanel.contribution.js';
 import './contrib/webviewView/browser/webviewView.contribution.js';
 import './contrib/customEditor/browser/customEditor.contribution.js';
 
+// Image Preview
+import './contrib/imagePreview/browser/imagePreview.contribution.js';
+
 // External Uri Opener
 import './contrib/externalUriOpener/common/externalUriOpener.contribution.js';
 

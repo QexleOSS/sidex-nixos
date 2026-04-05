@@ -11602,38 +11602,7 @@
             }
           }
         },
-        "customEditors": [
-          {
-            "viewType": "imagePreview.previewEditor",
-            "displayName": "%customEditor.imagePreview.displayName%",
-            "priority": "builtin",
-            "selector": [
-              {
-                "filenamePattern": "*.{jpg,jpe,jpeg,png,bmp,gif,ico,webp,avif,svg}"
-              }
-            ]
-          },
-          {
-            "viewType": "vscode.audioPreview",
-            "displayName": "%customEditor.audioPreview.displayName%",
-            "priority": "builtin",
-            "selector": [
-              {
-                "filenamePattern": "*.{mp3,wav,ogg,oga}"
-              }
-            ]
-          },
-          {
-            "viewType": "vscode.videoPreview",
-            "displayName": "%customEditor.videoPreview.displayName%",
-            "priority": "builtin",
-            "selector": [
-              {
-                "filenamePattern": "*.{mp4,webm}"
-              }
-            ]
-          }
-        ],
+        "customEditors": [],
         "commands": [
           {
             "command": "imagePreview.zoomIn",
