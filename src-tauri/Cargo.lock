@@ -99,46 +99,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
-name = "app"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "crossbeam",
- "dashmap",
- "dirs 5.0.1",
- "encoding_rs",
- "flate2",
- "glob",
- "globset",
- "hostname",
- "libc",
- "log",
- "md5",
- "memmap2",
- "notify",
- "pathdiff",
- "portable-pty",
- "rand 0.8.5",
- "rayon",
- "regex",
- "reqwest 0.12.28",
- "rusqlite",
- "serde",
- "serde_json",
- "sha2",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-log",
- "tauri-plugin-shell",
- "tokio",
- "uuid",
- "walkdir",
- "which",
- "zip",
-]
-
-[[package]]
 name = "arbitrary"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4445,6 +4405,46 @@ name = "shlex"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
+
+[[package]]
+name = "sidex"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "crossbeam",
+ "dashmap",
+ "dirs 5.0.1",
+ "encoding_rs",
+ "flate2",
+ "glob",
+ "globset",
+ "hostname",
+ "libc",
+ "log",
+ "md5",
+ "memmap2",
+ "notify",
+ "pathdiff",
+ "portable-pty",
+ "rand 0.8.5",
+ "rayon",
+ "regex",
+ "reqwest 0.12.28",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-log",
+ "tauri-plugin-shell",
+ "tokio",
+ "uuid",
+ "walkdir",
+ "which",
+ "zip",
+]
 
 [[package]]
 name = "sigchld"
