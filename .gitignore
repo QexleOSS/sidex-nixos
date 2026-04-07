@@ -12,7 +12,7 @@ public/wasm/scroll/.gitignore
 public/wasm/scroll/package.json
 
 # Extensions (downloaded at runtime)
-extensions/
+/extensions/
 
 # Logs
 *.log

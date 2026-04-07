@@ -424,11 +424,16 @@ class ClientConnection {
 				this._forwardToExtHost(id, msg);
 				break;
 
-			case 'documentOpened':
-			case 'documentChanged':
-			case 'documentClosed':
-				this._forwardToExtHost(id, msg);
-				break;
+		case 'documentOpened':
+		case 'documentChanged':
+		case 'documentClosed':
+		case 'documentSaved':
+		case 'activeEditorChanged':
+		case 'messageResponse':
+		case 'setLanguageConfiguration':
+		case 'fileWatchEvent':
+			this._forwardToExtHost(id, msg);
+			break;
 
 			case 'provideCompletionItems':
 			case 'provideHover':
@@ -438,13 +443,21 @@ class ClientConnection {
 			case 'provideCodeActions':
 			case 'provideCodeLenses':
 			case 'provideFormatting':
+			case 'provideRangeFormatting':
 			case 'provideSignatureHelp':
 			case 'provideDocumentHighlight':
 			case 'provideRename':
+			case 'prepareRename':
+			case 'provideDocumentLinks':
 			case 'provideInlayHints':
 			case 'provideTypeDefinition':
 			case 'provideImplementation':
+			case 'provideDeclaration':
 			case 'provideFoldingRanges':
+			case 'provideDocumentColors':
+			case 'provideSemanticTokens':
+			case 'provideWorkspaceSymbols':
+			case 'provideSelectionRanges':
 				this._forwardToExtHost(id, msg);
 				break;
 
