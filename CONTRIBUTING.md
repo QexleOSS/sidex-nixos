@@ -11,7 +11,7 @@ npm install
 npm run tauri dev
 ```
 
-See the [README](./README.md) for full prerequisites.
+On NixOS: `nix develop` or `nix-shell` first. See [NIXOS.md](./NIXOS.md).
 
 ## How to Contribute
 

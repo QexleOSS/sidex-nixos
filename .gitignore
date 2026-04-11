@@ -69,6 +69,11 @@ coverage/
 .cache/
 .parcel-cache/
 
+# ── Nix ───────────────────────────────────────────────────────────────────────
+result/
+result-*
+.direnv/
+
 # ── Incomplete Rust WASM extensions (stubs, not yet LSP-backed) ──────────────
 extensions-rust/debug-auto-launch-extension/
 extensions-rust/debug-server-ready-extension/

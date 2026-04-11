@@ -20,7 +20,7 @@
 <br>
 
 <p align="center">
-  <a href="#why">Why</a> · <a href="#whats-working">What's Working</a> · <a href="#getting-started">Getting Started</a> · <a href="#how-its-built">How It's Built</a> · <a href="#contributing">Contributing</a> · <a href="https://discord.gg/8CUCnEAC4J">Discord</a>
+  <a href="#why">Why</a> · <a href="#whats-working">What's Working</a> · <a href="#getting-started">Getting Started</a> · <a href="#nixos">NixOS</a> · <a href="#how-its-built">How It's Built</a> · <a href="#contributing">Contributing</a> · <a href="https://discord.gg/8CUCnEAC4J">Discord</a>
 </p>
 
 ---
@@ -86,6 +86,25 @@ npx tauri build
 ```
 
 First build takes 5–10 minutes (Rust compile time). Pre-built binaries are not distributed yet.
+
+### NixOS
+
+```bash
+# Flakes
+nix develop
+npm install
+npm run tauri dev
+
+# Traditional nix-shell
+nix-shell
+npm install
+npm run tauri dev
+
+# Install
+nix profile install .#sidex
+```
+
+See [NIXOS.md](./NIXOS.md) for details.
 
 ---
 
