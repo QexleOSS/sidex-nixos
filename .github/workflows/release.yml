@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to release (e.g. 0.1.0)"
+        description: "Version to release (e.g. 0.1.2)"
         required: true
-        default: "0.1.0"
+        default: "0.1.2"
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -20,37 +20,31 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS arm64
           - platform: macos-latest
             target: aarch64-apple-darwin
             rust_targets: aarch64-apple-darwin
             artifact_name: macos-arm64
 
-          # macOS x64
           - platform: macos-latest
             target: x86_64-apple-darwin
             rust_targets: x86_64-apple-darwin
             artifact_name: macos-x64
 
-          # macOS universal fat binary
           - platform: macos-latest
             target: universal-apple-darwin
             rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
             artifact_name: macos-universal
 
-          # Windows x64
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
             rust_targets: x86_64-pc-windows-msvc
             artifact_name: windows-x64
 
-          # Windows ARM64 (cross-compiled from x64 runner)
           - platform: windows-latest
             target: aarch64-pc-windows-msvc
             rust_targets: aarch64-pc-windows-msvc
             artifact_name: windows-arm64
 
-          # Linux x64
           - platform: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             rust_targets: x86_64-unknown-linux-gnu
@@ -71,12 +65,6 @@ jobs:
         with:
           targets: ${{ matrix.rust_targets }}
 
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: "./src-tauri -> target"
-          key: ${{ matrix.artifact_name }}
-
       - name: Install Linux system dependencies
         if: runner.os == 'Linux'
         run: |
@@ -93,9 +81,8 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      # ── macOS signing ────────────────────────────────────────────────────────
       - name: Import Apple signing certificate
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && !contains(matrix.platform, 'self-hosted')
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -108,6 +95,7 @@ jobs:
           security set-keychain-settings -lut 21600 build.keychain
           security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          security list-keychain -d user -s build.keychain login.keychain
           rm certificate.p12
 
       - name: Install create-dmg
@@ -116,7 +104,6 @@ jobs:
           brew install create-dmg
           sudo ln -sf "$(which create-dmg)" /usr/local/bin/create-dmg
 
-      # ── Build ────────────────────────────────────────────────────────────────
       - name: Build frontend
         env:
           NODE_OPTIONS: "--max-old-space-size=12288"
@@ -138,20 +125,16 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npx tauri build --target ${{ matrix.target }} --config src-tauri/tauri.release.conf.json
 
-      # ── Collect artifacts ────────────────────────────────────────────────────
       - name: Collect macOS artifacts
         if: runner.os == 'macOS'
         shell: bash
         run: |
           mkdir -p dist-artifacts
-          # DMGs — strip version number for stable filenames
-          for f in $(find src-tauri/target -name "*.dmg" ! -name "*.tar.gz"); do
-            stable=$(echo "$(basename $f)" | sed 's/SideX_[0-9._]*_*\(.*\.dmg\)/SideX_\1/')
-            cp "$f" "dist-artifacts/$stable"
-          done
-          # Updater tarballs + sigs
-          find src-tauri/target \( -name "*.app.tar.gz" -o -name "*.app.tar.gz.sig" \) \
-            -exec cp {} dist-artifacts/ \; 2>/dev/null || true
+          find src-tauri/target \( \
+            -name "*.dmg" \
+            -o -name "*.app.tar.gz" \
+            -o -name "*.app.tar.gz.sig" \
+          \) -exec cp {} dist-artifacts/ \; 2>/dev/null || true
           ls -la dist-artifacts/
 
       - name: Collect Windows artifacts
@@ -159,16 +142,11 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist-artifacts
-          # NSIS installers — strip version number
-          for f in $(find src-tauri/target -name "*setup*.exe" -o -name "*_x64*.exe" -o -name "*_aarch64*.exe" 2>/dev/null); do
-            stable=$(echo "$(basename $f)" | sed 's/SideX_[0-9._]*_*\(.*\.exe\)/SideX_\1/')
-            stable=$(echo "$stable" | sed 's/aarch64/arm64/')
-            cp "$f" "dist-artifacts/$stable"
-          done
-          # Updater zips + sigs
-          find src-tauri/target \( -name "*.exe.zip" -o -name "*.exe.zip.sig" \
-            -o -name "*.msi" -o -name "*.msi.zip" -o -name "*.msi.zip.sig" \) \
-            -exec cp {} dist-artifacts/ \; 2>/dev/null || true
+          find src-tauri/target \( \
+            -name "*-setup.exe" \
+            -o -name "*.exe.zip" \
+            -o -name "*.exe.zip.sig" \
+          \) -exec cp {} dist-artifacts/ \; 2>/dev/null || true
           ls -la dist-artifacts/
 
       - name: Collect Linux artifacts
@@ -184,14 +162,9 @@ jobs:
           \) -exec cp {} dist-artifacts/ \; 2>/dev/null || true
           ls -la dist-artifacts/
 
-      # ── Windows code signing (Azure Trusted Signing) ─────────────────────────
-      - name: Sign Windows installers
+      - name: Sign Windows installers (Azure Trusted Signing)
         if: runner.os == 'Windows'
         uses: Azure/artifact-signing-action@v1.1.0
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -200,7 +173,7 @@ jobs:
           trusted-signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
           certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE }}
           files-folder: dist-artifacts
-          files-folder-filter: exe,msi
+          files-folder-filter: exe
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
@@ -216,6 +189,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+
     steps:
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
@@ -230,6 +204,7 @@ jobs:
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
         run: |
           aws configure set aws_access_key_id "$R2_ACCESS_KEY_ID"
           aws configure set aws_secret_access_key "$R2_SECRET_ACCESS_KEY"
@@ -254,50 +229,36 @@ jobs:
             --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
             --delete
 
-      - name: Generate and upload latest.json for updater
+      - name: Generate and upload latest.json
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
         run: |
           VERSION="${{ github.event.inputs.version || github.ref_name }}"
           DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          BASE_URL="https://cdn.siden.ai/releases/sidex/latest"
 
           MACOS_SIG=$(cat all-artifacts/*.app.tar.gz.sig 2>/dev/null | head -1 || echo "")
-          MACOS_FILE=$(ls all-artifacts/*.app.tar.gz 2>/dev/null | head -1 | xargs basename || echo "")
+          MACOS_FILE=$(ls all-artifacts/*.app.tar.gz 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "")
 
-          WIN_SIG=$(cat all-artifacts/*-setup.exe.zip.sig 2>/dev/null | head -1 || echo "")
-          WIN_FILE=$(ls all-artifacts/*-setup.exe.zip 2>/dev/null | head -1 | xargs basename || echo "")
+          WIN_SIG=$(cat all-artifacts/*x64-setup.exe.zip.sig 2>/dev/null | head -1 || echo "")
+          WIN_FILE=$(ls all-artifacts/*x64-setup.exe.zip 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "")
 
           LINUX_SIG=$(cat all-artifacts/*.AppImage.tar.gz.sig 2>/dev/null | head -1 || echo "")
-          LINUX_FILE=$(ls all-artifacts/*.AppImage.tar.gz 2>/dev/null | head -1 | xargs basename || echo "")
+          LINUX_FILE=$(ls all-artifacts/*.AppImage.tar.gz 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "")
 
           cat > latest.json << EOF
           {
             "version": "${VERSION}",
-            "notes": "See the full changelog at https://github.com/${{ github.repository }}/releases/tag/${VERSION}",
+            "notes": "See the full changelog at https://github.com/${{ github.repository }}/releases/tag/v${VERSION}",
             "pub_date": "${DATE}",
             "platforms": {
-              "darwin-aarch64": {
-                "signature": "${MACOS_SIG}",
-                "url": "${BASE_URL}/${MACOS_FILE}"
-              },
-              "darwin-x86_64": {
-                "signature": "${MACOS_SIG}",
-                "url": "${BASE_URL}/${MACOS_FILE}"
-              },
-              "windows-x86_64": {
-                "signature": "${WIN_SIG}",
-                "url": "${BASE_URL}/${WIN_FILE}"
-              },
-              "linux-x86_64": {
-                "signature": "${LINUX_SIG}",
-                "url": "${BASE_URL}/${LINUX_FILE}"
-              }
+              "darwin-aarch64": { "signature": "${MACOS_SIG}", "url": "${BASE_URL}/${MACOS_FILE}" },
+              "darwin-x86_64": { "signature": "${MACOS_SIG}", "url": "${BASE_URL}/${MACOS_FILE}" },
+              "windows-x86_64": { "signature": "${WIN_SIG}", "url": "${BASE_URL}/${WIN_FILE}" },
+              "linux-x86_64": { "signature": "${LINUX_SIG}", "url": "${BASE_URL}/${LINUX_FILE}" }
             }
           }
           EOF
-
-          echo "Generated latest.json:"
-          cat latest.json
 
           aws s3 cp latest.json \
             "s3://siden-assets/releases/sidex/latest/latest.json" \
@@ -305,7 +266,7 @@ jobs:
             --content-type "application/json" \
             --cache-control "no-cache"
 
-  # ── GitHub Release (open source — public download) ───────────────────────────
+  # ── GitHub Release ───────────────────────────────────────────────────────────
   release:
     needs: deploy
     runs-on: ubuntu-latest
@@ -319,9 +280,6 @@ jobs:
         with:
           path: all-artifacts
           merge-multiple: true
-
-      - name: List release files
-        run: find all-artifacts -type f | sort
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

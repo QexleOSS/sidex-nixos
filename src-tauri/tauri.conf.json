@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "SideX",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "identifier": "com.siden.sidex",
   "build": {
     "frontendDist": "../dist",
@@ -56,6 +56,7 @@
       "icons/icon.ico"
     ],
     "macOS": {
+      "signingIdentity": "Developer ID Application: kima Booker (D983H3RN86)",
       "minimumSystemVersion": "10.15"
     },
     "windows": {
