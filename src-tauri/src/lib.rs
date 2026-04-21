@@ -406,7 +406,7 @@ pub fn run() {
             restore_and_show(app, &db);
 
             app.manage(Arc::new(db));
-            
+
             {
                 let settings_store = app.state::<Arc<SettingsStore>>();
                 let user_settings_path = app_data.join("UserData").join("User").join("settings.json");
@@ -604,6 +604,9 @@ pub fn run() {
             commands::git_add,
             commands::git_commit,
             commands::git_checkout,
+            commands::git_restore,
+            commands::git_clean,
+            commands::git_checkout_file,
             commands::git_branches,
             commands::git_init,
             commands::git_is_repo,
@@ -619,6 +622,27 @@ pub fn run() {
             commands::git_show,
             commands::git_run,
             commands::git_log_graph,
+            commands::git_blame,
+            commands::git_cherry_pick,
+            commands::git_delete_branch_force,
+            commands::git_fetch_all,
+            commands::git_get_config,
+            commands::git_get_remotes,
+            commands::git_list_branches,
+            commands::git_list_submodules,
+            commands::git_list_tags,
+            commands::git_merge,
+            commands::git_pull_detailed,
+            commands::git_push_detailed,
+            commands::git_rebase,
+            commands::git_rename_branch,
+            commands::git_set_config,
+            commands::git_stash_apply,
+            commands::git_stash_drop_index,
+            commands::git_stash_list_parsed,
+            commands::git_submodule_init,
+            commands::git_submodule_update,
+            commands::git_tag,
             commands::extension_platform_bootstrap,
             commands::extension_platform_status,
             commands::extension_platform_restart,

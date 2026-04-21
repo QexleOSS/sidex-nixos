@@ -1312,7 +1312,8 @@ class SetListViewModeNavigationAction extends SetListViewModeAction {
 				ContextKeys.SCMViewMode.isEqualTo(ViewMode.Tree)
 			),
 			group: 'navigation',
-			order: -1000
+			order: -1000,
+			isHiddenByDefault: true
 		});
 	}
 }
@@ -1345,7 +1346,8 @@ class SetTreeViewModeNavigationAction extends SetTreeViewModeAction {
 				ContextKeys.SCMViewMode.isEqualTo(ViewMode.List)
 			),
 			group: 'navigation',
-			order: -1000
+			order: -1000,
+			isHiddenByDefault: true
 		});
 	}
 }

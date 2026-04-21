@@ -162,6 +162,52 @@ pub fn checkout(repo_root: &Path, branch: &str) -> GitResult<()> {
     Ok(())
 }
 
+pub fn restore(
+    repo_root: &Path,
+    paths: &[String],
+    source: Option<&str>,
+    staged: bool,
+    worktree: bool,
+) -> GitResult<()> {
+    let mut args: Vec<&str> = vec!["restore"];
+    if staged {
+        args.push("--staged");
+    }
+    if worktree {
+        args.push("--worktree");
+    }
+    let source_arg;
+    if let Some(src) = source {
+        source_arg = format!("--source={src}");
+        args.push(&source_arg);
+    }
+    args.push("--");
+    let path_refs: Vec<&str> = paths.iter().map(String::as_str).collect();
+    args.extend(path_refs);
+    run_git(repo_root, &args)?;
+    Ok(())
+}
+
+pub fn clean(repo_root: &Path, paths: &[String], dirs: bool) -> GitResult<()> {
+    let mut args: Vec<&str> = vec!["clean", "-f"];
+    if dirs {
+        args.push("-d");
+    }
+    args.push("--");
+    let path_refs: Vec<&str> = paths.iter().map(String::as_str).collect();
+    args.extend(path_refs);
+    run_git(repo_root, &args)?;
+    Ok(())
+}
+
+pub fn checkout_files(repo_root: &Path, treeish: &str, paths: &[String]) -> GitResult<()> {
+    let mut args: Vec<&str> = vec!["checkout", treeish, "--"];
+    let path_refs: Vec<&str> = paths.iter().map(String::as_str).collect();
+    args.extend(path_refs);
+    run_git(repo_root, &args)?;
+    Ok(())
+}
+
 /// Create a new branch and switch to it, optionally from a start point.
 pub fn create_branch(repo_root: &Path, name: &str, start_point: Option<&str>) -> GitResult<()> {
     let mut args = vec!["checkout", "-b", name];

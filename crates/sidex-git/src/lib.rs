@@ -19,14 +19,14 @@ pub use diff::{
 pub use error::{GitError, GitResult};
 pub use log::{log_graph, Commit, GitGraphEntry, GitRef, GraphCommit};
 pub use operations::{
-    branches, checkout, cherry_pick, clone, commit, create_branch, delete_branch,
-    delete_branch_force, fetch, fetch_all, get_config, get_remotes, init, list_branches,
-    list_submodules, list_tags, merge, pull, pull_detailed, push, push_detailed, rebase,
-    remote_list, rename_branch, run, set_config, show_file, stage, stash, stash_action,
-    stash_apply, stash_drop, stash_drop_index, stash_list, stash_list_parsed, stash_pop,
-    submodule_init, submodule_update, tag, unstage, BranchInfo, GitBranch, GitRemote, MergeResult,
-    PullResult, PushResult, RebaseResult, RemoteInfo, StashAction, StashEntry, SubmoduleInfo,
-    TagInfo,
+    branches, checkout, checkout_files, cherry_pick, clean, clone, commit, create_branch,
+    delete_branch, delete_branch_force, fetch, fetch_all, get_config, get_remotes, init,
+    list_branches, list_submodules, list_tags, merge, pull, pull_detailed, push, push_detailed,
+    rebase, remote_list, rename_branch, restore, run, set_config, show_file, stage, stash,
+    stash_action, stash_apply, stash_drop, stash_drop_index, stash_list, stash_list_parsed,
+    stash_pop, submodule_init, submodule_update, tag, unstage, BranchInfo, GitBranch, GitRemote,
+    MergeResult, PullResult, PushResult, RebaseResult, RemoteInfo, StashAction, StashEntry,
+    SubmoduleInfo, TagInfo,
 };
 pub use repo::{current_branch, find_repo_root, is_git_repo, remotes};
 pub use status::{FileStatus, StatusEntry};

@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+use sidex_git::{
+    BlameLine, BranchInfo, MergeResult, PullResult, PushResult, RebaseResult, RemoteInfo,
+    StashEntry, SubmoduleInfo, TagInfo,
+};
+
 use super::validation::validate_path;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -151,6 +156,37 @@ pub async fn git_checkout(path: String, branch: String) -> Result<(), String> {
     validate_path(&path)?;
     let repo = Path::new(&path);
     sidex_git::checkout(repo, &branch).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_restore(
+    path: String,
+    files: Vec<String>,
+    source: Option<String>,
+    staged: bool,
+    worktree: bool,
+) -> Result<(), String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::restore(repo, &files, source.as_deref(), staged, worktree).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_clean(path: String, files: Vec<String>, dirs: bool) -> Result<(), String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::clean(repo, &files, dirs).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_checkout_file(
+    path: String,
+    treeish: String,
+    files: Vec<String>,
+) -> Result<(), String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::checkout_files(repo, &treeish, &files).map_err(git_err)
 }
 
 #[tauri::command]
@@ -330,4 +366,182 @@ pub async fn git_log_graph(path: String, limit: Option<u32>) -> Result<Vec<GitLo
         .collect();
 
     Ok(entries)
+}
+
+#[tauri::command]
+pub async fn git_blame(path: String, file: String) -> Result<Vec<BlameLine>, String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::blame::blame(repo, Path::new(&file)).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_tag(
+    path: String,
+    name: String,
+    message: Option<String>,
+) -> Result<(), String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::tag(repo, &name, message.as_deref()).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_list_tags(path: String) -> Result<Vec<TagInfo>, String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::list_tags(repo).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_merge(path: String, branch: String) -> Result<MergeResult, String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::merge(repo, &branch).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_rebase(path: String, branch: String) -> Result<RebaseResult, String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::rebase(repo, &branch).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_cherry_pick(path: String, commit: String) -> Result<(), String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::cherry_pick(repo, &commit).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_rename_branch(
+    path: String,
+    old_name: String,
+    new_name: String,
+) -> Result<(), String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::rename_branch(repo, &old_name, &new_name).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_delete_branch_force(path: String, name: String) -> Result<(), String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::delete_branch_force(repo, &name, true).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_list_branches(path: String) -> Result<Vec<BranchInfo>, String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::list_branches(repo, true).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_push_detailed(
+    path: String,
+    remote: Option<String>,
+    branch: Option<String>,
+    force: bool,
+) -> Result<PushResult, String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    let remote_str = remote.unwrap_or_else(|| "origin".to_string());
+    let branch_str = match branch {
+        Some(b) => b,
+        None => sidex_git::current_branch(repo).map_err(git_err)?,
+    };
+    sidex_git::push_detailed(repo, &remote_str, &branch_str, force).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_pull_detailed(
+    path: String,
+    remote: Option<String>,
+    branch: Option<String>,
+    rebase: bool,
+) -> Result<PullResult, String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    let remote_str = remote.unwrap_or_else(|| "origin".to_string());
+    let branch_str = match branch {
+        Some(b) => b,
+        None => sidex_git::current_branch(repo).map_err(git_err)?,
+    };
+    sidex_git::pull_detailed(repo, &remote_str, &branch_str, rebase).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_fetch_all(path: String) -> Result<(), String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::fetch_all(repo).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_stash_apply(path: String, index: Option<u32>) -> Result<(), String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    let idx = index.unwrap_or(0) as usize;
+    sidex_git::stash_apply(repo, idx).map_err(git_err)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn git_stash_drop_index(path: String, index: u32) -> Result<(), String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::stash_drop_index(repo, index as usize).map_err(git_err)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn git_stash_list_parsed(path: String) -> Result<Vec<StashEntry>, String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::stash_list_parsed(repo).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_get_config(path: String, key: String) -> Result<Option<String>, String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::get_config(repo, &key).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_set_config(path: String, key: String, value: String) -> Result<(), String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::set_config(repo, &key, &value).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_submodule_init(path: String) -> Result<(), String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::submodule_init(repo).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_submodule_update(path: String) -> Result<(), String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::submodule_update(repo).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_list_submodules(path: String) -> Result<Vec<SubmoduleInfo>, String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::list_submodules(repo).map_err(git_err)
+}
+
+#[tauri::command]
+pub async fn git_get_remotes(path: String) -> Result<Vec<RemoteInfo>, String> {
+    validate_path(&path)?;
+    let repo = Path::new(&path);
+    sidex_git::get_remotes(repo).map_err(git_err)
 }
