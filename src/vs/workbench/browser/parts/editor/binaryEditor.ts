@@ -23,7 +23,6 @@ export interface IOpenCallbacks {
  * This class is only intended to be subclassed and not instantiated.
  */
 export abstract class BaseBinaryResourceEditor extends EditorPlaceholder {
-
 	private readonly _onDidChangeMetadata = this._register(new Emitter<void>());
 	readonly onDidChangeMetadata = this._onDidChangeMetadata.event;
 
@@ -44,7 +43,7 @@ export abstract class BaseBinaryResourceEditor extends EditorPlaceholder {
 	}
 
 	override getTitle(): string {
-		return this.input ? this.input.getName() : localize('binaryEditor', "Binary Viewer");
+		return this.input ? this.input.getName() : localize('binaryEditor', 'Binary Viewer');
 	}
 
 	protected async getContents(input: EditorInput, options: IEditorOptions): Promise<IEditorPlaceholderContents> {
@@ -61,12 +60,14 @@ export abstract class BaseBinaryResourceEditor extends EditorPlaceholder {
 
 		return {
 			icon: '$(warning)',
-			label: localize('binaryError', "The file is not displayed in the text editor because it is either binary or uses an unsupported text encoding."),
+			label: localize(
+				'binaryError',
+				'The file is not displayed in the text editor because it is either binary or uses an unsupported text encoding.'
+			),
 			actions: [
 				{
-					label: localize('openAnyway', "Open Anyway"),
+					label: localize('openAnyway', 'Open Anyway'),
 					run: async () => {
-
 						// Open in place
 						await this.callbacks.openInternal(input, options);
 

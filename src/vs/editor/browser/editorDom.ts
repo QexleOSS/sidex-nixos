@@ -22,7 +22,7 @@ export class PageCoordinates {
 	constructor(
 		public readonly x: number,
 		public readonly y: number
-	) { }
+	) {}
 
 	public toClientCoordinates(targetWindow: Window): ClientCoordinates {
 		return new ClientCoordinates(this.x - targetWindow.scrollX, this.y - targetWindow.scrollY);
@@ -42,7 +42,7 @@ export class ClientCoordinates {
 	constructor(
 		public readonly clientX: number,
 		public readonly clientY: number
-	) { }
+	) {}
 
 	public toPageCoordinates(targetWindow: Window): PageCoordinates {
 		return new PageCoordinates(this.clientX + targetWindow.scrollX, this.clientY + targetWindow.scrollY);
@@ -60,7 +60,7 @@ export class EditorPagePosition {
 		public readonly y: number,
 		public readonly width: number,
 		public readonly height: number
-	) { }
+	) {}
 }
 
 /**
@@ -75,7 +75,7 @@ export class CoordinatesRelativeToEditor {
 	constructor(
 		public readonly x: number,
 		public readonly y: number
-	) { }
+	) {}
 }
 
 export function createEditorPagePosition(editorViewDomNode: HTMLElement): EditorPagePosition {
@@ -83,7 +83,11 @@ export function createEditorPagePosition(editorViewDomNode: HTMLElement): Editor
 	return new EditorPagePosition(editorPos.left, editorPos.top, editorPos.width, editorPos.height);
 }
 
-export function createCoordinatesRelativeToEditor(editorViewDomNode: HTMLElement, editorPagePosition: EditorPagePosition, pos: PageCoordinates) {
+export function createCoordinatesRelativeToEditor(
+	editorViewDomNode: HTMLElement,
+	editorPagePosition: EditorPagePosition,
+	pos: PageCoordinates
+) {
 	// The editor's page position is read from the DOM using getBoundingClientRect().
 	//
 	// getBoundingClientRect() returns the actual dimensions, while offsetWidth and offsetHeight
@@ -138,7 +142,6 @@ export class EditorMouseEvent extends StandardMouseEvent {
 }
 
 export class EditorMouseEventFactory {
-
 	private readonly _editorViewDomNode: HTMLElement;
 
 	constructor(editorViewDomNode: HTMLElement) {
@@ -180,12 +183,11 @@ export class EditorMouseEventFactory {
 	}
 
 	public onMouseMove(target: HTMLElement, callback: (e: EditorMouseEvent) => void): IDisposable {
-		return dom.addDisposableListener(target, dom.EventType.MOUSE_MOVE, (e) => callback(this._create(e)));
+		return dom.addDisposableListener(target, dom.EventType.MOUSE_MOVE, e => callback(this._create(e)));
 	}
 }
 
 export class EditorPointerEventFactory {
-
 	private readonly _editorViewDomNode: HTMLElement;
 
 	constructor(editorViewDomNode: HTMLElement) {
@@ -215,12 +217,11 @@ export class EditorPointerEventFactory {
 	}
 
 	public onPointerMove(target: HTMLElement, callback: (e: EditorMouseEvent) => void): IDisposable {
-		return dom.addDisposableListener(target, 'pointermove', (e) => callback(this._create(e)));
+		return dom.addDisposableListener(target, 'pointermove', e => callback(this._create(e)));
 	}
 }
 
 export class GlobalEditorPointerMoveMonitor extends Disposable {
-
 	private readonly _editorViewDomNode: HTMLElement;
 	private readonly _globalPointerMoveMonitor: GlobalPointerMoveMonitor;
 	private _keydownListener: IDisposable | null;
@@ -239,26 +240,30 @@ export class GlobalEditorPointerMoveMonitor extends Disposable {
 		pointerMoveCallback: (e: EditorMouseEvent) => void,
 		onStopCallback: (browserEvent?: PointerEvent | KeyboardEvent) => void
 	): void {
-
 		// Add a <<capture>> keydown event listener that will cancel the monitoring
 		// if something other than a modifier key is pressed
-		this._keydownListener = dom.addStandardDisposableListener(initialElement.ownerDocument, 'keydown', (e) => {
-			const chord = e.toKeyCodeChord();
-			if (chord.isModifierKey()) {
-				// Allow modifier keys
-				return;
-			}
-			this._globalPointerMoveMonitor.stopMonitoring(true, e.browserEvent);
-		}, true);
+		this._keydownListener = dom.addStandardDisposableListener(
+			initialElement.ownerDocument,
+			'keydown',
+			e => {
+				const chord = e.toKeyCodeChord();
+				if (chord.isModifierKey()) {
+					// Allow modifier keys
+					return;
+				}
+				this._globalPointerMoveMonitor.stopMonitoring(true, e.browserEvent);
+			},
+			true
+		);
 
 		this._globalPointerMoveMonitor.startMonitoring(
 			initialElement,
 			pointerId,
 			initialButtons,
-			(e) => {
+			e => {
 				pointerMoveCallback(new EditorMouseEvent(e, true, this._editorViewDomNode));
 			},
-			(e) => {
+			e => {
 				this._keydownListener!.dispose();
 				onStopCallback(e);
 			}
@@ -270,12 +275,11 @@ export class GlobalEditorPointerMoveMonitor extends Disposable {
 	}
 }
 
-
 /**
  * A helper to create dynamic css rules, bound to a class name.
  * Rules are reused.
  * Reference counting and delayed garbage collection ensure that no rules leak.
-*/
+ */
 export class DynamicCssRules {
 	private static _idPool = 0;
 	private readonly _instanceId = ++DynamicCssRules._idPool;
@@ -285,9 +289,7 @@ export class DynamicCssRules {
 	// We delay garbage collection so that hanging rules can be reused.
 	private readonly _garbageCollectionScheduler = new RunOnceScheduler(() => this.garbageCollect(), 1000);
 
-	constructor(
-		private readonly _editor: ICodeEditor
-	) { }
+	constructor(private readonly _editor: ICodeEditor) {}
 
 	dispose(): void {
 		this._rules.dispose();
@@ -312,10 +314,10 @@ export class DynamicCssRules {
 		let existingRule = this._rules.get(key);
 		if (!existingRule) {
 			const counter = this._counter++;
-			existingRule = new RefCountedCssRule(key, `dyn-rule-${this._instanceId}-${counter}`,
-				dom.isInShadowDOM(this._editor.getContainerDomNode())
-					? this._editor.getContainerDomNode()
-					: undefined,
+			existingRule = new RefCountedCssRule(
+				key,
+				`dyn-rule-${this._instanceId}-${counter}`,
+				dom.isInShadowDOM(this._editor.getContainerDomNode()) ? this._editor.getContainerDomNode() : undefined,
 				properties
 			);
 			this._rules.set(key, existingRule);
@@ -371,7 +373,7 @@ class RefCountedCssRule {
 		public readonly key: string,
 		public readonly className: string,
 		_containerElement: HTMLElement | undefined,
-		public readonly properties: CssProperties,
+		public readonly properties: CssProperties
 	) {
 		this._styleElementDisposables = new DisposableStore();
 		this._styleElement = domStylesheetsJs.createStyleSheet(_containerElement, undefined, this._styleElementDisposables);
@@ -415,6 +417,7 @@ class RefCountedCssRule {
 }
 
 function camelToDashes(str: string): string {
-	return str.replace(/(^[A-Z])/, ([first]) => first.toLowerCase())
+	return str
+		.replace(/(^[A-Z])/, ([first]) => first.toLowerCase())
 		.replace(/([A-Z])/g, ([letter]) => `-${letter.toLowerCase()}`);
 }

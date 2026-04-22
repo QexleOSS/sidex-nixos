@@ -19,11 +19,13 @@ export const enum SyncResource {
 	Extensions = 'extensions',
 	GlobalState = 'globalState',
 	Profiles = 'profiles',
-	WorkspaceState = 'workspaceState',
+	WorkspaceState = 'workspaceState'
 }
 
 // Null implementation of IIgnoredExtensionsManagementService
-export const IIgnoredExtensionsManagementService = createDecorator<IIgnoredExtensionsManagementService>('IIgnoredExtensionsManagementService');
+export const IIgnoredExtensionsManagementService = createDecorator<IIgnoredExtensionsManagementService>(
+	'IIgnoredExtensionsManagementService'
+);
 export interface IIgnoredExtensionsManagementService {
 	readonly _serviceBrand: undefined;
 	getIgnoredExtensions(installed: unknown[]): string[];
@@ -35,11 +37,17 @@ export interface IIgnoredExtensionsManagementService {
 
 export class NullIgnoredExtensionsManagementService implements IIgnoredExtensionsManagementService {
 	declare readonly _serviceBrand: undefined;
-	getIgnoredExtensions(): string[] { return []; }
-	hasToNeverSyncExtension(): boolean { return false; }
-	hasToAlwaysSyncExtension(): boolean { return false; }
-	async updateIgnoredExtensions(): Promise<void> { }
-	async updateSynchronizedExtensions(): Promise<void> { }
+	getIgnoredExtensions(): string[] {
+		return [];
+	}
+	hasToNeverSyncExtension(): boolean {
+		return false;
+	}
+	hasToAlwaysSyncExtension(): boolean {
+		return false;
+	}
+	async updateIgnoredExtensions(): Promise<void> {}
+	async updateSynchronizedExtensions(): Promise<void> {}
 }
 
 // Null implementation of IUserDataSyncLogService
@@ -56,12 +64,12 @@ export interface IUserDataSyncLogService {
 
 export class NullUserDataSyncLogService extends AbstractLogger implements IUserDataSyncLogService {
 	declare readonly _serviceBrand: undefined;
-	trace(): void { }
-	debug(): void { }
-	info(): void { }
-	warn(): void { }
-	error(): void { }
-	flush(): void { }
+	trace(): void {}
+	debug(): void {}
+	info(): void {}
+	warn(): void {}
+	error(): void {}
+	flush(): void {}
 }
 
 // Null implementation of IUserDataSyncStoreService
@@ -83,7 +91,8 @@ export class NullUserDataSyncStoreService implements IUserDataSyncStoreService {
 }
 
 // Null implementation of IUserDataSyncMachinesService
-export const IUserDataSyncMachinesService = createDecorator<IUserDataSyncMachinesService>('IUserDataSyncMachinesService');
+export const IUserDataSyncMachinesService =
+	createDecorator<IUserDataSyncMachinesService>('IUserDataSyncMachinesService');
 export interface IUserDataSyncMachinesService {
 	readonly _serviceBrand: undefined;
 }
@@ -93,7 +102,9 @@ export class NullUserDataSyncMachinesService implements IUserDataSyncMachinesSer
 }
 
 // Null implementation of IUserDataSyncLocalStoreService
-export const IUserDataSyncLocalStoreService = createDecorator<IUserDataSyncLocalStoreService>('IUserDataSyncLocalStoreService');
+export const IUserDataSyncLocalStoreService = createDecorator<IUserDataSyncLocalStoreService>(
+	'IUserDataSyncLocalStoreService'
+);
 export interface IUserDataSyncLocalStoreService {
 	readonly _serviceBrand: undefined;
 }
@@ -115,7 +126,7 @@ export class NullUserDataSyncAccountService implements IUserDataSyncAccountServi
 	declare readonly _serviceBrand: undefined;
 	readonly onDidChangeAccount = Event.None;
 	readonly account = undefined;
-	async updateAccount(): Promise<void> { }
+	async updateAccount(): Promise<void> {}
 }
 
 // Null implementation of IUserDataSyncService
@@ -143,7 +154,9 @@ export class NullUserDataSyncService implements IUserDataSyncService {
 }
 
 // Null implementation of IUserDataSyncResourceProviderService
-export const IUserDataSyncResourceProviderService = createDecorator<IUserDataSyncResourceProviderService>('IUserDataSyncResourceProviderService');
+export const IUserDataSyncResourceProviderService = createDecorator<IUserDataSyncResourceProviderService>(
+	'IUserDataSyncResourceProviderService'
+);
 export interface IUserDataSyncResourceProviderService {
 	readonly _serviceBrand: undefined;
 }
@@ -164,12 +177,14 @@ export interface IUserDataAutoSyncService {
 export class NullUserDataAutoSyncService implements IUserDataAutoSyncService {
 	declare readonly _serviceBrand: undefined;
 	readonly onError = Event.None;
-	async turnOn(): Promise<void> { }
-	async turnOff(): Promise<void> { }
+	async turnOn(): Promise<void> {}
+	async turnOff(): Promise<void> {}
 }
 
 // Null implementation of IUserDataSyncEnablementService
-export const IUserDataSyncEnablementService = createDecorator<IUserDataSyncEnablementService>('IUserDataSyncEnablementService');
+export const IUserDataSyncEnablementService = createDecorator<IUserDataSyncEnablementService>(
+	'IUserDataSyncEnablementService'
+);
 export interface IUserDataSyncEnablementService {
 	readonly _serviceBrand: undefined;
 	readonly onDidChangeEnablement: Event<boolean>;
@@ -185,16 +200,26 @@ export class NullUserDataSyncEnablementService extends Disposable implements IUs
 	declare readonly _serviceBrand: undefined;
 	private readonly _onDidChangeEnablement = this._register(new Emitter<boolean>());
 	readonly onDidChangeEnablement = this._onDidChangeEnablement.event;
-	isEnabled(): boolean { return false; }
-	canToggleEnablement(): boolean { return false; }
-	setEnablement(): void { }
-	isResourceEnabled(): boolean { return false; }
-	setResourceEnablement(): void { }
-	getResourceSyncStateVersion(): string | undefined { return undefined; }
+	isEnabled(): boolean {
+		return false;
+	}
+	canToggleEnablement(): boolean {
+		return false;
+	}
+	setEnablement(): void {}
+	isResourceEnabled(): boolean {
+		return false;
+	}
+	setResourceEnablement(): void {}
+	getResourceSyncStateVersion(): string | undefined {
+		return undefined;
+	}
 }
 
 // Null implementation of IUserDataSyncStoreManagementService
-export const IUserDataSyncStoreManagementService = createDecorator<IUserDataSyncStoreManagementService>('IUserDataSyncStoreManagementService');
+export const IUserDataSyncStoreManagementService = createDecorator<IUserDataSyncStoreManagementService>(
+	'IUserDataSyncStoreManagementService'
+);
 export interface IUserDataSyncStoreManagementService {
 	readonly _serviceBrand: undefined;
 	readonly onDidChangeUserDataSyncStore: Event<void>;
@@ -208,14 +233,26 @@ export class NullUserDataSyncStoreManagementService extends Disposable implement
 }
 
 // Register all null singletons
-registerSingleton(IIgnoredExtensionsManagementService, NullIgnoredExtensionsManagementService, InstantiationType.Delayed);
+registerSingleton(
+	IIgnoredExtensionsManagementService,
+	NullIgnoredExtensionsManagementService,
+	InstantiationType.Delayed
+);
 registerSingleton(IUserDataSyncLogService, NullUserDataSyncLogService, InstantiationType.Delayed);
 registerSingleton(IUserDataSyncStoreService, NullUserDataSyncStoreService, InstantiationType.Delayed);
 registerSingleton(IUserDataSyncMachinesService, NullUserDataSyncMachinesService, InstantiationType.Delayed);
 registerSingleton(IUserDataSyncLocalStoreService, NullUserDataSyncLocalStoreService, InstantiationType.Delayed);
 registerSingleton(IUserDataSyncAccountService, NullUserDataSyncAccountService, InstantiationType.Delayed);
 registerSingleton(IUserDataSyncService, NullUserDataSyncService, InstantiationType.Delayed);
-registerSingleton(IUserDataSyncResourceProviderService, NullUserDataSyncResourceProviderService, InstantiationType.Delayed);
+registerSingleton(
+	IUserDataSyncResourceProviderService,
+	NullUserDataSyncResourceProviderService,
+	InstantiationType.Delayed
+);
 registerSingleton(IUserDataAutoSyncService, NullUserDataAutoSyncService, InstantiationType.Delayed);
 registerSingleton(IUserDataSyncEnablementService, NullUserDataSyncEnablementService, InstantiationType.Delayed);
-registerSingleton(IUserDataSyncStoreManagementService, NullUserDataSyncStoreManagementService, InstantiationType.Delayed);
+registerSingleton(
+	IUserDataSyncStoreManagementService,
+	NullUserDataSyncStoreManagementService,
+	InstantiationType.Delayed
+);

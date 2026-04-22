@@ -9,7 +9,7 @@ import { OffsetRange } from '../ranges/offsetRange.js';
 
 /**
  * Represents a non-negative length of text in terms of line and column count.
-*/
+ */
 export class TextLength {
 	public static zero = new TextLength(0, 0);
 
@@ -65,7 +65,7 @@ export class TextLength {
 	constructor(
 		public readonly lineCount: number,
 		public readonly columnCount: number
-	) { }
+	) {}
 
 	public isZero() {
 		return this.lineCount === 0 && this.columnCount === 0;
@@ -113,9 +113,19 @@ export class TextLength {
 
 	public createRange(startPosition: Position): Range {
 		if (this.lineCount === 0) {
-			return new Range(startPosition.lineNumber, startPosition.column, startPosition.lineNumber, startPosition.column + this.columnCount);
+			return new Range(
+				startPosition.lineNumber,
+				startPosition.column,
+				startPosition.lineNumber,
+				startPosition.column + this.columnCount
+			);
 		} else {
-			return new Range(startPosition.lineNumber, startPosition.column, startPosition.lineNumber + this.lineCount, this.columnCount + 1);
+			return new Range(
+				startPosition.lineNumber,
+				startPosition.column,
+				startPosition.lineNumber + this.lineCount,
+				this.columnCount + 1
+			);
 		}
 	}
 

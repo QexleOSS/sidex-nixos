@@ -32,13 +32,15 @@ export class TerminalUriLinkDetector implements ITerminalLinkDetector {
 
 	constructor(
 		readonly xterm: Terminal,
-		private readonly _processManager: Pick<ITerminalProcessManager, 'initialCwd' | 'os' | 'remoteAuthority' | 'userHome'> & { backend?: Pick<ITerminalBackend, 'getWslPath'> },
+		private readonly _processManager: Pick<
+			ITerminalProcessManager,
+			'initialCwd' | 'os' | 'remoteAuthority' | 'userHome'
+		> & { backend?: Pick<ITerminalBackend, 'getWslPath'> },
 		private readonly _linkResolver: ITerminalLinkResolver,
 		@ITerminalLogService private readonly _logService: ITerminalLogService,
 		@IUriIdentityService private readonly _uriIdentityService: IUriIdentityService,
 		@IWorkspaceContextService private readonly _workspaceContextService: IWorkspaceContextService
-	) {
-	}
+	) {}
 
 	async detect(lines: IBufferLine[], startLine: number, endLine: number): Promise<ITerminalSimpleLink[]> {
 		const links: ITerminalSimpleLink[] = [];
@@ -53,7 +55,9 @@ export class TerminalUriLinkDetector implements ITerminalLinkDetector {
 
 			// Check if the link is within the mouse position
 			const uri = computedLink.url
-				? (isString(computedLink.url) ? URI.parse(this._excludeLineAndColSuffix(computedLink.url)) : computedLink.url)
+				? isString(computedLink.url)
+					? URI.parse(this._excludeLineAndColSuffix(computedLink.url))
+					: computedLink.url
 				: undefined;
 
 			if (!uri) {
@@ -98,7 +102,12 @@ export class TerminalUriLinkDetector implements ITerminalLinkDetector {
 
 				// Create the link if validated
 				if (linkStat) {
-					const type = getTerminalLinkType(uriCandidate, linkStat.isDirectory, this._uriIdentityService, this._workspaceContextService);
+					const type = getTerminalLinkType(
+						uriCandidate,
+						linkStat.isDirectory,
+						this._uriIdentityService,
+						this._workspaceContextService
+					);
 					const simpleLink: ITerminalSimpleLink = {
 						// Use computedLink.url if it's a string to retain the line/col suffix
 						text: isString(computedLink.url) ? computedLink.url : linkStat.link,
@@ -132,7 +141,7 @@ class TerminalLinkAdapter implements ILinkComputerTarget {
 		private _xterm: Terminal,
 		private _lineStart: number,
 		private _lineEnd: number
-	) { }
+	) {}
 
 	getLineCount(): number {
 		return 1;

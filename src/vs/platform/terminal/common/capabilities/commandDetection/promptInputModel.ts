@@ -14,7 +14,7 @@ import type { ITerminalCommand } from '../capabilities.js';
 export const enum PromptInputState {
 	Unknown = 0,
 	Input = 1,
-	Execute = 2,
+	Execute = 2
 }
 
 /**
@@ -78,7 +78,9 @@ export interface ISerializedPromptInputModel {
 
 export class PromptInputModel extends Disposable implements IPromptInputModel {
 	private _state: PromptInputState = PromptInputState.Unknown;
-	get state() { return this._state; }
+	get state() {
+		return this._state;
+	}
 
 	private _commandStartMarker: IMarker | undefined;
 	private _commandStartX: number = 0;
@@ -89,15 +91,25 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 	private _lastUserInput: string = '';
 
 	private _value: string = '';
-	get value() { return this._value; }
-	get prefix() { return this._value.substring(0, this._cursorIndex); }
-	get suffix() { return this._value.substring(this._cursorIndex, this._ghostTextIndex === -1 ? undefined : this._ghostTextIndex); }
+	get value() {
+		return this._value;
+	}
+	get prefix() {
+		return this._value.substring(0, this._cursorIndex);
+	}
+	get suffix() {
+		return this._value.substring(this._cursorIndex, this._ghostTextIndex === -1 ? undefined : this._ghostTextIndex);
+	}
 
 	private _cursorIndex: number = 0;
-	get cursorIndex() { return this._cursorIndex; }
+	get cursorIndex() {
+		return this._cursorIndex;
+	}
 
 	private _ghostTextIndex: number = -1;
-	get ghostTextIndex() { return this._ghostTextIndex; }
+	get ghostTextIndex() {
+		return this._ghostTextIndex;
+	}
 
 	private readonly _onDidStartInput = this._register(new Emitter<IPromptInputModelState>());
 	readonly onDidStartInput = this._onDidStartInput.event;
@@ -118,11 +130,9 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 	) {
 		super();
 
-		this._register(Event.any(
-			this._xterm.onCursorMove,
-			this._xterm.onData,
-			this._xterm.onWriteParsed,
-		)(() => this._sync()));
+		this._register(
+			Event.any(this._xterm.onCursorMove, this._xterm.onData, this._xterm.onWriteParsed)(() => this._sync())
+		);
 		this._register(this._xterm.onData(e => this._handleUserInput(e)));
 
 		this._register(onCommandStart(e => this._handleCommandStart(e as { marker: IMarker })));
@@ -325,7 +335,10 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 			if (lineText && nextLine) {
 				// Check if the line wrapped without a new line (continuation) or
 				// we're on the last line and the continuation prompt is not present, so we need to add the value
-				if (nextLine.isWrapped || (absoluteCursorY === y && this._continuationPrompt && !this._lineContainsContinuationPrompt(lineText))) {
+				if (
+					nextLine.isWrapped ||
+					(absoluteCursorY === y && this._continuationPrompt && !this._lineContainsContinuationPrompt(lineText))
+				) {
 					value += `${lineText}`;
 					const relativeCursorIndex = this._getRelativeCursorIndex(0, buffer, nextLine);
 					if (absoluteCursorY === y) {
@@ -397,13 +410,12 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 				if (cursorIndex === this._cursorIndex - 1) {
 					// If trailing whitespace is being increased by removing a non-whitespace character
 					if (this._value.trimEnd().length > value.trimEnd().length && value.trimEnd().length <= cursorIndex) {
-						trailingWhitespace = Math.max((this._value.length - 1) - value.trimEnd().length, 0);
+						trailingWhitespace = Math.max(this._value.length - 1 - value.trimEnd().length, 0);
 					}
 					// Standard case; subtract from trailing whitespace
 					else {
 						trailingWhitespace = Math.max(trailingWhitespace - 1, 0);
 					}
-
 				}
 			}
 
@@ -433,7 +445,12 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 
 				// Handle case where a non-space character is inserted in the middle of trailing whitespace
 				const charBeforeCursor = cursorIndex === 0 ? '' : value[cursorIndex - 1];
-				if (trailingWhitespace > 0 && cursorIndex === this._cursorIndex + 1 && this._lastUserInput !== '' && charBeforeCursor !== ' ') {
+				if (
+					trailingWhitespace > 0 &&
+					cursorIndex === this._cursorIndex + 1 &&
+					this._lastUserInput !== '' &&
+					charBeforeCursor !== ' '
+				) {
 					trailingWhitespace = this._value.length - this._cursorIndex;
 				}
 			}
@@ -547,8 +564,10 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 		}
 
 		// If there's no valid last non-whitespace cell OR the first and last styles match (indicating no ghost text)
-		if (!lastNonWhitespaceCell?.getChars().trim().length ||
-			this._cellStylesMatch(line.getCell(this._commandStartX), lastNonWhitespaceCell)) {
+		if (
+			!lastNonWhitespaceCell?.getChars().trim().length ||
+			this._cellStylesMatch(line.getCell(this._commandStartX), lastNonWhitespaceCell)
+		) {
 			return -1;
 		}
 
@@ -557,7 +576,10 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 		if (positionsWithGhostStyle) {
 			// Ghost text must start at the cursor or one char after (e.g. a space)
 			// To account for cursor movement, we also ensure there are not 5+ spaces preceding the ghost text position
-			if (positionsWithGhostStyle[0] > buffer.cursorX + 1 && this._isPositionRightPrompt(line, positionsWithGhostStyle[0])) {
+			if (
+				positionsWithGhostStyle[0] > buffer.cursorX + 1 &&
+				this._isPositionRightPrompt(line, positionsWithGhostStyle[0])
+			) {
 				return -1;
 			}
 			// Ensure these positions are contiguous
@@ -623,19 +645,21 @@ export class PromptInputModel extends Disposable implements IPromptInputModel {
 		if (!a || !b) {
 			return false;
 		}
-		return a.getFgColor() === b.getFgColor()
-			&& a.getBgColor() === b.getBgColor()
-			&& a.isBold() === b.isBold()
-			&& a.isItalic() === b.isItalic()
-			&& a.isDim() === b.isDim()
-			&& a.isUnderline() === b.isUnderline()
-			&& a.isBlink() === b.isBlink()
-			&& a.isInverse() === b.isInverse()
-			&& a.isInvisible() === b.isInvisible()
-			&& a.isStrikethrough() === b.isStrikethrough()
-			&& a.isOverline() === b.isOverline()
-			&& a?.getBgColorMode() === b?.getBgColorMode()
-			&& a?.getFgColorMode() === b?.getFgColorMode();
+		return (
+			a.getFgColor() === b.getFgColor() &&
+			a.getBgColor() === b.getBgColor() &&
+			a.isBold() === b.isBold() &&
+			a.isItalic() === b.isItalic() &&
+			a.isDim() === b.isDim() &&
+			a.isUnderline() === b.isUnderline() &&
+			a.isBlink() === b.isBlink() &&
+			a.isInverse() === b.isInverse() &&
+			a.isInvisible() === b.isInvisible() &&
+			a.isStrikethrough() === b.isStrikethrough() &&
+			a.isOverline() === b.isOverline() &&
+			a?.getBgColorMode() === b?.getBgColorMode() &&
+			a?.getFgColorMode() === b?.getFgColorMode()
+		);
 	}
 
 	private _trimContinuationPrompt(lineText: string): string {

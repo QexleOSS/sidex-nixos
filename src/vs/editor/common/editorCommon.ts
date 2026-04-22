@@ -13,7 +13,15 @@ import { IDimension } from './core/2d/dimension.js';
 import { IPosition, Position } from './core/position.js';
 import { IRange, Range } from './core/range.js';
 import { ISelection, Selection } from './core/selection.js';
-import { IModelDecoration, IModelDecorationsChangeAccessor, IModelDeltaDecoration, ITextModel, IValidEditOperation, OverviewRulerLane, TrackedRangeStickiness } from './model.js';
+import {
+	IModelDecoration,
+	IModelDecorationsChangeAccessor,
+	IModelDeltaDecoration,
+	ITextModel,
+	IValidEditOperation,
+	OverviewRulerLane,
+	TrackedRangeStickiness
+} from './model.js';
 import { IModelDecorationsChangedEvent } from './textModelEvents.js';
 import { ICommandMetadata } from '../../platform/commands/common/commands.js';
 
@@ -68,7 +76,6 @@ export interface ICursorStateComputerData {
  * A command that modifies text / cursor state on a model.
  */
 export interface ICommand {
-
 	/**
 	 * Signal that this command is inserting automatic whitespace that should be trimmed if possible.
 	 * @internal
@@ -215,7 +222,7 @@ export type IEditorViewState = ICodeEditorViewState | IDiffEditorViewState;
 
 export const enum ScrollType {
 	Smooth = 0,
-	Immediate = 1,
+	Immediate = 1
 }
 
 /**
@@ -504,7 +511,6 @@ export interface IEditor {
  * @internal
  */
 export interface IDiffEditor extends IEditor {
-
 	/**
 	 * Type the getModel() of IEditor.
 	 */
@@ -525,7 +531,6 @@ export interface IDiffEditor extends IEditor {
  * @internal
  */
 export interface ICompositeCodeEditor {
-
 	/**
 	 * An event that signals that the active editor has changed
 	 */
@@ -754,7 +759,7 @@ export const enum Handler {
 	ReplacePreviousChar = 'replacePreviousChar',
 	CompositionType = 'compositionType',
 	Paste = 'paste',
-	Cut = 'cut',
+	Cut = 'cut'
 }
 
 /**

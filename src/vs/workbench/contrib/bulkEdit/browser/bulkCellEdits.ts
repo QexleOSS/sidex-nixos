@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *  SideX - A fast, native code editor
+ *  Copyright (c) Siden Technologies, Inc. MIT Licensed.
  *--------------------------------------------------------------------------------------------*/
 
 import { groupBy } from '../../../../base/common/arrays.js';
@@ -13,18 +13,27 @@ import { WorkspaceEditMetadata } from '../../../../editor/common/languages.js';
 import { IProgress } from '../../../../platform/progress/common/progress.js';
 import { UndoRedoGroup, UndoRedoSource } from '../../../../platform/undoRedo/common/undoRedo.js';
 import { getNotebookEditorFromEditorPane } from '../../notebook/browser/notebookBrowser.js';
-import { CellUri, ICellPartialMetadataEdit, ICellReplaceEdit, IDocumentMetadataEdit, ISelectionState, IWorkspaceNotebookCellEdit, SelectionStateType } from '../../notebook/common/notebookCommon.js';
+import {
+	CellUri,
+	ICellPartialMetadataEdit,
+	ICellReplaceEdit,
+	IDocumentMetadataEdit,
+	ISelectionState,
+	IWorkspaceNotebookCellEdit,
+	SelectionStateType
+} from '../../notebook/common/notebookCommon.js';
 import { INotebookEditorModelResolverService } from '../../notebook/common/notebookEditorModelResolverService.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 
 export class ResourceNotebookCellEdit extends ResourceEdit implements IWorkspaceNotebookCellEdit {
-
 	static is(candidate: unknown): candidate is IWorkspaceNotebookCellEdit {
 		if (candidate instanceof ResourceNotebookCellEdit) {
 			return true;
 		}
-		return URI.isUri((<IWorkspaceNotebookCellEdit>candidate).resource)
-			&& isObject((<IWorkspaceNotebookCellEdit>candidate).cellEdit);
+		return (
+			URI.isUri((<IWorkspaceNotebookCellEdit>candidate).resource) &&
+			isObject((<IWorkspaceNotebookCellEdit>candidate).cellEdit)
+		);
 	}
 
 	static lift(edit: IWorkspaceNotebookCellEdit): ResourceNotebookCellEdit {
@@ -45,7 +54,6 @@ export class ResourceNotebookCellEdit extends ResourceEdit implements IWorkspace
 }
 
 export class BulkCellEdits {
-
 	constructor(
 		private readonly _undoRedoGroup: UndoRedoGroup,
 		undoRedoSource: UndoRedoSource | undefined,
@@ -53,7 +61,7 @@ export class BulkCellEdits {
 		private readonly _token: CancellationToken,
 		private readonly _edits: ResourceNotebookCellEdit[],
 		@IEditorService private readonly _editorService: IEditorService,
-		@INotebookEditorModelResolverService private readonly _notebookModelService: INotebookEditorModelResolverService,
+		@INotebookEditorModelResolverService private readonly _notebookModelService: INotebookEditorModelResolverService
 	) {
 		this._edits = this._edits.map(e => {
 			if (e.resource.scheme === CellUri.scheme) {
@@ -90,12 +98,22 @@ export class BulkCellEdits {
 			const edits = group.map(entry => entry.cellEdit);
 			const computeUndo = !ref.object.isReadonly();
 			const editor = getNotebookEditorFromEditorPane(this._editorService.activeEditorPane);
-			const initialSelectionState: ISelectionState | undefined = editor?.textModel?.uri.toString() === ref.object.notebook.uri.toString() ? {
-				kind: SelectionStateType.Index,
-				focus: editor.getFocus(),
-				selections: editor.getSelections()
-			} : undefined;
-			ref.object.notebook.applyEdits(edits, true, initialSelectionState, () => undefined, this._undoRedoGroup, computeUndo);
+			const initialSelectionState: ISelectionState | undefined =
+				editor?.textModel?.uri.toString() === ref.object.notebook.uri.toString()
+					? {
+							kind: SelectionStateType.Index,
+							focus: editor.getFocus(),
+							selections: editor.getSelections()
+						}
+					: undefined;
+			ref.object.notebook.applyEdits(
+				edits,
+				true,
+				initialSelectionState,
+				() => undefined,
+				this._undoRedoGroup,
+				computeUndo
+			);
 			ref.dispose();
 
 			this._progress.report(undefined);

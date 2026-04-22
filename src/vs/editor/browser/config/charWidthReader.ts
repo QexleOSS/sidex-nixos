@@ -13,7 +13,6 @@ export const enum CharWidthRequestType {
 }
 
 export class CharWidthRequest {
-
 	public readonly chr: string;
 	public readonly type: CharWidthRequestType;
 	public width: number;
@@ -30,7 +29,6 @@ export class CharWidthRequest {
 }
 
 class DomCharWidthReader {
-
 	private readonly _bareFontInfo: BareFontInfo;
 	private readonly _requests: CharWidthRequest[];
 
@@ -84,7 +82,6 @@ class DomCharWidthReader {
 
 		const testElements: HTMLSpanElement[] = [];
 		for (const request of this._requests) {
-
 			let parent: HTMLElement;
 			if (request.type === CharWidthRequestType.Regular) {
 				parent = regularDomNode;

@@ -23,17 +23,26 @@ import { Memento } from '../../../common/memento.js';
 /**
  * Set when the find widget in a webview in a webview is visible.
  */
-export const KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_VISIBLE = new RawContextKey<boolean>('webviewFindWidgetVisible', false);
+export const KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_VISIBLE = new RawContextKey<boolean>(
+	'webviewFindWidgetVisible',
+	false
+);
 
 /**
  * Set when the find widget in a webview is focused.
  */
-export const KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_FOCUSED = new RawContextKey<boolean>('webviewFindWidgetFocused', false);
+export const KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_FOCUSED = new RawContextKey<boolean>(
+	'webviewFindWidgetFocused',
+	false
+);
 
 /**
  * Set when the find widget in a webview is enabled in a webview
  */
-export const KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_ENABLED = new RawContextKey<boolean>('webviewFindWidgetEnabled', false);
+export const KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_ENABLED = new RawContextKey<boolean>(
+	'webviewFindWidgetEnabled',
+	false
+);
 
 export const IWebviewService = createDecorator<IWebviewService>('webviewService');
 
@@ -85,7 +94,7 @@ export const enum WebviewContentPurpose {
 	NotebookRenderer = 'notebookRenderer',
 	CustomEditor = 'customEditor',
 	WebviewView = 'webviewView',
-	ChatOutputItem = 'chatOutputItem',
+	ChatOutputItem = 'chatOutputItem'
 }
 
 export type WebviewStyles = { readonly [key: string]: string | number };
@@ -147,12 +156,16 @@ export interface WebviewContentOptions {
  */
 export function areWebviewContentOptionsEqual(a: WebviewContentOptions, b: WebviewContentOptions): boolean {
 	return (
-		a.allowMultipleAPIAcquire === b.allowMultipleAPIAcquire
-		&& a.allowScripts === b.allowScripts
-		&& a.allowForms === b.allowForms
-		&& equals(a.localResourceRoots, b.localResourceRoots, isEqual)
-		&& equals(a.portMapping, b.portMapping, (a, b) => a.extensionHostPort === b.extensionHostPort && a.webviewPort === b.webviewPort)
-		&& areEnableCommandUrisEqual(a, b)
+		a.allowMultipleAPIAcquire === b.allowMultipleAPIAcquire &&
+		a.allowScripts === b.allowScripts &&
+		a.allowForms === b.allowForms &&
+		equals(a.localResourceRoots, b.localResourceRoots, isEqual) &&
+		equals(
+			a.portMapping,
+			b.portMapping,
+			(a, b) => a.extensionHostPort === b.extensionHostPort && a.webviewPort === b.webviewPort
+		) &&
+		areEnableCommandUrisEqual(a, b)
 	);
 }
 
@@ -179,7 +192,6 @@ export interface WebviewMessageReceivedEvent {
 }
 
 export interface IWebview extends IDisposable {
-
 	/**
 	 * The original view type of the webview.
 	 */
@@ -347,14 +359,10 @@ export interface IOverlayWebview extends IWebview {
  * These are randomly generated
  */
 export class WebviewOriginStore {
-
 	private readonly _memento: Memento<Record<string, string>>;
 	private readonly _state: Record<string, string | undefined>;
 
-	constructor(
-		rootStorageKey: string,
-		@IStorageService storageService: IStorageService,
-	) {
+	constructor(rootStorageKey: string, @IStorageService storageService: IStorageService) {
 		this._memento = new Memento(rootStorageKey, storageService);
 		this._state = this._memento.getMemento(StorageScope.APPLICATION, StorageTarget.MACHINE);
 	}
@@ -384,13 +392,9 @@ export class WebviewOriginStore {
  * These are randomly generated, but keyed on extension and webview viewType.
  */
 export class ExtensionKeyedWebviewOriginStore {
-
 	private readonly _store: WebviewOriginStore;
 
-	constructor(
-		rootStorageKey: string,
-		@IStorageService storageService: IStorageService,
-	) {
+	constructor(rootStorageKey: string, @IStorageService storageService: IStorageService) {
 		this._store = new WebviewOriginStore(rootStorageKey, storageService);
 	}
 

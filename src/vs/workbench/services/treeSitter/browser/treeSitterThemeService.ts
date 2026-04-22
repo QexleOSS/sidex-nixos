@@ -13,11 +13,12 @@ export class TreeSitterThemeService implements ITreeSitterThemeService {
 	public readonly onChange: IObservable<void>;
 	private readonly _colorTheme: IObservable<ColorThemeData>;
 
-	constructor(
-		@IWorkbenchThemeService private readonly _themeService: IWorkbenchThemeService,
-	) {
-		this._colorTheme = observableFromEvent(this._themeService.onDidColorThemeChange, () => this._themeService.getColorTheme() as ColorThemeData);
-		this.onChange = derived(this, (reader) => {
+	constructor(@IWorkbenchThemeService private readonly _themeService: IWorkbenchThemeService) {
+		this._colorTheme = observableFromEvent(
+			this._themeService.onDidColorThemeChange,
+			() => this._themeService.getColorTheme() as ColorThemeData
+		);
+		this.onChange = derived(this, reader => {
 			this._colorTheme.read(reader);
 			reader.reportChange(void 0);
 		});

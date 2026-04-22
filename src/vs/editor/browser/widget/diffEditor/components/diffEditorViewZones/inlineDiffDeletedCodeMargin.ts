@@ -47,7 +47,7 @@ export class InlineDiffDeletedCodeMargin extends Disposable {
 		private readonly _renderLinesResult: RenderLinesResult,
 		private readonly _originalTextModel: ITextModel,
 		private readonly _contextMenuService: IContextMenuService,
-		private readonly _clipboardService: IClipboardService,
+		private readonly _clipboardService: IClipboardService
 	) {
 		super();
 
@@ -69,7 +69,7 @@ export class InlineDiffDeletedCodeMargin extends Disposable {
 		const useShadowDOM = _modifiedEditor.getOption(EditorOption.useShadowDOM) && !isIOS; // Do not use shadow dom on IOS #122035
 		const showContextMenu = (anchor: { x: number; y: number }, baseActions?: Action[], onHide?: () => void) => {
 			this._contextMenuService.showContextMenu({
-				domForShadowRoot: useShadowDOM ? _modifiedEditor.getDomNode() ?? undefined : undefined,
+				domForShadowRoot: useShadowDOM ? (_modifiedEditor.getDomNode() ?? undefined) : undefined,
 				getAnchor: () => anchor,
 				onHide,
 				getActions: () => {
@@ -77,54 +77,68 @@ export class InlineDiffDeletedCodeMargin extends Disposable {
 					const isDeletion = _diff.modified.isEmpty;
 
 					// default action
-					actions.push(new Action(
-						'diff.clipboard.copyDeletedContent',
-						isDeletion
-							? (_diff.original.length > 1
-								? localize('diff.clipboard.copyDeletedLinesContent.label', "Copy deleted lines")
-								: localize('diff.clipboard.copyDeletedLinesContent.single.label', "Copy deleted line"))
-							: (_diff.original.length > 1
-								? localize('diff.clipboard.copyChangedLinesContent.label', "Copy changed lines")
-								: localize('diff.clipboard.copyChangedLinesContent.single.label', "Copy changed line")),
-						undefined,
-						true,
-						async () => {
-							const originalText = this._originalTextModel.getValueInRange(_diff.original.toExclusiveRange());
-							await this._clipboardService.writeText(originalText);
-						}
-					));
-
-					if (_diff.original.length > 1) {
-						actions.push(new Action(
-							'diff.clipboard.copyDeletedLineContent',
+					actions.push(
+						new Action(
+							'diff.clipboard.copyDeletedContent',
 							isDeletion
-								? localize('diff.clipboard.copyDeletedLineContent.label', "Copy deleted line ({0})",
-									_diff.original.startLineNumber + currentLineNumberOffset)
-								: localize('diff.clipboard.copyChangedLineContent.label', "Copy changed line ({0})",
-									_diff.original.startLineNumber + currentLineNumberOffset),
+								? _diff.original.length > 1
+									? localize('diff.clipboard.copyDeletedLinesContent.label', 'Copy deleted lines')
+									: localize('diff.clipboard.copyDeletedLinesContent.single.label', 'Copy deleted line')
+								: _diff.original.length > 1
+									? localize('diff.clipboard.copyChangedLinesContent.label', 'Copy changed lines')
+									: localize('diff.clipboard.copyChangedLinesContent.single.label', 'Copy changed line'),
 							undefined,
 							true,
 							async () => {
-								let lineContent = this._originalTextModel.getLineContent(_diff.original.startLineNumber + currentLineNumberOffset);
-								if (lineContent === '') {
-									// empty line -> new line
-									const eof = this._originalTextModel.getEndOfLineSequence();
-									lineContent = eof === EndOfLineSequence.LF ? '\n' : '\r\n';
-								}
-								await this._clipboardService.writeText(lineContent);
+								const originalText = this._originalTextModel.getValueInRange(_diff.original.toExclusiveRange());
+								await this._clipboardService.writeText(originalText);
 							}
-						));
+						)
+					);
+
+					if (_diff.original.length > 1) {
+						actions.push(
+							new Action(
+								'diff.clipboard.copyDeletedLineContent',
+								isDeletion
+									? localize(
+											'diff.clipboard.copyDeletedLineContent.label',
+											'Copy deleted line ({0})',
+											_diff.original.startLineNumber + currentLineNumberOffset
+										)
+									: localize(
+											'diff.clipboard.copyChangedLineContent.label',
+											'Copy changed line ({0})',
+											_diff.original.startLineNumber + currentLineNumberOffset
+										),
+								undefined,
+								true,
+								async () => {
+									let lineContent = this._originalTextModel.getLineContent(
+										_diff.original.startLineNumber + currentLineNumberOffset
+									);
+									if (lineContent === '') {
+										// empty line -> new line
+										const eof = this._originalTextModel.getEndOfLineSequence();
+										lineContent = eof === EndOfLineSequence.LF ? '\n' : '\r\n';
+									}
+									await this._clipboardService.writeText(lineContent);
+								}
+							)
+						);
 					}
 					const readOnly = _modifiedEditor.getOption(EditorOption.readOnly);
 					if (!readOnly) {
-						actions.push(new Action(
-							'diff.inline.revertChange',
-							localize('diff.inline.revertChange.label', "Revert this change"),
-							undefined,
-							true,
-							async () => {
-								this._editor.revert(this._diff);
-							})
+						actions.push(
+							new Action(
+								'diff.inline.revertChange',
+								localize('diff.inline.revertChange.label', 'Revert this change'),
+								undefined,
+								true,
+								async () => {
+									this._editor.revert(this._diff);
+								}
+							)
 						);
 					}
 					return actions;
@@ -133,31 +147,46 @@ export class InlineDiffDeletedCodeMargin extends Disposable {
 			});
 		};
 
-		this._register(addStandardDisposableListener(this._diffActions, 'mousedown', e => {
-			if (!e.leftButton) { return; }
+		this._register(
+			addStandardDisposableListener(this._diffActions, 'mousedown', e => {
+				if (!e.leftButton) {
+					return;
+				}
 
-			const { top, height } = getDomNodePagePosition(this._diffActions);
-			const pad = Math.floor(lineHeight / 3);
-			e.preventDefault();
-			showContextMenu({ x: e.posx, y: top + height + pad });
-		}));
+				const { top, height } = getDomNodePagePosition(this._diffActions);
+				const pad = Math.floor(lineHeight / 3);
+				e.preventDefault();
+				showContextMenu({ x: e.posx, y: top + height + pad });
+			})
+		);
 
-		this._register(_modifiedEditor.onMouseMove((e: IEditorMouseEvent) => {
-			if ((e.target.type === MouseTargetType.CONTENT_VIEW_ZONE || e.target.type === MouseTargetType.GUTTER_VIEW_ZONE) && e.target.detail.viewZoneId === this._getViewZoneId()) {
-				currentLineNumberOffset = this._updateLightBulbPosition(this._marginDomNode, e.event.browserEvent.y, lineHeight);
-				this.visibility = true;
-			} else {
-				this.visibility = false;
-			}
-		}));
+		this._register(
+			_modifiedEditor.onMouseMove((e: IEditorMouseEvent) => {
+				if (
+					(e.target.type === MouseTargetType.CONTENT_VIEW_ZONE || e.target.type === MouseTargetType.GUTTER_VIEW_ZONE) &&
+					e.target.detail.viewZoneId === this._getViewZoneId()
+				) {
+					currentLineNumberOffset = this._updateLightBulbPosition(
+						this._marginDomNode,
+						e.event.browserEvent.y,
+						lineHeight
+					);
+					this.visibility = true;
+				} else {
+					this.visibility = false;
+				}
+			})
+		);
 
-		this._register(enableCopySelection({
-			domNode: this._deletedCodeDomNode,
-			diffEntry: _diff,
-			originalModel: this._originalTextModel,
-			renderLinesResult: this._renderLinesResult,
-			clipboardService: _clipboardService,
-		}));
+		this._register(
+			enableCopySelection({
+				domNode: this._deletedCodeDomNode,
+				diffEntry: _diff,
+				originalModel: this._originalTextModel,
+				renderLinesResult: this._renderLinesResult,
+				clipboardService: _clipboardService
+			})
+		);
 	}
 
 	private _updateLightBulbPosition(marginDomNode: HTMLElement, y: number, lineHeight: number): number {

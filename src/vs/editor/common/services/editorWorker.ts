@@ -22,18 +22,36 @@ export interface IEditorWorkerService {
 	readonly _serviceBrand: undefined;
 
 	canComputeUnicodeHighlights(uri: URI): boolean;
-	computedUnicodeHighlights(uri: URI, options: UnicodeHighlighterOptions, range?: IRange): Promise<IUnicodeHighlightsResult>;
+	computedUnicodeHighlights(
+		uri: URI,
+		options: UnicodeHighlighterOptions,
+		range?: IRange
+	): Promise<IUnicodeHighlightsResult>;
 
 	/** Implementation in {@link EditorWorker.computeDiff} */
-	computeDiff(original: URI, modified: URI, options: IDocumentDiffProviderOptions, algorithm: DiffAlgorithmName): Promise<IDocumentDiff | null>;
+	computeDiff(
+		original: URI,
+		modified: URI,
+		options: IDocumentDiffProviderOptions,
+		algorithm: DiffAlgorithmName
+	): Promise<IDocumentDiff | null>;
 
 	canComputeDirtyDiff(original: URI, modified: URI): boolean;
 	computeDirtyDiff(original: URI, modified: URI, ignoreTrimWhitespace: boolean): Promise<IChange[] | null>;
 
-	computeMoreMinimalEdits(resource: URI, edits: TextEdit[] | null | undefined, pretty?: boolean): Promise<TextEdit[] | undefined>;
+	computeMoreMinimalEdits(
+		resource: URI,
+		edits: TextEdit[] | null | undefined,
+		pretty?: boolean
+	): Promise<TextEdit[] | undefined>;
 	computeHumanReadableDiff(resource: URI, edits: TextEdit[] | null | undefined): Promise<TextEdit[] | undefined>;
 
-	computeStringEditFromDiff(original: string, modified: string, options: { maxComputationTimeMs: number }, algorithm: DiffAlgorithmName): Promise<StringEdit>;
+	computeStringEditFromDiff(
+		original: string,
+		modified: string,
+		options: { maxComputationTimeMs: number },
+		algorithm: DiffAlgorithmName
+	): Promise<StringEdit>;
 
 	canComputeWordRanges(resource: URI): boolean;
 	computeWordRanges(resource: URI, range: IRange): Promise<{ [word: string]: IRange[] } | null>;
@@ -44,7 +62,6 @@ export interface IEditorWorkerService {
 	findSectionHeaders(uri: URI, options: FindSectionHeaderOptions): Promise<SectionHeader[]>;
 
 	computeDefaultDocumentColors(uri: URI): Promise<IColorInformation[] | null>;
-
 }
 
 export interface IDiffComputationResult {
@@ -59,7 +76,7 @@ export type ILineChange = [
 	originalEndLine: number,
 	modifiedStartLine: number,
 	modifiedEndLine: number,
-	charChanges: ICharChange[] | undefined,
+	charChanges: ICharChange[] | undefined
 ];
 
 export type ICharChange = [
@@ -71,7 +88,7 @@ export type ICharChange = [
 	modifiedStartLine: number,
 	modifiedStartColumn: number,
 	modifiedEndLine: number,
-	modifiedEndColumn: number,
+	modifiedEndColumn: number
 ];
 
 export type ITextMove = [
@@ -79,7 +96,7 @@ export type ITextMove = [
 	originalEndLine: number,
 	modifiedStartLine: number,
 	modifiedEndLine: number,
-	changes: ILineChange[],
+	changes: ILineChange[]
 ];
 
 export interface IUnicodeHighlightsResult {

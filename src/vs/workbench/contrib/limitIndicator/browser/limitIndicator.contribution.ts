@@ -7,9 +7,16 @@ import { Disposable, IDisposable } from '../../../../base/common/lifecycle.js';
 import Severity from '../../../../base/common/severity.js';
 import { ICodeEditor, getCodeEditor } from '../../../../editor/browser/editorBrowser.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
-import { ILanguageStatus, ILanguageStatusService } from '../../../services/languageStatus/common/languageStatusService.js';
+import {
+	ILanguageStatus,
+	ILanguageStatusService
+} from '../../../services/languageStatus/common/languageStatusService.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
-import { Extensions as WorkbenchExtensions, IWorkbenchContributionsRegistry, IWorkbenchContribution } from '../../../common/contributions.js';
+import {
+	Extensions as WorkbenchExtensions,
+	IWorkbenchContributionsRegistry,
+	IWorkbenchContribution
+} from '../../../common/contributions.js';
 import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js';
 import { Event } from '../../../../base/common/event.js';
 import * as nls from '../../../../nls.js';
@@ -18,14 +25,13 @@ import { FoldingController } from '../../../../editor/contrib/folding/browser/fo
 import { ColorDetector } from '../../../../editor/contrib/colorPicker/browser/colorDetector.js';
 
 const openSettingsCommand = 'workbench.action.openSettings';
-const configureSettingsLabel = nls.localize('status.button.configure', "Configure");
+const configureSettingsLabel = nls.localize('status.button.configure', 'Configure');
 
 /**
  * Uses that language status indicator to show information which language features have been limited for performance reasons.
  * Currently this is used for folding ranges and for color decorators.
  */
 export class LimitIndicatorContribution extends Disposable implements IWorkbenchContribution {
-
 	constructor(
 		@IEditorService editorService: IEditorService,
 		@ILanguageStatusService languageStatusService: ILanguageStatusService
@@ -52,9 +58,7 @@ export class LimitIndicatorContribution extends Disposable implements IWorkbench
 
 		onActiveEditorChanged();
 	}
-
 }
-
 
 export interface LimitInfo {
 	readonly onDidChange: Event<void>;
@@ -97,12 +101,13 @@ class FoldingRangeAccessor implements LanguageFeatureAccessor {
 }
 
 class LanguageStatusEntry implements IDisposable {
-
 	private _limitStatusItem: IDisposable | undefined;
 	private _indicatorChangeListener: IDisposable | undefined;
 
-	constructor(private languageStatusService: ILanguageStatusService, private accessor: LanguageFeatureAccessor) {
-	}
+	constructor(
+		private languageStatusService: ILanguageStatusService,
+		private accessor: LanguageFeatureAccessor
+	) {}
 
 	onActiveEditorChanged(editor: ICodeEditor | null): boolean {
 		if (this._indicatorChangeListener) {
@@ -123,7 +128,6 @@ class LanguageStatusEntry implements IDisposable {
 		}
 		return false;
 	}
-
 
 	private updateStatusItem(info: LimitInfo | undefined) {
 		if (this._limitStatusItem) {

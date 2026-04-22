@@ -6,14 +6,25 @@
 import { localize } from '../../../../nls.js';
 import { dirname, basename } from '../../../../base/common/resources.js';
 import { ITitleProperties, ITitleVariable } from './titlebarPart.js';
-import { IConfigurationService, IConfigurationChangeEvent, isConfigured } from '../../../../platform/configuration/common/configuration.js';
-import { Extensions as ConfigurationExtensions, IConfigurationRegistry } from '../../../../platform/configuration/common/configurationRegistry.js';
+import {
+	IConfigurationService,
+	IConfigurationChangeEvent,
+	isConfigured
+} from '../../../../platform/configuration/common/configuration.js';
+import {
+	Extensions as ConfigurationExtensions,
+	IConfigurationRegistry
+} from '../../../../platform/configuration/common/configurationRegistry.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
 import { EditorResourceAccessor, Verbosity, SideBySideEditor } from '../../../common/editor.js';
 import { IBrowserWorkbenchEnvironmentService } from '../../../services/environment/browser/environmentService.js';
-import { IWorkspaceContextService, WorkbenchState, IWorkspaceFolder } from '../../../../platform/workspace/common/workspace.js';
+import {
+	IWorkspaceContextService,
+	WorkbenchState,
+	IWorkspaceFolder
+} from '../../../../platform/workspace/common/workspace.js';
 import { isWindows, isWeb, isMacintosh, isNative } from '../../../../base/common/platform.js';
 import { URI } from '../../../../base/common/uri.js';
 import { trim } from '../../../../base/common/strings.js';
@@ -35,7 +46,7 @@ import { IAccessibilityService } from '../../../../platform/accessibility/common
 
 const enum WindowSettingNames {
 	titleSeparator = 'window.titleSeparator',
-	title = 'window.title',
+	title = 'window.title'
 }
 
 export const defaultWindowTitle = (() => {
@@ -53,9 +64,13 @@ export const defaultWindowTitle = (() => {
 export const defaultWindowTitleSeparator = isMacintosh ? ' \u2014 ' : ' - ';
 
 export class WindowTitle extends Disposable {
-
-	private static readonly NLS_USER_IS_ADMIN = isWindows ? localize('userIsAdmin', "[Administrator]") : localize('userIsSudo', "[Superuser]");
-	private static readonly NLS_EXTENSION_HOST = localize('devExtensionWindowTitlePrefix', "[Extension Development Host]");
+	private static readonly NLS_USER_IS_ADMIN = isWindows
+		? localize('userIsAdmin', '[Administrator]')
+		: localize('userIsSudo', '[Superuser]');
+	private static readonly NLS_EXTENSION_HOST = localize(
+		'devExtensionWindowTitlePrefix',
+		'[Extension Development Host]'
+	);
 	private static readonly TITLE_DIRTY = '\u25cf ';
 
 	private readonly properties: ITitleProperties = { isPure: true, isAdmin: false, prefix: undefined };
@@ -67,8 +82,12 @@ export class WindowTitle extends Disposable {
 	private readonly onDidChangeEmitter = this._register(new Emitter<void>());
 	readonly onDidChange = this.onDidChangeEmitter.event;
 
-	get value() { return this.title ?? ''; }
-	get workspaceName() { return this.labelService.getWorkspaceLabel(this.contextService.getWorkspace()); }
+	get value() {
+		return this.title ?? '';
+	}
+	get workspaceName() {
+		return this.labelService.getWorkspaceLabel(this.contextService.getWorkspace());
+	}
 	get fileName() {
 		const activeEditor = this.editorService.activeEditor;
 		if (!activeEditor) {
@@ -117,16 +136,20 @@ export class WindowTitle extends Disposable {
 		this._register(this.contextService.onDidChangeWorkspaceName(() => this.titleUpdater.schedule()));
 		this._register(this.labelService.onDidChangeFormatters(() => this.titleUpdater.schedule()));
 		this._register(this.userDataProfileService.onDidChangeCurrentProfile(() => this.titleUpdater.schedule()));
-		this._register(this.viewsService.onDidChangeFocusedView(() => {
-			if (this.titleIncludesFocusedView) {
-				this.titleUpdater.schedule();
-			}
-		}));
-		this._register(this.contextKeyService.onDidChangeContext(e => {
-			if (e.affectsSome(this.variables)) {
-				this.titleUpdater.schedule();
-			}
-		}));
+		this._register(
+			this.viewsService.onDidChangeFocusedView(() => {
+				if (this.titleIncludesFocusedView) {
+					this.titleUpdater.schedule();
+				}
+			})
+		);
+		this._register(
+			this.contextKeyService.onDidChangeContext(e => {
+				if (e.affectsSome(this.variables)) {
+					this.titleUpdater.schedule();
+				}
+			})
+		);
 		this._register(this.accessibilityService.onDidChangeScreenReaderOptimized(() => this.titleUpdater.schedule()));
 	}
 
@@ -150,7 +173,6 @@ export class WindowTitle extends Disposable {
 	}
 
 	private onActiveEditorChange(): void {
-
 		// Dispose old listeners
 		this.activeEditorListeners.clear();
 
@@ -171,7 +193,10 @@ export class WindowTitle extends Disposable {
 			if (isCodeEditor(activeTextEditorControl)) {
 				textEditorControls.push(activeTextEditorControl);
 			} else if (isDiffEditor(activeTextEditorControl)) {
-				textEditorControls.push(activeTextEditorControl.getOriginalEditor(), activeTextEditorControl.getModifiedEditor());
+				textEditorControls.push(
+					activeTextEditorControl.getOriginalEditor(),
+					activeTextEditorControl.getModifiedEditor()
+				);
 			}
 
 			for (const textEditorControl of textEditorControls) {
@@ -182,14 +207,15 @@ export class WindowTitle extends Disposable {
 
 		// Apply listener for decorations to track editor state
 		if (this.titleIncludesEditorState) {
-			this.activeEditorListeners.add(this.decorationsService.onDidChangeDecorations(() => this.titleUpdater.schedule()));
+			this.activeEditorListeners.add(
+				this.decorationsService.onDidChangeDecorations(() => this.titleUpdater.schedule())
+			);
 		}
 	}
 
 	private doUpdateTitle(): void {
 		const title = this.getFullWindowTitle();
 		if (title !== this.title) {
-
 			// Always set the native window title to identify us properly to the OS
 			let nativeTitle = title;
 			if (!trim(nativeTitle)) {
@@ -240,9 +266,7 @@ export class WindowTitle extends Disposable {
 		}
 
 		if (this.environmentService.isExtensionDevelopment) {
-			prefix = !prefix
-				? WindowTitle.NLS_EXTENSION_HOST
-				: `${WindowTitle.NLS_EXTENSION_HOST} - ${prefix}`;
+			prefix = !prefix ? WindowTitle.NLS_EXTENSION_HOST : `${WindowTitle.NLS_EXTENSION_HOST} - ${prefix}`;
 		}
 
 		if (this.properties.isAdmin) {
@@ -316,7 +340,9 @@ export class WindowTitle extends Disposable {
 		}
 
 		// Compute active editor folder
-		const editorResource = EditorResourceAccessor.getOriginalUri(editor, { supportSideBySide: SideBySideEditor.PRIMARY });
+		const editorResource = EditorResourceAccessor.getOriginalUri(editor, {
+			supportSideBySide: SideBySideEditor.PRIMARY
+		});
 		let editorFolderResource = editorResource ? dirname(editorResource) : undefined;
 		if (editorFolderResource?.path === '.') {
 			editorFolderResource = undefined;
@@ -341,7 +367,10 @@ export class WindowTitle extends Disposable {
 		} else {
 			const virtualWorkspaceLocation = getVirtualWorkspaceLocation(workspace);
 			if (virtualWorkspaceLocation) {
-				remoteName = this.labelService.getHostLabel(virtualWorkspaceLocation.scheme, virtualWorkspaceLocation.authority);
+				remoteName = this.labelService.getHostLabel(
+					virtualWorkspaceLocation.scheme,
+					virtualWorkspaceLocation.authority
+				);
 			}
 		}
 
@@ -350,7 +379,9 @@ export class WindowTitle extends Disposable {
 		const activeEditorMedium = editor ? editor.getTitle(Verbosity.MEDIUM) : activeEditorShort;
 		const activeEditorLong = editor ? editor.getTitle(Verbosity.LONG) : activeEditorMedium;
 		const activeFolderShort = editorFolderResource ? basename(editorFolderResource) : '';
-		const activeFolderMedium = editorFolderResource ? this.labelService.getUriLabel(editorFolderResource, { relative: true }) : '';
+		const activeFolderMedium = editorFolderResource
+			? this.labelService.getUriLabel(editorFolderResource, { relative: true })
+			: '';
 		const activeFolderLong = editorFolderResource ? this.labelService.getUriLabel(editorFolderResource) : '';
 		const rootName = this.labelService.getWorkspaceLabel(workspace);
 		const rootNameShort = this.labelService.getWorkspaceLabel(workspace, { verbose: LabelVerbosity.SHORT });
@@ -359,9 +390,13 @@ export class WindowTitle extends Disposable {
 		const folderPath = folder ? this.labelService.getUriLabel(folder.uri) : '';
 		const dirty = editor?.isDirty() && !editor.isSaving() ? WindowTitle.TITLE_DIRTY : '';
 		const appName = this.productService.nameLong;
-		const profileName = this.userDataProfileService.currentProfile.isDefault ? '' : this.userDataProfileService.currentProfile.name;
+		const profileName = this.userDataProfileService.currentProfile.isDefault
+			? ''
+			: this.userDataProfileService.currentProfile.name;
 		const focusedView: string = this.viewsService.getFocusedViewName();
-		const activeEditorState = editorResource ? this.decorationsService.getDecoration(editorResource, false)?.tooltip : undefined;
+		const activeEditorState = editorResource
+			? this.decorationsService.getDecoration(editorResource, false)?.tooltip
+			: undefined;
 		const activeEditorLanguageId = this.editorService.activeTextEditorLanguageId;
 
 		const variables: Record<string, string> = {};
@@ -374,7 +409,11 @@ export class WindowTitle extends Disposable {
 			titleTemplate = defaultWindowTitle;
 		}
 
-		if (!this.titleIncludesEditorState && this.accessibilityService.isScreenReaderOptimized() && this.configurationService.getValue('accessibility.windowTitleOptimized')) {
+		if (
+			!this.titleIncludesEditorState &&
+			this.accessibilityService.isScreenReaderOptimized() &&
+			this.configurationService.getValue('accessibility.windowTitleOptimized')
+		) {
 			titleTemplate += '${separator}${activeEditorState}';
 		}
 

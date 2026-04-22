@@ -9,9 +9,7 @@ export class HierarchicalKind {
 	public static readonly None = new HierarchicalKind('@@none@@'); // Special kind that matches nothing
 	public static readonly Empty = new HierarchicalKind('');
 
-	constructor(
-		public readonly value: string
-	) { }
+	constructor(public readonly value: string) {}
 
 	public equals(other: HierarchicalKind): boolean {
 		return this.value === other.value;

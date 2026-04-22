@@ -11,20 +11,17 @@ import { IHostColorSchemeService } from '../common/hostColorSchemeService.js';
 import { mainWindow } from '../../../../base/browser/window.js';
 
 export class BrowserHostColorSchemeService extends Disposable implements IHostColorSchemeService {
-
 	declare readonly _serviceBrand: undefined;
 
 	private readonly _onDidSchemeChangeEvent = this._register(new Emitter<void>());
 
-	constructor(
-	) {
+	constructor() {
 		super();
 
 		this.registerListeners();
 	}
 
 	private registerListeners(): void {
-
 		addMatchMediaChangeListener(mainWindow, '(prefers-color-scheme: dark)', () => {
 			this._onDidSchemeChangeEvent.fire();
 		});
@@ -52,7 +49,6 @@ export class BrowserHostColorSchemeService extends Disposable implements IHostCo
 		}
 		return false;
 	}
-
 }
 
 registerSingleton(IHostColorSchemeService, BrowserHostColorSchemeService, InstantiationType.Delayed);

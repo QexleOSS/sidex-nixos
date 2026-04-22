@@ -38,15 +38,19 @@ interface ResourceMapKeyFn {
 }
 
 class ResourceMapEntry<T> {
-	constructor(readonly uri: URI, readonly value: T) { }
+	constructor(
+		readonly uri: URI,
+		readonly value: T
+	) {}
 }
 
-function isEntries<T>(arg: ResourceMap<T> | ResourceMapKeyFn | readonly (readonly [URI, T])[] | undefined): arg is readonly (readonly [URI, T])[] {
+function isEntries<T>(
+	arg: ResourceMap<T> | ResourceMapKeyFn | readonly (readonly [URI, T])[] | undefined
+): arg is readonly (readonly [URI, T])[] {
 	return Array.isArray(arg);
 }
 
 export class ResourceMap<T> implements Map<URI, T> {
-
 	private static readonly defaultToKey = (resource: URI) => resource.toString();
 
 	readonly [Symbol.toStringTag] = 'ResourceMap';
@@ -151,7 +155,6 @@ export class ResourceMap<T> implements Map<URI, T> {
 }
 
 export class ResourceSet implements Set<URI> {
-
 	readonly [Symbol.toStringTag]: string = 'ResourceSet';
 
 	private readonly _map: ResourceMap<URI>;
@@ -166,7 +169,6 @@ export class ResourceSet implements Set<URI> {
 			entriesOrKey.forEach(this.add, this);
 		}
 	}
-
 
 	get size(): number {
 		return this._map.size;
@@ -210,7 +212,6 @@ export class ResourceSet implements Set<URI> {
 	}
 }
 
-
 interface Item<K, V> {
 	previous: Item<K, V> | undefined;
 	next: Item<K, V> | undefined;
@@ -225,7 +226,6 @@ export const enum Touch {
 }
 
 export class LinkedMap<K, V> implements Map<K, V> {
-
 	readonly [Symbol.toStringTag] = 'LinkedMap';
 
 	private _map: Map<K, Item<K, V>>;
@@ -510,8 +510,7 @@ export class LinkedMap<K, V> implements Map<K, V> {
 		if (item === this._head && item === this._tail) {
 			this._head = undefined;
 			this._tail = undefined;
-		}
-		else if (item === this._head) {
+		} else if (item === this._head) {
 			// This can only happen if size === 1 which is handled
 			// by the case above.
 			if (!item.next) {
@@ -519,8 +518,7 @@ export class LinkedMap<K, V> implements Map<K, V> {
 			}
 			item.next.previous = undefined;
 			this._head = item.next;
-		}
-		else if (item === this._tail) {
+		} else if (item === this._tail) {
 			// This can only happen if size === 1 which is handled
 			// by the case above.
 			if (!item.previous) {
@@ -528,8 +526,7 @@ export class LinkedMap<K, V> implements Map<K, V> {
 			}
 			item.previous.next = undefined;
 			this._tail = item.previous;
-		}
-		else {
+		} else {
 			const next = item.next;
 			const previous = item.previous;
 			if (!next || !previous) {
@@ -547,7 +544,7 @@ export class LinkedMap<K, V> implements Map<K, V> {
 		if (!this._head || !this._tail) {
 			throw new Error('Invalid list');
 		}
-		if ((touch !== Touch.AsOld && touch !== Touch.AsNew)) {
+		if (touch !== Touch.AsOld && touch !== Touch.AsNew) {
 			return;
 		}
 
@@ -565,8 +562,7 @@ export class LinkedMap<K, V> implements Map<K, V> {
 				// So there are more than on item in the map
 				previous!.next = undefined;
 				this._tail = previous;
-			}
-			else {
+			} else {
 				// Both next and previous are not undefined since item was neither head nor tail.
 				next!.previous = previous;
 				previous!.next = next;
@@ -625,7 +621,6 @@ export class LinkedMap<K, V> implements Map<K, V> {
 }
 
 abstract class Cache<K, V> extends LinkedMap<K, V> {
-
 	protected _limit: number;
 	protected _ratio: number;
 
@@ -676,7 +671,6 @@ abstract class Cache<K, V> extends LinkedMap<K, V> {
 }
 
 export class LRUCache<K, V> extends Cache<K, V> {
-
 	constructor(limit: number, ratio: number = 1) {
 		super(limit, ratio);
 	}
@@ -693,7 +687,6 @@ export class LRUCache<K, V> extends Cache<K, V> {
 }
 
 export class MRUCache<K, V> extends Cache<K, V> {
-
 	constructor(limit: number, ratio: number = 1) {
 		super(limit, ratio);
 	}
@@ -713,7 +706,6 @@ export class MRUCache<K, V> extends Cache<K, V> {
 }
 
 export class CounterSet<T> {
-
 	private map = new Map<T, number>();
 
 	add(value: T): CounterSet<T> {
@@ -749,7 +741,6 @@ export class CounterSet<T> {
  * **NOTE**: values need to be unique.
  */
 export class BidirectionalMap<K, V> {
-
 	private readonly _m1 = new Map<K, V>();
 	private readonly _m2 = new Map<V, K>();
 
@@ -805,7 +796,6 @@ export class BidirectionalMap<K, V> {
 }
 
 export class SetMap<K, V> {
-
 	private map = new Map<K, Set<V>>();
 
 	add(key: K, value: V): void {

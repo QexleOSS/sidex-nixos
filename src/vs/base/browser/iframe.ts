@@ -39,7 +39,6 @@ function getParentWindowIfSameOrigin(w: Window): Window | null {
 }
 
 export class IframeUtils {
-
 	/**
 	 * Returns a chain of embedded windows with the same origin (which can be accessed programmatically).
 	 * Having a chain of length 1 might mean that the current execution environment is running outside of an iframe or inside an iframe embedded in a window with a different origin.
@@ -74,7 +73,6 @@ export class IframeUtils {
 	 * Returns the position of `childWindow` relative to `ancestorWindow`
 	 */
 	public static getPositionOfChildWindowRelativeToAncestorWindow(childWindow: Window, ancestorWindow: Window | null) {
-
 		if (!ancestorWindow || childWindow === ancestorWindow) {
 			return {
 				top: 0,
@@ -82,7 +80,8 @@ export class IframeUtils {
 			};
 		}
 
-		let top = 0, left = 0;
+		let top = 0,
+			left = 0;
 
 		const windowChain = this.getSameOriginWindowChain(childWindow);
 
@@ -117,7 +116,9 @@ export class IframeUtils {
 export async function parentOriginHash(parentOrigin: string, salt: string): Promise<string> {
 	// This same code is also inlined at `src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html`
 	if (!crypto.subtle) {
-		throw new Error(`'crypto.subtle' is not available so webviews will not work. This is likely because the editor is not running in a secure context (https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts).`);
+		throw new Error(
+			`'crypto.subtle' is not available so webviews will not work. This is likely because the editor is not running in a secure context (https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts).`
+		);
 	}
 
 	const strData = JSON.stringify({ parentOrigin, salt });

@@ -5,7 +5,12 @@
 
 import { Emitter } from '../../../../../../../base/common/event.js';
 import { Disposable } from '../../../../../../../base/common/lifecycle.js';
-import { autorunWithStore, derived, IObservable, observableFromEvent } from '../../../../../../../base/common/observable.js';
+import {
+	autorunWithStore,
+	derived,
+	IObservable,
+	observableFromEvent
+} from '../../../../../../../base/common/observable.js';
 import { ICodeEditor, MouseTargetType } from '../../../../../../browser/editorBrowser.js';
 import { observableCodeEditor } from '../../../../../../browser/observableCodeEditor.js';
 import { rangeIsSingleLine } from '../../../../../../browser/widget/diffEditor/components/diffEditorViewZones/diffEditorViewZones.js';
@@ -13,7 +18,12 @@ import { OffsetRange } from '../../../../../../common/core/ranges/offsetRange.js
 import { Range } from '../../../../../../common/core/range.js';
 import { AbstractText } from '../../../../../../common/core/text/abstractText.js';
 import { DetailedLineRangeMapping } from '../../../../../../common/diff/rangeMapping.js';
-import { EndOfLinePreference, IModelDeltaDecoration, InjectedTextCursorStops, ITextModel } from '../../../../../../common/model.js';
+import {
+	EndOfLinePreference,
+	IModelDeltaDecoration,
+	InjectedTextCursorStops,
+	ITextModel
+} from '../../../../../../common/model.js';
 import { ModelDecorationOptions } from '../../../../../../common/model/textModel.js';
 import { IInlineEditsView, InlineEditClickEvent } from '../inlineEditsViewInterface.js';
 import { classNames } from '../utils/utils.js';
@@ -43,11 +53,12 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 	constructor(
 		private readonly _originalEditor: ICodeEditor,
 		private readonly _state: IObservable<IOriginalEditorInlineDiffViewState | undefined>,
-		private readonly _modifiedTextModel: ITextModel,
+		private readonly _modifiedTextModel: ITextModel
 	) {
 		super();
 		this.isHovered = observableCodeEditor(this._originalEditor).isTargetHovered(
-			p => p.target.type === MouseTargetType.CONTENT_TEXT &&
+			p =>
+				p.target.type === MouseTargetType.CONTENT_TEXT &&
 				p.target.detail.injectedText?.options.attachedData instanceof InlineEditAttachedData &&
 				p.target.detail.injectedText.options.attachedData.owner === this,
 			this._store
@@ -55,7 +66,9 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 		this._tokenizationFinished = modelTokenizationFinished(this._modifiedTextModel);
 		this._decorations = derived(this, reader => {
 			const diff = this._state.read(reader);
-			if (!diff) { return undefined; }
+			if (!diff) {
+				return undefined;
+			}
 
 			const modified = diff.modifiedText;
 			const showInline = diff.mode === 'insertionInline';
@@ -70,61 +83,65 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 				className: 'inlineCompletions-line-insert',
 				description: 'line-insert',
 				isWholeLine: true,
-				marginClassName: 'gutter-insert',
+				marginClassName: 'gutter-insert'
 			});
 
 			const diffLineDeleteDecorationBackground = ModelDecorationOptions.register({
 				className: 'inlineCompletions-line-delete',
 				description: 'line-delete',
 				isWholeLine: true,
-				marginClassName: 'gutter-delete',
+				marginClassName: 'gutter-delete'
 			});
 
 			const diffWholeLineDeleteDecoration = ModelDecorationOptions.register({
 				className: 'inlineCompletions-char-delete',
 				description: 'char-delete',
 				isWholeLine: false,
-				zIndex: 1, // be on top of diff background decoration
+				zIndex: 1 // be on top of diff background decoration
 			});
 
 			const diffWholeLineAddDecoration = ModelDecorationOptions.register({
 				className: 'inlineCompletions-char-insert',
 				description: 'char-insert',
-				isWholeLine: true,
+				isWholeLine: true
 			});
 
 			const diffAddDecoration = ModelDecorationOptions.register({
 				className: 'inlineCompletions-char-insert',
 				description: 'char-insert',
-				shouldFillLineOnLineBreak: true,
+				shouldFillLineOnLineBreak: true
 			});
 
 			const diffAddDecorationEmpty = ModelDecorationOptions.register({
 				className: 'inlineCompletions-char-insert diff-range-empty',
-				description: 'char-insert diff-range-empty',
+				description: 'char-insert diff-range-empty'
 			});
 
 			const NESOriginalBackground = ModelDecorationOptions.register({
 				className: 'inlineCompletions-original-lines',
 				description: 'inlineCompletions-original-lines',
 				isWholeLine: false,
-				shouldFillLineOnLineBreak: true,
+				shouldFillLineOnLineBreak: true
 			});
 
-			const showFullLineDecorations = diff.mode !== 'sideBySide' && diff.mode !== 'deletion' && diff.mode !== 'insertionInline' && diff.mode !== 'lineReplacement';
+			const showFullLineDecorations =
+				diff.mode !== 'sideBySide' &&
+				diff.mode !== 'deletion' &&
+				diff.mode !== 'insertionInline' &&
+				diff.mode !== 'lineReplacement';
 			const hideEmptyInnerDecorations = diff.mode === 'lineReplacement';
 			for (const m of diff.diff) {
 				if (showFullLineDecorations) {
 					if (!m.original.isEmpty) {
 						originalDecorations.push({
 							range: m.original.toInclusiveRange()!,
-							options: diffLineDeleteDecorationBackground,
+							options: diffLineDeleteDecorationBackground
 						});
 					}
 					if (!m.modified.isEmpty) {
 						modifiedDecorations.push({
 							range: m.modified.toInclusiveRange()!,
-							options: diffLineAddDecorationBackground,
+							options: diffLineAddDecorationBackground
 						});
 					}
 				}
@@ -140,8 +157,13 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 					const useInlineDiff = showInline && allowsTrueInlineDiffRendering(m);
 					for (const i of m.innerChanges || []) {
 						// Don't show empty markers outside the line range
-						if (m.original.contains(i.originalRange.startLineNumber) && !(hideEmptyInnerDecorations && i.originalRange.isEmpty())) {
-							const replacedText = this._originalEditor.getModel()?.getValueInRange(i.originalRange, EndOfLinePreference.LF);
+						if (
+							m.original.contains(i.originalRange.startLineNumber) &&
+							!(hideEmptyInnerDecorations && i.originalRange.isEmpty())
+						) {
+							const replacedText = this._originalEditor
+								.getModel()
+								?.getValueInRange(i.originalRange, EndOfLinePreference.LF);
 							originalDecorations.push({
 								range: i.originalRange,
 								options: {
@@ -151,7 +173,11 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 										'inlineCompletions-char-delete',
 										i.originalRange.isSingleLine() && diff.mode === 'insertionInline' && 'single-line-inline',
 										i.originalRange.isEmpty() && 'empty',
-										((i.originalRange.isEmpty() && hasOneInnerChange || diff.mode === 'deletion' && replacedText === '\n') && showEmptyDecorations && !useInlineDiff) && 'diff-range-empty'
+										((i.originalRange.isEmpty() && hasOneInnerChange) ||
+											(diff.mode === 'deletion' && replacedText === '\n')) &&
+											showEmptyDecorations &&
+											!useInlineDiff &&
+											'diff-range-empty'
 									),
 									inlineClassName: useInlineDiff ? classNames('strike-through', 'inlineCompletions') : null,
 									zIndex: 1
@@ -161,24 +187,42 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 						if (m.modified.contains(i.modifiedRange.startLineNumber)) {
 							modifiedDecorations.push({
 								range: i.modifiedRange,
-								options: (i.modifiedRange.isEmpty() && showEmptyDecorations && !useInlineDiff && hasOneInnerChange)
-									? diffAddDecorationEmpty
-									: diffAddDecoration
+								options:
+									i.modifiedRange.isEmpty() && showEmptyDecorations && !useInlineDiff && hasOneInnerChange
+										? diffAddDecorationEmpty
+										: diffAddDecoration
 							});
 						}
 						if (useInlineDiff) {
 							const insertedText = modified.getValueOfRange(i.modifiedRange);
 							// when the injected text becomes long, the editor will split it into multiple spans
 							// to be able to get the border around the start and end of the text, we need to split it into multiple segments
-							const textSegments = insertedText.length > 3 ?
-								[
-									{ text: insertedText.slice(0, 1), extraClasses: ['start'], offsetRange: new OffsetRange(i.modifiedRange.startColumn - 1, i.modifiedRange.startColumn) },
-									{ text: insertedText.slice(1, -1), extraClasses: [], offsetRange: new OffsetRange(i.modifiedRange.startColumn, i.modifiedRange.endColumn - 2) },
-									{ text: insertedText.slice(-1), extraClasses: ['end'], offsetRange: new OffsetRange(i.modifiedRange.endColumn - 2, i.modifiedRange.endColumn - 1) }
-								] :
-								[
-									{ text: insertedText, extraClasses: ['start', 'end'], offsetRange: new OffsetRange(i.modifiedRange.startColumn - 1, i.modifiedRange.endColumn) }
-								];
+							const textSegments =
+								insertedText.length > 3
+									? [
+											{
+												text: insertedText.slice(0, 1),
+												extraClasses: ['start'],
+												offsetRange: new OffsetRange(i.modifiedRange.startColumn - 1, i.modifiedRange.startColumn)
+											},
+											{
+												text: insertedText.slice(1, -1),
+												extraClasses: [],
+												offsetRange: new OffsetRange(i.modifiedRange.startColumn, i.modifiedRange.endColumn - 2)
+											},
+											{
+												text: insertedText.slice(-1),
+												extraClasses: ['end'],
+												offsetRange: new OffsetRange(i.modifiedRange.endColumn - 2, i.modifiedRange.endColumn - 1)
+											}
+										]
+									: [
+											{
+												text: insertedText,
+												extraClasses: ['start', 'end'],
+												offsetRange: new OffsetRange(i.modifiedRange.startColumn - 1, i.modifiedRange.endColumn)
+											}
+										];
 
 							// Tokenization
 							this._tokenizationFinished.read(reader); // reconsider when tokenization is finished
@@ -198,10 +242,10 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 												...extraClasses // include extraClasses for additional styling if provided
 											),
 											cursorStops: InjectedTextCursorStops.None,
-											attachedData: new InlineEditAttachedData(this),
+											attachedData: new InlineEditAttachedData(this)
 										},
 										zIndex: 2,
-										showIfCollapsed: true,
+										showIfCollapsed: true
 									}
 								});
 							}
@@ -215,7 +259,7 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 					if (!m.original.isEmpty) {
 						originalDecorations.push({
 							range: m.original.toExclusiveRange(),
-							options: NESOriginalBackground,
+							options: NESOriginalBackground
 						});
 					}
 				}
@@ -224,40 +268,47 @@ export class OriginalEditorInlineDiffView extends Disposable implements IInlineE
 			return { originalDecorations, modifiedDecorations };
 		});
 
-		this._register(observableCodeEditor(this._originalEditor).setDecorations(this._decorations.map(d => d?.originalDecorations ?? [])));
+		this._register(
+			observableCodeEditor(this._originalEditor).setDecorations(
+				this._decorations.map(d => d?.originalDecorations ?? [])
+			)
+		);
 
 		const modifiedCodeEditor = this._state.map(s => s?.modifiedCodeEditor);
-		this._register(autorunWithStore((reader, store) => {
-			const e = modifiedCodeEditor.read(reader);
-			if (e) {
-				store.add(observableCodeEditor(e).setDecorations(this._decorations.map(d => d?.modifiedDecorations ?? [])));
-			}
-		}));
+		this._register(
+			autorunWithStore((reader, store) => {
+				const e = modifiedCodeEditor.read(reader);
+				if (e) {
+					store.add(observableCodeEditor(e).setDecorations(this._decorations.map(d => d?.modifiedDecorations ?? [])));
+				}
+			})
+		);
 
-		this._register(this._originalEditor.onMouseUp(e => {
-			if (e.target.type !== MouseTargetType.CONTENT_TEXT) {
-				return;
-			}
-			const a = e.target.detail.injectedText?.options.attachedData;
-			if (a instanceof InlineEditAttachedData && a.owner === this) {
-				this._onDidClick.fire(new InlineEditClickEvent(e.event));
-			}
-		}));
+		this._register(
+			this._originalEditor.onMouseUp(e => {
+				if (e.target.type !== MouseTargetType.CONTENT_TEXT) {
+					return;
+				}
+				const a = e.target.detail.injectedText?.options.attachedData;
+				if (a instanceof InlineEditAttachedData && a.owner === this) {
+					this._onDidClick.fire(new InlineEditClickEvent(e.event));
+				}
+			})
+		);
 	}
 
 	private readonly _decorations;
 }
 
 class InlineEditAttachedData {
-	constructor(public readonly owner: OriginalEditorInlineDiffView) { }
+	constructor(public readonly owner: OriginalEditorInlineDiffView) {}
 }
 
 function allowsTrueInlineDiffRendering(mapping: DetailedLineRangeMapping): boolean {
 	if (!mapping.innerChanges) {
 		return false;
 	}
-	return mapping.innerChanges.every(c =>
-		(rangeIsSingleLine(c.modifiedRange) && rangeIsSingleLine(c.originalRange)));
+	return mapping.innerChanges.every(c => rangeIsSingleLine(c.modifiedRange) && rangeIsSingleLine(c.originalRange));
 }
 
 let i = 0;

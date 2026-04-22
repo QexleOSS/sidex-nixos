@@ -14,7 +14,7 @@ import { terminalDecorationError, terminalDecorationIncomplete, terminalDecorati
 
 const enum DecorationStyles {
 	DefaultDimension = 16,
-	MarginLeft = -17,
+	MarginLeft = -17
 }
 
 export const enum DecorationSelector {
@@ -25,11 +25,17 @@ export const enum DecorationSelector {
 	Default = 'default',
 	Codicon = 'codicon',
 	XtermDecoration = 'xterm-decoration',
-	OverviewRuler = '.xterm-decoration-overview-ruler',
+	OverviewRuler = '.xterm-decoration-overview-ruler'
 }
 
-export function getTerminalDecorationHoverContent(command: ITerminalCommand | undefined, hoverMessage?: string, showCommandActions?: boolean): string {
-	let hoverContent = showCommandActions ? `${localize('terminalPromptContextMenu', "Show Command Actions")}\n\n---\n\n` : '';
+export function getTerminalDecorationHoverContent(
+	command: ITerminalCommand | undefined,
+	hoverMessage?: string,
+	showCommandActions?: boolean
+): string {
+	let hoverContent = showCommandActions
+		? `${localize('terminalPromptContextMenu', 'Show Command Actions')}\n\n---\n\n`
+		: '';
 	if (!command) {
 		if (hoverMessage) {
 			hoverContent = hoverMessage;
@@ -47,19 +53,44 @@ export function getTerminalDecorationHoverContent(command: ITerminalCommand | un
 			const durationText = getDurationString(command.duration);
 			if (command.exitCode) {
 				if (command.exitCode === -1) {
-					hoverContent += localize('terminalPromptCommandFailed.duration', 'Command executed {0}, took {1} and failed', fromNow(command.timestamp, true), durationText);
+					hoverContent += localize(
+						'terminalPromptCommandFailed.duration',
+						'Command executed {0}, took {1} and failed',
+						fromNow(command.timestamp, true),
+						durationText
+					);
 				} else {
-					hoverContent += localize('terminalPromptCommandFailedWithExitCode.duration', 'Command executed {0}, took {1} and failed (Exit Code {2})', fromNow(command.timestamp, true), durationText, command.exitCode);
+					hoverContent += localize(
+						'terminalPromptCommandFailedWithExitCode.duration',
+						'Command executed {0}, took {1} and failed (Exit Code {2})',
+						fromNow(command.timestamp, true),
+						durationText,
+						command.exitCode
+					);
 				}
 			} else {
-				hoverContent += localize('terminalPromptCommandSuccess.duration', 'Command executed {0} and took {1}', fromNow(command.timestamp, true), durationText);
+				hoverContent += localize(
+					'terminalPromptCommandSuccess.duration',
+					'Command executed {0} and took {1}',
+					fromNow(command.timestamp, true),
+					durationText
+				);
 			}
 		} else {
 			if (command.exitCode) {
 				if (command.exitCode === -1) {
-					hoverContent += localize('terminalPromptCommandFailed', 'Command executed {0} and failed', fromNow(command.timestamp, true));
+					hoverContent += localize(
+						'terminalPromptCommandFailed',
+						'Command executed {0} and failed',
+						fromNow(command.timestamp, true)
+					);
 				} else {
-					hoverContent += localize('terminalPromptCommandFailedWithExitCode', 'Command executed {0} and failed (Exit Code {1})', fromNow(command.timestamp, true), command.exitCode);
+					hoverContent += localize(
+						'terminalPromptCommandFailedWithExitCode',
+						'Command executed {0} and failed (Exit Code {1})',
+						fromNow(command.timestamp, true),
+						command.exitCode
+					);
 				}
 			} else {
 				hoverContent += localize('terminalPromptCommandSuccess', 'Command executed {0} now');
@@ -98,7 +129,10 @@ export interface ITerminalCommandDecorationState {
 const unknownText = localize('terminalCommandDecoration.unknown', 'Unknown');
 const runningText = localize('terminalCommandDecoration.running', 'Running');
 
-export function getTerminalCommandDecorationTooltip(command?: ITerminalCommand, storedState?: ITerminalCommandDecorationPersistedState): string {
+export function getTerminalCommandDecorationTooltip(
+	command?: ITerminalCommand,
+	storedState?: ITerminalCommandDecorationPersistedState
+): string {
 	if (command) {
 		return getTerminalDecorationHoverContent(command);
 	}
@@ -117,19 +151,40 @@ export function getTerminalCommandDecorationTooltip(command?: ITerminalCommand, 
 		const durationText = getDurationString(Math.max(duration, 0));
 		if (exitCode) {
 			if (exitCode === -1) {
-				hoverContent += localize('terminalPromptCommandFailed.duration', 'Command executed {0}, took {1} and failed', fromNowText, durationText);
+				hoverContent += localize(
+					'terminalPromptCommandFailed.duration',
+					'Command executed {0}, took {1} and failed',
+					fromNowText,
+					durationText
+				);
 			} else {
-				hoverContent += localize('terminalPromptCommandFailedWithExitCode.duration', 'Command executed {0}, took {1} and failed (Exit Code {2})', fromNowText, durationText, exitCode);
+				hoverContent += localize(
+					'terminalPromptCommandFailedWithExitCode.duration',
+					'Command executed {0}, took {1} and failed (Exit Code {2})',
+					fromNowText,
+					durationText,
+					exitCode
+				);
 			}
 		} else {
-			hoverContent += localize('terminalPromptCommandSuccess.duration', 'Command executed {0} and took {1}', fromNowText, durationText);
+			hoverContent += localize(
+				'terminalPromptCommandSuccess.duration',
+				'Command executed {0} and took {1}',
+				fromNowText,
+				durationText
+			);
 		}
 	} else {
 		if (exitCode) {
 			if (exitCode === -1) {
 				hoverContent += localize('terminalPromptCommandFailed', 'Command executed {0} and failed', fromNowText);
 			} else {
-				hoverContent += localize('terminalPromptCommandFailedWithExitCode', 'Command executed {0} and failed (Exit Code {1})', fromNowText, exitCode);
+				hoverContent += localize(
+					'terminalPromptCommandFailedWithExitCode',
+					'Command executed {0} and failed (Exit Code {1})',
+					fromNowText,
+					exitCode
+				);
 			}
 		} else {
 			hoverContent += localize('terminalPromptCommandSuccess.', 'Command executed {0} ', fromNowText);
@@ -231,7 +286,7 @@ export function updateLayout(configurationService: IConfigurationService, elemen
 	const defaultFontSize = configurationService.inspect(TerminalSettingId.FontSize).defaultValue;
 	const lineHeight = configurationService.inspect(TerminalSettingId.LineHeight).value;
 	if (isNumber(fontSize) && isNumber(defaultFontSize) && isNumber(lineHeight)) {
-		const scalar = (fontSize / defaultFontSize) <= 1 ? (fontSize / defaultFontSize) : 1;
+		const scalar = fontSize / defaultFontSize <= 1 ? fontSize / defaultFontSize : 1;
 		// must be inlined to override the inlined styles from xterm
 		element.style.width = `${scalar * DecorationStyles.DefaultDimension}px`;
 		element.style.height = `${scalar * DecorationStyles.DefaultDimension * lineHeight}px`;

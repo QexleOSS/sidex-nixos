@@ -68,7 +68,7 @@ export async function requestUsbDevice(options?: { filters?: unknown[] }): Promi
 		usbVersionMajor: device.usbVersionMajor,
 		usbVersionMinor: device.usbVersionMinor,
 		usbVersionSubminor: device.usbVersionSubminor,
-		vendorId: device.vendorId,
+		vendorId: device.vendorId
 	};
 }
 

@@ -8,7 +8,11 @@ import { KeyCode, KeyMod } from '../../../../base/common/keyCodes.js';
 import { Schemas } from '../../../../base/common/network.js';
 import { URI } from '../../../../base/common/uri.js';
 import * as nls from '../../../../nls.js';
-import { Extensions as DragAndDropExtensions, IDragAndDropContributionRegistry, IDraggedResourceEditorInput } from '../../../../platform/dnd/browser/dnd.js';
+import {
+	Extensions as DragAndDropExtensions,
+	IDragAndDropContributionRegistry,
+	IDraggedResourceEditorInput
+} from '../../../../platform/dnd/browser/dnd.js';
 import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
@@ -19,18 +23,31 @@ import { EditorPaneDescriptor, IEditorPaneRegistry } from '../../../browser/edit
 import { ViewPaneContainer } from '../../../browser/parts/views/viewPaneContainer.js';
 import { WorkbenchPhase, registerWorkbenchContribution2 } from '../../../common/contributions.js';
 import { EditorExtensions, IEditorFactoryRegistry } from '../../../common/editor.js';
-import { IViewContainersRegistry, IViewsRegistry, Extensions as ViewContainerExtensions, ViewContainerLocation, WindowVisibility } from '../../../common/views.js';
+import {
+	IViewContainersRegistry,
+	IViewsRegistry,
+	Extensions as ViewContainerExtensions,
+	ViewContainerLocation,
+	WindowVisibility
+} from '../../../common/views.js';
 import { ITerminalProfileService, TERMINAL_VIEW_ID, TerminalCommandId } from '../common/terminal.js';
 import { TerminalEditingService } from './terminalEditingService.js';
 import { registerColors } from '../common/terminalColorRegistry.js';
 import { registerTerminalConfiguration } from '../common/terminalConfiguration.js';
 import { terminalStrings } from '../common/terminalStrings.js';
 import './media/terminal.css';
-import './media/terminalVoice.css';
 import './media/widgets.css';
 import './media/xterm.css';
-import { RemoteTerminalBackendContribution } from './remoteTerminalBackend.js';
-import { ITerminalChatService, ITerminalConfigurationService, ITerminalEditingService, ITerminalEditorService, ITerminalGroupService, ITerminalInstance, ITerminalInstanceService, ITerminalService, TerminalDataTransfers, terminalEditorId } from './terminal.js';
+import {
+	ITerminalConfigurationService,
+	ITerminalEditingService,
+	ITerminalEditorService,
+	ITerminalGroupService,
+	ITerminalInstanceService,
+	ITerminalService,
+	TerminalDataTransfers,
+	terminalEditorId
+} from './terminal.js';
 import { registerTerminalActions } from './terminalActions.js';
 import { setupTerminalCommands } from './terminalCommands.js';
 import { TerminalConfigurationService } from './terminalConfigurationService.js';
@@ -47,30 +64,6 @@ import { TerminalProfileService } from './terminalProfileService.js';
 import { TerminalService } from './terminalService.js';
 import { TerminalTelemetryContribution } from './terminalTelemetry.js';
 import { TerminalViewPane } from './terminalView.js';
-import { Emitter, Event } from '../../../../base/common/event.js';
-import { Disposable, IDisposable } from '../../../../base/common/lifecycle.js';
-
-class NullTerminalChatService extends Disposable implements ITerminalChatService {
-	readonly _serviceBrand: undefined;
-	private readonly _onDidRegister = this._register(new Emitter<ITerminalInstance>());
-	readonly onDidRegisterTerminalInstanceWithToolSession: Event<ITerminalInstance> = this._onDidRegister.event;
-	registerTerminalInstanceWithToolSession(): void { }
-	async getTerminalInstanceByToolSessionId(): Promise<ITerminalInstance | undefined> { return undefined; }
-	getToolSessionTerminalInstances(): readonly ITerminalInstance[] { return []; }
-	getToolSessionIdForInstance(): string | undefined { return undefined; }
-	registerTerminalInstanceWithChatSession(): void { }
-	getChatSessionResourceForInstance(): URI | undefined { return undefined; }
-	isBackgroundTerminal(): boolean { return false; }
-	registerProgressPart(): IDisposable { return Disposable.None; }
-	setFocusedProgressPart(): void { }
-	clearFocusedProgressPart(): void { }
-	getFocusedProgressPart(): undefined { return undefined; }
-	getMostRecentProgressPart(): undefined { return undefined; }
-	setChatSessionAutoApproval(): void { }
-	hasChatSessionAutoApproval(): boolean { return false; }
-	addSessionAutoApproveRule(): void { }
-	getSessionAutoApproveRules(): Readonly<Record<string, boolean | { approve: boolean; matchCommandLine?: boolean }>> { return {}; }
-}
 
 // Register services
 registerSingleton(ITerminalLogService, TerminalLogService, InstantiationType.Delayed);
@@ -80,14 +73,16 @@ registerSingleton(ITerminalEditorService, TerminalEditorService, InstantiationTy
 registerSingleton(ITerminalEditingService, TerminalEditingService, InstantiationType.Delayed);
 registerSingleton(ITerminalGroupService, TerminalGroupService, InstantiationType.Delayed);
 registerSingleton(ITerminalInstanceService, TerminalInstanceService, InstantiationType.Delayed);
-registerSingleton(ITerminalChatService, NullTerminalChatService, InstantiationType.Delayed);
 registerSingleton(ITerminalProfileService, TerminalProfileService, InstantiationType.Delayed);
 
 // Register workbench contributions
 // This contribution blocks startup as it's critical to enable the web embedder window.createTerminal API
 registerWorkbenchContribution2(TerminalMainContribution.ID, TerminalMainContribution, WorkbenchPhase.BlockStartup);
-registerWorkbenchContribution2(RemoteTerminalBackendContribution.ID, RemoteTerminalBackendContribution, WorkbenchPhase.AfterRestored);
-registerWorkbenchContribution2(TerminalTelemetryContribution.ID, TerminalTelemetryContribution, WorkbenchPhase.AfterRestored);
+registerWorkbenchContribution2(
+	TerminalTelemetryContribution.ID,
+	TerminalTelemetryContribution,
+	WorkbenchPhase.AfterRestored
+);
 
 // Tauri terminal backend — register it so VSCode's built-in terminal panel uses our PTY
 import './tauriTerminalBackend.js';
@@ -97,16 +92,13 @@ registerTerminalPlatformConfiguration();
 registerTerminalConfiguration(getFontSnippets);
 
 // Register editor/dnd contributions
-Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).registerEditorSerializer(TerminalEditorInput.ID, TerminalInputSerializer);
+Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).registerEditorSerializer(
+	TerminalEditorInput.ID,
+	TerminalInputSerializer
+);
 Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane(
-	EditorPaneDescriptor.create(
-		TerminalEditor,
-		terminalEditorId,
-		terminalStrings.terminal
-	),
-	[
-		new SyncDescriptor(TerminalEditorInput)
-	]
+	EditorPaneDescriptor.create(TerminalEditor, terminalEditorId, terminalStrings.terminal),
+	[new SyncDescriptor(TerminalEditorInput)]
 );
 Registry.as<IDragAndDropContributionRegistry>(DragAndDropExtensions.DragAndDropContribution).register({
 	dataFormatKey: TerminalDataTransfers.Terminals,
@@ -125,40 +117,60 @@ Registry.as<IDragAndDropContributionRegistry>(DragAndDropExtensions.DragAndDropC
 	setData(resources, event) {
 		const terminalResources = resources.filter(({ resource }) => resource.scheme === Schemas.vscodeTerminal);
 		if (terminalResources.length) {
-			event.dataTransfer?.setData(TerminalDataTransfers.Terminals, JSON.stringify(terminalResources.map(({ resource }) => resource.toString())));
+			event.dataTransfer?.setData(
+				TerminalDataTransfers.Terminals,
+				JSON.stringify(terminalResources.map(({ resource }) => resource.toString()))
+			);
 		}
 	}
 });
 
 // Register views
-const VIEW_CONTAINER = Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegistry).registerViewContainer({
-	id: TERMINAL_VIEW_ID,
-	title: nls.localize2('terminal', "Terminal"),
-	icon: terminalViewIcon,
-	ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [TERMINAL_VIEW_ID, { mergeViewWithContainerWhenSingleView: true }]),
-	storageId: TERMINAL_VIEW_ID,
-	hideIfEmpty: true,
-	order: 3,
-	windowVisibility: WindowVisibility.Both
-}, ViewContainerLocation.Panel, { doNotRegisterOpenCommand: true, isDefault: true });
-Registry.as<IViewsRegistry>(ViewContainerExtensions.ViewsRegistry).registerViews([{
-	id: TERMINAL_VIEW_ID,
-	name: nls.localize2('terminal', "Terminal"),
-	containerIcon: terminalViewIcon,
-	canToggleVisibility: true,
-	canMoveView: true,
-	ctorDescriptor: new SyncDescriptor(TerminalViewPane),
-	windowVisibility: WindowVisibility.Both,
-	openCommandActionDescriptor: {
-		id: TerminalCommandId.Toggle,
-		mnemonicTitle: nls.localize({ key: 'miToggleIntegratedTerminal', comment: ['&& denotes a mnemonic'] }, "&&Terminal"),
-		keybindings: {
-			primary: KeyMod.CtrlCmd | KeyCode.Backquote,
-			mac: { primary: KeyMod.WinCtrl | KeyCode.Backquote }
-		},
-		order: 3
-	}
-}], VIEW_CONTAINER);
+const VIEW_CONTAINER = Registry.as<IViewContainersRegistry>(
+	ViewContainerExtensions.ViewContainersRegistry
+).registerViewContainer(
+	{
+		id: TERMINAL_VIEW_ID,
+		title: nls.localize2('terminal', 'Terminal'),
+		icon: terminalViewIcon,
+		ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [
+			TERMINAL_VIEW_ID,
+			{ mergeViewWithContainerWhenSingleView: true }
+		]),
+		storageId: TERMINAL_VIEW_ID,
+		hideIfEmpty: true,
+		order: 3,
+		windowVisibility: WindowVisibility.Both
+	},
+	ViewContainerLocation.Panel,
+	{ doNotRegisterOpenCommand: true, isDefault: true }
+);
+Registry.as<IViewsRegistry>(ViewContainerExtensions.ViewsRegistry).registerViews(
+	[
+		{
+			id: TERMINAL_VIEW_ID,
+			name: nls.localize2('terminal', 'Terminal'),
+			containerIcon: terminalViewIcon,
+			canToggleVisibility: true,
+			canMoveView: true,
+			ctorDescriptor: new SyncDescriptor(TerminalViewPane),
+			windowVisibility: WindowVisibility.Both,
+			openCommandActionDescriptor: {
+				id: TerminalCommandId.Toggle,
+				mnemonicTitle: nls.localize(
+					{ key: 'miToggleIntegratedTerminal', comment: ['&& denotes a mnemonic'] },
+					'&&Terminal'
+				),
+				keybindings: {
+					primary: KeyMod.CtrlCmd | KeyCode.Backquote,
+					mac: { primary: KeyMod.WinCtrl | KeyCode.Backquote }
+				},
+				order: 3
+			}
+		}
+	],
+	VIEW_CONTAINER
+);
 
 registerTerminalActions();
 

@@ -12,7 +12,10 @@ import { ITaskFilter, ITaskService } from '../common/taskService.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 
 export class TaskService extends AbstractTaskService {
-	private static readonly ProcessTaskSystemSupportMessage = nls.localize('taskService.processTaskSystem', 'Process task system is not support in the web.');
+	private static readonly ProcessTaskSystemSupportMessage = nls.localize(
+		'taskService.processTaskSystem',
+		'Process task system is not support in the web.'
+	);
 
 	protected _getTaskSystem(): ITaskSystem {
 		if (this._taskSystem) {
@@ -22,17 +25,18 @@ export class TaskService extends AbstractTaskService {
 			throw new Error(TaskService.ProcessTaskSystemSupportMessage);
 		}
 		this._taskSystem = this._createTerminalTaskSystem();
-		this._taskSystemListeners =
-			[
-				this._taskSystem.onDidStateChange((event) => {
-					this._taskRunningState.set(this._taskSystem!.isActiveSync());
-					this._onDidStateChange.fire(event);
-				}),
-			];
+		this._taskSystemListeners = [
+			this._taskSystem.onDidStateChange(event => {
+				this._taskRunningState.set(this._taskSystem!.isActiveSync());
+				this._onDidStateChange.fire(event);
+			})
+		];
 		return this._taskSystem;
 	}
 
-	protected _computeLegacyConfiguration(workspaceFolder: IWorkspaceFolder): Promise<IWorkspaceFolderConfigurationResult> {
+	protected _computeLegacyConfiguration(
+		workspaceFolder: IWorkspaceFolder
+	): Promise<IWorkspaceFolderConfigurationResult> {
 		throw new Error(TaskService.ProcessTaskSystemSupportMessage);
 	}
 

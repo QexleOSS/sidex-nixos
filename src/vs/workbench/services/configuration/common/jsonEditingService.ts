@@ -22,7 +22,6 @@ import { InstantiationType, registerSingleton } from '../../../../platform/insta
 import { IFilesConfigurationService } from '../../filesConfiguration/common/filesConfigurationService.js';
 
 export class JSONEditingService implements IJSONEditingService {
-
 	public _serviceBrand: undefined;
 
 	private queue: Queue<void>;
@@ -79,8 +78,14 @@ export class JSONEditingService implements IJSONEditingService {
 		const range = new Range(startPosition.lineNumber, startPosition.column, endPosition.lineNumber, endPosition.column);
 		const currentText = model.getValueInRange(range);
 		if (edit.content !== currentText) {
-			const editOperation = currentText ? EditOperation.replace(range, edit.content) : EditOperation.insert(startPosition, edit.content);
-			model.pushEditOperations([new Selection(startPosition.lineNumber, startPosition.column, startPosition.lineNumber, startPosition.column)], [editOperation], () => []);
+			const editOperation = currentText
+				? EditOperation.replace(range, edit.content)
+				: EditOperation.insert(startPosition, edit.content);
+			model.pushEditOperations(
+				[new Selection(startPosition.lineNumber, startPosition.column, startPosition.lineNumber, startPosition.column)],
+				[editOperation],
+				() => []
+			);
 			return true;
 		}
 		return false;
@@ -94,11 +99,13 @@ export class JSONEditingService implements IJSONEditingService {
 		// With empty path the entire file is being replaced, so we just use JSON.stringify
 		if (!path.length) {
 			const content = JSON.stringify(value, null, insertSpaces ? ' '.repeat(tabSize) : '\t');
-			return [{
-				content,
-				length: content.length,
-				offset: 0
-			}];
+			return [
+				{
+					content,
+					length: content.length,
+					offset: 0
+				}
+			];
 		}
 
 		return setProperty(model.getValue(), path, value, { tabSize, insertSpaces, eol });
@@ -140,7 +147,10 @@ export class JSONEditingService implements IJSONEditingService {
 		switch (error) {
 			// User issues
 			case JSONEditingErrorCode.ERROR_INVALID_FILE: {
-				return nls.localize('errorInvalidFile', "Unable to write into the file. Please open the file to correct errors/warnings in the file and try again.");
+				return nls.localize(
+					'errorInvalidFile',
+					'Unable to write into the file. Please open the file to correct errors/warnings in the file and try again.'
+				);
 			}
 		}
 	}

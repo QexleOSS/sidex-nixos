@@ -7,7 +7,8 @@ import { createDecorator } from '../../../../platform/instantiation/common/insta
 import { IAuthorizationTokenResponse } from '../../../../base/common/oauth.js';
 import { Event } from '../../../../base/common/event.js';
 
-export const IDynamicAuthenticationProviderStorageService = createDecorator<IDynamicAuthenticationProviderStorageService>('dynamicAuthenticationProviderStorageService');
+export const IDynamicAuthenticationProviderStorageService =
+	createDecorator<IDynamicAuthenticationProviderStorageService>('dynamicAuthenticationProviderStorageService');
 
 export interface DynamicAuthenticationProviderInfo {
 	readonly providerId: string;
@@ -52,7 +53,13 @@ export interface IDynamicAuthenticationProviderStorageService {
 	 * @param clientSecret Optional client secret to store.
 	 * @param label Optional label for the provider.
 	 */
-	storeClientRegistration(providerId: string, authorizationServer: string, clientId: string, clientSecret?: string, label?: string): Promise<void>;
+	storeClientRegistration(
+		providerId: string,
+		authorizationServer: string,
+		clientId: string,
+		clientSecret?: string,
+		label?: string
+	): Promise<void>;
 
 	/**
 	 * Get all dynamic authentication providers that have been interacted with.
@@ -72,7 +79,10 @@ export interface IDynamicAuthenticationProviderStorageService {
 	 * @param clientId The client ID.
 	 * @returns Array of authorization tokens with creation timestamps, or undefined if none exist.
 	 */
-	getSessionsForDynamicAuthProvider(authProviderId: string, clientId: string): Promise<(IAuthorizationTokenResponse & { created_at: number })[] | undefined>;
+	getSessionsForDynamicAuthProvider(
+		authProviderId: string,
+		clientId: string
+	): Promise<(IAuthorizationTokenResponse & { created_at: number })[] | undefined>;
 
 	/**
 	 * Set sessions for a dynamic authentication provider in secret storage.
@@ -80,5 +90,9 @@ export interface IDynamicAuthenticationProviderStorageService {
 	 * @param clientId The client ID.
 	 * @param sessions Array of authorization tokens with creation timestamps.
 	 */
-	setSessionsForDynamicAuthProvider(authProviderId: string, clientId: string, sessions: (IAuthorizationTokenResponse & { created_at: number })[]): Promise<void>;
+	setSessionsForDynamicAuthProvider(
+		authProviderId: string,
+		clientId: string,
+		sessions: (IAuthorizationTokenResponse & { created_at: number })[]
+	): Promise<void>;
 }

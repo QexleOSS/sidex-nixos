@@ -8,7 +8,13 @@ import { onUnexpectedError } from '../../../../base/common/errors.js';
 import { KeyCode, KeyMod } from '../../../../base/common/keyCodes.js';
 import { CodeEditorStateFlag, EditorState } from '../../editorState/browser/editorState.js';
 import { ICodeEditor } from '../../../browser/editorBrowser.js';
-import { EditorAction, EditorContributionInstantiation, registerEditorAction, registerEditorContribution, ServicesAccessor } from '../../../browser/editorExtensions.js';
+import {
+	EditorAction,
+	EditorContributionInstantiation,
+	registerEditorAction,
+	registerEditorContribution,
+	ServicesAccessor
+} from '../../../browser/editorExtensions.js';
 import { Range } from '../../../common/core/range.js';
 import { Selection } from '../../../common/core/selection.js';
 import { IEditorContribution, IEditorDecorationsCollection } from '../../../common/editorCommon.js';
@@ -22,7 +28,6 @@ import { InPlaceReplaceCommand } from './inPlaceReplaceCommand.js';
 import './inPlaceReplace.css';
 
 class InPlaceReplaceController implements IEditorContribution {
-
 	public static readonly ID = 'editor.contrib.inPlaceReplaceController';
 
 	static get(editor: ICodeEditor): InPlaceReplaceController | null {
@@ -40,20 +45,15 @@ class InPlaceReplaceController implements IEditorContribution {
 	private currentRequest?: CancelablePromise<IInplaceReplaceSupportResult | null>;
 	private decorationRemover?: CancelablePromise<void>;
 
-	constructor(
-		editor: ICodeEditor,
-		@IEditorWorkerService editorWorkerService: IEditorWorkerService
-	) {
+	constructor(editor: ICodeEditor, @IEditorWorkerService editorWorkerService: IEditorWorkerService) {
 		this.editor = editor;
 		this.editorWorkerService = editorWorkerService;
 		this.decorations = this.editor.createDecorationsCollection();
 	}
 
-	public dispose(): void {
-	}
+	public dispose(): void {}
 
 	public run(source: string, up: boolean): Promise<void> | undefined {
-
 		// cancel any pending request
 		this.currentRequest?.cancel();
 
@@ -74,64 +74,72 @@ class InPlaceReplaceController implements IEditorContribution {
 			return Promise.resolve(undefined);
 		}
 
-		this.currentRequest = createCancelablePromise(token => this.editorWorkerService.navigateValueSet(modelURI, selection, up));
+		this.currentRequest = createCancelablePromise(token =>
+			this.editorWorkerService.navigateValueSet(modelURI, selection, up)
+		);
 
-		return this.currentRequest.then(result => {
+		return this.currentRequest
+			.then(result => {
+				if (!result || !result.range || !result.value) {
+					// No proper result
+					return;
+				}
 
-			if (!result || !result.range || !result.value) {
-				// No proper result
-				return;
-			}
+				if (!state.validate(this.editor)) {
+					// state has changed
+					return;
+				}
 
-			if (!state.validate(this.editor)) {
-				// state has changed
-				return;
-			}
+				// Selection
+				const editRange = Range.lift(result.range);
+				let highlightRange = result.range;
+				const diff = result.value.length - (selection.endColumn - selection.startColumn);
 
-			// Selection
-			const editRange = Range.lift(result.range);
-			let highlightRange = result.range;
-			const diff = result.value.length - (selection.endColumn - selection.startColumn);
+				// highlight
+				highlightRange = {
+					startLineNumber: highlightRange.startLineNumber,
+					startColumn: highlightRange.startColumn,
+					endLineNumber: highlightRange.endLineNumber,
+					endColumn: highlightRange.startColumn + result.value.length
+				};
+				if (diff > 1) {
+					selection = new Selection(
+						selection.startLineNumber,
+						selection.startColumn,
+						selection.endLineNumber,
+						selection.endColumn + diff - 1
+					);
+				}
 
-			// highlight
-			highlightRange = {
-				startLineNumber: highlightRange.startLineNumber,
-				startColumn: highlightRange.startColumn,
-				endLineNumber: highlightRange.endLineNumber,
-				endColumn: highlightRange.startColumn + result.value.length
-			};
-			if (diff > 1) {
-				selection = new Selection(selection.startLineNumber, selection.startColumn, selection.endLineNumber, selection.endColumn + diff - 1);
-			}
+				// Insert new text
+				const command = new InPlaceReplaceCommand(editRange, selection, result.value);
 
-			// Insert new text
-			const command = new InPlaceReplaceCommand(editRange, selection, result.value);
+				this.editor.pushUndoStop();
+				this.editor.executeCommand(source, command);
+				this.editor.pushUndoStop();
 
-			this.editor.pushUndoStop();
-			this.editor.executeCommand(source, command);
-			this.editor.pushUndoStop();
+				// add decoration
+				this.decorations.set([
+					{
+						range: highlightRange,
+						options: InPlaceReplaceController.DECORATION
+					}
+				]);
 
-			// add decoration
-			this.decorations.set([{
-				range: highlightRange,
-				options: InPlaceReplaceController.DECORATION
-			}]);
-
-			// remove decoration after delay
-			this.decorationRemover?.cancel();
-			this.decorationRemover = timeout(350);
-			this.decorationRemover.then(() => this.decorations.clear()).catch(onUnexpectedError);
-
-		}).catch(onUnexpectedError);
+				// remove decoration after delay
+				this.decorationRemover?.cancel();
+				this.decorationRemover = timeout(350);
+				this.decorationRemover.then(() => this.decorations.clear()).catch(onUnexpectedError);
+			})
+			.catch(onUnexpectedError);
 	}
 }
 
 class InPlaceReplaceUp extends EditorAction {
-
 	constructor() {
 		super({
 			id: 'editor.action.inPlaceReplace.up',
-			label: nls.localize2('InPlaceReplaceAction.previous.label', "Replace with Previous Value"),
+			label: nls.localize2('InPlaceReplaceAction.previous.label', 'Replace with Previous Value'),
 			precondition: EditorContextKeys.writable,
 			kbOpts: {
 				kbExpr: EditorContextKeys.editorTextFocus,
@@ -151,11 +159,10 @@ class InPlaceReplaceUp extends EditorAction {
 }
 
 class InPlaceReplaceDown extends EditorAction {
-
 	constructor() {
 		super({
 			id: 'editor.action.inPlaceReplace.down',
-			label: nls.localize2('InPlaceReplaceAction.next.label', "Replace with Next Value"),
+			label: nls.localize2('InPlaceReplaceAction.next.label', 'Replace with Next Value'),
 			precondition: EditorContextKeys.writable,
 			kbOpts: {
 				kbExpr: EditorContextKeys.editorTextFocus,

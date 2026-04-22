@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-
 import './media/terminalResizeDimensionsOverlay.css';
 import { $ } from '../../../../../base/browser/dom.js';
 import { disposableTimeout } from '../../../../../base/common/async.js';
@@ -13,25 +12,26 @@ import type { XtermTerminal } from '../../../terminal/browser/xterm/xtermTermina
 
 const enum Constants {
 	ResizeOverlayHideDelay = 500,
-	VisibleClass = 'visible',
+	VisibleClass = 'visible'
 }
 
 export class TerminalResizeDimensionsOverlay extends Disposable {
-
 	private _resizeOverlay: HTMLElement | undefined;
 	private readonly _resizeOverlayHideTimeout: MutableDisposable<IDisposable> = this._register(new MutableDisposable());
 
 	constructor(
 		private readonly _container: HTMLElement,
-		xterm: IXtermTerminal,
+		xterm: IXtermTerminal
 	) {
 		super();
 
 		this._register((xterm as XtermTerminal).raw.onResize(dims => this._handleDimensionsChanged(dims)));
-		this._register(toDisposable(() => {
-			this._resizeOverlay?.remove();
-			this._resizeOverlay = undefined;
-		}));
+		this._register(
+			toDisposable(() => {
+				this._resizeOverlay?.remove();
+				this._resizeOverlay = undefined;
+			})
+		);
 	}
 
 	private _handleDimensionsChanged(dims: { cols: number; rows: number }): void {

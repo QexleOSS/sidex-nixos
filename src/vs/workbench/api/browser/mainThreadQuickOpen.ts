@@ -14,10 +14,27 @@ import { getIconClasses } from '../../../editor/common/services/getIconClasses.j
 import { IModelService } from '../../../editor/common/services/model.js';
 import { FileKind } from '../../../platform/files/common/files.js';
 import { ILabelService } from '../../../platform/label/common/label.js';
-import { IInputOptions, IPickOptions, IQuickInput, IQuickInputService, IQuickPick, IQuickPickItem } from '../../../platform/quickinput/common/quickInput.js';
+import {
+	IInputOptions,
+	IPickOptions,
+	IQuickInput,
+	IQuickInputService,
+	IQuickPick,
+	IQuickPickItem
+} from '../../../platform/quickinput/common/quickInput.js';
 import { ICustomEditorLabelService } from '../../services/editor/common/customEditorLabelService.js';
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
-import { ExtHostContext, ExtHostQuickOpenShape, IInputBoxOptions, MainContext, MainThreadQuickOpenShape, TransferQuickInput, TransferQuickInputButton, TransferQuickPickItem, TransferQuickPickItemOrSeparator } from '../common/extHost.protocol.js';
+import {
+	ExtHostContext,
+	ExtHostQuickOpenShape,
+	IInputBoxOptions,
+	MainContext,
+	MainThreadQuickOpenShape,
+	TransferQuickInput,
+	TransferQuickInputButton,
+	TransferQuickPickItem,
+	TransferQuickPickItemOrSeparator
+} from '../common/extHost.protocol.js';
 
 interface QuickInputSession {
 	input: IQuickInput;
@@ -27,13 +44,15 @@ interface QuickInputSession {
 
 @extHostNamedCustomer(MainContext.MainThreadQuickOpen)
 export class MainThreadQuickOpen implements MainThreadQuickOpenShape {
-
 	private readonly _proxy: ExtHostQuickOpenShape;
 	private readonly _quickInputService: IQuickInputService;
-	private readonly _items: Record<number, {
-		resolve(items: TransferQuickPickItemOrSeparator[]): void;
-		reject(error: Error): void;
-	}> = {};
+	private readonly _items: Record<
+		number,
+		{
+			resolve(items: TransferQuickPickItemOrSeparator[]): void;
+			reject(error: Error): void;
+		}
+	> = {};
 
 	constructor(
 		extHostContext: IExtHostContext,
@@ -53,7 +72,11 @@ export class MainThreadQuickOpen implements MainThreadQuickOpenShape {
 		}
 	}
 
-	$show(instance: number, options: IPickOptions<TransferQuickPickItem>, token: CancellationToken): Promise<number | number[] | undefined> {
+	$show(
+		instance: number,
+		options: IPickOptions<TransferQuickPickItem>,
+		token: CancellationToken
+	): Promise<number | number[] | undefined> {
 		const contents = new Promise<TransferQuickPickItemOrSeparator[]>((resolve, reject) => {
 			this._items[instance] = { resolve, reject };
 		});
@@ -103,7 +126,11 @@ export class MainThreadQuickOpen implements MainThreadQuickOpenShape {
 
 	// ---- input
 
-	$input(options: IInputBoxOptions | undefined, validateInput: boolean, token: CancellationToken): Promise<string | undefined> {
+	$input(
+		options: IInputBoxOptions | undefined,
+		validateInput: boolean,
+		token: CancellationToken
+	): Promise<string | undefined> {
 		const inputOptions: IInputOptions = Object.create(null);
 
 		if (options) {
@@ -117,7 +144,7 @@ export class MainThreadQuickOpen implements MainThreadQuickOpenShape {
 		}
 
 		if (validateInput) {
-			inputOptions.validateInput = (value) => {
+			inputOptions.validateInput = value => {
 				return this._proxy.$validateInput(value);
 			};
 		}
@@ -134,39 +161,66 @@ export class MainThreadQuickOpen implements MainThreadQuickOpenShape {
 		let session = this.sessions.get(sessionId);
 		if (!session) {
 			const store = new DisposableStore();
-			const input = params.type === 'quickPick' ? this._quickInputService.createQuickPick() : this._quickInputService.createInputBox();
+			const input =
+				params.type === 'quickPick'
+					? this._quickInputService.createQuickPick()
+					: this._quickInputService.createInputBox();
 			store.add(input);
-			store.add(input.onDidAccept(() => {
-				this._proxy.$onDidAccept(sessionId);
-			}));
-			store.add(input.onDidTriggerButton(button => {
-				this._proxy.$onDidTriggerButton(sessionId, (button as TransferQuickInputButton).handle, button.toggle?.checked);
-			}));
-			store.add(input.onDidChangeValue(value => {
-				this._proxy.$onDidChangeValue(sessionId, value);
-			}));
-			store.add(input.onDidHide(() => {
-				this._proxy.$onDidHide(sessionId);
-			}));
+			store.add(
+				input.onDidAccept(() => {
+					this._proxy.$onDidAccept(sessionId);
+				})
+			);
+			store.add(
+				input.onDidTriggerButton(button => {
+					this._proxy.$onDidTriggerButton(
+						sessionId,
+						(button as TransferQuickInputButton).handle,
+						button.toggle?.checked
+					);
+				})
+			);
+			store.add(
+				input.onDidChangeValue(value => {
+					this._proxy.$onDidChangeValue(sessionId, value);
+				})
+			);
+			store.add(
+				input.onDidHide(() => {
+					this._proxy.$onDidHide(sessionId);
+				})
+			);
 
 			if (params.type === 'quickPick') {
 				// Add extra events specific for quick pick
 				const quickPick = input as IQuickPick<IQuickPickItem>;
-				store.add(quickPick.onDidChangeActive(items => {
-					this._proxy.$onDidChangeActive(sessionId, items.map(item => (item as TransferQuickPickItem).handle));
-				}));
-				store.add(quickPick.onDidChangeSelection(items => {
-					this._proxy.$onDidChangeSelection(sessionId, items.map(item => (item as TransferQuickPickItem).handle));
-				}));
-				store.add(quickPick.onDidTriggerItemButton((e) => {
-					const transferButton = e.button as TransferQuickInputButton;
-					this._proxy.$onDidTriggerItemButton(
-						sessionId,
-						(e.item as TransferQuickPickItem).handle,
-						transferButton.handle,
-						transferButton.toggle?.checked
-					);
-				}));
+				store.add(
+					quickPick.onDidChangeActive(items => {
+						this._proxy.$onDidChangeActive(
+							sessionId,
+							items.map(item => (item as TransferQuickPickItem).handle)
+						);
+					})
+				);
+				store.add(
+					quickPick.onDidChangeSelection(items => {
+						this._proxy.$onDidChangeSelection(
+							sessionId,
+							items.map(item => (item as TransferQuickPickItem).handle)
+						);
+					})
+				);
+				store.add(
+					quickPick.onDidTriggerItemButton(e => {
+						const transferButton = e.button as TransferQuickInputButton;
+						this._proxy.$onDidTriggerItemButton(
+							sessionId,
+							(e.item as TransferQuickPickItem).handle,
+							transferButton.handle,
+							transferButton.toggle?.checked
+						);
+					})
+				);
 			}
 
 			session = {
@@ -233,7 +287,7 @@ export class MainThreadQuickOpen implements MainThreadQuickOpenShape {
 				}
 
 				default:
-					// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+					// eslint-disable-next-line local/code-no-any-casts
 					(input as any)[param] = params[param];
 					break;
 			}
@@ -251,8 +305,8 @@ export class MainThreadQuickOpen implements MainThreadQuickOpenShape {
 	}
 
 	/**
-	* Derives icon, label and description for Quick Pick items that represent a resource URI.
-	*/
+	 * Derives icon, label and description for Quick Pick items that represent a resource URI.
+	 */
 	private expandItemProps(item: TransferQuickPickItemOrSeparator) {
 		if (item.type === 'separator') {
 			return;
@@ -276,8 +330,11 @@ export class MainThreadQuickOpen implements MainThreadQuickOpenShape {
 		// Derive icon props from resourceUri if icon is set to ThemeIcon.File or ThemeIcon.Folder.
 		const icon = item.iconPathDto;
 		if (ThemeIcon.isThemeIcon(icon) && (ThemeIcon.isFile(icon) || ThemeIcon.isFolder(icon))) {
-			const fileKind = ThemeIcon.isFolder(icon) || hasTrailingPathSeparator(resourceUri) ? FileKind.FOLDER : FileKind.FILE;
-			const iconClasses = new Lazy(() => getIconClasses(this.modelService, this.languageService, resourceUri, fileKind));
+			const fileKind =
+				ThemeIcon.isFolder(icon) || hasTrailingPathSeparator(resourceUri) ? FileKind.FOLDER : FileKind.FILE;
+			const iconClasses = new Lazy(() =>
+				getIconClasses(this.modelService, this.languageService, resourceUri, fileKind)
+			);
 			Object.defineProperty(item, 'iconClasses', { get: () => iconClasses.value });
 		} else {
 			this.expandIconPath(item);
@@ -285,8 +342,8 @@ export class MainThreadQuickOpen implements MainThreadQuickOpenShape {
 	}
 
 	/**
-	* Converts IconPath DTO into iconPath/iconClass properties.
-	*/
+	 * Converts IconPath DTO into iconPath/iconClass properties.
+	 */
 	private expandIconPath(target: Pick<TransferQuickPickItem, 'iconPathDto' | 'iconPath' | 'iconClass'>) {
 		const icon = target.iconPathDto;
 		if (!icon) {

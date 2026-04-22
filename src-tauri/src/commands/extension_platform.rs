@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::io::Read as _;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -14,6 +13,7 @@ pub enum ExtensionKind {
     Wasm,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NodeRuntimeInfo {
@@ -23,6 +23,7 @@ pub struct NodeRuntimeInfo {
     pub bundled: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ResolvedNode {
     pub path: String,
@@ -31,6 +32,7 @@ pub struct ResolvedNode {
     pub bundled: bool,
 }
 
+#[allow(dead_code)]
 impl ResolvedNode {
     pub fn to_info(&self) -> NodeRuntimeInfo {
         NodeRuntimeInfo {
@@ -92,12 +94,14 @@ pub struct UriComponents {
     pub authority: String,
 }
 
-/// Parsed from a VSIX archive (extension/package.json).
-#[derive(Debug)]
-pub struct VsixManifest {
-    pub id: String,
-    pub name: String,
-    pub version: String,
+pub fn path_to_uri_path(path: &str) -> String {
+    let stripped = path.strip_prefix(r"\\?\").unwrap_or(path);
+    let p = stripped.replace('\\', "/");
+    if p.starts_with('/') {
+        p
+    } else {
+        format!("/{p}")
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -107,6 +111,7 @@ struct SidexTomlManifest {
     contributes: Option<SidexTomlContributes>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct SidexTomlExtension {
     id: String,
@@ -131,6 +136,7 @@ struct SidexTomlContributes {
     commands: Vec<SidexTomlCommand>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct SidexTomlCommand {
     id: String,
@@ -250,29 +256,16 @@ pub struct InitDataRemote {
     pub connection_data: Option<serde_json::Value>,
 }
 
-pub fn sidex_data_dir() -> PathBuf {
-    dirs::home_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join(".sidex")
-}
-
 pub fn user_extensions_dir() -> PathBuf {
-    let dir = sidex_data_dir().join("extensions");
-    let _ = fs::create_dir_all(&dir);
-    dir
+    sidex_extensions::paths::user_extensions_dir()
 }
 
 pub fn global_storage_dir() -> PathBuf {
-    let dir = sidex_data_dir()
-        .join("data")
-        .join("User")
-        .join("globalStorage");
-    let _ = fs::create_dir_all(&dir);
-    dir
+    sidex_extensions::paths::global_storage_dir()
 }
 
 fn user_data_dir() -> PathBuf {
-    sidex_data_dir().join("data")
+    sidex_extensions::paths::user_data_dir()
 }
 
 pub fn resolve_server_script(app: &AppHandle) -> PathBuf {
@@ -340,8 +333,6 @@ pub fn bundled_node_candidates(app: &AppHandle) -> Vec<PathBuf> {
 
     let resource_candidates = if cfg!(target_os = "windows") {
         vec!["node/node.exe", "bin/node.exe", "node.exe"]
-    } else if cfg!(target_os = "macos") {
-        vec!["node/bin/node", "bin/node", "node"]
     } else {
         vec!["node/bin/node", "bin/node", "node"]
     };
@@ -404,17 +395,6 @@ pub fn resolve_node_runtime(app: &AppHandle) -> Result<ResolvedNode, String> {
     Err("Node runtime not found. Bundle Node with SideX or install Node.js (>=18).".into())
 }
 
-pub fn sanitize_ext_id(id: &str) -> Result<String, String> {
-    let clean: String = id
-        .chars()
-        .filter(|c| c.is_alphanumeric() || *c == '.' || *c == '-' || *c == '_')
-        .collect();
-    if clean.is_empty() || clean.contains("..") {
-        return Err(format!("invalid extension id: {id}"));
-    }
-    Ok(clean)
-}
-
 fn extension_source(app: &AppHandle, path: &Path) -> (String, bool) {
     let builtin_dir = resolve_builtin_extensions_dir(app);
     let user_dir = user_extensions_dir();
@@ -427,27 +407,8 @@ fn extension_source(app: &AppHandle, path: &Path) -> (String, bool) {
     }
 }
 
-fn version_weight(version: &str) -> Vec<u32> {
-    version
-        .split(['.', '-'])
-        .map(|part| part.parse::<u32>().unwrap_or(0))
-        .collect()
-}
-
 fn is_version_greater(a: &str, b: &str) -> bool {
-    let wa = version_weight(a);
-    let wb = version_weight(b);
-    let len = wa.len().max(wb.len());
-    for idx in 0..len {
-        let av = *wa.get(idx).unwrap_or(&0);
-        let bv = *wb.get(idx).unwrap_or(&0);
-        match av.cmp(&bv) {
-            std::cmp::Ordering::Greater => return true,
-            std::cmp::Ordering::Less => return false,
-            std::cmp::Ordering::Equal => {}
-        }
-    }
-    false
+    sidex_extensions::manifest::is_version_greater(a, b)
 }
 
 fn manifest_entry_exists(ext_dir: &Path, entry: &str) -> bool {
@@ -495,8 +456,7 @@ pub fn read_extension_manifest(
     if let Some(entry) = entry {
         if !manifest_entry_exists(ext_dir, entry) {
             return Err(format!(
-                "entry '{}' missing for extension {}.{}",
-                entry, publisher, name
+                "entry '{entry}' missing for extension {publisher}.{name}"
             ));
         }
     }
@@ -598,7 +558,7 @@ pub fn extension_search_paths(app: &AppHandle) -> Vec<PathBuf> {
 }
 
 pub fn scan_extensions(app: &AppHandle, paths: &[PathBuf]) -> Vec<ExtensionManifest> {
-    let disable_ids: HashSet<String> = std::env::var("SIDEX_DISABLE_EXTENSION_IDS")
+    let mut disable_ids: HashSet<String> = std::env::var("SIDEX_DISABLE_EXTENSION_IDS")
         .unwrap_or_else(|_| "ms-python.vscode-pylance".to_string())
         .split(',')
         .map(str::trim)
@@ -606,17 +566,27 @@ pub fn scan_extensions(app: &AppHandle, paths: &[PathBuf]) -> Vec<ExtensionManif
         .map(str::to_string)
         .collect();
 
+    for id in &[
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "sswg.swift-lang",
+        "vscode.github-authentication",
+        "vscode.microsoft-authentication",
+    ] {
+        disable_ids.insert(id.to_string());
+    }
+
+    let disable_prefixes = ["anysphere.cursor", "cursor."];
+
     let mut by_id: HashMap<String, ExtensionManifest> = HashMap::new();
     for search_path in paths {
-        let entries = match fs::read_dir(search_path) {
-            Ok(entries) => entries,
-            Err(_) => continue,
+        let Ok(entries) = fs::read_dir(search_path) else {
+            continue;
         };
 
         for entry in entries.flatten() {
-            let file_type = match entry.file_type() {
-                Ok(ft) => ft,
-                Err(_) => continue,
+            let Ok(file_type) = entry.file_type() else {
+                continue;
             };
             if !file_type.is_dir() {
                 continue;
@@ -628,12 +598,13 @@ pub fn scan_extensions(app: &AppHandle, paths: &[PathBuf]) -> Vec<ExtensionManif
             } else {
                 read_extension_manifest(app, &ext_dir)
             };
-            let manifest = match manifest {
-                Ok(m) => m,
-                Err(_) => continue,
+            let Ok(manifest) = manifest else {
+                continue;
             };
 
-            if disable_ids.contains(&manifest.id) {
+            if disable_ids.contains(&manifest.id)
+                || disable_prefixes.iter().any(|p| manifest.id.starts_with(p))
+            {
                 continue;
             }
 
@@ -677,7 +648,7 @@ pub fn build_extension_descriptions(manifests: &[ExtensionManifest]) -> Vec<Exte
                 },
                 extension_location: UriComponents {
                     scheme: "file".to_string(),
-                    path: m.path.clone(),
+                    path: path_to_uri_path(&m.path),
                     authority: String::new(),
                 },
                 package_json,
@@ -719,15 +690,12 @@ pub fn build_init_data(
             is_extension_telemetry_logging_only: false,
             global_storage_home: UriComponents {
                 scheme: "file".to_string(),
-                path: global_storage.to_string_lossy().to_string(),
+                path: path_to_uri_path(&global_storage.to_string_lossy()),
                 authority: String::new(),
             },
             workspace_storage_home: UriComponents {
                 scheme: "file".to_string(),
-                path: data_dir
-                    .join("workspaceStorage")
-                    .to_string_lossy()
-                    .to_string(),
+                path: path_to_uri_path(&data_dir.join("workspaceStorage").to_string_lossy()),
                 authority: String::new(),
             },
             extension_development_location_uri: None,
@@ -738,7 +706,7 @@ pub fn build_init_data(
         } else {
             Some(serde_json::json!({
                 "folders": workspace_folders.iter().map(|f| {
-                    serde_json::json!({ "uri": { "scheme": "file", "path": f } })
+                    serde_json::json!({ "uri": { "scheme": "file", "path": path_to_uri_path(f) } })
                 }).collect::<Vec<_>>()
             }))
         },
@@ -755,7 +723,7 @@ pub fn build_init_data(
         loggers: vec![],
         logs_location: UriComponents {
             scheme: "file".to_string(),
-            path: data_dir.join("logs").to_string_lossy().to_string(),
+            path: path_to_uri_path(&data_dir.join("logs").to_string_lossy()),
             authority: String::new(),
         },
         auto_start: true,
@@ -766,42 +734,6 @@ pub fn build_init_data(
         },
         ui_kind: 1,
     }
-}
-
-pub fn read_vsix_manifest(
-    archive: &mut zip::ZipArchive<std::fs::File>,
-) -> Result<VsixManifest, String> {
-    let pkg_path = "extension/package.json";
-    let mut entry = archive
-        .by_name(pkg_path)
-        .map_err(|_| "VSIX missing extension/package.json".to_string())?;
-    let mut buf = String::new();
-    entry
-        .read_to_string(&mut buf)
-        .map_err(|e| format!("read manifest: {e}"))?;
-    let val: serde_json::Value =
-        serde_json::from_str(&buf).map_err(|e| format!("parse manifest: {e}"))?;
-    let publisher = val
-        .get("publisher")
-        .and_then(|v| v.as_str())
-        .unwrap_or("unknown");
-    let name = val
-        .get("name")
-        .and_then(|v| v.as_str())
-        .ok_or("manifest missing 'name'")?;
-    let version = val
-        .get("version")
-        .and_then(|v| v.as_str())
-        .unwrap_or("0.0.0");
-    Ok(VsixManifest {
-        id: format!("{publisher}.{name}"),
-        name: val
-            .get("displayName")
-            .and_then(|v| v.as_str())
-            .unwrap_or(name)
-            .to_string(),
-        version: version.to_string(),
-    })
 }
 
 #[tauri::command]
@@ -845,13 +777,13 @@ pub async fn extension_platform_bootstrap(
         let count = wasm_manifests.len();
         log::info!("[platform] loading {count} WASM extensions in background");
         std::thread::spawn(move || {
+            use tauri::Emitter;
             for manifest in &wasm_manifests {
                 if let Err(e) = runtime.load_extension(manifest) {
                     log::warn!("[platform] failed to load WASM ext {}: {e}", manifest.id);
                 }
             }
             log::info!("[platform] {count} WASM extensions loaded, emitting ready event");
-            use tauri::Emitter;
             let _ = app_handle.emit("sidex-wasm-extensions-ready", count);
         });
     }
@@ -896,6 +828,7 @@ pub async fn extension_platform_status(
 ) -> Result<serde_json::Value, String> {
     let snapshot = supervisor.snapshot()?;
     let paths = extension_search_paths(&app);
+    #[allow(clippy::cast_possible_truncation)]
     let ext_count = scan_extensions(&app, &paths).len() as u32;
     Ok(serde_json::json!({
         "running": snapshot.running,

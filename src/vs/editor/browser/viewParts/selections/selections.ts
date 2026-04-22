@@ -60,7 +60,6 @@ function toStyled(item: LineVisibleRanges): LineVisibleRangesWithStyle {
  * This view part displays selected text to the user. Every line has its own selection overlay.
  */
 export class SelectionsOverlay extends DynamicViewOverlay {
-
 	private static readonly SELECTION_CLASS_NAME = 'selected-text';
 	private static readonly SELECTION_TOP_LEFT = 'top-left-radius';
 	private static readonly SELECTION_BOTTOM_LEFT = 'bottom-left-radius';
@@ -107,7 +106,7 @@ export class SelectionsOverlay extends DynamicViewOverlay {
 	}
 	public override onDecorationsChanged(e: viewEvents.ViewDecorationsChangedEvent): boolean {
 		// true for inline decorations that can end up relayouting text
-		return true;//e.inlineDecorationsChanged;
+		return true; //e.inlineDecorationsChanged;
 	}
 	public override onFlushed(e: viewEvents.ViewFlushedEvent): boolean {
 		return true;
@@ -131,7 +130,6 @@ export class SelectionsOverlay extends DynamicViewOverlay {
 	// --- end event handlers
 
 	private _visibleRangesHaveGaps(linesVisibleRanges: LineVisibleRangesWithStyle[]): boolean {
-
 		for (let i = 0, len = linesVisibleRanges.length; i < len; i++) {
 			const lineVisibleRanges = linesVisibleRanges[i];
 
@@ -144,13 +142,16 @@ export class SelectionsOverlay extends DynamicViewOverlay {
 		return false;
 	}
 
-	private _enrichVisibleRangesWithStyle(viewport: Range, linesVisibleRanges: LineVisibleRangesWithStyle[], previousFrame: LineVisibleRangesWithStyle[] | null): void {
+	private _enrichVisibleRangesWithStyle(
+		viewport: Range,
+		linesVisibleRanges: LineVisibleRangesWithStyle[],
+		previousFrame: LineVisibleRangesWithStyle[] | null
+	): void {
 		const epsilon = this._typicalHalfwidthCharacterWidth / 4;
 		let previousFrameTop: HorizontalRangeWithStyle | null = null;
 		let previousFrameBottom: HorizontalRangeWithStyle | null = null;
 
 		if (previousFrame && previousFrame.length > 0 && linesVisibleRanges.length > 0) {
-
 			const topLineNumber = linesVisibleRanges[0].lineNumber;
 			if (topLineNumber === viewport.startLineNumber) {
 				for (let i = 0; !previousFrameTop && i < previousFrame.length; i++) {
@@ -242,7 +243,11 @@ export class SelectionsOverlay extends DynamicViewOverlay {
 		}
 	}
 
-	private _getVisibleRangesWithStyle(selection: Range, ctx: RenderingContext, previousFrame: LineVisibleRangesWithStyle[] | null): LineVisibleRangesWithStyle[] {
+	private _getVisibleRangesWithStyle(
+		selection: Range,
+		ctx: RenderingContext,
+		previousFrame: LineVisibleRangesWithStyle[] | null
+	): LineVisibleRangesWithStyle[] {
 		const _linesVisibleRanges = ctx.linesVisibleRangesForRange(selection, true) || [];
 		const linesVisibleRanges = _linesVisibleRanges.map(toStyled);
 		const visibleRangesHaveGaps = this._visibleRangesHaveGaps(linesVisibleRanges);
@@ -257,18 +262,31 @@ export class SelectionsOverlay extends DynamicViewOverlay {
 
 	private _createSelectionPiece(top: number, bottom: number, className: string, left: number, width: number): string {
 		return (
-			'<div class="cslr '
-			+ className
-			+ '" style="'
-			+ 'top:' + top.toString() + 'px;'
-			+ 'bottom:' + bottom.toString() + 'px;'
-			+ 'left:' + left.toString() + 'px;'
-			+ 'width:' + width.toString() + 'px;'
-			+ '"></div>'
+			'<div class="cslr ' +
+			className +
+			'" style="' +
+			'top:' +
+			top.toString() +
+			'px;' +
+			'bottom:' +
+			bottom.toString() +
+			'px;' +
+			'left:' +
+			left.toString() +
+			'px;' +
+			'width:' +
+			width.toString() +
+			'px;' +
+			'"></div>'
 		);
 	}
 
-	private _actualRenderOneSelection(output2: [string, string][], visibleStartLineNumber: number, hasMultipleSelections: boolean, visibleRanges: LineVisibleRangesWithStyle[]): void {
+	private _actualRenderOneSelection(
+		output2: [string, string][],
+		visibleStartLineNumber: number,
+		hasMultipleSelections: boolean,
+		visibleRanges: LineVisibleRangesWithStyle[]
+	): void {
 		if (visibleRanges.length === 0) {
 			return;
 		}
@@ -284,7 +302,11 @@ export class SelectionsOverlay extends DynamicViewOverlay {
 			const lineIndex = lineNumber - visibleStartLineNumber;
 
 			const top = hasMultipleSelections ? (lineNumber === firstLineNumber ? 1 : 0) : 0;
-			const bottom = hasMultipleSelections ? (lineNumber !== firstLineNumber && lineNumber === lastLineNumber ? 1 : 0) : 0;
+			const bottom = hasMultipleSelections
+				? lineNumber !== firstLineNumber && lineNumber === lastLineNumber
+					? 1
+					: 0
+				: 0;
 
 			let innerCornerOutput = '';
 			let restOfSelectionOutput = '';
@@ -299,7 +321,13 @@ export class SelectionsOverlay extends DynamicViewOverlay {
 						// Reverse rounded corner to the left
 
 						// First comes the selection (blue layer)
-						innerCornerOutput += this._createSelectionPiece(top, bottom, SelectionsOverlay.SELECTION_CLASS_NAME, visibleRange.left - SelectionsOverlay.ROUNDED_PIECE_WIDTH, SelectionsOverlay.ROUNDED_PIECE_WIDTH);
+						innerCornerOutput += this._createSelectionPiece(
+							top,
+							bottom,
+							SelectionsOverlay.SELECTION_CLASS_NAME,
+							visibleRange.left - SelectionsOverlay.ROUNDED_PIECE_WIDTH,
+							SelectionsOverlay.ROUNDED_PIECE_WIDTH
+						);
 
 						// Second comes the background (white layer) with inverse border radius
 						let className = SelectionsOverlay.EDITOR_BACKGROUND_CLASS_NAME;
@@ -309,13 +337,25 @@ export class SelectionsOverlay extends DynamicViewOverlay {
 						if (startStyle.bottom === CornerStyle.INTERN) {
 							className += ' ' + SelectionsOverlay.SELECTION_BOTTOM_RIGHT;
 						}
-						innerCornerOutput += this._createSelectionPiece(top, bottom, className, visibleRange.left - SelectionsOverlay.ROUNDED_PIECE_WIDTH, SelectionsOverlay.ROUNDED_PIECE_WIDTH);
+						innerCornerOutput += this._createSelectionPiece(
+							top,
+							bottom,
+							className,
+							visibleRange.left - SelectionsOverlay.ROUNDED_PIECE_WIDTH,
+							SelectionsOverlay.ROUNDED_PIECE_WIDTH
+						);
 					}
 					if (endStyle.top === CornerStyle.INTERN || endStyle.bottom === CornerStyle.INTERN) {
 						// Reverse rounded corner to the right
 
 						// First comes the selection (blue layer)
-						innerCornerOutput += this._createSelectionPiece(top, bottom, SelectionsOverlay.SELECTION_CLASS_NAME, visibleRange.left + visibleRange.width, SelectionsOverlay.ROUNDED_PIECE_WIDTH);
+						innerCornerOutput += this._createSelectionPiece(
+							top,
+							bottom,
+							SelectionsOverlay.SELECTION_CLASS_NAME,
+							visibleRange.left + visibleRange.width,
+							SelectionsOverlay.ROUNDED_PIECE_WIDTH
+						);
 
 						// Second comes the background (white layer) with inverse border radius
 						let className = SelectionsOverlay.EDITOR_BACKGROUND_CLASS_NAME;
@@ -325,7 +365,13 @@ export class SelectionsOverlay extends DynamicViewOverlay {
 						if (endStyle.bottom === CornerStyle.INTERN) {
 							className += ' ' + SelectionsOverlay.SELECTION_BOTTOM_LEFT;
 						}
-						innerCornerOutput += this._createSelectionPiece(top, bottom, className, visibleRange.left + visibleRange.width, SelectionsOverlay.ROUNDED_PIECE_WIDTH);
+						innerCornerOutput += this._createSelectionPiece(
+							top,
+							bottom,
+							className,
+							visibleRange.left + visibleRange.width,
+							SelectionsOverlay.ROUNDED_PIECE_WIDTH
+						);
 					}
 				}
 
@@ -346,7 +392,13 @@ export class SelectionsOverlay extends DynamicViewOverlay {
 						className += ' ' + SelectionsOverlay.SELECTION_BOTTOM_RIGHT;
 					}
 				}
-				restOfSelectionOutput += this._createSelectionPiece(top, bottom, className, visibleRange.left, visibleRange.width);
+				restOfSelectionOutput += this._createSelectionPiece(
+					top,
+					bottom,
+					className,
+					visibleRange.left,
+					visibleRange.width
+				);
 			}
 
 			output2[lineIndex][0] += innerCornerOutput;
@@ -356,7 +408,6 @@ export class SelectionsOverlay extends DynamicViewOverlay {
 
 	private _previousFrameVisibleRangesWithStyle: (LineVisibleRangesWithStyle[] | null)[] = [];
 	public prepareRender(ctx: RenderingContext): void {
-
 		// Build HTML for inner corners separate from HTML for the rest of selections,
 		// as the inner corner HTML can interfere with that of other selections.
 		// In final render, make sure to place the inner corner HTML before the rest of selection HTML. See issue #77777.
@@ -376,9 +427,18 @@ export class SelectionsOverlay extends DynamicViewOverlay {
 				continue;
 			}
 
-			const visibleRangesWithStyle = this._getVisibleRangesWithStyle(selection, ctx, this._previousFrameVisibleRangesWithStyle[i]);
+			const visibleRangesWithStyle = this._getVisibleRangesWithStyle(
+				selection,
+				ctx,
+				this._previousFrameVisibleRangesWithStyle[i]
+			);
 			thisFrameVisibleRangesWithStyle[i] = visibleRangesWithStyle;
-			this._actualRenderOneSelection(output, visibleStartLineNumber, this._selections.length > 1, visibleRangesWithStyle);
+			this._actualRenderOneSelection(
+				output,
+				visibleStartLineNumber,
+				this._selections.length > 1,
+				visibleRangesWithStyle
+			);
 		}
 
 		this._previousFrameVisibleRangesWithStyle = thisFrameVisibleRangesWithStyle;
@@ -400,7 +460,9 @@ export class SelectionsOverlay extends DynamicViewOverlay {
 registerThemingParticipant((theme, collector) => {
 	const editorSelectionForegroundColor = theme.getColor(editorSelectionForeground);
 	if (editorSelectionForegroundColor && !editorSelectionForegroundColor.isTransparent()) {
-		collector.addRule(`.monaco-editor .view-line span.inline-selected-text { color: ${editorSelectionForegroundColor}; }`);
+		collector.addRule(
+			`.monaco-editor .view-line span.inline-selected-text { color: ${editorSelectionForegroundColor}; }`
+		);
 	}
 });
 

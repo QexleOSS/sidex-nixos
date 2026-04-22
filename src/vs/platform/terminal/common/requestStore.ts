@@ -32,11 +32,13 @@ export class RequestStore<T, RequestArgs> extends Disposable {
 	) {
 		super();
 		this._timeout = timeout === undefined ? 15000 : timeout;
-		this._register(toDisposable(() => {
-			for (const d of this._pendingRequestDisposables.values()) {
-				dispose(d);
-			}
-		}));
+		this._register(
+			toDisposable(() => {
+				for (const d of this._pendingRequestDisposables.values()) {
+					dispose(d);
+				}
+			})
+		);
 	}
 
 	/**
@@ -49,7 +51,9 @@ export class RequestStore<T, RequestArgs> extends Disposable {
 			this._pendingRequests.set(requestId, resolve);
 			this._onCreateRequest.fire({ requestId, ...args });
 			const tokenSource = new CancellationTokenSource();
-			timeout(this._timeout, tokenSource.token).then(() => reject(`Request ${requestId} timed out (${this._timeout}ms)`));
+			timeout(this._timeout, tokenSource.token).then(() =>
+				reject(`Request ${requestId} timed out (${this._timeout}ms)`)
+			);
 			this._pendingRequestDisposables.set(requestId, [toDisposable(() => tokenSource.cancel())]);
 		});
 	}

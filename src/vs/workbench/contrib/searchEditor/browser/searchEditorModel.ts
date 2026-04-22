@@ -23,14 +23,15 @@ export class SearchConfigurationModel {
 	private _onConfigDidUpdate = new Emitter<SearchConfiguration>();
 	public readonly onConfigDidUpdate = this._onConfigDidUpdate.event;
 
-	constructor(public config: Readonly<SearchConfiguration>) { }
-	updateConfig(config: SearchConfiguration) { this.config = config; this._onConfigDidUpdate.fire(config); }
+	constructor(public config: Readonly<SearchConfiguration>) {}
+	updateConfig(config: SearchConfiguration) {
+		this.config = config;
+		this._onConfigDidUpdate.fire(config);
+	}
 }
 
 export class SearchEditorModel {
-	constructor(
-		private resource: URI,
-	) { }
+	constructor(private resource: URI) {}
 
 	async resolve(): Promise<SearchEditorData> {
 		return assertReturnsDefined(searchEditorModelFactory.models.get(this.resource)).resolve();
@@ -40,7 +41,7 @@ export class SearchEditorModel {
 class SearchEditorModelFactory {
 	models = new ResourceMap<{ resolve: () => Promise<SearchEditorData> }>();
 
-	constructor() { }
+	constructor() {}
 
 	initializeModelFromExistingModel(accessor: ServicesAccessor, resource: URI, config: SearchConfiguration) {
 		if (this.models.has(resource)) {
@@ -58,14 +59,21 @@ class SearchEditorModelFactory {
 			resolve: () => {
 				if (!ongoingResolve) {
 					ongoingResolve = (async () => {
-
-						const backup = await this.tryFetchModelFromBackupService(resource, languageService, modelService, workingCopyBackupService, instantiationService);
+						const backup = await this.tryFetchModelFromBackupService(
+							resource,
+							languageService,
+							modelService,
+							workingCopyBackupService,
+							instantiationService
+						);
 						if (backup) {
 							return backup;
 						}
 
 						return Promise.resolve({
-							resultsModel: modelService.getModel(resource) ?? modelService.createModel('', languageService.createById(SEARCH_RESULT_LANGUAGE_ID), resource),
+							resultsModel:
+								modelService.getModel(resource) ??
+								modelService.createModel('', languageService.createById(SEARCH_RESULT_LANGUAGE_ID), resource),
 							configurationModel: new SearchConfigurationModel(config)
 						});
 					})();
@@ -75,7 +83,12 @@ class SearchEditorModelFactory {
 		});
 	}
 
-	initializeModelFromRawData(accessor: ServicesAccessor, resource: URI, config: SearchConfiguration, contents: string | undefined) {
+	initializeModelFromRawData(
+		accessor: ServicesAccessor,
+		resource: URI,
+		config: SearchConfiguration,
+		contents: string | undefined
+	) {
 		if (this.models.has(resource)) {
 			throw Error('Unable to contruct model for resource that already exists');
 		}
@@ -91,14 +104,23 @@ class SearchEditorModelFactory {
 			resolve: () => {
 				if (!ongoingResolve) {
 					ongoingResolve = (async () => {
-
-						const backup = await this.tryFetchModelFromBackupService(resource, languageService, modelService, workingCopyBackupService, instantiationService);
+						const backup = await this.tryFetchModelFromBackupService(
+							resource,
+							languageService,
+							modelService,
+							workingCopyBackupService,
+							instantiationService
+						);
 						if (backup) {
 							return backup;
 						}
 
 						return Promise.resolve({
-							resultsModel: modelService.createModel(contents ?? '', languageService.createById(SEARCH_RESULT_LANGUAGE_ID), resource),
+							resultsModel: modelService.createModel(
+								contents ?? '',
+								languageService.createById(SEARCH_RESULT_LANGUAGE_ID),
+								resource
+							),
 							configurationModel: new SearchConfigurationModel(config)
 						});
 					})();
@@ -124,17 +146,26 @@ class SearchEditorModelFactory {
 			resolve: async () => {
 				if (!ongoingResolve) {
 					ongoingResolve = (async () => {
-
-						const backup = await this.tryFetchModelFromBackupService(resource, languageService, modelService, workingCopyBackupService, instantiationService);
+						const backup = await this.tryFetchModelFromBackupService(
+							resource,
+							languageService,
+							modelService,
+							workingCopyBackupService,
+							instantiationService
+						);
 						if (backup) {
 							return backup;
 						}
 
 						const { text, config } = await instantiationService.invokeFunction(parseSavedSearchEditor, existingFile);
-						return ({
-							resultsModel: modelService.createModel(text ?? '', languageService.createById(SEARCH_RESULT_LANGUAGE_ID), resource),
+						return {
+							resultsModel: modelService.createModel(
+								text ?? '',
+								languageService.createById(SEARCH_RESULT_LANGUAGE_ID),
+								resource
+							),
 							configurationModel: new SearchConfigurationModel(config)
-						});
+						};
 					})();
 				}
 				return ongoingResolve;
@@ -142,7 +173,13 @@ class SearchEditorModelFactory {
 		});
 	}
 
-	private async tryFetchModelFromBackupService(resource: URI, languageService: ILanguageService, modelService: IModelService, workingCopyBackupService: IWorkingCopyBackupService, instantiationService: IInstantiationService): Promise<SearchEditorData | undefined> {
+	private async tryFetchModelFromBackupService(
+		resource: URI,
+		languageService: ILanguageService,
+		modelService: IModelService,
+		workingCopyBackupService: IWorkingCopyBackupService,
+		instantiationService: IInstantiationService
+	): Promise<SearchEditorData | undefined> {
 		const backup = await workingCopyBackupService.resolve({ resource, typeId: SearchEditorWorkingCopyTypeId });
 
 		let model = modelService.getModel(resource);
@@ -156,12 +193,15 @@ class SearchEditorModelFactory {
 			const existingFile = model.getValue();
 			const { text, config } = parseSerializedSearchEditor(existingFile);
 			modelService.destroyModel(resource);
-			return ({
-				resultsModel: modelService.createModel(text ?? '', languageService.createById(SEARCH_RESULT_LANGUAGE_ID), resource),
+			return {
+				resultsModel: modelService.createModel(
+					text ?? '',
+					languageService.createById(SEARCH_RESULT_LANGUAGE_ID),
+					resource
+				),
 				configurationModel: new SearchConfigurationModel(config)
-			});
-		}
-		else {
+			};
+		} else {
 			return undefined;
 		}
 	}

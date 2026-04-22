@@ -38,5 +38,5 @@ export class ExtHostSecretState implements ExtHostSecretStateShape {
 	}
 }
 
-export interface IExtHostSecretState extends ExtHostSecretState { }
+export interface IExtHostSecretState extends ExtHostSecretState {}
 export const IExtHostSecretState = createDecorator<IExtHostSecretState>('IExtHostSecretState');

@@ -53,7 +53,16 @@ export class DropdownWithPrimaryActionViewItem extends BaseActionViewItem {
 		@IAccessibilityService _accessibilityService: IAccessibilityService
 	) {
 		super(null, primaryAction, { hoverDelegate: _options?.hoverDelegate });
-		this._primaryAction = new MenuEntryActionViewItem(primaryAction, { hoverDelegate: _options?.hoverDelegate }, _keybindingService, _notificationService, _contextKeyService, _themeService, _contextMenuProvider, _accessibilityService);
+		this._primaryAction = new MenuEntryActionViewItem(
+			primaryAction,
+			{ hoverDelegate: _options?.hoverDelegate },
+			_keybindingService,
+			_notificationService,
+			_contextKeyService,
+			_themeService,
+			_contextMenuProvider,
+			_accessibilityService
+		);
 		if (_options?.actionRunner) {
 			this._primaryAction.actionRunner = _options.actionRunner;
 		}
@@ -64,7 +73,7 @@ export class DropdownWithPrimaryActionViewItem extends BaseActionViewItem {
 			actionRunner: this._options?.actionRunner,
 			keybindingProvider: this._options?.getKeyBinding ?? (action => _keybindingService.lookupKeybinding(action.id)),
 			hoverDelegate: _options?.hoverDelegate,
-			skipTelemetry: _options?.skipTelemetry,
+			skipTelemetry: _options?.skipTelemetry
 		});
 	}
 
@@ -95,29 +104,33 @@ export class DropdownWithPrimaryActionViewItem extends BaseActionViewItem {
 		this._primaryAction.render(DOM.append(this._container, primaryContainer));
 		this._dropdownContainer = DOM.$('.dropdown-action-container');
 		this._dropdown.render(DOM.append(this._container, this._dropdownContainer));
-		this._register(DOM.addDisposableListener(primaryContainer, DOM.EventType.KEY_DOWN, (e: KeyboardEvent) => {
-			if (!this.action.enabled) {
-				return;
-			}
-			const event = new StandardKeyboardEvent(e);
-			if (event.equals(KeyCode.RightArrow)) {
-				this._primaryAction.element!.tabIndex = -1;
-				this._dropdown.focus();
-				event.stopPropagation();
-			}
-		}));
-		this._register(DOM.addDisposableListener(this._dropdownContainer, DOM.EventType.KEY_DOWN, (e: KeyboardEvent) => {
-			if (!this.action.enabled) {
-				return;
-			}
-			const event = new StandardKeyboardEvent(e);
-			if (event.equals(KeyCode.LeftArrow)) {
-				this._primaryAction.element!.tabIndex = 0;
-				this._dropdown.setFocusable(false);
-				this._primaryAction.element?.focus();
-				event.stopPropagation();
-			}
-		}));
+		this._register(
+			DOM.addDisposableListener(primaryContainer, DOM.EventType.KEY_DOWN, (e: KeyboardEvent) => {
+				if (!this.action.enabled) {
+					return;
+				}
+				const event = new StandardKeyboardEvent(e);
+				if (event.equals(KeyCode.RightArrow)) {
+					this._primaryAction.element!.tabIndex = -1;
+					this._dropdown.focus();
+					event.stopPropagation();
+				}
+			})
+		);
+		this._register(
+			DOM.addDisposableListener(this._dropdownContainer, DOM.EventType.KEY_DOWN, (e: KeyboardEvent) => {
+				if (!this.action.enabled) {
+					return;
+				}
+				const event = new StandardKeyboardEvent(e);
+				if (event.equals(KeyCode.LeftArrow)) {
+					this._primaryAction.element!.tabIndex = 0;
+					this._dropdown.setFocusable(false);
+					this._primaryAction.element?.focus();
+					event.stopPropagation();
+				}
+			})
+		);
 
 		this.updateEnabled();
 	}

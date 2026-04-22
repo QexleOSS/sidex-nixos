@@ -10,7 +10,7 @@ export const enum LinePartMetadata {
 
 	IS_WHITESPACE_MASK = 0b001,
 	PSEUDO_BEFORE_MASK = 0b010,
-	PSEUDO_AFTER_MASK = 0b100,
+	PSEUDO_AFTER_MASK = 0b100
 }
 
 export class LinePart {
@@ -24,13 +24,13 @@ export class LinePart {
 		public readonly type: string,
 		public readonly metadata: number,
 		public readonly containsRTL: boolean
-	) { }
+	) {}
 
 	public isWhitespace(): boolean {
-		return (this.metadata & LinePartMetadata.IS_WHITESPACE_MASK ? true : false);
+		return this.metadata & LinePartMetadata.IS_WHITESPACE_MASK ? true : false;
 	}
 
 	public isPseudoAfter(): boolean {
-		return (this.metadata & LinePartMetadata.PSEUDO_AFTER_MASK ? true : false);
+		return this.metadata & LinePartMetadata.PSEUDO_AFTER_MASK ? true : false;
 	}
 }

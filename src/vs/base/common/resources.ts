@@ -18,7 +18,6 @@ export function originalFSPath(uri: URI): string {
 //#region IExtUri
 
 export interface IExtUri {
-
 	// --- identity
 
 	/**
@@ -137,8 +136,7 @@ export interface IExtUri {
 }
 
 export class ExtUri implements IExtUri {
-
-	constructor(private _ignorePathCasing: (uri: URI) => boolean) { }
+	constructor(private _ignorePathCasing: (uri: URI) => boolean) {}
 
 	compare(uri1: URI, uri2: URI, ignoreFragment: boolean = false): number {
 		if (uri1 === uri2) {
@@ -158,10 +156,12 @@ export class ExtUri implements IExtUri {
 	}
 
 	getComparisonKey(uri: URI, ignoreFragment: boolean = false): string {
-		return uri.with({
-			path: this._ignorePathCasing(uri) ? uri.path.toLowerCase() : undefined,
-			fragment: ignoreFragment ? null : undefined
-		}).toString();
+		return uri
+			.with({
+				path: this._ignorePathCasing(uri) ? uri.path.toLowerCase() : undefined,
+				fragment: ignoreFragment ? null : undefined
+			})
+			.toString();
 	}
 
 	ignorePathCasing(uri: URI): boolean {
@@ -171,10 +171,22 @@ export class ExtUri implements IExtUri {
 	isEqualOrParent(base: URI, parentCandidate: URI, ignoreFragment: boolean = false): boolean {
 		if (base.scheme === parentCandidate.scheme) {
 			if (base.scheme === Schemas.file) {
-				return extpath.isEqualOrParent(originalFSPath(base), originalFSPath(parentCandidate), this._ignorePathCasing(base)) && base.query === parentCandidate.query && (ignoreFragment || base.fragment === parentCandidate.fragment);
+				return (
+					extpath.isEqualOrParent(
+						originalFSPath(base),
+						originalFSPath(parentCandidate),
+						this._ignorePathCasing(base)
+					) &&
+					base.query === parentCandidate.query &&
+					(ignoreFragment || base.fragment === parentCandidate.fragment)
+				);
 			}
 			if (isEqualAuthority(base.authority, parentCandidate.authority)) {
-				return extpath.isEqualOrParent(base.path, parentCandidate.path, this._ignorePathCasing(base), '/') && base.query === parentCandidate.query && (ignoreFragment || base.fragment === parentCandidate.fragment);
+				return (
+					extpath.isEqualOrParent(base.path, parentCandidate.path, this._ignorePathCasing(base), '/') &&
+					base.query === parentCandidate.query &&
+					(ignoreFragment || base.fragment === parentCandidate.fragment)
+				);
 			}
 		}
 		return false;
@@ -287,7 +299,9 @@ export class ExtUri implements IExtUri {
 			return fsp.length > extpath.getRoot(fsp).length && fsp[fsp.length - 1] === sep;
 		} else {
 			const p = resource.path;
-			return (p.length > 1 && p.charCodeAt(p.length - 1) === CharCode.Slash) && !(/^[a-zA-Z]:(\/$|\\$)/.test(resource.fsPath)); // ignore the slash at offset 0
+			return (
+				p.length > 1 && p.charCodeAt(p.length - 1) === CharCode.Slash && !/^[a-zA-Z]:(\/$|\\$)/.test(resource.fsPath)
+			); // ignore the slash at offset 0
 		}
 	}
 
@@ -303,7 +317,7 @@ export class ExtUri implements IExtUri {
 		let isRootSep: boolean = false;
 		if (resource.scheme === Schemas.file) {
 			const fsp = originalFSPath(resource);
-			isRootSep = ((fsp !== undefined) && (fsp.length === extpath.getRoot(fsp).length) && (fsp[fsp.length - 1] === sep));
+			isRootSep = fsp !== undefined && fsp.length === extpath.getRoot(fsp).length && fsp[fsp.length - 1] === sep;
 		} else {
 			sep = '/';
 			const p = resource.path;
@@ -315,7 +329,6 @@ export class ExtUri implements IExtUri {
 		return resource;
 	}
 }
-
 
 /**
  * Unbiased utility that takes uris "as they are". This means it can be interchanged with
@@ -342,7 +355,6 @@ export const extUriBiasedIgnorePathCase = new ExtUri(uri => {
 	// Resource can be from another platform. Lowering the case as an hack. Should come from File system provider
 	return uri.scheme === Schemas.file ? !isLinux : true;
 });
-
 
 /**
  * BIASED utility that always ignores the casing of uris paths. ONLY use this util if you
@@ -380,13 +392,15 @@ export function distinctParents<T>(items: T[], resourceAccessor: (item: T) => UR
 	const distinctParents: T[] = [];
 	for (let i = 0; i < items.length; i++) {
 		const candidateResource = resourceAccessor(items[i]);
-		if (items.some((otherItem, index) => {
-			if (index === i) {
-				return false;
-			}
+		if (
+			items.some((otherItem, index) => {
+				if (index === i) {
+					return false;
+				}
 
-			return isEqualOrParent(candidateResource, resourceAccessor(otherItem));
-		})) {
+				return isEqualOrParent(candidateResource, resourceAccessor(otherItem));
+			})
+		) {
 			continue;
 		}
 
@@ -400,7 +414,6 @@ export function distinctParents<T>(items: T[], resourceAccessor: (item: T) => UR
  * Data URI related helpers.
  */
 export namespace DataUri {
-
 	export const META_DATA_LABEL = 'label';
 	export const META_DATA_DESCRIPTION = 'description';
 	export const META_DATA_SIZE = 'size';

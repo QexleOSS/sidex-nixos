@@ -43,18 +43,15 @@ perfMark('scriptStart');
 /** @type {number} */
 const resolveTimeout = 30_000;
 
-
 /**
  * @template T
  * @typedef {{ status: 'ok', value: T } | { status: 'timeout' }} RequestStoreResult
  */
 
-
 /**
  * @template T
  * @typedef {{ resolve: (x: RequestStoreResult<T>) => void, promise: Promise<RequestStoreResult<T>> }} RequestStoreEntry
  */
-
 
 /**
  * @template T
@@ -75,7 +72,7 @@ class RequestStore {
 
 		/** @type {(x: RequestStoreResult<T>) => void} */
 		let resolve;
-		const promise = new Promise(r => resolve = r);
+		const promise = new Promise(r => (resolve = r));
 
 		/** @type {RequestStoreEntry<T>} */
 		const entry = { resolve, promise };
@@ -121,19 +118,15 @@ const resourceRequestStore = new RequestStore();
 /** @type {RequestStore<string|undefined>} */
 const localhostRequestStore = new RequestStore();
 
-const unauthorized = () =>
-	new Response('Unauthorized', { status: 401, });
+const unauthorized = () => new Response('Unauthorized', { status: 401 });
 
-const notFound = () =>
-	new Response('Not Found', { status: 404, });
+const notFound = () => new Response('Not Found', { status: 404 });
 
-const methodNotAllowed = () =>
-	new Response('Method Not Allowed', { status: 405, });
+const methodNotAllowed = () => new Response('Method Not Allowed', { status: 405 });
 
-const requestTimeout = () =>
-	new Response('Request Timeout', { status: 408, });
+const requestTimeout = () => new Response('Request Timeout', { status: 408 });
 
-sw.addEventListener('message', async (event) => {
+sw.addEventListener('message', async event => {
 	if (!event.source) {
 		return;
 	}
@@ -177,21 +170,30 @@ sw.addEventListener('message', async (event) => {
 	}
 });
 
-sw.addEventListener('fetch', (event) => {
+sw.addEventListener('fetch', event => {
 	const requestUrl = new URL(event.request.url);
-	if (typeof resourceBaseAuthority === 'string' && requestUrl.protocol === 'https:' && requestUrl.hostname.endsWith('.' + resourceBaseAuthority)) {
+	if (
+		typeof resourceBaseAuthority === 'string' &&
+		requestUrl.protocol === 'https:' &&
+		requestUrl.hostname.endsWith('.' + resourceBaseAuthority)
+	) {
 		switch (event.request.method) {
 			case 'GET':
 			case 'HEAD': {
-				const firstHostSegment = requestUrl.hostname.slice(0, requestUrl.hostname.length - (resourceBaseAuthority.length + 1));
+				const firstHostSegment = requestUrl.hostname.slice(
+					0,
+					requestUrl.hostname.length - (resourceBaseAuthority.length + 1)
+				);
 				const scheme = firstHostSegment.split('+', 1)[0];
 				const authority = firstHostSegment.slice(scheme.length + 1); // may be empty
-				return event.respondWith(processResourceRequest(event, {
-					scheme,
-					authority,
-					path: requestUrl.pathname,
-					query: requestUrl.search.replace(/^\?/, ''),
-				}));
+				return event.respondWith(
+					processResourceRequest(event, {
+						scheme,
+						authority,
+						path: requestUrl.pathname,
+						query: requestUrl.search.replace(/^\?/, '')
+					})
+				);
 			}
 			default: {
 				return event.respondWith(methodNotAllowed());
@@ -207,12 +209,14 @@ sw.addEventListener('fetch', (event) => {
 		switch (event.request.method) {
 			case 'GET':
 			case 'HEAD': {
-				return event.respondWith(processResourceRequest(event, {
-					path: requestUrl.pathname,
-					scheme: requestUrl.protocol.slice(0, requestUrl.protocol.length - 1),
-					authority: requestUrl.host,
-					query: requestUrl.search.replace(/^\?/, ''),
-				}));
+				return event.respondWith(
+					processResourceRequest(event, {
+						path: requestUrl.pathname,
+						scheme: requestUrl.protocol.slice(0, requestUrl.protocol.length - 1),
+						authority: requestUrl.host,
+						query: requestUrl.search.replace(/^\?/, '')
+					})
+				);
 			}
 			default: {
 				return event.respondWith(methodNotAllowed());
@@ -226,14 +230,13 @@ sw.addEventListener('fetch', (event) => {
 	}
 });
 
-sw.addEventListener('install', (event) => {
+sw.addEventListener('install', event => {
 	event.waitUntil(sw.skipWaiting()); // Activate worker immediately
 });
 
-sw.addEventListener('activate', (event) => {
+sw.addEventListener('activate', event => {
 	event.waitUntil(sw.clients.claim()); // Become available to all pages
 });
-
 
 /**
  * @typedef {Object} ResourceRequestUrlComponents
@@ -248,10 +251,7 @@ sw.addEventListener('activate', (event) => {
  * @param {ResourceRequestUrlComponents} requestUrlComponents
  * @returns {Promise<Response>}
  */
-async function processResourceRequest(
-	event,
-	requestUrlComponents
-) {
+async function processResourceRequest(event, requestUrlComponents) {
 	let client = await sw.clients.get(event.clientId);
 	if (!client) {
 		client = await getWorkerClientForId(event.clientId);
@@ -274,7 +274,7 @@ async function processResourceRequest(
 		return notFound();
 	}
 
-	const shouldTryCaching = (event.request.method === 'GET');
+	const shouldTryCaching = event.request.method === 'GET';
 
 	/**
 	 * @param {RequestStoreResult<ResourceResponse>} result
@@ -289,11 +289,12 @@ async function processResourceRequest(
 		/** @type {Record<string, string>} */
 		const accessControlHeaders = {
 			'Access-Control-Allow-Origin': '*',
-			'Cross-Origin-Resource-Policy': 'cross-origin',
+			'Cross-Origin-Resource-Policy': 'cross-origin'
 		};
 
 		const entry = result.value;
-		if (entry.status === 304) { // Not modified
+		if (entry.status === 304) {
+			// Not modified
 			if (cachedResponse) {
 				const r = cachedResponse.clone();
 				for (const [key, value] of Object.entries(accessControlHeaders)) {
@@ -329,7 +330,7 @@ async function processResourceRequest(
 					status: 206,
 					headers: {
 						...accessControlHeaders,
-						'Content-range': `bytes 0-${end}/${byteLength}`,
+						'Content-range': `bytes 0-${end}/${byteLength}`
 					}
 				});
 			} else {
@@ -348,7 +349,7 @@ async function processResourceRequest(
 		const headers = {
 			...accessControlHeaders,
 			'Content-Type': entry.mime,
-			'Content-Length': byteLength.toString(),
+			'Content-Length': byteLength.toString()
 		};
 
 		if (entry.etag) {
@@ -407,7 +408,7 @@ async function processResourceRequest(
 				authority: requestUrlComponents.authority,
 				path: requestUrlComponents.path,
 				query: requestUrlComponents.query,
-				ifNoneMatch: cached?.headers.get('ETag'),
+				ifNoneMatch: cached?.headers.get('ETag')
 			});
 		}
 	} else if (client.type === 'worker' || client.type === 'sharedworker') {
@@ -418,7 +419,7 @@ async function processResourceRequest(
 			authority: requestUrlComponents.authority,
 			path: requestUrlComponents.path,
 			query: requestUrlComponents.query,
-			ifNoneMatch: cached?.headers.get('ETag'),
+			ifNoneMatch: cached?.headers.get('ETag')
 		});
 	}
 
@@ -430,10 +431,7 @@ async function processResourceRequest(
  * @param {URL} requestUrl
  * @returns {Promise<Response>}
  */
-async function processLocalhostRequest(
-	event,
-	requestUrl
-) {
+async function processLocalhostRequest(event, requestUrl) {
 	const client = await sw.clients.get(event.clientId);
 	if (!client) {
 		// This is expected when requesting resources on other localhost ports
@@ -484,14 +482,14 @@ async function processLocalhostRequest(
 			parentClient.postMessage({
 				channel: 'load-localhost',
 				origin: origin,
-				id: requestId,
+				id: requestId
 			});
 		}
 	} else if (client.type === 'worker' || client.type === 'sharedworker') {
 		outerIframeMessagePort?.postMessage({
 			channel: 'load-localhost',
 			origin: origin,
-			id: requestId,
+			id: requestId
 		});
 	}
 
@@ -515,7 +513,10 @@ async function getOuterIframeClient(webviewId) {
 	const allClients = await sw.clients.matchAll({ includeUncontrolled: true });
 	return allClients.filter(client => {
 		const clientUrl = new URL(client.url);
-		const hasExpectedPathName = (clientUrl.pathname === `${rootPath}/` || clientUrl.pathname === `${rootPath}/index.html` || clientUrl.pathname === `${rootPath}/index-no-csp.html`);
+		const hasExpectedPathName =
+			clientUrl.pathname === `${rootPath}/` ||
+			clientUrl.pathname === `${rootPath}/index.html` ||
+			clientUrl.pathname === `${rootPath}/index-no-csp.html`;
 		return hasExpectedPathName && clientUrl.searchParams.get('id') === webviewId;
 	});
 }
@@ -532,7 +533,6 @@ async function getWorkerClientForId(clientId) {
 		return client.id === clientId;
 	});
 }
-
 
 /**
  * @typedef {(

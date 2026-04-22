@@ -17,7 +17,11 @@ export class LinesSliceCharSequence implements ISequence {
 	private readonly lineStartOffsets: number[] = [];
 	private readonly trimmedWsLengthsByLineIdx: number[] = [];
 
-	constructor(public readonly lines: string[], private readonly range: Range, public readonly considerWhitespaceChanges: boolean) {
+	constructor(
+		public readonly lines: string[],
+		private readonly range: Range,
+		public readonly considerWhitespaceChanges: boolean
+	) {
 		this.firstElementOffsetByLineIdx.push(0);
 		for (let lineNumber = this.range.startLineNumber; lineNumber <= this.range.endLineNumber; lineNumber++) {
 			let line = lines[lineNumber - 1];
@@ -36,7 +40,10 @@ export class LinesSliceCharSequence implements ISequence {
 			}
 			this.trimmedWsLengthsByLineIdx.push(trimmedWsLength);
 
-			const lineLength = lineNumber === this.range.endLineNumber ? Math.min(this.range.endColumn - 1 - lineStartOffset - trimmedWsLength, line.length) : line.length;
+			const lineLength =
+				lineNumber === this.range.endLineNumber
+					? Math.min(this.range.endColumn - 1 - lineStartOffset - trimmedWsLength, line.length)
+					: line.length;
 			for (let i = 0; i < lineLength; i++) {
 				this.elements.push(line.charCodeAt(i));
 			}
@@ -57,7 +64,10 @@ export class LinesSliceCharSequence implements ISequence {
 	}
 
 	getText(range: OffsetRange): string {
-		return this.elements.slice(range.start, range.endExclusive).map(e => String.fromCharCode(e)).join('');
+		return this.elements
+			.slice(range.start, range.endExclusive)
+			.map(e => String.fromCharCode(e))
+			.join('');
 	}
 
 	getElement(offset: number): number {
@@ -100,11 +110,14 @@ export class LinesSliceCharSequence implements ISequence {
 
 	public translateOffset(offset: number, preference: 'left' | 'right' = 'right'): Position {
 		// find smallest i, so that lineBreakOffsets[i] <= offset using binary search
-		const i = findLastIdxMonotonous(this.firstElementOffsetByLineIdx, (value) => value <= offset);
+		const i = findLastIdxMonotonous(this.firstElementOffsetByLineIdx, value => value <= offset);
 		const lineOffset = offset - this.firstElementOffsetByLineIdx[i];
 		return new Position(
 			this.range.startLineNumber + i,
-			1 + this.lineStartOffsets[i] + lineOffset + ((lineOffset === 0 && preference === 'left') ? 0 : this.trimmedWsLengthsByLineIdx[i])
+			1 +
+				this.lineStartOffsets[i] +
+				lineOffset +
+				(lineOffset === 0 && preference === 'left' ? 0 : this.trimmedWsLengthsByLineIdx[i])
 		);
 	}
 
@@ -179,15 +192,18 @@ export class LinesSliceCharSequence implements ISequence {
 
 	public extendToFullLines(range: OffsetRange): OffsetRange {
 		const start = findLastMonotonous(this.firstElementOffsetByLineIdx, x => x <= range.start) ?? 0;
-		const end = findFirstMonotonous(this.firstElementOffsetByLineIdx, x => range.endExclusive <= x) ?? this.elements.length;
+		const end =
+			findFirstMonotonous(this.firstElementOffsetByLineIdx, x => range.endExclusive <= x) ?? this.elements.length;
 		return new OffsetRange(start, end);
 	}
 }
 
 function isWordChar(charCode: number): boolean {
-	return charCode >= CharCode.a && charCode <= CharCode.z
-		|| charCode >= CharCode.A && charCode <= CharCode.Z
-		|| charCode >= CharCode.Digit0 && charCode <= CharCode.Digit9;
+	return (
+		(charCode >= CharCode.a && charCode <= CharCode.z) ||
+		(charCode >= CharCode.A && charCode <= CharCode.Z) ||
+		(charCode >= CharCode.Digit0 && charCode <= CharCode.Digit9)
+	);
 }
 
 function isUpperCase(charCode: number): boolean {
@@ -203,7 +219,7 @@ const enum CharBoundaryCategory {
 	Separator,
 	Space,
 	LineBreakCR,
-	LineBreakLF,
+	LineBreakLF
 }
 
 const score: Record<CharBoundaryCategory, number> = {
@@ -215,7 +231,7 @@ const score: Record<CharBoundaryCategory, number> = {
 	[CharBoundaryCategory.Separator]: 30,
 	[CharBoundaryCategory.Space]: 3,
 	[CharBoundaryCategory.LineBreakCR]: 10,
-	[CharBoundaryCategory.LineBreakLF]: 10,
+	[CharBoundaryCategory.LineBreakLF]: 10
 };
 
 function getCategoryBoundaryScore(category: CharBoundaryCategory): number {
@@ -243,4 +259,3 @@ function getCategory(charCode: number): CharBoundaryCategory {
 		return CharBoundaryCategory.Other;
 	}
 }
-

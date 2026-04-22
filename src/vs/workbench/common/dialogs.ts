@@ -20,7 +20,6 @@ export interface IDialogHandle {
 }
 
 export interface IDialogsModel {
-
 	readonly onWillShowDialog: Event<void>;
 	readonly onDidShowDialog: Event<void>;
 
@@ -30,7 +29,6 @@ export interface IDialogsModel {
 }
 
 export class DialogsModel extends Disposable implements IDialogsModel {
-
 	readonly dialogs: IDialogViewItem[] = [];
 
 	private readonly _onWillShowDialog = this._register(new Emitter<void>());

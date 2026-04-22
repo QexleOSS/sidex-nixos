@@ -15,25 +15,29 @@ import { status } from '../../../../base/browser/ui/aria/aria.js';
  * A button that appears in hover parts to copy their content to the clipboard.
  */
 export class HoverCopyButton extends Disposable {
-
 	private readonly _button: SimpleButton;
 
 	constructor(
 		private readonly _container: HTMLElement,
 		private readonly _getContent: () => string,
 		@IClipboardService private readonly _clipboardService: IClipboardService,
-		@IHoverService private readonly _hoverService: IHoverService,
+		@IHoverService private readonly _hoverService: IHoverService
 	) {
 		super();
 
 		this._container.classList.add('hover-row-with-copy');
 
-		this._button = this._register(new SimpleButton({
-			label: localize('hover.copy', "Copy"),
-			icon: Codicon.copy,
-			onTrigger: () => this._copyContent(),
-			className: 'hover-copy-button',
-		}, this._hoverService));
+		this._button = this._register(
+			new SimpleButton(
+				{
+					label: localize('hover.copy', 'Copy'),
+					icon: Codicon.copy,
+					onTrigger: () => this._copyContent(),
+					className: 'hover-copy-button'
+				},
+				this._hoverService
+			)
+		);
 
 		this._container.appendChild(this._button.domNode);
 	}
@@ -42,7 +46,7 @@ export class HoverCopyButton extends Disposable {
 		const content = this._getContent();
 		if (content) {
 			await this._clipboardService.writeText(content);
-			status(localize('hover.copied', "Copied to clipboard"));
+			status(localize('hover.copied', 'Copied to clipboard'));
 		}
 	}
 }

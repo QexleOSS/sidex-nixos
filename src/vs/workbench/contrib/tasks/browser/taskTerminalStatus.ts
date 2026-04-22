@@ -8,13 +8,22 @@ import { Codicon } from '../../../../base/common/codicons.js';
 import { Disposable, DisposableMap, DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
 import Severity from '../../../../base/common/severity.js';
 import { AbstractProblemCollector, StartStopProblemCollector } from '../common/problemCollectors.js';
-import { ITaskGeneralEvent, ITaskProcessEndedEvent, ITaskProcessStartedEvent, TaskEventKind, TaskRunType } from '../common/tasks.js';
+import {
+	ITaskGeneralEvent,
+	ITaskProcessEndedEvent,
+	ITaskProcessStartedEvent,
+	TaskEventKind,
+	TaskRunType
+} from '../common/tasks.js';
 import { ITaskService, Task } from '../common/taskService.js';
 import { ITerminalInstance } from '../../terminal/browser/terminal.js';
 import { MarkerSeverity } from '../../../../platform/markers/common/markers.js';
 import { spinningLoading } from '../../../../platform/theme/common/iconRegistry.js';
 import type { IMarker } from '@xterm/xterm';
-import { AccessibilitySignal, IAccessibilitySignalService } from '../../../../platform/accessibilitySignal/browser/accessibilitySignalService.js';
+import {
+	AccessibilitySignal,
+	IAccessibilitySignalService
+} from '../../../../platform/accessibilitySignal/browser/accessibilitySignalService.js';
 import { ITerminalStatus } from '../../terminal/common/terminal.js';
 
 interface ITerminalData extends IDisposable {
@@ -26,54 +35,122 @@ interface ITerminalData extends IDisposable {
 }
 
 const TASK_TERMINAL_STATUS_ID = 'task_terminal_status';
-export const ACTIVE_TASK_STATUS: ITerminalStatus = { id: TASK_TERMINAL_STATUS_ID, icon: spinningLoading, severity: Severity.Info, tooltip: nls.localize('taskTerminalStatus.active', "Task is running") };
-export const SUCCEEDED_TASK_STATUS: ITerminalStatus = { id: TASK_TERMINAL_STATUS_ID, icon: Codicon.check, severity: Severity.Info, tooltip: nls.localize('taskTerminalStatus.succeeded', "Task succeeded") };
-const SUCCEEDED_INACTIVE_TASK_STATUS: ITerminalStatus = { id: TASK_TERMINAL_STATUS_ID, icon: Codicon.check, severity: Severity.Info, tooltip: nls.localize('taskTerminalStatus.succeededInactive', "Task succeeded and waiting...") };
-export const FAILED_TASK_STATUS: ITerminalStatus = { id: TASK_TERMINAL_STATUS_ID, icon: Codicon.error, severity: Severity.Error, tooltip: nls.localize('taskTerminalStatus.errors', "Task has errors") };
-const FAILED_INACTIVE_TASK_STATUS: ITerminalStatus = { id: TASK_TERMINAL_STATUS_ID, icon: Codicon.error, severity: Severity.Error, tooltip: nls.localize('taskTerminalStatus.errorsInactive', "Task has errors and is waiting...") };
-const WARNING_TASK_STATUS: ITerminalStatus = { id: TASK_TERMINAL_STATUS_ID, icon: Codicon.warning, severity: Severity.Warning, tooltip: nls.localize('taskTerminalStatus.warnings', "Task has warnings") };
-const WARNING_INACTIVE_TASK_STATUS: ITerminalStatus = { id: TASK_TERMINAL_STATUS_ID, icon: Codicon.warning, severity: Severity.Warning, tooltip: nls.localize('taskTerminalStatus.warningsInactive', "Task has warnings and is waiting...") };
-const INFO_TASK_STATUS: ITerminalStatus = { id: TASK_TERMINAL_STATUS_ID, icon: Codicon.info, severity: Severity.Info, tooltip: nls.localize('taskTerminalStatus.infos', "Task has infos") };
-const INFO_INACTIVE_TASK_STATUS: ITerminalStatus = { id: TASK_TERMINAL_STATUS_ID, icon: Codicon.info, severity: Severity.Info, tooltip: nls.localize('taskTerminalStatus.infosInactive', "Task has infos and is waiting...") };
+export const ACTIVE_TASK_STATUS: ITerminalStatus = {
+	id: TASK_TERMINAL_STATUS_ID,
+	icon: spinningLoading,
+	severity: Severity.Info,
+	tooltip: nls.localize('taskTerminalStatus.active', 'Task is running')
+};
+export const SUCCEEDED_TASK_STATUS: ITerminalStatus = {
+	id: TASK_TERMINAL_STATUS_ID,
+	icon: Codicon.check,
+	severity: Severity.Info,
+	tooltip: nls.localize('taskTerminalStatus.succeeded', 'Task succeeded')
+};
+const SUCCEEDED_INACTIVE_TASK_STATUS: ITerminalStatus = {
+	id: TASK_TERMINAL_STATUS_ID,
+	icon: Codicon.check,
+	severity: Severity.Info,
+	tooltip: nls.localize('taskTerminalStatus.succeededInactive', 'Task succeeded and waiting...')
+};
+export const FAILED_TASK_STATUS: ITerminalStatus = {
+	id: TASK_TERMINAL_STATUS_ID,
+	icon: Codicon.error,
+	severity: Severity.Error,
+	tooltip: nls.localize('taskTerminalStatus.errors', 'Task has errors')
+};
+const FAILED_INACTIVE_TASK_STATUS: ITerminalStatus = {
+	id: TASK_TERMINAL_STATUS_ID,
+	icon: Codicon.error,
+	severity: Severity.Error,
+	tooltip: nls.localize('taskTerminalStatus.errorsInactive', 'Task has errors and is waiting...')
+};
+const WARNING_TASK_STATUS: ITerminalStatus = {
+	id: TASK_TERMINAL_STATUS_ID,
+	icon: Codicon.warning,
+	severity: Severity.Warning,
+	tooltip: nls.localize('taskTerminalStatus.warnings', 'Task has warnings')
+};
+const WARNING_INACTIVE_TASK_STATUS: ITerminalStatus = {
+	id: TASK_TERMINAL_STATUS_ID,
+	icon: Codicon.warning,
+	severity: Severity.Warning,
+	tooltip: nls.localize('taskTerminalStatus.warningsInactive', 'Task has warnings and is waiting...')
+};
+const INFO_TASK_STATUS: ITerminalStatus = {
+	id: TASK_TERMINAL_STATUS_ID,
+	icon: Codicon.info,
+	severity: Severity.Info,
+	tooltip: nls.localize('taskTerminalStatus.infos', 'Task has infos')
+};
+const INFO_INACTIVE_TASK_STATUS: ITerminalStatus = {
+	id: TASK_TERMINAL_STATUS_ID,
+	icon: Codicon.info,
+	severity: Severity.Info,
+	tooltip: nls.localize('taskTerminalStatus.infosInactive', 'Task has infos and is waiting...')
+};
 
 export class TaskTerminalStatus extends Disposable {
 	private terminalMap: DisposableMap<number, ITerminalData> = this._register(new DisposableMap());
 	private _marker: IMarker | undefined;
-	constructor(@ITaskService taskService: ITaskService, @IAccessibilitySignalService private readonly _accessibilitySignalService: IAccessibilitySignalService) {
+	constructor(
+		@ITaskService taskService: ITaskService,
+		@IAccessibilitySignalService private readonly _accessibilitySignalService: IAccessibilitySignalService
+	) {
 		super();
-		this._register(taskService.onDidStateChange((event) => {
-			switch (event.kind) {
-				case TaskEventKind.ProcessStarted:
-				case TaskEventKind.Active: this.eventActive(event); break;
-				case TaskEventKind.Inactive: this.eventInactive(event); break;
-				case TaskEventKind.ProcessEnded: this.eventEnd(event); break;
-			}
-		}));
+		this._register(
+			taskService.onDidStateChange(event => {
+				switch (event.kind) {
+					case TaskEventKind.ProcessStarted:
+					case TaskEventKind.Active:
+						this.eventActive(event);
+						break;
+					case TaskEventKind.Inactive:
+						this.eventInactive(event);
+						break;
+					case TaskEventKind.ProcessEnded:
+						this.eventEnd(event);
+						break;
+				}
+			})
+		);
 	}
 
 	addTerminal(task: Task, terminal: ITerminalInstance, problemMatcher: AbstractProblemCollector) {
 		const status: ITerminalStatus = { id: TASK_TERMINAL_STATUS_ID, severity: Severity.Info };
 		terminal.statusList.add(status);
 		const store = new DisposableStore();
-		store.add(problemMatcher.onDidFindFirstMatch(() => {
-			this._marker = terminal.registerMarker();
-			if (this._marker) {
-				store.add(this._marker);
-			}
-		}));
-		store.add(problemMatcher.onDidFindErrors(() => {
-			if (this._marker) {
-				terminal.addBufferMarker({ marker: this._marker, hoverMessage: nls.localize('task.watchFirstError', "Beginning of detected errors for this run"), disableCommandStorage: true });
-			}
-		}));
-		store.add(problemMatcher.onDidRequestInvalidateLastMarker(() => {
-			this._marker?.dispose();
-			this._marker = undefined;
-		}));
+		store.add(
+			problemMatcher.onDidFindFirstMatch(() => {
+				this._marker = terminal.registerMarker();
+				if (this._marker) {
+					store.add(this._marker);
+				}
+			})
+		);
+		store.add(
+			problemMatcher.onDidFindErrors(() => {
+				if (this._marker) {
+					terminal.addBufferMarker({
+						marker: this._marker,
+						hoverMessage: nls.localize('task.watchFirstError', 'Beginning of detected errors for this run'),
+						disableCommandStorage: true
+					});
+				}
+			})
+		);
+		store.add(
+			problemMatcher.onDidRequestInvalidateLastMarker(() => {
+				this._marker?.dispose();
+				this._marker = undefined;
+			})
+		);
 
-		store.add(terminal.onDisposed(() => {
-			this.terminalMap.deleteAndDispose(terminal.instanceId);
-		}));
+		store.add(
+			terminal.onDisposed(() => {
+				this.terminalMap.deleteAndDispose(terminal.instanceId);
+			})
+		);
 
 		this.terminalMap.set(terminal.instanceId, {
 			terminal,
@@ -83,7 +160,7 @@ export class TaskTerminalStatus extends Disposable {
 			taskRunEnded: false,
 			dispose() {
 				store.dispose();
-			},
+			}
 		});
 	}
 
@@ -101,7 +178,11 @@ export class TaskTerminalStatus extends Disposable {
 		}
 		terminalData.taskRunEnded = true;
 		terminalData.terminal.statusList.remove(terminalData.status);
-		if ((event.exitCode === 0) && (!terminalData.problemMatcher.maxMarkerSeverity || terminalData.problemMatcher.maxMarkerSeverity < MarkerSeverity.Warning)) {
+		if (
+			event.exitCode === 0 &&
+			(!terminalData.problemMatcher.maxMarkerSeverity ||
+				terminalData.problemMatcher.maxMarkerSeverity < MarkerSeverity.Warning)
+		) {
 			this._accessibilitySignalService.playSignal(AccessibilitySignal.taskCompleted);
 			if (terminalData.task.configurationProperties.isBackground) {
 				for (const status of terminalData.terminal.statusList.statuses) {
@@ -110,7 +191,11 @@ export class TaskTerminalStatus extends Disposable {
 			} else {
 				terminalData.terminal.statusList.add(SUCCEEDED_TASK_STATUS);
 			}
-		} else if (event.exitCode || (terminalData.problemMatcher.maxMarkerSeverity !== undefined && terminalData.problemMatcher.maxMarkerSeverity === MarkerSeverity.Error)) {
+		} else if (
+			event.exitCode ||
+			(terminalData.problemMatcher.maxMarkerSeverity !== undefined &&
+				terminalData.problemMatcher.maxMarkerSeverity === MarkerSeverity.Error)
+		) {
 			this._accessibilitySignalService.playSignal(AccessibilitySignal.taskFailed);
 			terminalData.terminal.statusList.add(FAILED_TASK_STATUS);
 		} else if (terminalData.problemMatcher.maxMarkerSeverity === MarkerSeverity.Warning) {
@@ -148,7 +233,11 @@ export class TaskTerminalStatus extends Disposable {
 		terminalData.taskRunEnded = false;
 		terminalData.terminal.statusList.remove(terminalData.status);
 		// We don't want to show an infinite status for a background task that doesn't have a problem matcher.
-		if ((terminalData.problemMatcher instanceof StartStopProblemCollector) || (terminalData.problemMatcher?.problemMatchers.length > 0) || event.runType === TaskRunType.SingleRun) {
+		if (
+			terminalData.problemMatcher instanceof StartStopProblemCollector ||
+			terminalData.problemMatcher?.problemMatchers.length > 0 ||
+			event.runType === TaskRunType.SingleRun
+		) {
 			terminalData.terminal.statusList.add(ACTIVE_TASK_STATUS);
 		}
 	}

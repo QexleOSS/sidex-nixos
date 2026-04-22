@@ -38,10 +38,7 @@ export class ConsoleObservableLogger implements IObservableLogger {
 	}
 
 	private textToConsoleArgs(text: ConsoleText): unknown[] {
-		return consoleTextToArgs([
-			normalText(repeat('|  ', this.indentation)),
-			text,
-		]);
+		return consoleTextToArgs([normalText(repeat('|  ', this.indentation)), text]);
 	}
 
 	private formatInfo(info: IChangeInformation): ConsoleText[] {
@@ -49,23 +46,23 @@ export class ConsoleObservableLogger implements IObservableLogger {
 			return [
 				normalText(` `),
 				styled(formatValue(info.newValue, 60), {
-					color: 'green',
+					color: 'green'
 				}),
-				normalText(` (initial)`),
+				normalText(` (initial)`)
 			];
 		}
 		return info.didChange
 			? [
-				normalText(` `),
-				styled(formatValue(info.oldValue, 70), {
-					color: 'red',
-					strikeThrough: true,
-				}),
-				normalText(` `),
-				styled(formatValue(info.newValue, 60), {
-					color: 'green',
-				}),
-			]
+					normalText(` `),
+					styled(formatValue(info.oldValue, 70), {
+						color: 'red',
+						strikeThrough: true
+					}),
+					normalText(` `),
+					styled(formatValue(info.newValue, 60), {
+						color: 'green'
+					})
+				]
 			: [normalText(` (unchanged)`)];
 	}
 
@@ -81,13 +78,13 @@ export class ConsoleObservableLogger implements IObservableLogger {
 				(derived as any).__debugUpdating = updating;
 
 				const existingBeginUpdate = derived.beginUpdate;
-				derived.beginUpdate = (obs) => {
+				derived.beginUpdate = obs => {
 					updating.push(obs);
 					return existingBeginUpdate.apply(derived, [obs]);
 				};
 
 				const existingEndUpdate = derived.endUpdate;
-				derived.endUpdate = (obs) => {
+				derived.endUpdate = obs => {
 					const idx = updating.indexOf(obs);
 					if (idx === -1) {
 						console.error('endUpdate called without beginUpdate', derived.debugName, obs.debugName);
@@ -99,21 +96,24 @@ export class ConsoleObservableLogger implements IObservableLogger {
 		}
 	}
 
-	handleOnListenerCountChanged(observable: IObservable<any>, newCount: number): void {
-	}
+	handleOnListenerCountChanged(observable: IObservable<any>, newCount: number): void {}
 
 	handleObservableUpdated(observable: IObservable<unknown>, info: IChangeInformation): void {
-		if (!this._isIncluded(observable)) { return; }
+		if (!this._isIncluded(observable)) {
+			return;
+		}
 		if (observable instanceof Derived) {
 			this._handleDerivedRecomputed(observable, info);
 			return;
 		}
 
-		console.log(...this.textToConsoleArgs([
-			formatKind('observable value changed'),
-			styled(observable.debugName, { color: 'BlueViolet' }),
-			...this.formatInfo(info),
-		]));
+		console.log(
+			...this.textToConsoleArgs([
+				formatKind('observable value changed'),
+				styled(observable.debugName, { color: 'BlueViolet' }),
+				...this.formatInfo(info)
+			])
+		);
 	}
 
 	private readonly changedObservablesSets = new WeakMap<object, Set<IObservable<any>>>();
@@ -122,81 +122,96 @@ export class ConsoleObservableLogger implements IObservableLogger {
 		if (changes.size === 0) {
 			return undefined;
 		}
-		return styled(
-			' (changed deps: ' +
-			[...changes].map((o) => o.debugName).join(', ') +
-			')',
-			{ color: 'gray' }
-		);
+		return styled(' (changed deps: ' + [...changes].map(o => o.debugName).join(', ') + ')', { color: 'gray' });
 	}
 
 	handleDerivedDependencyChanged(derived: Derived<any>, observable: IObservable<any>, change: unknown): void {
-		if (!this._isIncluded(derived)) { return; }
+		if (!this._isIncluded(derived)) {
+			return;
+		}
 
 		this.changedObservablesSets.get(derived)?.add(observable);
 	}
 
 	_handleDerivedRecomputed(derived: Derived<unknown>, info: IChangeInformation): void {
-		if (!this._isIncluded(derived)) { return; }
+		if (!this._isIncluded(derived)) {
+			return;
+		}
 
 		const changedObservables = this.changedObservablesSets.get(derived);
-		if (!changedObservables) { return; }
-		console.log(...this.textToConsoleArgs([
-			formatKind('derived recomputed'),
-			styled(derived.debugName, { color: 'BlueViolet' }),
-			...this.formatInfo(info),
-			this.formatChanges(changedObservables),
-			{ data: [{ fn: derived._debugNameData.referenceFn ?? derived._computeFn }] }
-		]));
+		if (!changedObservables) {
+			return;
+		}
+		console.log(
+			...this.textToConsoleArgs([
+				formatKind('derived recomputed'),
+				styled(derived.debugName, { color: 'BlueViolet' }),
+				...this.formatInfo(info),
+				this.formatChanges(changedObservables),
+				{ data: [{ fn: derived._debugNameData.referenceFn ?? derived._computeFn }] }
+			])
+		);
 		changedObservables.clear();
 	}
 
 	handleDerivedCleared(derived: Derived<unknown>): void {
-		if (!this._isIncluded(derived)) { return; }
+		if (!this._isIncluded(derived)) {
+			return;
+		}
 
-		console.log(...this.textToConsoleArgs([
-			formatKind('derived cleared'),
-			styled(derived.debugName, { color: 'BlueViolet' }),
-		]));
+		console.log(
+			...this.textToConsoleArgs([formatKind('derived cleared'), styled(derived.debugName, { color: 'BlueViolet' })])
+		);
 	}
 
 	handleFromEventObservableTriggered(observable: FromEventObservable<any, any>, info: IChangeInformation): void {
-		if (!this._isIncluded(observable)) { return; }
+		if (!this._isIncluded(observable)) {
+			return;
+		}
 
-		console.log(...this.textToConsoleArgs([
-			formatKind('observable from event triggered'),
-			styled(observable.debugName, { color: 'BlueViolet' }),
-			...this.formatInfo(info),
-			{ data: [{ fn: observable._getValue }] }
-		]));
+		console.log(
+			...this.textToConsoleArgs([
+				formatKind('observable from event triggered'),
+				styled(observable.debugName, { color: 'BlueViolet' }),
+				...this.formatInfo(info),
+				{ data: [{ fn: observable._getValue }] }
+			])
+		);
 	}
 
 	handleAutorunCreated(autorun: AutorunObserver): void {
-		if (!this._isIncluded(autorun)) { return; }
+		if (!this._isIncluded(autorun)) {
+			return;
+		}
 
 		this.changedObservablesSets.set(autorun, new Set());
 	}
 
-	handleAutorunDisposed(autorun: AutorunObserver): void {
-	}
+	handleAutorunDisposed(autorun: AutorunObserver): void {}
 
 	handleAutorunDependencyChanged(autorun: AutorunObserver, observable: IObservable<any>, change: unknown): void {
-		if (!this._isIncluded(autorun)) { return; }
+		if (!this._isIncluded(autorun)) {
+			return;
+		}
 
 		this.changedObservablesSets.get(autorun)!.add(observable);
 	}
 
 	handleAutorunStarted(autorun: AutorunObserver): void {
 		const changedObservables = this.changedObservablesSets.get(autorun);
-		if (!changedObservables) { return; }
+		if (!changedObservables) {
+			return;
+		}
 
 		if (this._isIncluded(autorun)) {
-			console.log(...this.textToConsoleArgs([
-				formatKind('autorun'),
-				styled(autorun.debugName, { color: 'BlueViolet' }),
-				this.formatChanges(changedObservables),
-				{ data: [{ fn: autorun._debugNameData.referenceFn ?? autorun._runFn }] }
-			]));
+			console.log(
+				...this.textToConsoleArgs([
+					formatKind('autorun'),
+					styled(autorun.debugName, { color: 'BlueViolet' }),
+					this.formatChanges(changedObservables),
+					{ data: [{ fn: autorun._debugNameData.referenceFn ?? autorun._runFn }] }
+				])
+			);
 		}
 		changedObservables.clear();
 		this.indentation++;
@@ -212,11 +227,13 @@ export class ConsoleObservableLogger implements IObservableLogger {
 			transactionName = '';
 		}
 		if (this._isIncluded(transaction)) {
-			console.log(...this.textToConsoleArgs([
-				formatKind('transaction'),
-				styled(transactionName, { color: 'BlueViolet' }),
-				{ data: [{ fn: transaction._fn }] }
-			]));
+			console.log(
+				...this.textToConsoleArgs([
+					formatKind('transaction'),
+					styled(transactionName, { color: 'BlueViolet' }),
+					{ data: [{ fn: transaction._fn }] }
+				])
+			);
 		}
 		this.indentation++;
 	}
@@ -225,9 +242,10 @@ export class ConsoleObservableLogger implements IObservableLogger {
 		this.indentation--;
 	}
 }
-type ConsoleText = (ConsoleText | undefined)[] |
-{ text: string; style: string; data?: unknown[] } |
-{ data: unknown[] };
+type ConsoleText =
+	| (ConsoleText | undefined)[]
+	| { text: string; style: string; data?: unknown[] }
+	| { data: unknown[] };
 function consoleTextToArgs(text: ConsoleText): unknown[] {
 	const styles = new Array<any>();
 	const data: unknown[] = [];
@@ -266,20 +284,17 @@ function formatKind(kind: string): ConsoleText {
 function styled(
 	text: string,
 	options: { color: string; strikeThrough?: boolean; bold?: boolean } = {
-		color: 'black',
+		color: 'black'
 	}
 ): ConsoleText {
 	function objToCss(styleObj: Record<string, string>): string {
-		return Object.entries(styleObj).reduce(
-			(styleString, [propName, propValue]) => {
-				return `${styleString}${propName}:${propValue};`;
-			},
-			''
-		);
+		return Object.entries(styleObj).reduce((styleString, [propName, propValue]) => {
+			return `${styleString}${propName}:${propValue};`;
+		}, '');
 	}
 
 	const style: Record<string, string> = {
-		color: options.color,
+		color: options.color
 	};
 	if (options.strikeThrough) {
 		style['text-decoration'] = 'line-through';
@@ -290,7 +305,7 @@ function styled(
 
 	return {
 		text,
-		style: objToCss(style),
+		style: objToCss(style)
 	};
 }
 

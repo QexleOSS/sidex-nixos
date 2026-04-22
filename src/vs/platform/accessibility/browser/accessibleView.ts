@@ -38,7 +38,7 @@ export const enum AccessibleViewProviderId {
 	TerminalFindHelp = 'terminalFindHelp',
 	WebviewFindHelp = 'webviewFindHelp',
 	OutputFindHelp = 'outputFindHelp',
-	ProblemsFilterHelp = 'problemsFilterHelp',
+	ProblemsFilterHelp = 'problemsFilterHelp'
 }
 
 export const enum AccessibleViewType {
@@ -85,7 +85,6 @@ export interface IAccessibleViewOptions {
 	configuredKeybindingItems?: IQuickPickItem[];
 }
 
-
 export interface IAccessibleViewContentProvider extends IBasicContentProvider, IDisposable {
 	id: AccessibleViewProviderId;
 	verbositySettingKey: string;
@@ -103,7 +102,6 @@ export interface IAccessibleViewContentProvider extends IBasicContentProvider, I
 	 */
 	readonly onDidRequestClearLastProvider?: Event<AccessibleViewProviderId>;
 }
-
 
 export interface IAccessibleViewSymbol extends IPickerQuickAccessItem {
 	markdownToParse?: string;
@@ -141,7 +139,6 @@ export interface IAccessibleViewService {
 	openHelpLink(): void;
 }
 
-
 export interface ICodeBlockActionContext {
 	code: string;
 	languageId?: string;
@@ -152,7 +149,6 @@ export interface ICodeBlockActionContext {
 export type AccesibleViewContentProvider = AccessibleContentProvider | ExtensionContentProvider;
 
 export class AccessibleContentProvider extends Disposable implements IAccessibleViewContentProvider {
-
 	constructor(
 		public id: AccessibleViewProviderId,
 		public options: IAccessibleViewOptions,
@@ -166,7 +162,7 @@ export class AccessibleContentProvider extends Disposable implements IAccessible
 		public onDidChangeContent?: Event<void>,
 		public onKeyDown?: (e: IKeyboardEvent) => void,
 		public getSymbols?: () => IAccessibleViewSymbol[],
-		public onDidRequestClearLastProvider?: Event<AccessibleViewProviderId>,
+		public onDidRequestClearLastProvider?: Event<AccessibleViewProviderId>
 	) {
 		super();
 	}
@@ -178,15 +174,16 @@ export function isIAccessibleViewContentProvider(obj: unknown): obj is IAccessib
 	}
 
 	const candidate = obj as Partial<IAccessibleViewContentProvider>;
-	return !!candidate.id
-		&& !!candidate.options
-		&& typeof candidate.provideContent === 'function'
-		&& typeof candidate.onClose === 'function'
-		&& typeof candidate.verbositySettingKey === 'string';
+	return (
+		!!candidate.id &&
+		!!candidate.options &&
+		typeof candidate.provideContent === 'function' &&
+		typeof candidate.onClose === 'function' &&
+		typeof candidate.verbositySettingKey === 'string'
+	);
 }
 
 export class ExtensionContentProvider extends Disposable implements IBasicContentProvider {
-
 	constructor(
 		public readonly id: string,
 		public options: IAccessibleViewOptions,
@@ -196,7 +193,7 @@ export class ExtensionContentProvider extends Disposable implements IBasicConten
 		public provideNextContent?: () => string | undefined,
 		public providePreviousContent?: () => string | undefined,
 		public actions?: IAction[],
-		public onDidChangeContent?: Event<void>,
+		public onDidChangeContent?: Event<void>
 	) {
 		super();
 	}

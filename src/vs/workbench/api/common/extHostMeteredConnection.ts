@@ -16,8 +16,10 @@ export interface IExtHostMeteredConnection extends ExtHostMeteredConnectionShape
 
 export const IExtHostMeteredConnection = createDecorator<IExtHostMeteredConnection>('IExtHostMeteredConnection');
 
-export class ExtHostMeteredConnection extends Disposable implements IExtHostMeteredConnection, ExtHostMeteredConnectionShape {
-
+export class ExtHostMeteredConnection
+	extends Disposable
+	implements IExtHostMeteredConnection, ExtHostMeteredConnectionShape
+{
 	declare readonly _serviceBrand: undefined;
 
 	private _isConnectionMetered: boolean = false;

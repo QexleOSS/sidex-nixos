@@ -12,9 +12,34 @@ import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
 import * as nls from '../../../../nls.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
-import { ISerializedCommandDetectionCapability, ITerminalCapabilityStore } from '../../../../platform/terminal/common/capabilities/capabilities.js';
+import {
+	ISerializedCommandDetectionCapability,
+	ITerminalCapabilityStore
+} from '../../../../platform/terminal/common/capabilities/capabilities.js';
 import { IMergedEnvironmentVariableCollection } from '../../../../platform/terminal/common/environmentVariable.js';
-import { ICreateContributedTerminalProfileOptions, IExtensionTerminalProfile, IFixedTerminalDimensions, ITerminalLaunchResult, IProcessDataEvent, IProcessProperty, IProcessPropertyMap, IProcessReadyEvent, IProcessReadyWindowsPty, IShellLaunchConfig, ITerminalBackend, ITerminalContributions, ITerminalEnvironment, ITerminalLaunchError, ITerminalProfile, ITerminalProfileObject, ITerminalTabAction, ProcessPropertyType, TerminalIcon, TerminalLocationConfigValue, TitleEventSource } from '../../../../platform/terminal/common/terminal.js';
+import {
+	ICreateContributedTerminalProfileOptions,
+	IExtensionTerminalProfile,
+	IFixedTerminalDimensions,
+	ITerminalLaunchResult,
+	IProcessDataEvent,
+	IProcessProperty,
+	IProcessPropertyMap,
+	IProcessReadyEvent,
+	IProcessReadyWindowsPty,
+	IShellLaunchConfig,
+	ITerminalBackend,
+	ITerminalContributions,
+	ITerminalEnvironment,
+	ITerminalLaunchError,
+	ITerminalProfile,
+	ITerminalProfileObject,
+	ITerminalTabAction,
+	ProcessPropertyType,
+	TerminalIcon,
+	TerminalLocationConfigValue,
+	TitleEventSource
+} from '../../../../platform/terminal/common/terminal.js';
 import { AccessibilityCommandId } from '../../accessibility/common/accessibilityCommands.js';
 import { IEnvironmentVariableInfo } from './environmentVariable.js';
 import { IExtensionPointDescriptor } from '../../../services/extensions/common/extensionsRegistry.js';
@@ -23,7 +48,12 @@ import type { SingleOrMany } from '../../../../base/common/types.js';
 
 export const TERMINAL_VIEW_ID = 'terminal';
 
-export const TERMINAL_CREATION_COMMANDS = ['workbench.action.terminal.toggleTerminal', 'workbench.action.terminal.new', 'workbench.action.togglePanel', 'workbench.action.terminal.focus'];
+export const TERMINAL_CREATION_COMMANDS = [
+	'workbench.action.terminal.toggleTerminal',
+	'workbench.action.terminal.new',
+	'workbench.action.togglePanel',
+	'workbench.action.terminal.focus'
+];
 
 export const TERMINAL_CONFIG_SECTION = 'terminal.integrated';
 
@@ -40,9 +70,23 @@ export const MINIMUM_FONT_WEIGHT = 1;
 export const MAXIMUM_FONT_WEIGHT = 1000;
 export const DEFAULT_FONT_WEIGHT = 'normal';
 export const DEFAULT_BOLD_FONT_WEIGHT = 'bold';
-export const SUGGESTIONS_FONT_WEIGHT = ['normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'];
+export const SUGGESTIONS_FONT_WEIGHT = [
+	'normal',
+	'bold',
+	'100',
+	'200',
+	'300',
+	'400',
+	'500',
+	'600',
+	'700',
+	'800',
+	'900'
+];
 
-export const ITerminalProfileResolverService = createDecorator<ITerminalProfileResolverService>('terminalProfileResolverService');
+export const ITerminalProfileResolverService = createDecorator<ITerminalProfileResolverService>(
+	'terminalProfileResolverService'
+);
 export interface ITerminalProfileResolverService {
 	readonly _serviceBrand: undefined;
 
@@ -52,7 +96,10 @@ export interface ITerminalProfileResolverService {
 	 * Resolves the icon of a shell launch config if this will use the default profile
 	 */
 	resolveIcon(shellLaunchConfig: IShellLaunchConfig, os: OperatingSystem): void;
-	resolveShellLaunchConfig(shellLaunchConfig: IShellLaunchConfig, options: IShellLaunchConfigResolveOptions): Promise<void>;
+	resolveShellLaunchConfig(
+		shellLaunchConfig: IShellLaunchConfig,
+		options: IShellLaunchConfigResolveOptions
+	): Promise<void>;
 	getDefaultProfile(options: IShellLaunchConfigResolveOptions): Promise<ITerminalProfile>;
 	getDefaultShell(options: IShellLaunchConfigResolveOptions): Promise<string>;
 	getDefaultShellArgs(options: IShellLaunchConfigResolveOptions): Promise<SingleOrMany<string>>;
@@ -67,7 +114,11 @@ export interface ITerminalProfileResolverService {
 export const ShellIntegrationExitCode = 633;
 
 export interface IRegisterContributedProfileArgs {
-	extensionIdentifier: string; id: string; title: string; options: ICreateContributedTerminalProfileOptions; titleTemplate?: string;
+	extensionIdentifier: string;
+	id: string;
+	title: string;
+	options: ICreateContributedTerminalProfileOptions;
+	titleTemplate?: string;
 }
 
 export const ITerminalProfileService = createDecorator<ITerminalProfileService>('terminalProfileService');
@@ -84,7 +135,11 @@ export interface ITerminalProfileService {
 	getContributedDefaultProfile(shellLaunchConfig: IShellLaunchConfig): Promise<IExtensionTerminalProfile | undefined>;
 	registerContributedProfile(args: IRegisterContributedProfileArgs): Promise<void>;
 	getContributedProfileProvider(extensionIdentifier: string, id: string): ITerminalProfileProvider | undefined;
-	registerTerminalProfileProvider(extensionIdentifier: string, id: string, profileProvider: ITerminalProfileProvider): IDisposable;
+	registerTerminalProfileProvider(
+		extensionIdentifier: string,
+		id: string,
+		profileProvider: ITerminalProfileProvider
+	): IDisposable;
 }
 
 export interface ITerminalProfileProvider {
@@ -276,7 +331,9 @@ export interface ITerminalProcessInfo {
 	readonly extEnvironmentVariableCollection: IMergedEnvironmentVariableCollection | undefined;
 }
 
-export const isTerminalProcessManager = (t: ITerminalProcessInfo | ITerminalProcessManager): t is ITerminalProcessManager => typeof (t as ITerminalProcessManager).write === 'function';
+export const isTerminalProcessManager = (
+	t: ITerminalProcessInfo | ITerminalProcessManager
+): t is ITerminalProcessManager => typeof (t as ITerminalProcessManager).write === 'function';
 
 export interface ITerminalProcessManager extends IDisposable, ITerminalProcessInfo {
 	readonly processTraits: IProcessReadyEvent | undefined;
@@ -296,8 +353,17 @@ export interface ITerminalProcessManager extends IDisposable, ITerminalProcessIn
 
 	dispose(immediate?: boolean): void;
 	detachFromProcess(forcePersist?: boolean): Promise<void>;
-	createProcess(shellLaunchConfig: IShellLaunchConfig, cols: number, rows: number): Promise<ITerminalLaunchError | ITerminalLaunchResult | undefined>;
-	relaunch(shellLaunchConfig: IShellLaunchConfig, cols: number, rows: number, reset: boolean): Promise<ITerminalLaunchError | ITerminalLaunchResult | undefined>;
+	createProcess(
+		shellLaunchConfig: IShellLaunchConfig,
+		cols: number,
+		rows: number
+	): Promise<ITerminalLaunchError | ITerminalLaunchResult | undefined>;
+	relaunch(
+		shellLaunchConfig: IShellLaunchConfig,
+		cols: number,
+		rows: number,
+		reset: boolean
+	): Promise<ITerminalLaunchError | ITerminalLaunchResult | undefined>;
 	write(data: string): Promise<void>;
 	sendSignal(signal: string): Promise<void>;
 	setDimensions(cols: number, rows: number, sync?: undefined, pixelWidth?: number, pixelHeight?: number): Promise<void>;
@@ -491,7 +557,7 @@ export const enum TerminalCommandId {
 	ShowEnvironmentContributions = 'workbench.action.terminal.showEnvironmentContributions',
 	StartVoice = 'workbench.action.terminal.startVoice',
 	StopVoice = 'workbench.action.terminal.stopVoice',
-	RevealCommand = 'workbench.action.terminal.revealCommand',
+	RevealCommand = 'workbench.action.terminal.revealCommand'
 }
 
 export const DEFAULT_COMMANDS_TO_SKIP_SHELL: string[] = [
@@ -639,7 +705,7 @@ export const DEFAULT_COMMANDS_TO_SKIP_SHELL: string[] = [
 	'workbench.action.terminal.chat.runCommand',
 	'workbench.action.terminal.chat.insertCommand',
 	'workbench.action.terminal.chat.viewInChat',
-	...defaultTerminalContribCommandsToSkipShell,
+	...defaultTerminalContribCommandsToSkipShell
 ];
 
 export const terminalContributionsDescriptor: IExtensionPointDescriptor<ITerminalContributions> = {
@@ -647,7 +713,7 @@ export const terminalContributionsDescriptor: IExtensionPointDescriptor<ITermina
 	defaultExtensionKind: ['workspace'],
 	activationEventsGenerator: function* (contribs: readonly ITerminalContributions[]) {
 		for (const contrib of contribs) {
-			for (const profileContrib of (contrib.profiles ?? [])) {
+			for (const profileContrib of contrib.profiles ?? []) {
 				yield `onTerminalProfile:${profileContrib.id}`;
 			}
 		}
@@ -658,71 +724,104 @@ export const terminalContributionsDescriptor: IExtensionPointDescriptor<ITermina
 		properties: {
 			profiles: {
 				type: 'array',
-				description: nls.localize('vscode.extension.contributes.terminal.profiles', "Defines additional terminal profiles that the user can create."),
+				description: nls.localize(
+					'vscode.extension.contributes.terminal.profiles',
+					'Defines additional terminal profiles that the user can create.'
+				),
 				items: {
 					type: 'object',
 					required: ['id', 'title'],
-					defaultSnippets: [{
-						body: {
-							id: '$1',
-							title: '$2'
+					defaultSnippets: [
+						{
+							body: {
+								id: '$1',
+								title: '$2'
+							}
 						}
-					}],
+					],
 					properties: {
 						id: {
-							description: nls.localize('vscode.extension.contributes.terminal.profiles.id', "The ID of the terminal profile provider."),
-							type: 'string',
+							description: nls.localize(
+								'vscode.extension.contributes.terminal.profiles.id',
+								'The ID of the terminal profile provider.'
+							),
+							type: 'string'
 						},
 						title: {
-							description: nls.localize('vscode.extension.contributes.terminal.profiles.title', "Title for this terminal profile."),
-							type: 'string',
+							description: nls.localize(
+								'vscode.extension.contributes.terminal.profiles.title',
+								'Title for this terminal profile.'
+							),
+							type: 'string'
 						},
 						icon: {
-							description: nls.localize('vscode.extension.contributes.terminal.types.icon', "A codicon, URI, or light and dark URIs to associate with this terminal type."),
-							anyOf: [{
-								type: 'string',
-							},
-							{
-								type: 'object',
-								properties: {
-									light: {
-										description: nls.localize('vscode.extension.contributes.terminal.types.icon.light', 'Icon path when a light theme is used'),
-										type: 'string'
-									},
-									dark: {
-										description: nls.localize('vscode.extension.contributes.terminal.types.icon.dark', 'Icon path when a dark theme is used'),
-										type: 'string'
+							description: nls.localize(
+								'vscode.extension.contributes.terminal.types.icon',
+								'A codicon, URI, or light and dark URIs to associate with this terminal type.'
+							),
+							anyOf: [
+								{
+									type: 'string'
+								},
+								{
+									type: 'object',
+									properties: {
+										light: {
+											description: nls.localize(
+												'vscode.extension.contributes.terminal.types.icon.light',
+												'Icon path when a light theme is used'
+											),
+											type: 'string'
+										},
+										dark: {
+											description: nls.localize(
+												'vscode.extension.contributes.terminal.types.icon.dark',
+												'Icon path when a dark theme is used'
+											),
+											type: 'string'
+										}
 									}
 								}
-							}]
+							]
 						},
 						titleTemplate: {
-							description: nls.localize('vscode.extension.contributes.terminal.profiles.titleTemplate', "A title template string for the terminal tab. Supports variables like $\{sequence}, $\{process}, $\{cwd}, etc. Overrides the default terminal.integrated.tabs.title setting for terminals created with this profile."),
-							type: 'string',
-						},
-					},
-				},
+							description: nls.localize(
+								'vscode.extension.contributes.terminal.profiles.titleTemplate',
+								'A title template string for the terminal tab. Supports variables like $\{sequence}, $\{process}, $\{cwd}, etc. Overrides the default terminal.integrated.tabs.title setting for terminals created with this profile.'
+							),
+							type: 'string'
+						}
+					}
+				}
 			},
 			completionProviders: {
 				type: 'array',
-				description: nls.localize('vscode.extension.contributes.terminal.completionProviders', "Defines terminal completion providers that will be registered when the extension activates."),
+				description: nls.localize(
+					'vscode.extension.contributes.terminal.completionProviders',
+					'Defines terminal completion providers that will be registered when the extension activates.'
+				),
 				items: {
 					type: 'object',
 					required: ['id'],
-					defaultSnippets: [{
-						body: {
-							id: '$1',
-							description: '$2'
+					defaultSnippets: [
+						{
+							body: {
+								id: '$1',
+								description: '$2'
+							}
 						}
-					}],
+					],
 					properties: {
 						description: {
-							description: nls.localize('vscode.extension.contributes.terminal.completionProviders.description', "A description of what the completion provider does. This will be shown in the settings UI."),
-							type: 'string',
-						},
-					},
-				},
-			},
-		},
-	},
+							description: nls.localize(
+								'vscode.extension.contributes.terminal.completionProviders.description',
+								'A description of what the completion provider does. This will be shown in the settings UI.'
+							),
+							type: 'string'
+						}
+					}
+				}
+			}
+		}
+	}
 };

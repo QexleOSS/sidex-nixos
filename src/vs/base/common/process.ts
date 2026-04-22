@@ -13,34 +13,60 @@ const vscodeGlobal = (globalThis as { vscode?: { process?: INodeProcess } }).vsc
 if (typeof vscodeGlobal !== 'undefined' && typeof vscodeGlobal.process !== 'undefined') {
 	const sandboxProcess: INodeProcess = vscodeGlobal.process;
 	safeProcess = {
-		get platform() { return sandboxProcess.platform; },
-		get arch() { return sandboxProcess.arch; },
-		get env() { return sandboxProcess.env; },
-		cwd() { return sandboxProcess.cwd(); }
+		get platform() {
+			return sandboxProcess.platform;
+		},
+		get arch() {
+			return sandboxProcess.arch;
+		},
+		get env() {
+			return sandboxProcess.env;
+		},
+		cwd() {
+			return sandboxProcess.cwd();
+		}
 	};
 }
 
 // Native node.js environment
 else if (typeof process !== 'undefined' && typeof process?.versions?.node === 'string') {
 	safeProcess = {
-		get platform() { return process.platform; },
-		get arch() { return process.arch; },
-		get env() { return process.env; },
-		cwd() { return process.env['VSCODE_CWD'] || process.cwd(); }
+		get platform() {
+			return process.platform;
+		},
+		get arch() {
+			return process.arch;
+		},
+		get env() {
+			return process.env;
+		},
+		cwd() {
+			return process.env['VSCODE_CWD'] || process.cwd();
+		}
 	};
 }
 
 // Web environment
 else {
 	safeProcess = {
-
 		// Supported
-		get platform() { return isWindows ? 'win32' : isMacintosh ? 'darwin' : 'linux'; },
-		get arch() { return undefined; /* arch is undefined in web */ },
+		get platform() {
+			return isWindows ? 'win32' : isMacintosh ? 'darwin' : 'linux';
+		},
+		get arch() {
+			if ((globalThis as any).__SIDEX_TAURI__) {
+				return (globalThis as any).__SIDEX_ARCH__ || undefined;
+			}
+			return undefined;
+		},
 
 		// Unsupported
-		get env() { return {}; },
-		cwd() { return '/'; }
+		get env() {
+			return {};
+		},
+		cwd() {
+			return '/';
+		}
 	};
 }
 

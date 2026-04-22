@@ -3,7 +3,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 pub struct PtyHandle {
     writer: Box<dyn Write + Send>,
@@ -48,6 +48,11 @@ pub(crate) fn resolve_windows_shell() -> String {
 }
 
 #[tauri::command]
+#[allow(
+    clippy::too_many_lines,
+    clippy::needless_pass_by_value,
+    clippy::too_many_arguments
+)]
 pub fn terminal_spawn(
     app: AppHandle,
     state: State<'_, Arc<TerminalStore>>,
@@ -70,7 +75,7 @@ pub fn terminal_spawn(
             pixel_width: 0,
             pixel_height: 0,
         })
-        .map_err(|e| format!("Failed to open PTY: {}", e))?;
+        .map_err(|e| format!("Failed to open PTY: {e}"))?;
 
     let shell_path = shell.unwrap_or_else(|| {
         if cfg!(target_os = "windows") {
@@ -99,8 +104,7 @@ pub fn terminal_spawn(
                 }
             }
             return Err(format!(
-                "Shell '{}' not found, and no fallback shell available",
-                shell_path
+                "Shell '{shell_path}' not found, and no fallback shell available"
             ));
         }
     }
@@ -151,10 +155,8 @@ pub fn terminal_spawn(
                 cmd.env(key, &val);
             }
         }
-    } else {
-        if let Ok(user) = std::env::var("USER") {
-            cmd.env("USER", &user);
-        }
+    } else if let Ok(user) = std::env::var("USER") {
+        cmd.env("USER", &user);
     }
     if let Ok(path) = std::env::var("PATH") {
         cmd.env("PATH", &path);
@@ -184,17 +186,17 @@ pub fn terminal_spawn(
     let child = pair
         .slave
         .spawn_command(cmd)
-        .map_err(|e| format!("Failed to spawn shell '{}': {}", shell_path, e))?;
+        .map_err(|e| format!("Failed to spawn shell '{shell_path}': {e}"))?;
 
     let writer = pair
         .master
         .take_writer()
-        .map_err(|e| format!("Failed to get PTY writer: {}", e))?;
+        .map_err(|e| format!("Failed to get PTY writer: {e}"))?;
 
     let mut reader = pair
         .master
         .try_clone_reader()
-        .map_err(|e| format!("Failed to get PTY reader: {}", e))?;
+        .map_err(|e| format!("Failed to get PTY reader: {e}"))?;
 
     let id = {
         let mut next = state.next_id.lock().map_err(|e| e.to_string())?;
@@ -221,8 +223,7 @@ pub fn terminal_spawn(
         let mut buf = [0u8; 8192];
         loop {
             match reader.read(&mut buf) {
-                Ok(0) => break,
-                Ok(n) => {
+                Ok(n) if n > 0 => {
                     let text = String::from_utf8_lossy(&buf[..n]).to_string();
                     let _ = app.emit(
                         "terminal-data",
@@ -232,33 +233,24 @@ pub fn terminal_spawn(
                         },
                     );
                 }
-                Err(_) => break,
+                Ok(_) | Err(_) => break,
             }
         }
 
         let exit_code = {
-            let mut terminals = match state_clone.terminals.lock() {
-                Ok(t) => t,
-                Err(_) => {
-                    let _ = app.emit(
-                        "terminal-exit",
-                        TerminalExitEvent {
-                            terminal_id,
-                            exit_code: -1,
-                        },
-                    );
-                    return;
-                }
+            let Ok(mut terminals) = state_clone.terminals.lock() else {
+                let _ = app.emit(
+                    "terminal-exit",
+                    TerminalExitEvent {
+                        terminal_id,
+                        exit_code: -1,
+                    },
+                );
+                return;
             };
             let code = if let Some(handle) = terminals.get_mut(&terminal_id) {
                 match handle.child.try_wait() {
-                    Ok(Some(status)) => {
-                        if status.success() {
-                            0
-                        } else {
-                            1
-                        }
-                    }
+                    Ok(Some(status)) => i32::from(!status.success()),
                     _ => 0,
                 }
             } else {
@@ -281,6 +273,7 @@ pub fn terminal_spawn(
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn terminal_write(
     state: State<'_, Arc<TerminalStore>>,
     terminal_id: u32,
@@ -289,22 +282,23 @@ pub fn terminal_write(
     let mut terminals = state.terminals.lock().map_err(|e| e.to_string())?;
     let handle = terminals
         .get_mut(&terminal_id)
-        .ok_or_else(|| format!("Terminal {} not found", terminal_id))?;
+        .ok_or_else(|| format!("Terminal {terminal_id} not found"))?;
 
     handle
         .writer
         .write_all(data.as_bytes())
-        .map_err(|e| format!("Failed to write to terminal {}: {}", terminal_id, e))?;
+        .map_err(|e| format!("Failed to write to terminal {terminal_id}: {e}"))?;
 
     handle
         .writer
         .flush()
-        .map_err(|e| format!("Failed to flush terminal {}: {}", terminal_id, e))?;
+        .map_err(|e| format!("Failed to flush terminal {terminal_id}: {e}"))?;
 
     Ok(())
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn terminal_resize(
     state: State<'_, Arc<TerminalStore>>,
     terminal_id: u32,
@@ -314,7 +308,7 @@ pub fn terminal_resize(
     let terminals = state.terminals.lock().map_err(|e| e.to_string())?;
     let handle = terminals
         .get(&terminal_id)
-        .ok_or_else(|| format!("Terminal {} not found", terminal_id))?;
+        .ok_or_else(|| format!("Terminal {terminal_id} not found"))?;
 
     handle
         .master
@@ -324,27 +318,29 @@ pub fn terminal_resize(
             pixel_width: 0,
             pixel_height: 0,
         })
-        .map_err(|e| format!("Failed to resize terminal {}: {}", terminal_id, e))?;
+        .map_err(|e| format!("Failed to resize terminal {terminal_id}: {e}"))?;
 
     Ok(())
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn terminal_kill(state: State<'_, Arc<TerminalStore>>, terminal_id: u32) -> Result<(), String> {
     let mut terminals = state.terminals.lock().map_err(|e| e.to_string())?;
     let mut handle = terminals
         .remove(&terminal_id)
-        .ok_or_else(|| format!("Terminal {} not found", terminal_id))?;
+        .ok_or_else(|| format!("Terminal {terminal_id} not found"))?;
 
     handle
         .child
         .kill()
-        .map_err(|e| format!("Failed to kill terminal {}: {}", terminal_id, e))?;
+        .map_err(|e| format!("Failed to kill terminal {terminal_id}: {e}"))?;
 
     Ok(())
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn terminal_get_pid(
     state: State<'_, Arc<TerminalStore>>,
     terminal_id: u32,
@@ -352,7 +348,7 @@ pub fn terminal_get_pid(
     let terminals = state.terminals.lock().map_err(|e| e.to_string())?;
     let handle = terminals
         .get(&terminal_id)
-        .ok_or_else(|| format!("Terminal {} not found", terminal_id))?;
+        .ok_or_else(|| format!("Terminal {terminal_id} not found"))?;
 
     let pid = handle
         .child
@@ -413,6 +409,7 @@ pub fn get_default_shell() -> String {
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn check_shell_exists(path: String) -> bool {
     if cfg!(target_os = "windows") {
         return std::path::Path::new(&path).exists() || which::which(&path).is_ok();
@@ -422,6 +419,7 @@ pub fn check_shell_exists(path: String) -> bool {
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_lines)]
 pub fn get_available_shells() -> Vec<ShellInfo> {
     if cfg!(target_os = "windows") {
         let candidates: &[(&str, &str)] = &[
@@ -520,28 +518,30 @@ pub struct ShellInfo {
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn get_shell_integration_dir(app: tauri::AppHandle) -> Result<String, String> {
     let resource_dir = app
         .path()
         .resource_dir()
-        .map_err(|e| format!("Failed to get resource dir: {}", e))?;
+        .map_err(|e| format!("Failed to get resource dir: {e}"))?;
     let scripts_dir = resource_dir.join("shell-integration");
     Ok(scripts_dir.to_string_lossy().to_string())
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_lines, clippy::needless_pass_by_value)]
 pub fn setup_zsh_dotdir(app: tauri::AppHandle) -> Result<String, String> {
     let data_dir = app
         .path()
         .app_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+        .map_err(|e| format!("Failed to get app data dir: {e}"))?;
     let zdotdir = data_dir.join("zsh-integration");
-    std::fs::create_dir_all(&zdotdir).map_err(|e| format!("Failed to create zdotdir: {}", e))?;
+    std::fs::create_dir_all(&zdotdir).map_err(|e| format!("Failed to create zdotdir: {e}"))?;
 
     let resource_dir = app
         .path()
         .resource_dir()
-        .map_err(|e| format!("Failed to get resource dir: {}", e))?;
+        .map_err(|e| format!("Failed to get resource dir: {e}"))?;
     let scripts_dir = resource_dir.join("shell-integration");
 
     let zshrc_content = format!(
@@ -558,7 +558,7 @@ fi
 
     let zshrc_path = zdotdir.join(".zshrc");
     std::fs::write(&zshrc_path, zshrc_content)
-        .map_err(|e| format!("Failed to write .zshrc: {}", e))?;
+        .map_err(|e| format!("Failed to write .zshrc: {e}"))?;
 
     let zshenv_content = format!(
         r#"# SideX Shell Integration - Auto-generated
@@ -572,7 +572,7 @@ fi
 
     let zshenv_path = zdotdir.join(".zshenv");
     std::fs::write(&zshenv_path, zshenv_content)
-        .map_err(|e| format!("Failed to write .zshenv: {}", e))?;
+        .map_err(|e| format!("Failed to write .zshenv: {e}"))?;
 
     let zprofile_content = format!(
         r#"# SideX Shell Integration - Auto-generated
@@ -585,7 +585,7 @@ fi
 
     let zprofile_path = zdotdir.join(".zprofile");
     std::fs::write(&zprofile_path, zprofile_content)
-        .map_err(|e| format!("Failed to write .zprofile: {}", e))?;
+        .map_err(|e| format!("Failed to write .zprofile: {e}"))?;
 
     let zlogin_content = format!(
         r#"# SideX Shell Integration - Auto-generated
@@ -598,7 +598,7 @@ fi
 
     let zlogin_path = zdotdir.join(".zlogin");
     std::fs::write(&zlogin_path, zlogin_content)
-        .map_err(|e| format!("Failed to write .zlogin: {}", e))?;
+        .map_err(|e| format!("Failed to write .zlogin: {e}"))?;
 
     Ok(zdotdir.to_string_lossy().to_string())
 }

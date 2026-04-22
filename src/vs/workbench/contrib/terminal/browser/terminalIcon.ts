@@ -18,12 +18,13 @@ import { createStyleSheet } from '../../../../base/browser/domStylesheets.js';
 import { DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
 import { isString } from '../../../../base/common/types.js';
 
-
 export function getColorClass(colorKey: string): string;
 export function getColorClass(profile: ITerminalProfile): string;
 export function getColorClass(terminal: ITerminalInstance): string | undefined;
 export function getColorClass(extensionTerminalProfile: IExtensionTerminalProfile): string | undefined;
-export function getColorClass(terminalOrColorKey: ITerminalInstance | IExtensionTerminalProfile | ITerminalProfile | string): string | undefined {
+export function getColorClass(
+	terminalOrColorKey: ITerminalInstance | IExtensionTerminalProfile | ITerminalProfile | string
+): string | undefined {
 	let color = undefined;
 	if (isString(terminalOrColorKey)) {
 		color = terminalOrColorKey;
@@ -59,10 +60,9 @@ export function createColorStyleElement(colorTheme: IColorTheme): IDisposable {
 		const colorClass = getColorClass(colorKey);
 		const color = colorTheme.getColor(colorKey);
 		if (color) {
-			css += (
+			css +=
 				`.monaco-workbench .${colorClass} .codicon:first-child:not(.codicon-split-horizontal):not(.codicon-trashcan):not(.file-icon)` +
-				`{ color: ${color} !important; }`
-			);
+				`{ color: ${color} !important; }`;
 		}
 	}
 	styleElement.textContent = css;
@@ -77,23 +77,25 @@ export function getColorStyleContent(colorTheme: IColorTheme, editor?: boolean):
 		const color = colorTheme.getColor(colorKey);
 		if (color) {
 			if (editor) {
-				css += (
+				css +=
 					`.monaco-workbench .show-file-icons .predefined-file-icon.terminal-tab.${colorClass}::before,` +
 					`.monaco-workbench .show-file-icons .file-icon.terminal-tab.${colorClass}::before` +
-					`{ color: ${color} !important; }`
-				);
+					`{ color: ${color} !important; }`;
 			} else {
-				css += (
+				css +=
 					`.monaco-workbench .${colorClass} .codicon:first-child:not(.codicon-split-horizontal):not(.codicon-trashcan):not(.file-icon)` +
-					`{ color: ${color} !important; }`
-				);
+					`{ color: ${color} !important; }`;
 			}
 		}
 	}
 	return css;
 }
 
-export function getUriClasses(terminal: ITerminalInstance | IExtensionTerminalProfile | ITerminalProfile, colorScheme: ColorScheme, extensionContributed?: boolean): string[] | undefined {
+export function getUriClasses(
+	terminal: ITerminalInstance | IExtensionTerminalProfile | ITerminalProfile,
+	colorScheme: ColorScheme,
+	extensionContributed?: boolean
+): string[] | undefined {
 	const icon = terminal.icon;
 	if (!icon) {
 		return undefined;
@@ -123,7 +125,10 @@ export function getUriClasses(terminal: ITerminalInstance | IExtensionTerminalPr
 	return iconClasses;
 }
 
-export function getIconId(accessor: ServicesAccessor, terminal: ITerminalInstance | IExtensionTerminalProfile | ITerminalProfile): string {
+export function getIconId(
+	accessor: ServicesAccessor,
+	terminal: ITerminalInstance | IExtensionTerminalProfile | ITerminalProfile
+): string {
 	if (isString(terminal.icon)) {
 		return terminal.icon;
 	}

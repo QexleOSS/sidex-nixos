@@ -3,7 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { addDisposableListener, Dimension, EventType, findParentWithClass, getWindow } from '../../../../base/browser/dom.js';
+import {
+	addDisposableListener,
+	Dimension,
+	EventType,
+	findParentWithClass,
+	getWindow
+} from '../../../../base/browser/dom.js';
 import { CancellationTokenSource } from '../../../../base/common/cancellation.js';
 import { Emitter } from '../../../../base/common/event.js';
 import { DisposableStore, IDisposable, MutableDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
@@ -23,7 +29,12 @@ import { IViewletViewOptions } from '../../../browser/parts/views/viewsViewlet.j
 import { Memento } from '../../../common/memento.js';
 import { IViewBadge, IViewDescriptorService } from '../../../common/views.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
-import { ExtensionKeyedWebviewOriginStore, IOverlayWebview, IWebviewService, WebviewContentPurpose } from '../../webview/browser/webview.js';
+import {
+	ExtensionKeyedWebviewOriginStore,
+	IOverlayWebview,
+	IWebviewService,
+	WebviewContentPurpose
+} from '../../webview/browser/webview.js';
 import { WebviewWindowDragMonitor } from '../../webview/browser/webviewWindowDragMonitor.js';
 import { IWebviewViewService, WebviewView } from './webviewViewService.js';
 import { IActivityService, NumberBadge } from '../../../services/activity/common/activity.js';
@@ -31,7 +42,7 @@ import { IExtensionService } from '../../../services/extensions/common/extension
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 
 const storageKeys = {
-	webviewState: 'webviewState',
+	webviewState: 'webviewState'
 } as const;
 
 interface WebviewViewState {
@@ -39,7 +50,6 @@ interface WebviewViewState {
 }
 
 export class WebviewViewPane extends ViewPane {
-
 	private static _originStore?: ExtensionKeyedWebviewOriginStore;
 
 	private static getOriginStore(storageService: IStorageService): ExtensionKeyedWebviewOriginStore {
@@ -84,9 +94,20 @@ export class WebviewViewPane extends ViewPane {
 		@IStorageService private readonly storageService: IStorageService,
 		@IViewsService private readonly viewService: IViewsService,
 		@IWebviewService private readonly webviewService: IWebviewService,
-		@IWebviewViewService private readonly webviewViewService: IWebviewViewService,
+		@IWebviewViewService private readonly webviewViewService: IWebviewViewService
 	) {
-		super({ ...options, titleMenuId: MenuId.ViewTitle, showActions: ViewPaneShowActions.WhenExpanded }, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService);
+		super(
+			{ ...options, titleMenuId: MenuId.ViewTitle, showActions: ViewPaneShowActions.WhenExpanded },
+			keybindingService,
+			contextMenuService,
+			configurationService,
+			contextKeyService,
+			viewDescriptorService,
+			instantiationService,
+			openerService,
+			themeService,
+			hoverService
+		);
 		this.extensionId = options.fromExtensionId;
 		this.defaultTitle = this.title;
 
@@ -95,12 +116,14 @@ export class WebviewViewPane extends ViewPane {
 
 		this._register(this.onDidChangeBodyVisibility(() => this.updateTreeVisibility()));
 
-		this._register(this.webviewViewService.onNewResolverRegistered(e => {
-			if (e.viewType === this.id) {
-				// Potentially re-activate if we have a new resolver
-				this.updateTreeVisibility();
-			}
-		}));
+		this._register(
+			this.webviewViewService.onNewResolverRegistered(e => {
+				if (e.viewType === this.id) {
+					// Potentially re-activate if we have a new resolver
+					this.updateTreeVisibility();
+				}
+			})
+		);
 
 		this.updateTreeVisibility();
 	}
@@ -137,9 +160,11 @@ export class WebviewViewPane extends ViewPane {
 				}, 0);
 			});
 
-			this._register(toDisposable(() => {
-				this._resizeObserver?.disconnect();
-			}));
+			this._register(
+				toDisposable(() => {
+					this._resizeObserver?.disconnect();
+				})
+			);
 			this._resizeObserver.observe(container);
 		}
 	}
@@ -175,7 +200,9 @@ export class WebviewViewPane extends ViewPane {
 
 		this._activated = true;
 
-		const origin = this.extensionId ? WebviewViewPane.getOriginStore(this.storageService).getOrigin(this.id, this.extensionId) : undefined;
+		const origin = this.extensionId
+			? WebviewViewPane.getOriginStore(this.storageService).getOrigin(this.id, this.extensionId)
+			: undefined;
 		const webview = this.webviewService.createWebviewOverlay({
 			origin,
 			providedViewType: this.id,
@@ -191,21 +218,33 @@ export class WebviewViewPane extends ViewPane {
 			this.layoutWebview();
 		}
 
-		this._webviewDisposables.add(toDisposable(() => {
-			this._webview.value?.release(this);
-		}));
+		this._webviewDisposables.add(
+			toDisposable(() => {
+				this._webview.value?.release(this);
+			})
+		);
 
-		this._webviewDisposables.add(webview.onDidUpdateState(() => {
-			this.viewState[storageKeys.webviewState] = webview.state;
-		}));
+		this._webviewDisposables.add(
+			webview.onDidUpdateState(() => {
+				this.viewState[storageKeys.webviewState] = webview.state;
+			})
+		);
 
 		// Re-dispatch all drag events back to the drop target to support view drag drop
-		for (const event of [EventType.DRAG, EventType.DRAG_END, EventType.DRAG_ENTER, EventType.DRAG_LEAVE, EventType.DRAG_START]) {
-			this._webviewDisposables.add(addDisposableListener(this._webview.value.container, event, e => {
-				e.preventDefault();
-				e.stopImmediatePropagation();
-				this.dropTargetElement.dispatchEvent(new DragEvent(e.type, e));
-			}));
+		for (const event of [
+			EventType.DRAG,
+			EventType.DRAG_END,
+			EventType.DRAG_ENTER,
+			EventType.DRAG_LEAVE,
+			EventType.DRAG_START
+		]) {
+			this._webviewDisposables.add(
+				addDisposableListener(this._webview.value.container, event, e => {
+					e.preventDefault();
+					e.stopImmediatePropagation();
+					this.dropTargetElement.dispatchEvent(new DragEvent(e.type, e));
+				})
+			);
 		}
 
 		this._webviewDisposables.add(new WebviewWindowDragMonitor(getWindow(this.element), () => this._webview.value));
@@ -221,14 +260,26 @@ export class WebviewViewPane extends ViewPane {
 				onDidChangeVisibility: this.onDidChangeBodyVisibility,
 				onDispose: this.onDispose,
 
-				get title(): string | undefined { return self.setTitle; },
-				set title(value: string | undefined) { self.updateTitle(value); },
+				get title(): string | undefined {
+					return self.setTitle;
+				},
+				set title(value: string | undefined) {
+					self.updateTitle(value);
+				},
 
-				get description(): string | undefined { return self.titleDescription; },
-				set description(value: string | undefined) { self.updateTitleDescription(value); },
+				get description(): string | undefined {
+					return self.titleDescription;
+				},
+				set description(value: string | undefined) {
+					self.updateTitleDescription(value);
+				},
 
-				get badge(): IViewBadge | undefined { return self.badge; },
-				set badge(badge: IViewBadge | undefined) { self.updateBadge(badge); },
+				get badge(): IViewBadge | undefined {
+					return self.badge;
+				},
+				set badge(badge: IViewBadge | undefined) {
+					self.updateBadge(badge);
+				},
 
 				dispose: () => {
 					// Only reset and clear the webview itself. Don't dispose of the view container
@@ -237,7 +288,7 @@ export class WebviewViewPane extends ViewPane {
 					this._webviewDisposables.clear();
 				},
 
-				show: (preserveFocus) => {
+				show: preserveFocus => {
 					this.viewService.openView(this.id, !preserveFocus);
 				}
 			};
@@ -252,9 +303,7 @@ export class WebviewViewPane extends ViewPane {
 	}
 
 	protected updateBadge(badge: IViewBadge | undefined) {
-
-		if (this.badge?.value === badge?.value &&
-			this.badge?.tooltip === badge?.tooltip) {
+		if (this.badge?.value === badge?.value && this.badge?.tooltip === badge?.tooltip) {
 			return;
 		}
 

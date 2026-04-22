@@ -23,7 +23,6 @@ interface WebviewThemeData {
 }
 
 export class WebviewThemeDataProvider extends Disposable {
-
 	private _cachedWebViewThemeData: WebviewThemeData | undefined = undefined;
 
 	private readonly _onThemeDataChanged = this._register(new Emitter<void>());
@@ -31,20 +30,30 @@ export class WebviewThemeDataProvider extends Disposable {
 
 	constructor(
 		@IWorkbenchThemeService private readonly _themeService: IWorkbenchThemeService,
-		@IConfigurationService private readonly _configurationService: IConfigurationService,
+		@IConfigurationService private readonly _configurationService: IConfigurationService
 	) {
 		super();
 
-		this._register(this._themeService.onDidColorThemeChange(() => {
-			this._reset();
-		}));
-
-		const webviewConfigurationKeys = ['editor.fontFamily', 'editor.fontWeight', 'editor.fontSize', 'editor.fontLigatures', 'accessibility.underlineLinks'];
-		this._register(this._configurationService.onDidChangeConfiguration(e => {
-			if (webviewConfigurationKeys.some(key => e.affectsConfiguration(key))) {
+		this._register(
+			this._themeService.onDidColorThemeChange(() => {
 				this._reset();
-			}
-		}));
+			})
+		);
+
+		const webviewConfigurationKeys = [
+			'editor.fontFamily',
+			'editor.fontWeight',
+			'editor.fontSize',
+			'editor.fontLigatures',
+			'accessibility.underlineLinks'
+		];
+		this._register(
+			this._configurationService.onDidChangeConfiguration(e => {
+				if (webviewConfigurationKeys.some(key => e.affectsConfiguration(key))) {
+					this._reset();
+				}
+			})
+		);
 	}
 
 	public getTheme(): IWorkbenchColorTheme {
@@ -61,13 +70,16 @@ export class WebviewThemeDataProvider extends Disposable {
 			const linkUnderlines = this._configurationService.getValue('accessibility.underlineLinks');
 
 			const theme = this._themeService.getColorTheme();
-			const exportedColors = colorRegistry.getColorRegistry().getColors().reduce<Record<string, string>>((colors, entry) => {
-				const color = theme.getColor(entry.id);
-				if (color) {
-					colors['vscode-' + entry.id.replace('.', '-')] = color.toString();
-				}
-				return colors;
-			}, {});
+			const exportedColors = colorRegistry
+				.getColorRegistry()
+				.getColors()
+				.reduce<Record<string, string>>((colors, entry) => {
+					const color = theme.getColor(entry.id);
+					if (color) {
+						colors['vscode-' + entry.id.replace('.', '-')] = color.toString();
+					}
+					return colors;
+				}, {});
 
 			const sizeRegistry = getSizeRegistry();
 			const exportedSizes = sizeRegistry.getSizes().reduce<Record<string, string>>((sizes, entry) => {
@@ -88,7 +100,7 @@ export class WebviewThemeDataProvider extends Disposable {
 				'text-link-decoration': linkUnderlines ? 'underline' : 'none',
 				...exportedColors,
 				...exportedSizes,
-				'vscode-editor-font-feature-settings': editorFontLigatures,
+				'vscode-editor-font-feature-settings': editorFontLigatures
 			};
 
 			const activeTheme = ApiThemeClassName.fromTheme(theme);
@@ -108,16 +120,20 @@ enum ApiThemeClassName {
 	light = 'vscode-light',
 	dark = 'vscode-dark',
 	highContrast = 'vscode-high-contrast',
-	highContrastLight = 'vscode-high-contrast-light',
+	highContrastLight = 'vscode-high-contrast-light'
 }
 
 namespace ApiThemeClassName {
 	export function fromTheme(theme: IWorkbenchColorTheme): ApiThemeClassName {
 		switch (theme.type) {
-			case ColorScheme.LIGHT: return ApiThemeClassName.light;
-			case ColorScheme.DARK: return ApiThemeClassName.dark;
-			case ColorScheme.HIGH_CONTRAST_DARK: return ApiThemeClassName.highContrast;
-			case ColorScheme.HIGH_CONTRAST_LIGHT: return ApiThemeClassName.highContrastLight;
+			case ColorScheme.LIGHT:
+				return ApiThemeClassName.light;
+			case ColorScheme.DARK:
+				return ApiThemeClassName.dark;
+			case ColorScheme.HIGH_CONTRAST_DARK:
+				return ApiThemeClassName.highContrast;
+			case ColorScheme.HIGH_CONTRAST_LIGHT:
+				return ApiThemeClassName.highContrastLight;
 		}
 	}
 }

@@ -24,7 +24,9 @@ export interface WebviewFindDelegate {
 }
 
 export class WebviewFindWidget extends SimpleFindWidget {
-	protected async _getResultCount(dataChanged?: boolean): Promise<{ resultIndex: number; resultCount: number } | undefined> {
+	protected async _getResultCount(
+		dataChanged?: boolean
+	): Promise<{ resultIndex: number; resultCount: number } | undefined> {
 		return undefined;
 	}
 
@@ -39,21 +41,33 @@ export class WebviewFindWidget extends SimpleFindWidget {
 		@IConfigurationService configurationService: IConfigurationService,
 		@IAccessibilityService accessibilityService: IAccessibilityService
 	) {
-		super({
-			showCommonFindToggles: false,
-			checkImeCompletionState: _delegate.checkImeCompletionState,
-			enableSash: true,
-		}, contextViewService, contextKeyService, hoverService, keybindingService, configurationService, accessibilityService);
+		super(
+			{
+				showCommonFindToggles: false,
+				checkImeCompletionState: _delegate.checkImeCompletionState,
+				enableSash: true
+			},
+			contextViewService,
+			contextKeyService,
+			hoverService,
+			keybindingService,
+			configurationService,
+			accessibilityService
+		);
 		this._findWidgetFocused = KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_FOCUSED.bindTo(contextKeyService);
 
-		this._register(_delegate.hasFindResult(hasResult => {
-			this.updateButtons(hasResult);
-			this.focusFindBox();
-		}));
+		this._register(
+			_delegate.hasFindResult(hasResult => {
+				this.updateButtons(hasResult);
+				this.focusFindBox();
+			})
+		);
 
-		this._register(_delegate.onDidStopFind(() => {
-			this.updateButtons(false);
-		}));
+		this._register(
+			_delegate.onDidStopFind(() => {
+				this.updateButtons(false);
+			})
+		);
 	}
 
 	public find(previous: boolean) {
@@ -87,9 +101,9 @@ export class WebviewFindWidget extends SimpleFindWidget {
 		this._findWidgetFocused.reset();
 	}
 
-	protected _onFindInputFocusTrackerFocus() { }
+	protected _onFindInputFocusTrackerFocus() {}
 
-	protected _onFindInputFocusTrackerBlur() { }
+	protected _onFindInputFocusTrackerBlur() {}
 
-	findFirst() { }
+	findFirst() {}
 }

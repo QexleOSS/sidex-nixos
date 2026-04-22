@@ -8,14 +8,16 @@ import { DisposableStore, IDisposable } from '../../../../base/common/lifecycle.
 import { ThemeColor } from '../../../../base/common/themables.js';
 import { Command } from '../../../../editor/common/languages.js';
 import { IMarkdownString } from '../../../../base/common/htmlContent.js';
-import { IManagedHoverTooltipHTMLElement, IManagedHoverTooltipMarkdownString } from '../../../../base/browser/ui/hover/hover.js';
+import {
+	IManagedHoverTooltipHTMLElement,
+	IManagedHoverTooltipMarkdownString
+} from '../../../../base/browser/ui/hover/hover.js';
 import { ColorIdentifier } from '../../../../platform/theme/common/colorRegistry.js';
 import { IAuxiliaryStatusbarPart, IStatusbarEntryContainer } from '../../../browser/parts/statusbar/statusbarPart.js';
 
 export const IStatusbarService = createDecorator<IStatusbarService>('statusbarService');
 
 export interface IStatusbarService extends IStatusbarEntryContainer {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -26,7 +28,10 @@ export interface IStatusbarService extends IStatusbarEntryContainer {
 	/**
 	 * Creates a new auxililary status bar part in the provided container.
 	 */
-	createAuxiliaryStatusbarPart(container: HTMLElement, instantiationService: IInstantiationService): IAuxiliaryStatusbarPart;
+	createAuxiliaryStatusbarPart(
+		container: HTMLElement,
+		instantiationService: IInstantiationService
+	): IAuxiliaryStatusbarPart;
 
 	/**
 	 * Create a scoped status bar service that only operates on the provided
@@ -41,7 +46,6 @@ export const enum StatusbarAlignment {
 }
 
 export interface IStatusbarEntryLocation {
-
 	/**
 	 * The identifier and priority of another status bar
 	 * entry to position relative to. If the referenced
@@ -73,7 +77,6 @@ export function isStatusbarEntryLocation(thing: unknown): thing is IStatusbarEnt
 }
 
 export interface IStatusbarEntryPriority {
-
 	/**
 	 * The main priority of the entry that
 	 * defines the order of appearance:
@@ -98,7 +101,10 @@ export interface IStatusbarEntryPriority {
 export function isStatusbarEntryPriority(thing: unknown): thing is IStatusbarEntryPriority {
 	const candidate = thing as IStatusbarEntryPriority | undefined;
 
-	return (typeof candidate?.primary === 'number' || isStatusbarEntryLocation(candidate?.primary)) && typeof candidate?.secondary === 'number';
+	return (
+		(typeof candidate?.primary === 'number' || isStatusbarEntryLocation(candidate?.primary)) &&
+		typeof candidate?.secondary === 'number'
+	);
 }
 
 export const ShowTooltipCommand: Command = {
@@ -114,9 +120,21 @@ export interface IStatusbarStyleOverride {
 }
 
 export type StatusbarEntryKind = 'standard' | 'warning' | 'error' | 'prominent' | 'remote' | 'offline';
-export const StatusbarEntryKinds: StatusbarEntryKind[] = ['standard', 'warning', 'error', 'prominent', 'remote', 'offline'];
+export const StatusbarEntryKinds: StatusbarEntryKind[] = [
+	'standard',
+	'warning',
+	'error',
+	'prominent',
+	'remote',
+	'offline'
+];
 
-export type TooltipContent = string | IMarkdownString | HTMLElement | IManagedHoverTooltipMarkdownString | IManagedHoverTooltipHTMLElement;
+export type TooltipContent =
+	| string
+	| IMarkdownString
+	| HTMLElement
+	| IManagedHoverTooltipMarkdownString
+	| IManagedHoverTooltipHTMLElement;
 
 export interface ITooltipWithCommands {
 	readonly content: TooltipContent;
@@ -133,7 +151,6 @@ export function isTooltipWithCommands(thing: unknown): thing is ITooltipWithComm
  * A declarative way of describing a status bar entry
  */
 export interface IStatusbarEntry {
-
 	/**
 	 * The (short) name to show for the entry like 'Language Indicator',
 	 * 'Git Status' etc.
@@ -218,12 +235,11 @@ export interface IStatusbarEntry {
 	/**
 	 * Allows to add content with custom rendering to the status bar entry.
 	 * If possible, use `text` instead.
-	*/
+	 */
 	readonly content?: HTMLElement;
 }
 
 export interface IStatusbarEntryAccessor extends IDisposable {
-
 	/**
 	 * Allows to update an existing status bar entry.
 	 */

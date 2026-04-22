@@ -9,7 +9,6 @@ import { Disposable } from '../../../../base/common/lifecycle.js';
 import { IColorPresentation } from '../../../common/languages.js';
 
 export class ColorPickerModel extends Disposable {
-
 	readonly originalColor: Color;
 	private _color: Color;
 
@@ -26,7 +25,9 @@ export class ColorPickerModel extends Disposable {
 		this._onDidChangeColor.fire(color);
 	}
 
-	get presentation(): IColorPresentation { return this.colorPresentations[this.presentationIndex]; }
+	get presentation(): IColorPresentation {
+		return this.colorPresentations[this.presentationIndex];
+	}
 
 	private _colorPresentations: IColorPresentation[];
 
@@ -51,7 +52,11 @@ export class ColorPickerModel extends Disposable {
 	private readonly _onDidChangePresentation = this._register(new Emitter<IColorPresentation>());
 	readonly onDidChangePresentation: Event<IColorPresentation> = this._onDidChangePresentation.event;
 
-	constructor(color: Color, availableColorPresentations: IColorPresentation[], private presentationIndex: number) {
+	constructor(
+		color: Color,
+		availableColorPresentations: IColorPresentation[],
+		private presentationIndex: number
+	) {
 		super();
 		this.originalColor = color;
 		this._color = color;

@@ -33,7 +33,6 @@ import { BannerFocused } from '../../../common/contextkeys.js';
 // Banner Part
 
 export class BannerPart extends Part implements IBannerService {
-
 	declare readonly _serviceBrand: undefined;
 
 	// #region IView
@@ -51,7 +50,9 @@ export class BannerPart extends Part implements IBannerService {
 	}
 
 	private _onDidChangeSize = this._register(new Emitter<{ width: number; height: number } | undefined>());
-	override get onDidChange() { return this._onDidChangeSize.event; }
+	override get onDidChange() {
+		return this._onDidChangeSize.event;
+	}
 
 	//#endregion
 
@@ -68,7 +69,7 @@ export class BannerPart extends Part implements IBannerService {
 		@IStorageService storageService: IStorageService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IMarkdownRendererService private readonly markdownRendererService: IMarkdownRendererService,
+		@IMarkdownRendererService private readonly markdownRendererService: IMarkdownRendererService
 	) {
 		super(Parts.BANNER_PART, { hasTitle: false }, themeService, storageService, layoutService);
 	}
@@ -78,11 +79,13 @@ export class BannerPart extends Part implements IBannerService {
 		this.element.tabIndex = 0;
 
 		// Restore focused action if needed
-		this._register(addDisposableListener(this.element, EventType.FOCUS, () => {
-			if (this.focusedActionIndex !== -1) {
-				this.focusActionLink();
-			}
-		}));
+		this._register(
+			addDisposableListener(this.element, EventType.FOCUS, () => {
+				if (this.focusedActionIndex !== -1) {
+					this.focusActionLink();
+				}
+			})
+		);
 
 		// Track focus
 		const scopedContextKeyService = this._register(this.contextKeyService.createScoped(this.element));
@@ -216,15 +219,19 @@ export class BannerPart extends Part implements IBannerService {
 		this.messageActionsContainer = append(this.element, $('div.message-actions-container'));
 		if (item.actions) {
 			for (const action of item.actions) {
-				this._register(this.instantiationService.createInstance(Link, this.messageActionsContainer, { ...action, tabIndex: -1 }, {}));
+				this._register(
+					this.instantiationService.createInstance(Link, this.messageActionsContainer, { ...action, tabIndex: -1 }, {})
+				);
 			}
 		}
 
 		// Action
 		const actionBarContainer = append(this.element, $('div.action-container'));
 		this.actionBar = this._register(new ActionBar(actionBarContainer));
-		const label = item.closeLabel ?? localize('closeBanner', "Close Banner");
-		const closeAction = this._register(new Action('banner.close', label, ThemeIcon.asClassName(widgetClose), true, () => this.close(item)));
+		const label = item.closeLabel ?? localize('closeBanner', 'Close Banner');
+		const closeAction = this._register(
+			new Action('banner.close', label, ThemeIcon.asClassName(widgetClose), true, () => this.close(item))
+		);
 		this.actionBar.push(closeAction, { icon: true, label: false });
 		this.actionBar.setFocusable(false);
 
@@ -240,7 +247,6 @@ export class BannerPart extends Part implements IBannerService {
 }
 
 registerSingleton(IBannerService, BannerPart, InstantiationType.Eager);
-
 
 // Keybindings
 
@@ -279,13 +285,11 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	}
 });
 
-
 // Actions
 
 class FocusBannerAction extends Action2 {
-
 	static readonly ID = 'workbench.action.focusBanner';
-	static readonly LABEL = localize2('focusBanner', "Focus Banner");
+	static readonly LABEL = localize2('focusBanner', 'Focus Banner');
 
 	constructor() {
 		super({

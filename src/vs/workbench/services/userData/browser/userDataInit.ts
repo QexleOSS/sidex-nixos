@@ -19,17 +19,17 @@ export interface IUserDataInitializer {
 	initializeOtherResources(instantiationService: IInstantiationService): Promise<void>;
 }
 
-export const IUserDataInitializationService = createDecorator<IUserDataInitializationService>('IUserDataInitializationService');
+export const IUserDataInitializationService = createDecorator<IUserDataInitializationService>(
+	'IUserDataInitializationService'
+);
 export interface IUserDataInitializationService extends IUserDataInitializer {
 	_serviceBrand: undefined;
 }
 
 export class UserDataInitializationService implements IUserDataInitializationService {
-
 	_serviceBrand: undefined;
 
-	constructor(private readonly initializers: IUserDataInitializer[] = []) {
-	}
+	constructor(private readonly initializers: IUserDataInitializer[] = []) {}
 
 	async whenInitializationFinished(): Promise<void> {
 		if (await this.requiresInitialization()) {
@@ -38,7 +38,9 @@ export class UserDataInitializationService implements IUserDataInitializationSer
 	}
 
 	async requiresInitialization(): Promise<boolean> {
-		return (await Promise.all(this.initializers.map(initializer => initializer.requiresInitialization()))).some(result => result);
+		return (await Promise.all(this.initializers.map(initializer => initializer.requiresInitialization()))).some(
+			result => result
+		);
 	}
 
 	async initializeRequiredResources(): Promise<void> {
@@ -49,16 +51,19 @@ export class UserDataInitializationService implements IUserDataInitializationSer
 
 	async initializeOtherResources(instantiationService: IInstantiationService): Promise<void> {
 		if (await this.requiresInitialization()) {
-			await Promise.all(this.initializers.map(initializer => initializer.initializeOtherResources(instantiationService)));
+			await Promise.all(
+				this.initializers.map(initializer => initializer.initializeOtherResources(instantiationService))
+			);
 		}
 	}
 
 	async initializeInstalledExtensions(instantiationService: IInstantiationService): Promise<void> {
 		if (await this.requiresInitialization()) {
-			await Promise.all(this.initializers.map(initializer => initializer.initializeInstalledExtensions(instantiationService)));
+			await Promise.all(
+				this.initializers.map(initializer => initializer.initializeInstalledExtensions(instantiationService))
+			);
 		}
 	}
-
 }
 
 class InitializeOtherResourcesContribution implements IWorkbenchContribution {
@@ -67,10 +72,15 @@ class InitializeOtherResourcesContribution implements IWorkbenchContribution {
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IExtensionService extensionService: IExtensionService
 	) {
-		extensionService.whenInstalledExtensionsRegistered().then(() => this.initializeOtherResource(userDataInitializeService, instantiationService));
+		extensionService
+			.whenInstalledExtensionsRegistered()
+			.then(() => this.initializeOtherResource(userDataInitializeService, instantiationService));
 	}
 
-	private async initializeOtherResource(userDataInitializeService: IUserDataInitializationService, instantiationService: IInstantiationService): Promise<void> {
+	private async initializeOtherResource(
+		userDataInitializeService: IUserDataInitializationService,
+		instantiationService: IInstantiationService
+	): Promise<void> {
 		if (await userDataInitializeService.requiresInitialization()) {
 			mark('code/willInitOtherUserData');
 			await userDataInitializeService.initializeOtherResources(instantiationService);

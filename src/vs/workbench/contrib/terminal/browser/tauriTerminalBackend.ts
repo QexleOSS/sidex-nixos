@@ -29,7 +29,7 @@ import {
 	TerminalIcon,
 	ProcessPropertyType,
 	IProcessPropertyMap,
-	ITerminalLaunchResult,
+	ITerminalLaunchResult
 } from '../../../../platform/terminal/common/terminal.js';
 import type { IProcessEnvironment } from '../../../../base/common/platform.js';
 import { IWorkbenchContribution } from '../../../common/contributions.js';
@@ -42,7 +42,9 @@ let _invoke: ((cmd: string, args?: Record<string, unknown>) => Promise<unknown>)
 let _listen: ((event: string, handler: (event: { payload: unknown }) => void) => Promise<() => void>) | undefined;
 
 async function ensureTauri(): Promise<boolean> {
-	if (_invoke && _listen) return true;
+	if (_invoke && _listen) {
+		return true;
+	}
 	try {
 		const core = await import('@tauri-apps/api/core');
 		const events = await import('@tauri-apps/api/event');
@@ -56,7 +58,12 @@ async function ensureTauri(): Promise<boolean> {
 }
 
 function getShellBasename(shellPath: string): string {
-	return shellPath.split(/[\\/]/).pop()?.replace(/\.exe$/i, '') || 'zsh';
+	return (
+		shellPath
+			.split(/[\\/]/)
+			.pop()
+			?.replace(/\.exe$/i, '') || 'zsh'
+	);
 }
 
 let nextPtyId = 1;
@@ -86,7 +93,7 @@ class TauriPty extends Disposable implements ITerminalChildProcess {
 		private readonly _cwd: string,
 		private _cols: number,
 		private _rows: number,
-		private readonly _env?: IProcessEnvironment,
+		private readonly _env?: IProcessEnvironment
 	) {
 		super();
 		this.id = nextPtyId++;
@@ -129,7 +136,7 @@ class TauriPty extends Disposable implements ITerminalChildProcess {
 			const dataBuffer: string[] = [];
 			let attached = false;
 
-			this._unlisten = await _listen('terminal-data', (event) => {
+			this._unlisten = await _listen('terminal-data', event => {
 				const payload = event.payload as { terminal_id: number; data: string };
 				if (this._backendId !== undefined && payload.terminal_id === this._backendId) {
 					if (attached) {
@@ -140,21 +147,21 @@ class TauriPty extends Disposable implements ITerminalChildProcess {
 				}
 			});
 
-			this._unlistenExit = await _listen('terminal-exit', (event) => {
+			this._unlistenExit = await _listen('terminal-exit', event => {
 				const payload = event.payload as { terminal_id: number; exit_code: number };
 				if (this._backendId !== undefined && payload.terminal_id === this._backendId) {
 					this._onProcessExit.fire(payload.exit_code);
 				}
 			});
 
-			const backendId = await _invoke('terminal_spawn', {
+			const backendId = (await _invoke('terminal_spawn', {
 				shell: shell ?? null,
 				args: shellArgs ?? null,
 				cwd: this._cwd || null,
 				env: Object.keys(envToPass).length > 0 ? envToPass : null,
 				cols: this._cols,
-				rows: this._rows,
-			}) as number;
+				rows: this._rows
+			})) as number;
 			this._backendId = backendId;
 
 			attached = true;
@@ -165,8 +172,8 @@ class TauriPty extends Disposable implements ITerminalChildProcess {
 
 			let pid = backendId;
 			try {
-				pid = await _invoke('terminal_get_pid', { terminalId: backendId }) as number;
-			} catch { }
+				pid = (await _invoke('terminal_get_pid', { terminalId: backendId })) as number;
+			} catch {}
 
 			this._onProcessReady.fire({ pid, cwd: this._cwd, windowsPty: undefined });
 			this._onDidChangeProperty.fire({ type: ProcessPropertyType.InitialCwd, value: this._cwd });
@@ -187,7 +194,7 @@ class TauriPty extends Disposable implements ITerminalChildProcess {
 	shutdown(immediate: boolean): void {
 		try {
 			if (this._backendId !== undefined && _invoke) {
-				_invoke('terminal_kill', { terminalId: this._backendId }).catch(() => { });
+				_invoke('terminal_kill', { terminalId: this._backendId }).catch(() => {});
 			}
 			this._unlisten?.();
 			this._unlistenExit?.();
@@ -200,7 +207,7 @@ class TauriPty extends Disposable implements ITerminalChildProcess {
 
 	input(data: string): void {
 		if (this._backendId !== undefined && _invoke) {
-			_invoke('terminal_write', { terminalId: this._backendId, data }).catch(() => { });
+			_invoke('terminal_write', { terminalId: this._backendId, data }).catch(() => {});
 		}
 	}
 
@@ -208,17 +215,21 @@ class TauriPty extends Disposable implements ITerminalChildProcess {
 		this._cols = cols;
 		this._rows = rows;
 		if (this._backendId !== undefined && _invoke) {
-			_invoke('terminal_resize', { terminalId: this._backendId, cols, rows }).catch(() => { });
+			_invoke('terminal_resize', { terminalId: this._backendId, cols, rows }).catch(() => {});
 		}
 	}
 
-	acknowledgeDataEvent(_charCount: number): void { }
-	async processBinary(_data: string): Promise<void> { }
-	async getInitialCwd(): Promise<string> { return this._cwd; }
-	async getCwd(): Promise<string> { return this._cwd; }
-	sendSignal(_signal: string): void { }
-	clearBuffer(): void { }
-	async setUnicodeVersion(_version: '6' | '11'): Promise<void> { }
+	acknowledgeDataEvent(_charCount: number): void {}
+	async processBinary(_data: string): Promise<void> {}
+	async getInitialCwd(): Promise<string> {
+		return this._cwd;
+	}
+	async getCwd(): Promise<string> {
+		return this._cwd;
+	}
+	sendSignal(_signal: string): void {}
+	clearBuffer(): void {}
+	async setUnicodeVersion(_version: '6' | '11'): Promise<void> {}
 
 	async refreshProperty<T extends ProcessPropertyType>(property: T): Promise<IProcessPropertyMap[T]> {
 		if (property === ProcessPropertyType.Cwd || property === ProcessPropertyType.InitialCwd) {
@@ -227,7 +238,7 @@ class TauriPty extends Disposable implements ITerminalChildProcess {
 		throw new Error(`Unhandled property: ${property}`);
 	}
 
-	async updateProperty<T extends ProcessPropertyType>(_property: T, _value: IProcessPropertyMap[T]): Promise<void> { }
+	async updateProperty<T extends ProcessPropertyType>(_property: T, _value: IProcessPropertyMap[T]): Promise<void> {}
 
 	override dispose(): void {
 		this.shutdown(true);
@@ -242,7 +253,9 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 	private readonly _whenReadyPromise: Promise<void>;
 	private _resolveReady!: () => void;
 
-	get whenReady(): Promise<void> { return this._whenReadyPromise; }
+	get whenReady(): Promise<void> {
+		return this._whenReadyPromise;
+	}
 
 	private readonly _onPtyHostUnresponsive = this._register(new Emitter<void>());
 	readonly onPtyHostUnresponsive = this._onPtyHostUnresponsive.event;
@@ -250,12 +263,16 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 	readonly onPtyHostResponsive = this._onPtyHostResponsive.event;
 	private readonly _onPtyHostRestart = this._register(new Emitter<void>());
 	readonly onPtyHostRestart = this._onPtyHostRestart.event;
-	private readonly _onDidRequestDetach = this._register(new Emitter<{ requestId: number; workspaceId: string; instanceId: number }>());
+	private readonly _onDidRequestDetach = this._register(
+		new Emitter<{ requestId: number; workspaceId: string; instanceId: number }>()
+	);
 	readonly onDidRequestDetach = this._onDidRequestDetach.event;
 
 	constructor() {
 		super();
-		this._whenReadyPromise = new Promise<void>(resolve => { this._resolveReady = resolve; });
+		this._whenReadyPromise = new Promise<void>(resolve => {
+			this._resolveReady = resolve;
+		});
 		this._init();
 	}
 
@@ -264,7 +281,9 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 		this._resolveReady();
 	}
 
-	setReady(): void { this._resolveReady(); }
+	setReady(): void {
+		this._resolveReady();
+	}
 
 	async createProcess(
 		shellLaunchConfig: IShellLaunchConfig,
@@ -288,18 +307,28 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 		return new TauriPty(shellLaunchConfig, resolvedCwd, cols, rows, _env);
 	}
 
-	async attachToProcess(_id: number): Promise<ITerminalChildProcess | undefined> { return undefined; }
-	async attachToRevivedProcess(_id: number): Promise<ITerminalChildProcess | undefined> { return undefined; }
-	async listProcesses(): Promise<IProcessDetails[]> { return []; }
-	async getLatency(): Promise<IPtyHostLatencyMeasurement[]> { return []; }
+	async attachToProcess(_id: number): Promise<ITerminalChildProcess | undefined> {
+		return undefined;
+	}
+	async attachToRevivedProcess(_id: number): Promise<ITerminalChildProcess | undefined> {
+		return undefined;
+	}
+	async listProcesses(): Promise<IProcessDetails[]> {
+		return [];
+	}
+	async getLatency(): Promise<IPtyHostLatencyMeasurement[]> {
+		return [];
+	}
 
 	async getDefaultSystemShell(_osOverride?: OperatingSystem): Promise<string> {
 		await ensureTauri();
 		if (_invoke) {
 			try {
-				const shell = await _invoke('get_default_shell') as string;
-				if (shell) return shell;
-			} catch { }
+				const shell = (await _invoke('get_default_shell')) as string;
+				if (shell) {
+					return shell;
+				}
+			} catch {}
 		}
 		return '/bin/zsh';
 	}
@@ -315,12 +344,12 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 		await ensureTauri();
 
 		const iconMap: Record<string, ThemeIcon> = {
-			'zsh': Codicon.terminal,
-			'bash': Codicon.terminalBash,
-			'fish': Codicon.terminal,
-			'sh': Codicon.terminalLinux,
-			'pwsh': Codicon.terminalPowershell,
-			'powershell': Codicon.terminalPowershell,
+			zsh: Codicon.terminal,
+			bash: Codicon.terminalBash,
+			fish: Codicon.terminal,
+			sh: Codicon.terminalLinux,
+			pwsh: Codicon.terminalPowershell,
+			powershell: Codicon.terminalPowershell
 		};
 
 		interface ShellInfoResult {
@@ -332,7 +361,7 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 		let detectedShells: ShellInfoResult[] = [];
 		if (_invoke) {
 			try {
-				detectedShells = await _invoke('get_available_shells', {}) as ShellInfoResult[];
+				detectedShells = (await _invoke('get_available_shells', {})) as ShellInfoResult[];
 			} catch {
 				// Fallback: check shells individually
 			}
@@ -356,7 +385,7 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 					path: shell.path,
 					isDefault,
 					isAutoDetected: false,
-					icon: iconMap[shellBaseName] || iconMap[shell.name] || Codicon.terminal,
+					icon: iconMap[shellBaseName] || iconMap[shell.name] || Codicon.terminal
 				});
 			}
 
@@ -366,7 +395,7 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 					path: defaultShell,
 					isDefault: true,
 					isAutoDetected: false,
-					icon: iconMap[defaultName] || Codicon.terminal,
+					icon: iconMap[defaultName] || Codicon.terminal
 				});
 			}
 
@@ -380,7 +409,7 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 			{ path: '/usr/bin/fish', profileName: 'fish' },
 			{ path: '/usr/local/bin/fish', profileName: 'fish' },
 			{ path: '/opt/homebrew/bin/fish', profileName: 'fish' },
-			{ path: '/bin/sh', profileName: 'sh' },
+			{ path: '/bin/sh', profileName: 'sh' }
 		];
 
 		const profiles: ITerminalProfile[] = [];
@@ -394,7 +423,7 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 			let exists = false;
 			if (_invoke) {
 				try {
-					exists = await _invoke('check_shell_exists', { path: shell.path }) as boolean;
+					exists = (await _invoke('check_shell_exists', { path: shell.path })) as boolean;
 				} catch {
 					exists = false;
 				}
@@ -410,7 +439,7 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 				path: shell.path,
 				isDefault: shell.profileName === defaultName,
 				isAutoDetected: false,
-				icon: iconMap[shell.profileName] || Codicon.terminal,
+				icon: iconMap[shell.profileName] || Codicon.terminal
 			});
 		}
 
@@ -420,7 +449,7 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 				path: defaultShell,
 				isDefault: true,
 				isAutoDetected: false,
-				icon: iconMap[defaultName] || Codicon.terminal,
+				icon: iconMap[defaultName] || Codicon.terminal
 			});
 		}
 
@@ -435,7 +464,7 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 		await ensureTauri();
 		if (_invoke) {
 			try {
-				return await _invoke('get_all_env') as IProcessEnvironment;
+				return (await _invoke('get_all_env')) as IProcessEnvironment;
 			} catch {
 				// Fall through to an empty environment if invoke is unavailable.
 			}
@@ -445,21 +474,29 @@ class TauriTerminalBackend extends Disposable implements ITerminalBackend {
 	async getShellEnvironment(): Promise<IProcessEnvironment | undefined> {
 		return this.getEnvironment();
 	}
-	async setTerminalLayoutInfo(_layoutInfo?: ITerminalsLayoutInfoById): Promise<void> { }
-	async updateTitle(_id: number, _title: string, _titleSource: TitleEventSource): Promise<void> { }
-	async updateIcon(_id: number, _userInitiated: boolean, _icon: TerminalIcon, _color?: string): Promise<void> { }
-	async setNextCommandId(_id: number, _commandLine: string, _commandId: string): Promise<void> { }
-	async getTerminalLayoutInfo(): Promise<ITerminalsLayoutInfo | undefined> { return undefined; }
-	async getPerformanceMarks(): Promise<performance.PerformanceMark[]> { return []; }
-	async reduceConnectionGraceTime(): Promise<void> { }
-	async requestDetachInstance(_workspaceId: string, _instanceId: number): Promise<IProcessDetails | undefined> { return undefined; }
-	async acceptDetachInstanceReply(_requestId: number, _persistentProcessId?: number): Promise<void> { }
-	async persistTerminalState(): Promise<void> { }
-	restartPtyHost(): void { }
+	async setTerminalLayoutInfo(_layoutInfo?: ITerminalsLayoutInfoById): Promise<void> {}
+	async updateTitle(_id: number, _title: string, _titleSource: TitleEventSource): Promise<void> {}
+	async updateIcon(_id: number, _userInitiated: boolean, _icon: TerminalIcon, _color?: string): Promise<void> {}
+	async setNextCommandId(_id: number, _commandLine: string, _commandId: string): Promise<void> {}
+	async getTerminalLayoutInfo(): Promise<ITerminalsLayoutInfo | undefined> {
+		return undefined;
+	}
+	async getPerformanceMarks(): Promise<performance.PerformanceMark[]> {
+		return [];
+	}
+	async reduceConnectionGraceTime(): Promise<void> {}
+	async requestDetachInstance(_workspaceId: string, _instanceId: number): Promise<IProcessDetails | undefined> {
+		return undefined;
+	}
+	async acceptDetachInstanceReply(_requestId: number, _persistentProcessId?: number): Promise<void> {}
+	async persistTerminalState(): Promise<void> {}
+	restartPtyHost(): void {}
 
-	async installAutoReply(_match: string, _reply: string): Promise<void> { }
-	async uninstallAllAutoReplies(): Promise<void> { }
-	async getAutoReplies(): Promise<Map<string, string>> { return new Map(); }
+	async installAutoReply(_match: string, _reply: string): Promise<void> {}
+	async uninstallAllAutoReplies(): Promise<void> {}
+	async getAutoReplies(): Promise<Map<string, string>> {
+		return new Map();
+	}
 }
 
 export class TauriTerminalBackendContribution implements IWorkbenchContribution {
@@ -469,23 +506,25 @@ export class TauriTerminalBackendContribution implements IWorkbenchContribution 
 		@IInstantiationService instantiationService: IInstantiationService,
 		@ITerminalInstanceService terminalInstanceService: ITerminalInstanceService,
 		@ITerminalService terminalService: ITerminalService,
-		@IConfigurationService configurationService: IConfigurationService,
+		@IConfigurationService configurationService: IConfigurationService
 	) {
 		if (!(globalThis as any).__SIDEX_TAURI__) {
 			return;
 		}
 
 		const backend = new TauriTerminalBackend();
-		Registry.as<ITerminalBackendRegistry>(TerminalExtensions.Backend)
-			.registerTerminalBackend(backend);
+		Registry.as<ITerminalBackendRegistry>(TerminalExtensions.Backend).registerTerminalBackend(backend);
 		terminalInstanceService.didRegisterBackend(backend);
 		terminalService.registerProcessSupport(true);
 
 		this._setDefaultProfile(backend, configurationService);
 	}
 
-	private async _setDefaultProfile(backend: TauriTerminalBackend, configurationService: IConfigurationService): Promise<void> {
-		const platformKey = isMacintosh ? 'osx' : (isWindows ? 'windows' : 'linux');
+	private async _setDefaultProfile(
+		backend: TauriTerminalBackend,
+		configurationService: IConfigurationService
+	): Promise<void> {
+		const platformKey = isMacintosh ? 'osx' : isWindows ? 'windows' : 'linux';
 		const configKey = `terminal.integrated.defaultProfile.${platformKey}`;
 		const current = configurationService.getValue<string>(configKey);
 		if (!current) {
@@ -499,5 +538,5 @@ export class TauriTerminalBackendContribution implements IWorkbenchContribution 
 registerWorkbenchContribution2(
 	TauriTerminalBackendContribution.ID,
 	TauriTerminalBackendContribution,
-	WorkbenchPhase.BlockStartup,
+	WorkbenchPhase.BlockStartup
 );

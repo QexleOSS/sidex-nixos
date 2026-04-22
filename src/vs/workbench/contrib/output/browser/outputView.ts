@@ -13,7 +13,17 @@ import { IInstantiationService } from '../../../../platform/instantiation/common
 import { IContextKeyService, IContextKey, ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
 import { IEditorOpenContext } from '../../../common/editor.js';
 import { AbstractTextResourceEditor } from '../../../browser/parts/editor/textResourceEditor.js';
-import { OUTPUT_VIEW_ID, CONTEXT_IN_OUTPUT, IOutputChannel, CONTEXT_OUTPUT_SCROLL_LOCK, IOutputService, IOutputViewFilters, OUTPUT_FILTER_FOCUS_CONTEXT, ILogEntry, HIDE_CATEGORY_FILTER_CONTEXT } from '../../../services/output/common/output.js';
+import {
+	OUTPUT_VIEW_ID,
+	CONTEXT_IN_OUTPUT,
+	IOutputChannel,
+	CONTEXT_OUTPUT_SCROLL_LOCK,
+	IOutputService,
+	IOutputViewFilters,
+	OUTPUT_FILTER_FOCUS_CONTEXT,
+	ILogEntry,
+	HIDE_CATEGORY_FILTER_CONTEXT
+} from '../../../services/output/common/output.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IEditorGroupsService } from '../../../services/editor/common/editorGroupsService.js';
@@ -38,7 +48,12 @@ import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { localize } from '../../../../nls.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
 import { LogLevel } from '../../../../platform/log/common/log.js';
-import { IEditorContributionDescription, EditorExtensionsRegistry, EditorContributionInstantiation, EditorContributionCtor } from '../../../../editor/browser/editorExtensions.js';
+import {
+	IEditorContributionDescription,
+	EditorExtensionsRegistry,
+	EditorContributionInstantiation,
+	EditorContributionCtor
+} from '../../../../editor/browser/editorExtensions.js';
 import { ICodeEditorWidgetOptions } from '../../../../editor/browser/widget/codeEditor/codeEditorWidget.js';
 import { IEditorContribution, IEditorDecorationsCollection } from '../../../../editor/common/editorCommon.js';
 import { IModelDeltaDecoration, ITextModel } from '../../../../editor/common/model.js';
@@ -61,14 +76,17 @@ interface IOutputViewState {
 }
 
 export class OutputViewPane extends FilterViewPane {
-
 	private readonly editor: OutputEditor;
 	private channelId: string | undefined;
 	private editorPromise: CancelablePromise<void> | null = null;
 
 	private readonly scrollLockContextKey: IContextKey<boolean>;
-	get scrollLock(): boolean { return !!this.scrollLockContextKey.get(); }
-	set scrollLock(scrollLock: boolean) { this.scrollLockContextKey.set(scrollLock); }
+	get scrollLock(): boolean {
+		return !!this.scrollLockContextKey.get();
+	}
+	set scrollLock(scrollLock: boolean) {
+		this.scrollLockContextKey.set(scrollLock);
+	}
 
 	private readonly memento: Memento<IOutputViewState>;
 	private readonly panelState: IOutputViewState;
@@ -85,19 +103,30 @@ export class OutputViewPane extends FilterViewPane {
 		@IThemeService themeService: IThemeService,
 		@IHoverService hoverService: IHoverService,
 		@IOutputService private readonly outputService: IOutputService,
-		@IStorageService storageService: IStorageService,
+		@IStorageService storageService: IStorageService
 	) {
 		const memento = new Memento<IOutputViewState>(Markers.MARKERS_VIEW_STORAGE_ID, storageService);
 		const viewState = memento.getMemento(StorageScope.WORKSPACE, StorageTarget.MACHINE);
-		super({
-			...options,
-			filterOptions: {
-				placeholder: localize('outputView.filter.placeholder', "Filter (e.g. text, !excludeText, text1,text2)"),
-				focusContextKey: OUTPUT_FILTER_FOCUS_CONTEXT.key,
-				text: viewState.filter || '',
-				history: []
-			}
-		}, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService);
+		super(
+			{
+				...options,
+				filterOptions: {
+					placeholder: localize('outputView.filter.placeholder', 'Filter (e.g. text, !excludeText, text1,text2)'),
+					focusContextKey: OUTPUT_FILTER_FOCUS_CONTEXT.key,
+					text: viewState.filter || '',
+					history: []
+				}
+			},
+			keybindingService,
+			contextMenuService,
+			configurationService,
+			contextKeyService,
+			viewDescriptorService,
+			instantiationService,
+			openerService,
+			themeService,
+			hoverService
+		);
 		this.memento = memento;
 		this.panelState = viewState;
 
@@ -112,14 +141,18 @@ export class OutputViewPane extends FilterViewPane {
 
 		this.scrollLockContextKey = CONTEXT_OUTPUT_SCROLL_LOCK.bindTo(this.contextKeyService);
 
-		const editorInstantiationService = this._register(instantiationService.createChild(new ServiceCollection([IContextKeyService, this.scopedContextKeyService])));
+		const editorInstantiationService = this._register(
+			instantiationService.createChild(new ServiceCollection([IContextKeyService, this.scopedContextKeyService]))
+		);
 		this.editor = this._register(editorInstantiationService.createInstance(OutputEditor));
-		this._register(this.editor.onTitleAreaUpdate(() => {
-			this.updateTitle(this.editor.getTitle());
-			this.updateActions();
-		}));
+		this._register(
+			this.editor.onTitleAreaUpdate(() => {
+				this.updateTitle(this.editor.getTitle());
+				this.updateActions();
+			})
+		);
 		this._register(this.onDidChangeBodyVisibility(() => this.onDidChangeVisibility(this.isBodyVisible())));
-		this._register(this.filterWidget.onDidChangeFilterText(text => outputService.filters.text = text));
+		this._register(this.filterWidget.onDidChangeFilterText(text => (outputService.filters.text = text)));
 
 		this.checkMoreFilters();
 		this._register(outputService.filters.onDidChange(() => this.checkMoreFilters()));
@@ -149,27 +182,31 @@ export class OutputViewPane extends FilterViewPane {
 		container.classList.add('output-view');
 		const codeEditor = <ICodeEditor>this.editor.getControl();
 		codeEditor.setAriaOptions({ role: 'document', activeDescendant: undefined });
-		this._register(codeEditor.onDidChangeModelContent(() => {
-			if (!this.scrollLock) {
-				this.editor.revealLastLine();
-			}
-		}));
-		this._register(codeEditor.onDidChangeCursorPosition((e) => {
-			if (e.reason !== CursorChangeReason.Explicit) {
-				return;
-			}
+		this._register(
+			codeEditor.onDidChangeModelContent(() => {
+				if (!this.scrollLock) {
+					this.editor.revealLastLine();
+				}
+			})
+		);
+		this._register(
+			codeEditor.onDidChangeCursorPosition(e => {
+				if (e.reason !== CursorChangeReason.Explicit) {
+					return;
+				}
 
-			if (!this.configurationService.getValue('output.smartScroll.enabled')) {
-				return;
-			}
+				if (!this.configurationService.getValue('output.smartScroll.enabled')) {
+					return;
+				}
 
-			const model = codeEditor.getModel();
-			if (model) {
-				const newPositionLine = e.position.lineNumber;
-				const lastLine = model.getLineCount();
-				this.scrollLock = lastLine !== newPositionLine;
-			}
-		}));
+				const model = codeEditor.getModel();
+				if (model) {
+					const newPositionLine = e.position.lineNumber;
+					const lastLine = model.getLineCount();
+					this.scrollLock = lastLine !== newPositionLine;
+				}
+			})
+		);
 	}
 
 	protected layoutBodyContent(height: number, width: number): void {
@@ -190,14 +227,22 @@ export class OutputViewPane extends FilterViewPane {
 		const input = this.createInput(channel);
 		if (!this.editor.input || !input.matches(this.editor.input)) {
 			this.editorPromise?.cancel();
-			this.editorPromise = createCancelablePromise(token => this.editor.setInput(input, { preserveFocus: true }, Object.create(null), token));
+			this.editorPromise = createCancelablePromise(token =>
+				this.editor.setInput(input, { preserveFocus: true }, Object.create(null), token)
+			);
 		}
-
 	}
 
 	private checkMoreFilters(): void {
 		const filters = this.outputService.filters;
-		this.filterWidget.checkMoreFilters(!filters.trace || !filters.debug || !filters.info || !filters.warning || !filters.error || (!!this.channelId && filters.categories.includes(`,${this.channelId}:`)));
+		this.filterWidget.checkMoreFilters(
+			!filters.trace ||
+				!filters.debug ||
+				!filters.info ||
+				!filters.warning ||
+				!filters.error ||
+				(!!this.channelId && filters.categories.includes(`,${this.channelId}:`))
+		);
 	}
 
 	private clearInput(): void {
@@ -207,7 +252,14 @@ export class OutputViewPane extends FilterViewPane {
 	}
 
 	private createInput(channel: IOutputChannel): TextResourceEditorInput {
-		return this.instantiationService.createInstance(TextResourceEditorInput, channel.uri, nls.localize('output model title', "{0} - Output", channel.label), nls.localize('channel', "Output channel for '{0}'", channel.label), undefined, undefined);
+		return this.instantiationService.createInstance(
+			TextResourceEditorInput,
+			channel.uri,
+			nls.localize('output model title', '{0} - Output', channel.label),
+			nls.localize('channel', "Output channel for '{0}'", channel.label),
+			undefined,
+			undefined
+		);
 	}
 
 	override saveState(): void {
@@ -223,7 +275,6 @@ export class OutputViewPane extends FilterViewPane {
 		this.memento.saveMemento();
 		super.saveState();
 	}
-
 }
 
 export class OutputEditor extends AbstractTextResourceEditor {
@@ -240,7 +291,18 @@ export class OutputEditor extends AbstractTextResourceEditor {
 		@IEditorService editorService: IEditorService,
 		@IFileService fileService: IFileService
 	) {
-		super(OUTPUT_VIEW_ID, editorGroupService.activeGroup /* this is not correct but pragmatic */, telemetryService, instantiationService, storageService, textResourceConfigurationService, themeService, editorGroupService, editorService, fileService);
+		super(
+			OUTPUT_VIEW_ID,
+			editorGroupService.activeGroup /* this is not correct but pragmatic */,
+			telemetryService,
+			instantiationService,
+			storageService,
+			textResourceConfigurationService,
+			themeService,
+			editorGroupService,
+			editorService,
+			fileService
+		);
 
 		this.resourceContext = this._register(instantiationService.createInstance(ResourceContextKey));
 	}
@@ -250,13 +312,13 @@ export class OutputEditor extends AbstractTextResourceEditor {
 	}
 
 	override getTitle(): string {
-		return nls.localize('output', "Output");
+		return nls.localize('output', 'Output');
 	}
 
 	protected override getConfigurationOverrides(configuration: IEditorConfiguration): ICodeEditorOptions {
 		const options = super.getConfigurationOverrides(configuration);
-		options.wordWrap = 'on';				// all output editors wrap
-		options.lineNumbers = 'off';			// all output editors hide line numbers
+		options.wordWrap = 'on'; // all output editors wrap
+		options.lineNumbers = 'off'; // all output editors hide line numbers
 		options.glyphMargin = false;
 		options.lineDecorationsWidth = 20;
 		options.rulers = [];
@@ -272,10 +334,13 @@ export class OutputEditor extends AbstractTextResourceEditor {
 		options.unicodeHighlight = {
 			nonBasicASCII: false,
 			invisibleCharacters: false,
-			ambiguousCharacters: false,
+			ambiguousCharacters: false
 		};
 
-		const outputConfig = this.configurationService.getValue<{ 'editor.minimap.enabled'?: boolean; 'editor.wordWrap'?: 'off' | 'on' | 'wordWrapColumn' | 'bounded' }>('[Log]');
+		const outputConfig = this.configurationService.getValue<{
+			'editor.minimap.enabled'?: boolean;
+			'editor.wordWrap'?: 'off' | 'on' | 'wordWrapColumn' | 'bounded';
+		}>('[Log]');
 		if (outputConfig) {
 			if (outputConfig['editor.minimap.enabled']) {
 				options.minimap = { enabled: true };
@@ -289,14 +354,21 @@ export class OutputEditor extends AbstractTextResourceEditor {
 	}
 
 	protected getAriaLabel(): string {
-		return this.input ? this.input.getAriaLabel() : nls.localize('outputViewAriaLabel', "Output panel");
+		return this.input ? this.input.getAriaLabel() : nls.localize('outputViewAriaLabel', 'Output panel');
 	}
 
 	protected override computeAriaLabel(): string {
-		return this.input ? computeEditorAriaLabel(this.input, undefined, undefined, this.editorGroupService.count) : this.getAriaLabel();
+		return this.input
+			? computeEditorAriaLabel(this.input, undefined, undefined, this.editorGroupService.count)
+			: this.getAriaLabel();
 	}
 
-	override async setInput(input: TextResourceEditorInput, options: ITextEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
+	override async setInput(
+		input: TextResourceEditorInput,
+		options: ITextEditorOptions | undefined,
+		context: IEditorOpenContext,
+		token: CancellationToken
+	): Promise<void> {
 		const focus = !(options && options.preserveFocus);
 		if (this.input && input.matches(this.input)) {
 			return;
@@ -327,7 +399,6 @@ export class OutputEditor extends AbstractTextResourceEditor {
 	}
 
 	protected override createEditor(parent: HTMLElement): void {
-
 		parent.setAttribute('role', 'document');
 
 		super.createEditor(parent);
@@ -352,11 +423,9 @@ export class OutputEditor extends AbstractTextResourceEditor {
 	protected override getCodeEditorWidgetOptions(): ICodeEditorWidgetOptions {
 		return { contributions: this._getContributions() };
 	}
-
 }
 
 export class FilterController extends Disposable implements IEditorContribution {
-
 	public static readonly ID = 'output.editor.contrib.filterController';
 
 	private readonly modelDisposables: DisposableStore = this._register(new DisposableStore());
@@ -366,7 +435,7 @@ export class FilterController extends Disposable implements IEditorContribution 
 
 	constructor(
 		private readonly editor: ICodeEditor,
-		@IOutputService private readonly outputService: IOutputService,
+		@IOutputService private readonly outputService: IOutputService
 	) {
 		super();
 		this.decorationsCollection = editor.createDecorationsCollection();
@@ -393,14 +462,16 @@ export class FilterController extends Disposable implements IEditorContribution 
 
 		let endLineNumber = computeEndLineNumber();
 
-		this.modelDisposables.add(model.onDidChangeContent(e => {
-			if (e.changes.every(e => e.range.startLineNumber > endLineNumber)) {
-				this.filterIncremental(model, endLineNumber + 1);
-			} else {
-				this.filter(model);
-			}
-			endLineNumber = computeEndLineNumber();
-		}));
+		this.modelDisposables.add(
+			model.onDidChangeContent(e => {
+				if (e.changes.every(e => e.range.startLineNumber > endLineNumber)) {
+					this.filterIncremental(model, endLineNumber + 1);
+				} else {
+					this.filter(model);
+				}
+				endLineNumber = computeEndLineNumber();
+			})
+		);
 	}
 
 	private filter(model: ITextModel): void {
@@ -423,28 +494,40 @@ export class FilterController extends Disposable implements IEditorContribution 
 					continue;
 				}
 				this.categories.set(categoryFilter, categoryName);
-				this.modelDisposables.add(registerAction2(class extends Action2 {
-					constructor() {
-						super({
-							id: `workbench.actions.${OUTPUT_VIEW_ID}.toggle.${categoryFilter}`,
-							title: categoryName,
-							toggled: ContextKeyExpr.regex(HIDE_CATEGORY_FILTER_CONTEXT.key, new RegExp(`.*,${escapeRegExpCharacters(categoryFilter)},.*`)).negate(),
-							menu: {
-								id: viewFilterSubmenu,
-								group: '1_category_filter',
-								when: ContextKeyExpr.and(ContextKeyExpr.equals('view', OUTPUT_VIEW_ID)),
+				this.modelDisposables.add(
+					registerAction2(
+						class extends Action2 {
+							constructor() {
+								super({
+									id: `workbench.actions.${OUTPUT_VIEW_ID}.toggle.${categoryFilter}`,
+									title: categoryName,
+									toggled: ContextKeyExpr.regex(
+										HIDE_CATEGORY_FILTER_CONTEXT.key,
+										new RegExp(`.*,${escapeRegExpCharacters(categoryFilter)},.*`)
+									).negate(),
+									menu: {
+										id: viewFilterSubmenu,
+										group: '1_category_filter',
+										when: ContextKeyExpr.and(ContextKeyExpr.equals('view', OUTPUT_VIEW_ID))
+									}
+								});
 							}
-						});
-					}
-					async run(): Promise<void> {
-						that.outputService.filters.toggleCategory(categoryFilter);
-					}
-				}));
+							async run(): Promise<void> {
+								that.outputService.filters.toggleCategory(categoryFilter);
+							}
+						}
+					)
+				);
 			}
 		}
 	}
 
-	private shouldShowLine(model: ITextModel, range: Range, positive: string[], negative: string[]): { show: boolean; matches: IModelDeltaDecoration[] } {
+	private shouldShowLine(
+		model: ITextModel,
+		range: Range,
+		positive: string[],
+		negative: string[]
+	): { show: boolean; matches: IModelDeltaDecoration[] } {
 		const matches: IModelDeltaDecoration[] = [];
 
 		// Check negative filters first - if any match, hide the line
@@ -476,7 +559,10 @@ export class FilterController extends Disposable implements IEditorContribution 
 		return { show: true, matches };
 	}
 
-	private compute(model: ITextModel, fromLineNumber: number): { findMatches: IModelDeltaDecoration[]; hiddenAreas: Range[]; categories: Map<string, string> } {
+	private compute(
+		model: ITextModel,
+		fromLineNumber: number
+	): { findMatches: IModelDeltaDecoration[]; hiddenAreas: Range[]; categories: Map<string, string> } {
 		const filters = this.outputService.filters;
 		const activeChannel = this.outputService.getActiveChannel();
 		const findMatches: IModelDeltaDecoration[] = [];
@@ -487,7 +573,9 @@ export class FilterController extends Disposable implements IEditorContribution 
 		if (activeChannel && logEntries?.length) {
 			const hasLogLevelFilter = !filters.trace || !filters.debug || !filters.info || !filters.warning || !filters.error;
 
-			const fromLogLevelEntryIndex = logEntries.findIndex(entry => fromLineNumber >= entry.range.startLineNumber && fromLineNumber <= entry.range.endLineNumber);
+			const fromLogLevelEntryIndex = logEntries.findIndex(
+				entry => fromLineNumber >= entry.range.startLineNumber && fromLineNumber <= entry.range.endLineNumber
+			);
 			if (fromLogLevelEntryIndex === -1) {
 				return { findMatches, hiddenAreas, categories };
 			}

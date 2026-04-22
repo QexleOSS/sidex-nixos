@@ -779,7 +779,9 @@ export function isAuthorizationServerMetadata(obj: unknown): obj is IAuthorizati
 	return true;
 }
 
-export function isAuthorizationDynamicClientRegistrationResponse(obj: unknown): obj is IAuthorizationDynamicClientRegistrationResponse {
+export function isAuthorizationDynamicClientRegistrationResponse(
+	obj: unknown
+): obj is IAuthorizationDynamicClientRegistrationResponse {
 	if (typeof obj !== 'object' || obj === null) {
 		return false;
 	}
@@ -808,7 +810,12 @@ export function isAuthorizationDeviceResponse(obj: unknown): obj is IAuthorizati
 		return false;
 	}
 	const response = obj as IAuthorizationDeviceResponse;
-	return response.device_code !== undefined && response.user_code !== undefined && response.verification_uri !== undefined && response.expires_in !== undefined;
+	return (
+		response.device_code !== undefined &&
+		response.user_code !== undefined &&
+		response.verification_uri !== undefined &&
+		response.expires_in !== undefined
+	);
 }
 
 export function isAuthorizationErrorResponse(obj: unknown): obj is IAuthorizationErrorResponse {
@@ -837,7 +844,7 @@ export function getDefaultMetadataForUrl(authorizationServer: URL): IAuthorizati
 		registration_endpoint: new URL('/register', authorizationServer).toString(),
 		// Default values for Dynamic OpenID Providers
 		// https://openid.net/specs/openid-connect-discovery-1_0.html
-		response_types_supported: ['code', 'id_token', 'id_token token'],
+		response_types_supported: ['code', 'id_token', 'id_token token']
 	};
 }
 
@@ -854,7 +861,11 @@ const grantTypesSupported = ['authorization_code', 'refresh_token', 'urn:ietf:pa
  * the spec and require an exact match.
  */
 export const DEFAULT_AUTH_FLOW_PORT = 33418;
-export async function fetchDynamicRegistration(serverMetadata: IAuthorizationServerMetadata, clientName: string, scopes?: string[]): Promise<IAuthorizationDynamicClientRegistrationResponse> {
+export async function fetchDynamicRegistration(
+	serverMetadata: IAuthorizationServerMetadata,
+	clientName: string,
+	scopes?: string[]
+): Promise<IAuthorizationDynamicClientRegistrationResponse> {
 	if (!serverMetadata.registration_endpoint) {
 		throw new Error('Server does not support dynamic registration');
 	}
@@ -984,7 +995,10 @@ export function parseWWWAuthenticateHeader(wwwAuthenticateHeaderValue: string): 
 					const equalIndex = afterSpace.indexOf('=');
 					if (equalIndex > 0) {
 						const key = afterSpace.substring(0, equalIndex).trim();
-						const value = afterSpace.substring(equalIndex + 1).trim().replace(/^"|"$/g, '');
+						const value = afterSpace
+							.substring(equalIndex + 1)
+							.trim()
+							.replace(/^"|"$/g, '');
 						if (key && value !== undefined) {
 							currentChallenge.params[key] = value;
 						}
@@ -998,7 +1012,10 @@ export function parseWWWAuthenticateHeader(wwwAuthenticateHeaderValue: string): 
 				const equalIndex = token.indexOf('=');
 				if (equalIndex > 0) {
 					const key = token.substring(0, equalIndex).trim();
-					const value = token.substring(equalIndex + 1).trim().replace(/^"|"$/g, '');
+					const value = token
+						.substring(equalIndex + 1)
+						.trim()
+						.replace(/^"|"$/g, '');
 					if (key && value !== undefined) {
 						currentChallenge.params[key] = value;
 					}
@@ -1113,17 +1130,14 @@ export async function fetchResourceMetadata(
 	resourceMetadataUrl: string | undefined,
 	options: IFetchResourceMetadataOptions = {}
 ): Promise<{ metadata: IAuthorizationProtectedResourceMetadata; discoveryUrl: string; errors: Error[] }> {
-	const {
-		sameOriginHeaders = {},
-		fetch: fetchImpl = fetch
-	} = options;
+	const { sameOriginHeaders = {}, fetch: fetchImpl = fetch } = options;
 
 	const targetResourceUrlObj = new URL(targetResource);
 
 	const fetchPrm = async (prmUrl: string, validateUrl: string) => {
 		// Determine if we should include same-origin headers
 		let headers: Record<string, string> = {
-			'Accept': 'application/json'
+			Accept: 'application/json'
 		};
 
 		const resourceMetadataUrlObj = new URL(prmUrl);
@@ -1152,11 +1166,15 @@ export async function fetchResourceMetadata(
 			const prmValue = new URL(body.resource).toString();
 			const expectedResource = new URL(validateUrl).toString();
 			if (prmValue !== expectedResource) {
-				throw new Error(`Protected Resource Metadata 'resource' property value "${prmValue}" does not match expected value "${expectedResource}" for URL ${prmUrl}. Per RFC 9728, these MUST match. See https://datatracker.ietf.org/doc/html/rfc9728#PRConfigurationValidation`);
+				throw new Error(
+					`Protected Resource Metadata 'resource' property value "${prmValue}" does not match expected value "${expectedResource}" for URL ${prmUrl}. Per RFC 9728, these MUST match. See https://datatracker.ietf.org/doc/html/rfc9728#PRConfigurationValidation`
+				);
 			}
 			return body;
 		} else {
-			throw new Error(`Invalid resource metadata from ${prmUrl}. Expected to follow shape of https://datatracker.ietf.org/doc/html/rfc9728#name-protected-resource-metadata (Hints: is scopes_supported an array? Is resource a string?). Current payload: ${JSON.stringify(body)}`);
+			throw new Error(
+				`Invalid resource metadata from ${prmUrl}. Expected to follow shape of https://datatracker.ietf.org/doc/html/rfc9728#name-protected-resource-metadata (Hints: is scopes_supported an array? Is resource a string?). Current payload: ${JSON.stringify(body)}`
+			);
 		}
 	};
 
@@ -1262,10 +1280,7 @@ export async function fetchAuthorizationServerMetadata(
 	authorizationServer: string,
 	options: IFetchAuthorizationServerMetadataOptions = {}
 ): Promise<{ metadata: IAuthorizationServerMetadata; discoveryUrl: string; errors: Error[] }> {
-	const {
-		additionalHeaders = {},
-		fetch: fetchImpl = fetch
-	} = options;
+	const { additionalHeaders = {}, fetch: fetchImpl = fetch } = options;
 
 	const authorizationServerUrl = new URL(authorizationServer);
 	const extraPath = authorizationServerUrl.pathname === '/' ? '' : authorizationServerUrl.pathname;
@@ -1278,7 +1293,7 @@ export async function fetchAuthorizationServerMetadata(
 				method: 'GET',
 				headers: {
 					...additionalHeaders,
-					'Accept': 'application/json'
+					Accept: 'application/json'
 				}
 			});
 			const metadata = await tryParseAuthServerMetadata(rawResponse);
@@ -1286,7 +1301,11 @@ export async function fetchAuthorizationServerMetadata(
 				return metadata;
 			}
 			// No metadata found, collect error from response
-			errors.push(new Error(`Failed to fetch authorization server metadata from ${url}: ${rawResponse.status} ${await getErrText(rawResponse)}`));
+			errors.push(
+				new Error(
+					`Failed to fetch authorization server metadata from ${url}: ${rawResponse.status} ${await getErrText(rawResponse)}`
+				)
+			);
 			return undefined;
 		} catch (e) {
 			// Collect error from fetch failure

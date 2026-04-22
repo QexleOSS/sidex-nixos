@@ -143,7 +143,6 @@ export function getTemplates(): ITaskEntry[] {
 	return _templates;
 }
 
-
 /** Version 1.0 templates
  *
 const gulp: TaskEntry = {

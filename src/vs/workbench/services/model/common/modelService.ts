@@ -19,15 +19,14 @@ export class WorkbenchModelService extends ModelService {
 		@ITextResourcePropertiesService resourcePropertiesService: ITextResourcePropertiesService,
 		@IUndoRedoService undoRedoService: IUndoRedoService,
 		@IPathService private readonly _pathService: IPathService,
-		@IInstantiationService instantiationService: IInstantiationService,
+		@IInstantiationService instantiationService: IInstantiationService
 	) {
 		super(configurationService, resourcePropertiesService, undoRedoService, instantiationService);
 	}
 
 	protected override _schemaShouldMaintainUndoRedoElements(resource: URI) {
 		return (
-			super._schemaShouldMaintainUndoRedoElements(resource)
-			|| resource.scheme === this._pathService.defaultUriScheme
+			super._schemaShouldMaintainUndoRedoElements(resource) || resource.scheme === this._pathService.defaultUriScheme
 		);
 	}
 }

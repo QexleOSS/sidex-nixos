@@ -22,7 +22,6 @@ interface IConfiguredExpression {
 }
 
 export class ResourceGlobMatcher extends Disposable {
-
 	private static readonly NO_FOLDER = null;
 
 	private readonly _onExpressionChange = this._register(new Emitter<void>());
@@ -45,11 +44,13 @@ export class ResourceGlobMatcher extends Disposable {
 	}
 
 	private registerListeners(): void {
-		this._register(this.configurationService.onDidChangeConfiguration(e => {
-			if (this.shouldUpdate(e)) {
-				this.updateExpressions(true);
-			}
-		}));
+		this._register(
+			this.configurationService.onDidChangeConfiguration(e => {
+				if (this.shouldUpdate(e)) {
+					this.updateExpressions(true);
+				}
+			})
+		);
 
 		this._register(this.contextService.onDidChangeWorkspaceFolders(() => this.updateExpressions(true)));
 	}
@@ -164,10 +165,7 @@ export class ResourceGlobMatcher extends Disposable {
 		};
 	}
 
-	matches(
-		resource: URI,
-		hasSibling?: (name: string) => boolean
-	): boolean {
+	matches(resource: URI, hasSibling?: (name: string) => boolean): boolean {
 		if (this.mapFolderToParsedExpression.size === 0) {
 			return false; // return early: no expression for this matcher
 		}

@@ -10,7 +10,10 @@ import { HierarchicalKind } from '../../../../base/common/hierarchicalKind.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
 import { URI } from '../../../../base/common/uri.js';
 import * as nls from '../../../../nls.js';
-import { AccessibilitySignal, IAccessibilitySignalService } from '../../../../platform/accessibilitySignal/browser/accessibilitySignalService.js';
+import {
+	AccessibilitySignal,
+	IAccessibilitySignalService
+} from '../../../../platform/accessibilitySignal/browser/accessibilitySignalService.js';
 import { CommandsRegistry, ICommandService } from '../../../../platform/commands/common/commands.js';
 import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
 import { INotificationService } from '../../../../platform/notification/common/notification.js';
@@ -27,7 +30,16 @@ import { ILanguageFeaturesService } from '../../../common/services/languageFeatu
 import { IModelService } from '../../../common/services/model.js';
 import { EditSources } from '../../../common/textModelEditSource.js';
 import { TextModelCancellationTokenSource } from '../../editorState/browser/editorState.js';
-import { CodeActionFilter, CodeActionItem, CodeActionKind, CodeActionSet, CodeActionTrigger, CodeActionTriggerSource, filtersAction, mayIncludeActionsOfKind } from '../common/types.js';
+import {
+	CodeActionFilter,
+	CodeActionItem,
+	CodeActionKind,
+	CodeActionSet,
+	CodeActionTrigger,
+	CodeActionTriggerSource,
+	filtersAction,
+	mayIncludeActionsOfKind
+} from '../common/types.js';
 
 export const codeActionCommandId = 'editor.action.codeAction';
 export const quickFixCommandId = 'editor.action.quickFix';
@@ -40,7 +52,6 @@ export const fixAllCommandId = 'editor.action.fixAll';
 const CODE_ACTION_SOUND_APPLIED_DURATION = 1000;
 
 class ManagedCodeActionSet extends Disposable implements CodeActionSet {
-
 	private static codeActionsPreferredComparator(a: languages.CodeAction, b: languages.CodeAction): number {
 		if (a.isPreferred && !b.isPreferred) {
 			return -1;
@@ -72,7 +83,7 @@ class ManagedCodeActionSet extends Disposable implements CodeActionSet {
 	public constructor(
 		actions: readonly CodeActionItem[],
 		public readonly documentation: readonly languages.Command[],
-		disposables: DisposableStore,
+		disposables: DisposableStore
 	) {
 		super();
 
@@ -83,7 +94,10 @@ class ManagedCodeActionSet extends Disposable implements CodeActionSet {
 	}
 
 	public get hasAutoFix() {
-		return this.validActions.some(({ action: fix }) => !!fix.kind && CodeActionKind.QuickFix.contains(new HierarchicalKind(fix.kind)) && !!fix.isPreferred);
+		return this.validActions.some(
+			({ action: fix }) =>
+				!!fix.kind && CodeActionKind.QuickFix.contains(new HierarchicalKind(fix.kind)) && !!fix.isPreferred
+		);
 	}
 
 	public get hasAIFix() {
@@ -103,29 +117,34 @@ export async function getCodeActions(
 	rangeOrSelection: Range | Selection,
 	trigger: CodeActionTrigger,
 	progress: IProgress<languages.CodeActionProvider>,
-	token: CancellationToken,
+	token: CancellationToken
 ): Promise<CodeActionSet> {
 	const filter = trigger.filter || {};
 	const notebookFilter: CodeActionFilter = {
 		...filter,
-		excludes: [...(filter.excludes || []), CodeActionKind.Notebook],
+		excludes: [...(filter.excludes || []), CodeActionKind.Notebook]
 	};
 
 	const codeActionContext: languages.CodeActionContext = {
 		only: filter.include?.value,
-		trigger: trigger.type,
+		trigger: trigger.type
 	};
 
 	const cts = new TextModelCancellationTokenSource(model, token);
 	// if the trigger is auto (autosave, lightbulb, etc), we should exclude notebook codeActions
-	const excludeNotebookCodeActions = (trigger.type === languages.CodeActionTriggerType.Auto);
-	const providers = getCodeActionProviders(registry, model, (excludeNotebookCodeActions) ? notebookFilter : filter);
+	const excludeNotebookCodeActions = trigger.type === languages.CodeActionTriggerType.Auto;
+	const providers = getCodeActionProviders(registry, model, excludeNotebookCodeActions ? notebookFilter : filter);
 
 	const disposables = new DisposableStore();
 	const promises = providers.map(async provider => {
 		const handle = setTimeout(() => progress.report(provider), 1250);
 		try {
-			const providedCodeActions = await provider.provideCodeActions(model, rangeOrSelection, codeActionContext, cts.token);
+			const providedCodeActions = await provider.provideCodeActions(
+				model,
+				rangeOrSelection,
+				codeActionContext,
+				cts.token
+			);
 			if (cts.token.isCancellationRequested) {
 				providedCodeActions?.dispose();
 				return emptyCodeActionsResponse;
@@ -135,7 +154,9 @@ export async function getCodeActions(
 				disposables.add(providedCodeActions);
 			}
 
-			const filteredActions = (providedCodeActions?.actions || []).filter(action => action && filtersAction(filter, action));
+			const filteredActions = (providedCodeActions?.actions || []).filter(
+				action => action && filtersAction(filter, action)
+			);
 			const documentation = getDocumentationFromProvider(provider, filteredActions, filter.include);
 			return {
 				actions: filteredActions.map(action => new CodeActionItem(action, provider)),
@@ -183,27 +204,35 @@ function getCodeActionProviders(
 	model: ITextModel,
 	filter: CodeActionFilter
 ) {
-	return registry.all(model)
-		// Don't include providers that we know will not return code actions of interest
-		.filter(provider => {
-			if (!provider.providedCodeActionKinds) {
-				// We don't know what type of actions this provider will return.
-				return true;
-			}
-			return provider.providedCodeActionKinds.some(kind => mayIncludeActionsOfKind(filter, new HierarchicalKind(kind)));
-		});
+	return (
+		registry
+			.all(model)
+			// Don't include providers that we know will not return code actions of interest
+			.filter(provider => {
+				if (!provider.providedCodeActionKinds) {
+					// We don't know what type of actions this provider will return.
+					return true;
+				}
+				return provider.providedCodeActionKinds.some(kind =>
+					mayIncludeActionsOfKind(filter, new HierarchicalKind(kind))
+				);
+			})
+	);
 }
 
 function* getAdditionalDocumentationForShowingActions(
 	registry: LanguageFeatureRegistry<languages.CodeActionProvider>,
 	model: ITextModel,
 	trigger: CodeActionTrigger,
-	actionsToShow: readonly CodeActionItem[],
+	actionsToShow: readonly CodeActionItem[]
 ): Iterable<languages.Command> {
 	if (model && actionsToShow.length) {
 		for (const provider of registry.all(model)) {
 			if (provider._getAdditionalMenuItems) {
-				yield* provider._getAdditionalMenuItems?.({ trigger: trigger.type, only: trigger.filter?.include?.value }, actionsToShow.map(item => item.action));
+				yield* provider._getAdditionalMenuItems?.(
+					{ trigger: trigger.type, only: trigger.filter?.include?.value },
+					actionsToShow.map(item => item.action)
+				);
 			}
 		}
 	}
@@ -218,7 +247,10 @@ function getDocumentationFromProvider(
 		return undefined;
 	}
 
-	const documentation = provider.documentation.map(entry => ({ kind: new HierarchicalKind(entry.kind), command: entry.command }));
+	const documentation = provider.documentation.map(entry => ({
+		kind: new HierarchicalKind(entry.kind),
+		command: entry.command
+	}));
 
 	if (only) {
 		let currentBest: { readonly kind: HierarchicalKind; readonly command: languages.Command } | undefined;
@@ -267,7 +299,7 @@ export async function applyCodeAction(
 	item: CodeActionItem,
 	codeActionReason: ApplyCodeActionReason,
 	options?: { readonly preview?: boolean; readonly editor?: ICodeEditor },
-	token: CancellationToken = CancellationToken.None,
+	token: CancellationToken = CancellationToken.None
 ): Promise<void> {
 	const bulkEditService = accessor.get(IBulkEditService);
 	const commandService = accessor.get(ICommandService);
@@ -282,10 +314,26 @@ export async function applyCodeAction(
 		reason: ApplyCodeActionReason;
 	};
 	type ApplyCodeEventClassification = {
-		codeActionTitle: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The display label of the applied code action' };
-		codeActionKind: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The kind (refactor, quickfix) of the applied code action' };
-		codeActionIsPreferred: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Was the code action marked as being a preferred action?' };
-		reason: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The kind of action used to trigger apply code action.' };
+		codeActionTitle: {
+			classification: 'SystemMetaData';
+			purpose: 'FeatureInsight';
+			comment: 'The display label of the applied code action';
+		};
+		codeActionKind: {
+			classification: 'SystemMetaData';
+			purpose: 'FeatureInsight';
+			comment: 'The kind (refactor, quickfix) of the applied code action';
+		};
+		codeActionIsPreferred: {
+			classification: 'SystemMetaData';
+			purpose: 'FeatureInsight';
+			comment: 'Was the code action marked as being a preferred action?';
+		};
+		reason: {
+			classification: 'SystemMetaData';
+			purpose: 'FeatureInsight';
+			comment: 'The kind of action used to trigger apply code action.';
+		};
 		owner: 'justschen';
 		comment: 'Event used to gain insights into which code actions are being triggered';
 	};
@@ -294,7 +342,7 @@ export async function applyCodeAction(
 		codeActionTitle: item.action.title,
 		codeActionKind: item.action.kind,
 		codeActionIsPreferred: !!item.action.isPreferred,
-		reason: codeActionReason,
+		reason: codeActionReason
 	});
 	accessibilitySignalService.playSignal(AccessibilitySignal.codeActionTriggered);
 	await item.resolve(token);
@@ -310,7 +358,10 @@ export async function applyCodeAction(
 			code: 'undoredo.codeAction',
 			respectAutoSaveConfig: codeActionReason !== ApplyCodeActionReason.OnSave,
 			showPreview: options?.preview,
-			reason: EditSources.codeAction({ kind: item.action.kind, providerId: languages.ProviderId.fromExtensionId(item.provider?.extensionId) }),
+			reason: EditSources.codeAction({
+				kind: item.action.kind,
+				providerId: languages.ProviderId.fromExtensionId(item.provider?.extensionId)
+			})
 		});
 
 		if (!result.isApplied) {
@@ -326,11 +377,15 @@ export async function applyCodeAction(
 			notificationService.error(
 				typeof message === 'string'
 					? message
-					: nls.localize('applyCodeActionFailed', "An unknown error occurred while applying the code action"));
+					: nls.localize('applyCodeActionFailed', 'An unknown error occurred while applying the code action')
+			);
 		}
 	}
 	// ensure the start sound and end sound do not overlap
-	setTimeout(() => accessibilitySignalService.playSignal(AccessibilitySignal.codeActionApplied), CODE_ACTION_SOUND_APPLIED_DURATION);
+	setTimeout(
+		() => accessibilitySignalService.playSignal(AccessibilitySignal.codeActionApplied),
+		CODE_ACTION_SOUND_APPLIED_DURATION
+	);
 }
 
 function asMessage(err: any): string | undefined {
@@ -343,46 +398,63 @@ function asMessage(err: any): string | undefined {
 	}
 }
 
-CommandsRegistry.registerCommand('_executeCodeActionProvider', async function (accessor, resource: URI, rangeOrSelection: Range | Selection, kind?: string, itemResolveCount?: number): Promise<ReadonlyArray<languages.CodeAction>> {
-	if (!(resource instanceof URI)) {
-		throw illegalArgument();
+CommandsRegistry.registerCommand(
+	'_executeCodeActionProvider',
+	async function (
+		accessor,
+		resource: URI,
+		rangeOrSelection: Range | Selection,
+		kind?: string,
+		itemResolveCount?: number
+	): Promise<ReadonlyArray<languages.CodeAction>> {
+		if (!(resource instanceof URI)) {
+			throw illegalArgument();
+		}
+
+		const { codeActionProvider } = accessor.get(ILanguageFeaturesService);
+		const model = accessor.get(IModelService).getModel(resource);
+		if (!model) {
+			throw illegalArgument();
+		}
+
+		const validatedRangeOrSelection = Selection.isISelection(rangeOrSelection)
+			? Selection.liftSelection(rangeOrSelection)
+			: Range.isIRange(rangeOrSelection)
+				? model.validateRange(rangeOrSelection)
+				: undefined;
+
+		if (!validatedRangeOrSelection) {
+			throw illegalArgument();
+		}
+
+		const include = typeof kind === 'string' ? new HierarchicalKind(kind) : undefined;
+		const codeActionSet = await getCodeActions(
+			codeActionProvider,
+			model,
+			validatedRangeOrSelection,
+			{
+				type: languages.CodeActionTriggerType.Invoke,
+				triggerAction: CodeActionTriggerSource.Default,
+				filter: { includeSourceActions: true, include }
+			},
+			Progress.None,
+			CancellationToken.None
+		);
+
+		const resolving: Promise<any>[] = [];
+		const resolveCount = Math.min(
+			codeActionSet.validActions.length,
+			typeof itemResolveCount === 'number' ? itemResolveCount : 0
+		);
+		for (let i = 0; i < resolveCount; i++) {
+			resolving.push(codeActionSet.validActions[i].resolve(CancellationToken.None));
+		}
+
+		try {
+			await Promise.all(resolving);
+			return codeActionSet.validActions.map(item => item.action);
+		} finally {
+			setTimeout(() => codeActionSet.dispose(), 100);
+		}
 	}
-
-	const { codeActionProvider } = accessor.get(ILanguageFeaturesService);
-	const model = accessor.get(IModelService).getModel(resource);
-	if (!model) {
-		throw illegalArgument();
-	}
-
-	const validatedRangeOrSelection = Selection.isISelection(rangeOrSelection)
-		? Selection.liftSelection(rangeOrSelection)
-		: Range.isIRange(rangeOrSelection)
-			? model.validateRange(rangeOrSelection)
-			: undefined;
-
-	if (!validatedRangeOrSelection) {
-		throw illegalArgument();
-	}
-
-	const include = typeof kind === 'string' ? new HierarchicalKind(kind) : undefined;
-	const codeActionSet = await getCodeActions(
-		codeActionProvider,
-		model,
-		validatedRangeOrSelection,
-		{ type: languages.CodeActionTriggerType.Invoke, triggerAction: CodeActionTriggerSource.Default, filter: { includeSourceActions: true, include } },
-		Progress.None,
-		CancellationToken.None);
-
-	const resolving: Promise<any>[] = [];
-	const resolveCount = Math.min(codeActionSet.validActions.length, typeof itemResolveCount === 'number' ? itemResolveCount : 0);
-	for (let i = 0; i < resolveCount; i++) {
-		resolving.push(codeActionSet.validActions[i].resolve(CancellationToken.None));
-	}
-
-	try {
-		await Promise.all(resolving);
-		return codeActionSet.validActions.map(item => item.action);
-	} finally {
-		setTimeout(() => codeActionSet.dispose(), 100);
-	}
-});
+);

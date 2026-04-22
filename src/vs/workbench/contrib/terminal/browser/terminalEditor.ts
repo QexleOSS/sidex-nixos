@@ -18,7 +18,12 @@ import { ITelemetryService } from '../../../../platform/telemetry/common/telemet
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { EditorPane } from '../../../browser/parts/editor/editorPane.js';
 import { IEditorOpenContext } from '../../../common/editor.js';
-import { ITerminalConfigurationService, ITerminalEditorService, ITerminalService, terminalEditorId } from './terminal.js';
+import {
+	ITerminalConfigurationService,
+	ITerminalEditorService,
+	ITerminalService,
+	terminalEditorId
+} from './terminal.js';
 import { TerminalEditorInput } from './terminalEditorInput.js';
 import { getTerminalActionBarArgs } from './terminalMenus.js';
 import { ITerminalProfileResolverService, ITerminalProfileService, TerminalCommandId } from '../common/terminal.js';
@@ -31,7 +36,6 @@ import { DisposableStore, MutableDisposable } from '../../../../base/common/life
 import { ITerminalProfile, TerminalLocation } from '../../../../platform/terminal/common/terminal.js';
 
 export class TerminalEditor extends EditorPane {
-
 	private _editorInstanceElement: HTMLElement | undefined;
 	private _overflowGuardElement: HTMLElement | undefined;
 
@@ -45,7 +49,9 @@ export class TerminalEditor extends EditorPane {
 
 	private _cancelContextMenu: boolean = false;
 
-	private readonly _newDropdown: MutableDisposable<DropdownWithPrimaryActionViewItem> = this._register(new MutableDisposable());
+	private readonly _newDropdown: MutableDisposable<DropdownWithPrimaryActionViewItem> = this._register(
+		new MutableDisposable()
+	);
 
 	private readonly _sessionDisposables = this._register(new DisposableStore());
 
@@ -70,10 +76,17 @@ export class TerminalEditor extends EditorPane {
 		super(terminalEditorId, group, telemetryService, themeService, storageService);
 		this._dropdownMenu = this._register(menuService.createMenu(MenuId.TerminalNewDropdownContext, contextKeyService));
 		this._instanceMenu = this._register(menuService.createMenu(MenuId.TerminalInstanceContext, contextKeyService));
-		this._register(this._terminalProfileService.onDidChangeAvailableProfiles(profiles => this._updateTabActionBar(profiles)));
+		this._register(
+			this._terminalProfileService.onDidChangeAvailableProfiles(profiles => this._updateTabActionBar(profiles))
+		);
 	}
 
-	override async setInput(newInput: TerminalEditorInput, options: IEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken) {
+	override async setInput(
+		newInput: TerminalEditorInput,
+		options: IEditorOptions | undefined,
+		context: IEditorOpenContext,
+		token: CancellationToken
+	) {
 		this._editorInput?.terminalInstance?.detachFromElement();
 		this._editorInput = newInput;
 		await super.setInput(newInput, options, context, token);
@@ -81,7 +94,9 @@ export class TerminalEditor extends EditorPane {
 		if (this._lastDimension) {
 			this.layout(this._lastDimension);
 		}
-		this._editorInput.terminalInstance?.setVisible(this.isVisible() && this._workbenchLayoutService.isVisible(Parts.EDITOR_PART, this.window));
+		this._editorInput.terminalInstance?.setVisible(
+			this.isVisible() && this._workbenchLayoutService.isVisible(Parts.EDITOR_PART, this.window)
+		);
 		if (this._editorInput.terminalInstance) {
 			// since the editor does not monitor focus changes, for ex. between the terminal
 			// panel and the editors, this is needed so that the active instance gets set
@@ -94,7 +109,10 @@ export class TerminalEditor extends EditorPane {
 	override clearInput(): void {
 		super.clearInput();
 		this._sessionDisposables.clear();
-		if (this._overflowGuardElement && this._editorInput?.terminalInstance?.domElement.parentElement === this._overflowGuardElement) {
+		if (
+			this._overflowGuardElement &&
+			this._editorInput?.terminalInstance?.domElement.parentElement === this._overflowGuardElement
+		) {
 			this._editorInput.terminalInstance?.detachFromElement();
 		}
 		this._editorInput = undefined;
@@ -113,7 +131,6 @@ export class TerminalEditor extends EditorPane {
 		this._editorInput?.terminalInstance?.focus(true);
 	}
 
-	// eslint-disable-next-line @typescript-eslint/naming-convention
 	protected createEditor(parent: HTMLElement): void {
 		this._editorInstanceElement = parent;
 		this._overflowGuardElement = dom.$('.terminal-overflow-guard.terminal-editor');
@@ -125,38 +142,54 @@ export class TerminalEditor extends EditorPane {
 		if (!this._editorInstanceElement) {
 			return;
 		}
-		this._register(dom.addDisposableListener(this._editorInstanceElement, 'mousedown', async (event: MouseEvent) => {
-			const terminal = this._terminalEditorService.activeInstance;
-			if (this._terminalEditorService.instances.length > 0 && terminal) {
-				const result = await terminal.handleMouseEvent(event, this._instanceMenu);
-				if (typeof result === 'object' && result.cancelContextMenu) {
-					this._cancelContextMenu = true;
+		this._register(
+			dom.addDisposableListener(this._editorInstanceElement, 'mousedown', async (event: MouseEvent) => {
+				const terminal = this._terminalEditorService.activeInstance;
+				if (this._terminalEditorService.instances.length > 0 && terminal) {
+					const result = await terminal.handleMouseEvent(event, this._instanceMenu);
+					if (typeof result === 'object' && result.cancelContextMenu) {
+						this._cancelContextMenu = true;
+					}
 				}
-			}
-		}));
-		this._register(dom.addDisposableListener(this._editorInstanceElement, 'contextmenu', (event: MouseEvent) => {
-			const rightClickBehavior = this._terminalConfigurationService.config.rightClickBehavior;
-			if (rightClickBehavior === 'nothing' && !event.shiftKey) {
-				event.preventDefault();
-				event.stopImmediatePropagation();
-				this._cancelContextMenu = false;
-				return;
-			}
-			else
-				if (!this._cancelContextMenu && rightClickBehavior !== 'copyPaste' && rightClickBehavior !== 'paste') {
+			})
+		);
+		this._register(
+			dom.addDisposableListener(this._editorInstanceElement, 'contextmenu', (event: MouseEvent) => {
+				const rightClickBehavior = this._terminalConfigurationService.config.rightClickBehavior;
+				if (rightClickBehavior === 'nothing' && !event.shiftKey) {
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					this._cancelContextMenu = false;
+					return;
+				} else if (!this._cancelContextMenu && rightClickBehavior !== 'copyPaste' && rightClickBehavior !== 'paste') {
 					if (!this._cancelContextMenu) {
-						openContextMenu(this.window, event, this._editorInput?.terminalInstance, this._instanceMenu, this._contextMenuService);
+						openContextMenu(
+							this.window,
+							event,
+							this._editorInput?.terminalInstance,
+							this._instanceMenu,
+							this._contextMenuService
+						);
 					}
 					event.preventDefault();
 					event.stopImmediatePropagation();
 					this._cancelContextMenu = false;
 				}
-		}));
+			})
+		);
 	}
 
 	private _updateTabActionBar(profiles: ITerminalProfile[]): void {
 		this._disposableStore.clear();
-		const actions = getTerminalActionBarArgs(TerminalLocation.Editor, profiles, this._getDefaultProfileName(), this._terminalProfileService.contributedProfiles, this._terminalService, this._dropdownMenu, this._disposableStore);
+		const actions = getTerminalActionBarArgs(
+			TerminalLocation.Editor,
+			profiles,
+			this._getDefaultProfileName(),
+			this._terminalProfileService.contributedProfiles,
+			this._terminalService,
+			this._dropdownMenu,
+			this._disposableStore
+		);
 		this._newDropdown.value?.update(actions.dropdownAction, actions.dropdownMenuActions);
 	}
 
@@ -171,7 +204,9 @@ export class TerminalEditor extends EditorPane {
 
 	override setVisible(visible: boolean): void {
 		super.setVisible(visible);
-		this._editorInput?.terminalInstance?.setVisible(visible && this._workbenchLayoutService.isVisible(Parts.EDITOR_PART, this.window));
+		this._editorInput?.terminalInstance?.setVisible(
+			visible && this._workbenchLayoutService.isVisible(Parts.EDITOR_PART, this.window)
+		);
 	}
 
 	override getActionViewItem(action: IAction, options: IBaseActionViewItemOptions): IActionViewItem | undefined {
@@ -180,8 +215,23 @@ export class TerminalEditor extends EditorPane {
 				if (action instanceof MenuItemAction) {
 					const location = { viewColumn: ACTIVE_GROUP };
 					this._disposableStore.clear();
-					const actions = getTerminalActionBarArgs(location, this._terminalProfileService.availableProfiles, this._getDefaultProfileName(), this._terminalProfileService.contributedProfiles, this._terminalService, this._dropdownMenu, this._disposableStore);
-					this._newDropdown.value = this._instantiationService.createInstance(DropdownWithPrimaryActionViewItem, action, actions.dropdownAction, actions.dropdownMenuActions, actions.className, { hoverDelegate: options.hoverDelegate });
+					const actions = getTerminalActionBarArgs(
+						location,
+						this._terminalProfileService.availableProfiles,
+						this._getDefaultProfileName(),
+						this._terminalProfileService.contributedProfiles,
+						this._terminalService,
+						this._dropdownMenu,
+						this._disposableStore
+					);
+					this._newDropdown.value = this._instantiationService.createInstance(
+						DropdownWithPrimaryActionViewItem,
+						action,
+						actions.dropdownAction,
+						actions.dropdownMenuActions,
+						actions.className,
+						{ hoverDelegate: options.hoverDelegate }
+					);
 					this._newDropdown.value?.update(actions.dropdownAction, actions.dropdownMenuActions);
 					return this._newDropdown.value;
 				}

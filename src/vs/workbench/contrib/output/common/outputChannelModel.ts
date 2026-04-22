@@ -13,7 +13,13 @@ import { Promises, ThrottledDelayer } from '../../../../base/common/async.js';
 import { FileOperationResult, IFileService, toFileOperationResult } from '../../../../platform/files/common/files.js';
 import { IModelService } from '../../../../editor/common/services/model.js';
 import { ILanguageSelection } from '../../../../editor/common/languages/language.js';
-import { Disposable, toDisposable, IDisposable, MutableDisposable, DisposableStore } from '../../../../base/common/lifecycle.js';
+import {
+	Disposable,
+	toDisposable,
+	IDisposable,
+	MutableDisposable,
+	DisposableStore
+} from '../../../../base/common/lifecycle.js';
 import { isNumber } from '../../../../base/common/types.js';
 import { EditOperation, ISingleEditOperation } from '../../../../editor/common/core/editOperation.js';
 import { Position } from '../../../../editor/common/core/position.js';
@@ -21,12 +27,18 @@ import { Range } from '../../../../editor/common/core/range.js';
 import { VSBuffer } from '../../../../base/common/buffer.js';
 import { ILogger, ILoggerService, ILogService, LogLevel } from '../../../../platform/log/common/log.js';
 import { CancellationToken, CancellationTokenSource } from '../../../../base/common/cancellation.js';
-import { ILogEntry, IOutputContentSource, LOG_MIME, OutputChannelUpdateMode } from '../../../services/output/common/output.js';
+import {
+	ILogEntry,
+	IOutputContentSource,
+	LOG_MIME,
+	OutputChannelUpdateMode
+} from '../../../services/output/common/output.js';
 import { isCancellationError } from '../../../../base/common/errors.js';
 import { TextModel } from '../../../../editor/common/model/textModel.js';
 import { binarySearch, sortedDiff } from '../../../../base/common/arrays.js';
 
-const LOG_ENTRY_REGEX = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\s(\[(info|trace|debug|error|warning)\])\s(\[(.*?)\])?/;
+const LOG_ENTRY_REGEX =
+	/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\s(\[(info|trace|debug|error|warning)\])\s(\[(.*?)\])?/;
 
 export function parseLogEntryAt(model: ITextModel, lineNumber: number): ILogEntry | null {
 	const lineContent = model.getLineContent(lineNumber);
@@ -35,7 +47,12 @@ export function parseLogEntryAt(model: ITextModel, lineNumber: number): ILogEntr
 		const timestamp = new Date(match[1]).getTime();
 		const timestampRange = new Range(lineNumber, 1, lineNumber, match[1].length);
 		const logLevel = parseLogLevel(match[3]);
-		const logLevelRange = new Range(lineNumber, timestampRange.endColumn + 1, lineNumber, timestampRange.endColumn + 1 + match[2].length);
+		const logLevelRange = new Range(
+			lineNumber,
+			timestampRange.endColumn + 1,
+			lineNumber,
+			timestampRange.endColumn + 1 + match[2].length
+		);
 		const category = match[5];
 		const startLine = lineNumber;
 		let endLine = lineNumber;
@@ -68,9 +85,24 @@ function* logEntryIterator<T>(model: ITextModel, process: (logEntry: ILogEntry) 
 function changeStartLineNumber(logEntry: ILogEntry, lineNumber: number): ILogEntry {
 	return {
 		...logEntry,
-		range: new Range(lineNumber, logEntry.range.startColumn, lineNumber + logEntry.range.endLineNumber - logEntry.range.startLineNumber, logEntry.range.endColumn),
-		timestampRange: new Range(lineNumber, logEntry.timestampRange.startColumn, lineNumber, logEntry.timestampRange.endColumn),
-		logLevelRange: new Range(lineNumber, logEntry.logLevelRange.startColumn, lineNumber, logEntry.logLevelRange.endColumn),
+		range: new Range(
+			lineNumber,
+			logEntry.range.startColumn,
+			lineNumber + logEntry.range.endLineNumber - logEntry.range.startLineNumber,
+			logEntry.range.endColumn
+		),
+		timestampRange: new Range(
+			lineNumber,
+			logEntry.timestampRange.startColumn,
+			lineNumber,
+			logEntry.timestampRange.endColumn
+		),
+		logLevelRange: new Range(
+			lineNumber,
+			logEntry.logLevelRange.startColumn,
+			lineNumber,
+			logEntry.logLevelRange.endColumn
+		)
 	};
 }
 
@@ -114,12 +146,15 @@ interface IContentProvider {
 }
 
 class FileContentProvider extends Disposable implements IContentProvider {
-
 	private readonly _onDidAppend = this._register(new Emitter<void>());
-	get onDidAppend() { return this._onDidAppend.event; }
+	get onDidAppend() {
+		return this._onDidAppend.event;
+	}
 
 	private readonly _onDidReset = this._register(new Emitter<void>());
-	get onDidReset() { return this._onDidReset.event; }
+	get onDidReset() {
+		return this._onDidReset.event;
+	}
 
 	private watching: boolean = false;
 	private syncDelayer: ThrottledDelayer<void>;
@@ -136,7 +171,7 @@ class FileContentProvider extends Disposable implements IContentProvider {
 		{ name, resource }: IOutputContentSource,
 		@IFileService private readonly fileService: IFileService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@ILogService private readonly logService: ILogService,
+		@ILogService private readonly logService: ILogService
 	) {
 		super();
 
@@ -207,18 +242,24 @@ class FileContentProvider extends Disposable implements IContentProvider {
 		return this.logEntries;
 	}
 
-	async getContent(donotConsumeLogEntries?: boolean): Promise<{ readonly name: string; readonly content: string; readonly consume: () => void }> {
+	async getContent(
+		donotConsumeLogEntries?: boolean
+	): Promise<{ readonly name: string; readonly content: string; readonly consume: () => void }> {
 		try {
 			if (!this.fileService.hasProvider(this.resource)) {
 				return {
 					name: this.name,
 					content: '',
-					consume: () => { /* No Op */ }
+					consume: () => {
+						/* No Op */
+					}
 				};
 			}
 			const fileContent = await this.fileService.readFile(this.resource, { position: this.endOffset });
 			const content = fileContent.value.toString();
-			const logEntries = donotConsumeLogEntries ? [] : this.parseLogEntries(content, this.logEntries[this.logEntries.length - 1]);
+			const logEntries = donotConsumeLogEntries
+				? []
+				: this.parseLogEntries(content, this.logEntries[this.logEntries.length - 1]);
 			let consumed = false;
 			return {
 				name: this.name,
@@ -239,20 +280,28 @@ class FileContentProvider extends Disposable implements IContentProvider {
 			return {
 				name: this.name,
 				content: '',
-				consume: () => { /* No Op */ }
+				consume: () => {
+					/* No Op */
+				}
 			};
 		}
 	}
 
 	private parseLogEntries(content: string, lastLogEntry: ILogEntry | undefined): ILogEntry[] {
-		const model = this.instantiationService.createInstance(TextModel, content, LOG_MIME, TextModel.DEFAULT_CREATION_OPTIONS, null);
+		const model = this.instantiationService.createInstance(
+			TextModel,
+			content,
+			LOG_MIME,
+			TextModel.DEFAULT_CREATION_OPTIONS,
+			null
+		);
 		try {
 			if (!parseLogEntryAt(model, 1)) {
 				return [];
 			}
 			const logEntries: ILogEntry[] = [];
 			let logEntryStartLineNumber = lastLogEntry ? lastLogEntry.range.endLineNumber + 1 : 1;
-			for (const entry of logEntryIterator(model, (e) => changeStartLineNumber(e, logEntryStartLineNumber))) {
+			for (const entry of logEntryIterator(model, e => changeStartLineNumber(e, logEntryStartLineNumber))) {
 				logEntries.push(entry);
 				logEntryStartLineNumber = entry.range.endLineNumber + 1;
 			}
@@ -264,7 +313,6 @@ class FileContentProvider extends Disposable implements IContentProvider {
 }
 
 class MultiFileContentProvider extends Disposable implements IContentProvider {
-
 	private readonly _onDidAppend = this._register(new Emitter<void>());
 	readonly onDidAppend = this._onDidAppend.event;
 	readonly onDidReset = Event.None;
@@ -278,22 +326,26 @@ class MultiFileContentProvider extends Disposable implements IContentProvider {
 		filesInfos: IOutputContentSource[],
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IFileService private readonly fileService: IFileService,
-		@ILogService private readonly logService: ILogService,
+		@ILogService private readonly logService: ILogService
 	) {
 		super();
 		for (const file of filesInfos) {
 			this.fileContentProviderItems.push(this.createFileContentProvider(file));
 		}
-		this._register(toDisposable(() => {
-			for (const [, disposables] of this.fileContentProviderItems) {
-				disposables.dispose();
-			}
-		}));
+		this._register(
+			toDisposable(() => {
+				for (const [, disposables] of this.fileContentProviderItems) {
+					disposables.dispose();
+				}
+			})
+		);
 	}
 
 	private createFileContentProvider(file: IOutputContentSource): [FileContentProvider, DisposableStore] {
 		const disposables = new DisposableStore();
-		const fileOutput = disposables.add(new FileContentProvider(file, this.fileService, this.instantiationService, this.logService));
+		const fileOutput = disposables.add(
+			new FileContentProvider(file, this.fileService, this.instantiationService, this.logService)
+		);
 		disposables.add(fileOutput.onDidAppend(() => this._onDidAppend.fire()));
 		return [fileOutput, disposables];
 	}
@@ -322,7 +374,11 @@ class MultiFileContentProvider extends Disposable implements IContentProvider {
 			this.unwatch();
 		}
 
-		const result = sortedDiff(this.fileContentProviderItems.map(([output]) => output), files, (a, b) => resources.extUri.compare(a.resource, b.resource));
+		const result = sortedDiff(
+			this.fileContentProviderItems.map(([output]) => output),
+			files,
+			(a, b) => resources.extUri.compare(a.resource, b.resource)
+		);
 		for (const { start, deleteCount, toInsert } of result) {
 			const outputs = toInsert.map(file => this.createFileContentProvider(file));
 			const outputsToRemove = this.fileContentProviderItems.splice(start, deleteCount, ...outputs);
@@ -370,8 +426,10 @@ class MultiFileContentProvider extends Disposable implements IContentProvider {
 		};
 	}
 
-	private combineLogEntries(outputs: { content: string; name: string }[], lastEntry: ILogEntry | undefined): { logEntries: ILogEntry[]; content: string } {
-
+	private combineLogEntries(
+		outputs: { content: string; name: string }[],
+		lastEntry: ILogEntry | undefined
+	): { logEntries: ILogEntry[]; content: string } {
 		outputs = outputs.filter(output => !!output.content);
 
 		if (outputs.length === 0) {
@@ -382,17 +440,33 @@ class MultiFileContentProvider extends Disposable implements IContentProvider {
 		const contents: string[] = [];
 		const process = (model: ITextModel, logEntry: ILogEntry, name: string): [ILogEntry, string] => {
 			const lineContent = model.getValueInRange(logEntry.range);
-			const content = name ? `${lineContent.substring(0, logEntry.logLevelRange.endColumn)} [${name}]${lineContent.substring(logEntry.logLevelRange.endColumn)}` : lineContent;
-			return [{
-				...logEntry,
-				category: name,
-				range: new Range(logEntry.range.startLineNumber, logEntry.logLevelRange.startColumn, logEntry.range.endLineNumber, name ? logEntry.range.endColumn + name.length + 3 : logEntry.range.endColumn),
-			}, content];
+			const content = name
+				? `${lineContent.substring(0, logEntry.logLevelRange.endColumn)} [${name}]${lineContent.substring(logEntry.logLevelRange.endColumn)}`
+				: lineContent;
+			return [
+				{
+					...logEntry,
+					category: name,
+					range: new Range(
+						logEntry.range.startLineNumber,
+						logEntry.logLevelRange.startColumn,
+						logEntry.range.endLineNumber,
+						name ? logEntry.range.endColumn + name.length + 3 : logEntry.range.endColumn
+					)
+				},
+				content
+			];
 		};
 
-		const model = this.instantiationService.createInstance(TextModel, outputs[0].content, LOG_MIME, TextModel.DEFAULT_CREATION_OPTIONS, null);
+		const model = this.instantiationService.createInstance(
+			TextModel,
+			outputs[0].content,
+			LOG_MIME,
+			TextModel.DEFAULT_CREATION_OPTIONS,
+			null
+		);
 		try {
-			for (const [logEntry, content] of logEntryIterator(model, (e) => process(model, e, outputs[0].name))) {
+			for (const [logEntry, content] of logEntryIterator(model, e => process(model, e, outputs[0].name))) {
 				logEntries.push(logEntry);
 				contents.push(content);
 			}
@@ -402,9 +476,15 @@ class MultiFileContentProvider extends Disposable implements IContentProvider {
 
 		for (let index = 1; index < outputs.length; index++) {
 			const { content, name } = outputs[index];
-			const model = this.instantiationService.createInstance(TextModel, content, LOG_MIME, TextModel.DEFAULT_CREATION_OPTIONS, null);
+			const model = this.instantiationService.createInstance(
+				TextModel,
+				content,
+				LOG_MIME,
+				TextModel.DEFAULT_CREATION_OPTIONS,
+				null
+			);
 			try {
-				const iterator = logEntryIterator(model, (e) => process(model, e, name));
+				const iterator = logEntryIterator(model, e => process(model, e, name));
 				let next = iterator.next();
 				while (!next.done) {
 					const [logEntry, content] = next.value;
@@ -421,8 +501,7 @@ class MultiFileContentProvider extends Disposable implements IContentProvider {
 							logEntriesToAdd.push(next.value[0]);
 							contentsToAdd.push(next.value[1]);
 						}
-					}
-					else {
+					} else {
 						if (logEntry.timestamp <= logEntries[0].timestamp) {
 							// If the timestamp is less than or equal to the first timestamp
 							// then insert at the beginning
@@ -434,7 +513,11 @@ class MultiFileContentProvider extends Disposable implements IContentProvider {
 						}
 
 						// Collect all entries that have a timestamp less than or equal to the timestamp at the insertion index
-						for (next = iterator.next(); !next.done && next.value[0].timestamp <= logEntries[insertionIndex].timestamp; next = iterator.next()) {
+						for (
+							next = iterator.next();
+							!next.done && next.value[0].timestamp <= logEntries[insertionIndex].timestamp;
+							next = iterator.next()
+						) {
 							logEntriesToAdd.push(next.value[0]);
 							contentsToAdd.push(next.value[1]);
 						}
@@ -460,11 +543,9 @@ class MultiFileContentProvider extends Disposable implements IContentProvider {
 
 		return { logEntries: updatedLogEntries, content };
 	}
-
 }
 
 export abstract class AbstractFileOutputChannelModel extends Disposable implements IOutputChannelModel {
-
 	private readonly _onDispose = this._register(new Emitter<void>());
 	readonly onDispose: Event<void> = this._onDispose.event;
 
@@ -484,7 +565,7 @@ export abstract class AbstractFileOutputChannelModel extends Disposable implemen
 		private readonly language: ILanguageSelection,
 		private readonly outputContentProvider: IContentProvider,
 		@IModelService protected readonly modelService: IModelService,
-		@IEditorWorkerService private readonly editorWorkerService: IEditorWorkerService,
+		@IEditorWorkerService private readonly editorWorkerService: IEditorWorkerService
 	) {
 		super();
 	}
@@ -497,16 +578,22 @@ export abstract class AbstractFileOutputChannelModel extends Disposable implemen
 				const { content, consume } = await this.outputContentProvider.getContent();
 				consume();
 				this.doAppendContent(this.model, content);
-				this.modelDisposable.value.add(this.outputContentProvider.onDidReset(() => this.onDidContentChange(true, true)));
-				this.modelDisposable.value.add(this.outputContentProvider.onDidAppend(() => this.onDidContentChange(false, false)));
+				this.modelDisposable.value.add(
+					this.outputContentProvider.onDidReset(() => this.onDidContentChange(true, true))
+				);
+				this.modelDisposable.value.add(
+					this.outputContentProvider.onDidAppend(() => this.onDidContentChange(false, false))
+				);
 				this.outputContentProvider.watch();
 				this.modelDisposable.value.add(toDisposable(() => this.outputContentProvider.unwatch()));
-				this.modelDisposable.value.add(this.model.onWillDispose(() => {
-					this.outputContentProvider.reset();
-					this.modelDisposable.value = undefined;
-					this.cancelModelUpdate();
-					this.model = null;
-				}));
+				this.modelDisposable.value.add(
+					this.model.onWillDispose(() => {
+						this.outputContentProvider.reset();
+						this.modelDisposable.value = undefined;
+						this.cancelModelUpdate();
+						this.model = null;
+					})
+				);
 				c(this.model);
 			} catch (error) {
 				e(error);
@@ -542,13 +629,9 @@ export abstract class AbstractFileOutputChannelModel extends Disposable implemen
 
 		if (mode === OutputChannelUpdateMode.Clear) {
 			this.clearContent(this.model);
-		}
-
-		else if (mode === OutputChannelUpdateMode.Replace) {
-			this.replacePromise = this.replaceContent(this.model, token).finally(() => this.replacePromise = undefined);
-		}
-
-		else {
+		} else if (mode === OutputChannelUpdateMode.Replace) {
+			this.replacePromise = this.replaceContent(this.model, token).finally(() => (this.replacePromise = undefined));
+		} else {
 			this.appendContent(this.model, immediate, token);
 		}
 	}
@@ -559,37 +642,46 @@ export abstract class AbstractFileOutputChannelModel extends Disposable implemen
 	}
 
 	private appendContent(model: ITextModel, immediate: boolean, token: CancellationToken): void {
-		this.appendThrottler.trigger(async () => {
-			/* Abort if operation is cancelled */
-			if (token.isCancellationRequested) {
-				return;
-			}
+		this.appendThrottler
+			.trigger(
+				async () => {
+					/* Abort if operation is cancelled */
+					if (token.isCancellationRequested) {
+						return;
+					}
 
-			/* Wait for replace to finish */
-			if (this.replacePromise) {
-				try { await this.replacePromise; } catch (e) { /* Ignore */ }
-				/* Abort if operation is cancelled */
-				if (token.isCancellationRequested) {
-					return;
+					/* Wait for replace to finish */
+					if (this.replacePromise) {
+						try {
+							await this.replacePromise;
+						} catch (e) {
+							/* Ignore */
+						}
+						/* Abort if operation is cancelled */
+						if (token.isCancellationRequested) {
+							return;
+						}
+					}
+
+					/* Get content to append */
+					const { content, consume } = await this.outputContentProvider.getContent();
+					/* Abort if operation is cancelled */
+					if (token.isCancellationRequested) {
+						return;
+					}
+
+					/* Appned Content */
+					consume();
+					this.doAppendContent(model, content);
+					this.modelUpdateInProgress = false;
+				},
+				immediate ? 0 : undefined
+			)
+			.catch(error => {
+				if (!isCancellationError(error)) {
+					throw error;
 				}
-			}
-
-			/* Get content to append */
-			const { content, consume } = await this.outputContentProvider.getContent();
-			/* Abort if operation is cancelled */
-			if (token.isCancellationRequested) {
-				return;
-			}
-
-			/* Appned Content */
-			consume();
-			this.doAppendContent(model, content);
-			this.modelUpdateInProgress = false;
-		}, immediate ? 0 : undefined).catch(error => {
-			if (!isCancellationError(error)) {
-				throw error;
-			}
-		});
+			});
 	}
 
 	private doAppendContent(model: ITextModel, content: string): void {
@@ -626,7 +718,9 @@ export abstract class AbstractFileOutputChannelModel extends Disposable implemen
 			return [EditOperation.delete(model.getFullModelRange())];
 		}
 		if (contentToReplace !== model.getValue()) {
-			const edits = await this.editorWorkerService.computeMoreMinimalEdits(model.uri, [{ text: contentToReplace.toString(), range: model.getFullModelRange() }]);
+			const edits = await this.editorWorkerService.computeMoreMinimalEdits(model.uri, [
+				{ text: contentToReplace.toString(), range: model.getFullModelRange() }
+			]);
 			if (edits?.length) {
 				return edits.map(edit => EditOperation.replace(Range.lift(edit.range), edit.text));
 			}
@@ -651,8 +745,12 @@ export abstract class AbstractFileOutputChannelModel extends Disposable implemen
 		super.dispose();
 	}
 
-	append(message: string): void { throw new Error('Not supported'); }
-	replace(message: string): void { throw new Error('Not supported'); }
+	append(message: string): void {
+		throw new Error('Not supported');
+	}
+	replace(message: string): void {
+		throw new Error('Not supported');
+	}
 
 	abstract clear(): void;
 	abstract update(mode: OutputChannelUpdateMode, till: number | undefined, immediate: boolean): void;
@@ -660,7 +758,6 @@ export abstract class AbstractFileOutputChannelModel extends Disposable implemen
 }
 
 export class FileOutputChannelModel extends AbstractFileOutputChannelModel implements IOutputChannelModel {
-
 	private readonly fileOutput: FileContentProvider;
 
 	constructor(
@@ -671,7 +768,7 @@ export class FileOutputChannelModel extends AbstractFileOutputChannelModel imple
 		@IModelService modelService: IModelService,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@ILogService logService: ILogService,
-		@IEditorWorkerService editorWorkerService: IEditorWorkerService,
+		@IEditorWorkerService editorWorkerService: IEditorWorkerService
 	) {
 		const fileOutput = new FileContentProvider(source, fileService, instantiationService, logService);
 		super(modelUri, language, fileOutput, modelService, editorWorkerService);
@@ -696,11 +793,12 @@ export class FileOutputChannelModel extends AbstractFileOutputChannelModel imple
 		});
 	}
 
-	override updateChannelSources(files: IOutputContentSource[]): void { throw new Error('Not supported'); }
+	override updateChannelSources(files: IOutputContentSource[]): void {
+		throw new Error('Not supported');
+	}
 }
 
 export class MultiFileOutputChannelModel extends AbstractFileOutputChannelModel implements IOutputChannelModel {
-
 	private readonly multifileOutput: MultiFileContentProvider;
 
 	constructor(
@@ -711,7 +809,7 @@ export class MultiFileOutputChannelModel extends AbstractFileOutputChannelModel 
 		@IModelService modelService: IModelService,
 		@ILogService logService: ILogService,
 		@IEditorWorkerService editorWorkerService: IEditorWorkerService,
-		@IInstantiationService instantiationService: IInstantiationService,
+		@IInstantiationService instantiationService: IInstantiationService
 	) {
 		const multifileOutput = new MultiFileContentProvider(source, instantiationService, fileService, logService);
 		super(modelUri, language, multifileOutput, modelService, editorWorkerService);
@@ -736,11 +834,12 @@ export class MultiFileOutputChannelModel extends AbstractFileOutputChannelModel 
 		});
 	}
 
-	override update(mode: OutputChannelUpdateMode, till: number | undefined, immediate: boolean): void { throw new Error('Not supported'); }
+	override update(mode: OutputChannelUpdateMode, till: number | undefined, immediate: boolean): void {
+		throw new Error('Not supported');
+	}
 }
 
 class OutputChannelBackedByFile extends FileOutputChannelModel implements IOutputChannelModel {
-
 	private logger: ILogger;
 	private _offset: number;
 
@@ -756,10 +855,24 @@ class OutputChannelBackedByFile extends FileOutputChannelModel implements IOutpu
 		@ILogService logService: ILogService,
 		@IEditorWorkerService editorWorkerService: IEditorWorkerService
 	) {
-		super(modelUri, language, { resource: file, name: '' }, fileService, modelService, instantiationService, logService, editorWorkerService);
+		super(
+			modelUri,
+			language,
+			{ resource: file, name: '' },
+			fileService,
+			modelService,
+			instantiationService,
+			logService,
+			editorWorkerService
+		);
 
 		// Donot rotate to check for the file reset
-		this.logger = loggerService.createLogger(file, { logLevel: 'always', donotRotate: true, donotUseFormatters: true, hidden: true });
+		this.logger = loggerService.createLogger(file, {
+			logLevel: 'always',
+			donotRotate: true,
+			donotUseFormatters: true,
+			hidden: true
+		});
 		this._offset = 0;
 	}
 
@@ -781,11 +894,9 @@ class OutputChannelBackedByFile extends FileOutputChannelModel implements IOutpu
 			this.logger.flush();
 		}
 	}
-
 }
 
 export class DelegatedOutputChannelModel extends Disposable implements IOutputChannelModel {
-
 	private readonly _onDispose: Emitter<void> = this._register(new Emitter<void>());
 	readonly onDispose: Event<void> = this._onDispose.event;
 
@@ -799,19 +910,33 @@ export class DelegatedOutputChannelModel extends Disposable implements IOutputCh
 		outputDir: URI,
 		outputDirCreationPromise: Promise<void>,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IFileService private readonly fileService: IFileService,
+		@IFileService private readonly fileService: IFileService
 	) {
 		super();
-		this.outputChannelModel = this.createOutputChannelModel(id, modelUri, language, outputDir, outputDirCreationPromise);
+		this.outputChannelModel = this.createOutputChannelModel(
+			id,
+			modelUri,
+			language,
+			outputDir,
+			outputDirCreationPromise
+		);
 		const resource = resources.joinPath(outputDir, `${id.replace(/[\\/:\*\?"<>\|]/g, '')}.log`);
 		this.source = { resource };
 	}
 
-	private async createOutputChannelModel(id: string, modelUri: URI, language: ILanguageSelection, outputDir: URI, outputDirPromise: Promise<void>): Promise<IOutputChannelModel> {
+	private async createOutputChannelModel(
+		id: string,
+		modelUri: URI,
+		language: ILanguageSelection,
+		outputDir: URI,
+		outputDirPromise: Promise<void>
+	): Promise<IOutputChannelModel> {
 		await outputDirPromise;
 		const file = resources.joinPath(outputDir, `${id.replace(/[\\/:\*\?"<>\|]/g, '')}.log`);
 		await this.fileService.createFile(file);
-		const outputChannelModel = this._register(this.instantiationService.createInstance(OutputChannelBackedByFile, id, modelUri, language, file));
+		const outputChannelModel = this._register(
+			this.instantiationService.createInstance(OutputChannelBackedByFile, id, modelUri, language, file)
+		);
 		this._register(outputChannelModel.onDispose(() => this._onDispose.fire()));
 		return outputChannelModel;
 	}

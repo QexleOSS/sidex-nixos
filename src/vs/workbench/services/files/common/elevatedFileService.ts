@@ -11,7 +11,6 @@ import { IFileStatWithMetadata, IWriteFileOptions } from '../../../../platform/f
 export const IElevatedFileService = createDecorator<IElevatedFileService>('elevatedFileService');
 
 export interface IElevatedFileService {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -23,5 +22,9 @@ export interface IElevatedFileService {
 	 * Attempts to write to the target resource elevated. This may bring
 	 * up a dialog to ask for admin username / password.
 	 */
-	writeFileElevated(resource: URI, value: VSBuffer | VSBufferReadable | VSBufferReadableStream, options?: IWriteFileOptions): Promise<IFileStatWithMetadata>;
+	writeFileElevated(
+		resource: URI,
+		value: VSBuffer | VSBufferReadable | VSBufferReadableStream,
+		options?: IWriteFileOptions
+	): Promise<IFileStatWithMetadata>;
 }

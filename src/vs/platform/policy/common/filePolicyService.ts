@@ -26,7 +26,6 @@ function keysDiff<T>(a: Map<string, T>, b: Map<string, T>): string[] {
 }
 
 export class FilePolicyService extends AbstractPolicyService implements IPolicyService {
-
 	private readonly throttledDelayer = this._register(new ThrottledDelayer(500));
 
 	constructor(
@@ -53,7 +52,7 @@ export class FilePolicyService extends AbstractPolicyService implements IPolicyS
 			const raw = JSON.parse(content.value.toString());
 
 			if (!isObject(raw)) {
-				throw new Error('Policy file isn\'t a JSON object');
+				throw new Error("Policy file isn't a JSON object");
 			}
 
 			for (const key of Object.keys(raw)) {

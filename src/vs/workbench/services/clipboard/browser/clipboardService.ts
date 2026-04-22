@@ -23,10 +23,12 @@ export class BrowserClipboardService extends BaseBrowserClipboardService {
 			__TAURI__?: unknown;
 			__TAURI_INTERNALS__?: unknown;
 		};
-		return globalScope.__SIDEX_TAURI__ === true
-			|| typeof globalScope.__TAURI__ !== 'undefined'
-			|| typeof globalScope.__TAURI_INTERNALS__ !== 'undefined'
-			|| globalThis.location?.protocol === 'tauri:';
+		return (
+			globalScope.__SIDEX_TAURI__ === true ||
+			typeof globalScope.__TAURI__ !== 'undefined' ||
+			typeof globalScope.__TAURI_INTERNALS__ !== 'undefined' ||
+			globalThis.location?.protocol === 'tauri:'
+		);
 	}
 
 	constructor(
@@ -40,7 +42,12 @@ export class BrowserClipboardService extends BaseBrowserClipboardService {
 	}
 
 	override async writeText(text: string, type?: string): Promise<void> {
-		this.logService.trace('BrowserClipboardService#writeText called with type:', type, ' with text.length:', text.length);
+		this.logService.trace(
+			'BrowserClipboardService#writeText called with type:',
+			type,
+			' with text.length:',
+			text.length
+		);
 		if (!!this.environmentService.extensionTestsLocationURI && typeof type !== 'string') {
 			type = 'vscode-tests'; // force in-memory clipboard for tests to avoid permission issues
 		}
@@ -70,22 +77,27 @@ export class BrowserClipboardService extends BaseBrowserClipboardService {
 			}
 
 			return new Promise<string>(resolve => {
-
 				// Inform user about permissions problem (https://github.com/microsoft/vscode/issues/112089)
 				const listener = new DisposableStore();
 				const handle = this.notificationService.prompt(
 					Severity.Error,
-					localize('clipboardError', "Unable to read from the browser's clipboard. Please make sure you have granted access for this website to read from the clipboard."),
-					[{
-						label: localize('retry', "Retry"),
-						run: async () => {
-							listener.dispose();
-							resolve(await this.readText(type));
+					localize(
+						'clipboardError',
+						"Unable to read from the browser's clipboard. Please make sure you have granted access for this website to read from the clipboard."
+					),
+					[
+						{
+							label: localize('retry', 'Retry'),
+							run: async () => {
+								listener.dispose();
+								resolve(await this.readText(type));
+							}
+						},
+						{
+							label: localize('learnMore', 'Learn More'),
+							run: () => this.openerService.open('https://go.microsoft.com/fwlink/?linkid=2151362')
 						}
-					}, {
-						label: localize('learnMore', "Learn More"),
-						run: () => this.openerService.open('https://go.microsoft.com/fwlink/?linkid=2151362')
-					}],
+					],
 					{
 						sticky: true
 					}

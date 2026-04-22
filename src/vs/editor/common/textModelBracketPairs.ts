@@ -13,7 +13,7 @@ import { PairAstNode } from './model/bracketPairsTextModelPart/bracketPairsTree/
 export interface IBracketPairsTextModelPart {
 	/**
 	 * Is fired when bracket pairs change, either due to a text or a settings change.
-	*/
+	 */
 	readonly onDidChange: Event<void>;
 
 	/**
@@ -77,8 +77,8 @@ export class BracketInfo {
 		/** 0-based level */
 		public readonly nestingLevel: number,
 		public readonly nestingLevelOfEqualBracketType: number,
-		public readonly isInvalid: boolean,
-	) { }
+		public readonly isInvalid: boolean
+	) {}
 }
 
 export class BracketPairInfo {
@@ -89,10 +89,8 @@ export class BracketPairInfo {
 		/** 0-based */
 		public readonly nestingLevel: number,
 		public readonly nestingLevelOfEqualBracketType: number,
-		private readonly bracketPairNode: PairAstNode,
-
-	) {
-	}
+		private readonly bracketPairNode: PairAstNode
+	) {}
 
 	public get openingBracketInfo(): OpeningBracketKind {
 		return this.bracketPairNode.openingBracket.bracketInfo as OpeningBracketKind;
@@ -110,15 +108,22 @@ export class BracketPairWithMinIndentationInfo extends BracketPairInfo {
 		closingBracketRange: Range | undefined,
 		/**
 		 * 0-based
-		*/
+		 */
 		nestingLevel: number,
 		nestingLevelOfEqualBracketType: number,
 		bracketPairNode: PairAstNode,
 		/**
 		 * -1 if not requested, otherwise the size of the minimum indentation in the bracket pair in terms of visible columns.
-		*/
-		public readonly minVisibleColumnIndentation: number,
+		 */
+		public readonly minVisibleColumnIndentation: number
 	) {
-		super(range, openingBracketRange, closingBracketRange, nestingLevel, nestingLevelOfEqualBracketType, bracketPairNode);
+		super(
+			range,
+			openingBracketRange,
+			closingBracketRange,
+			nestingLevel,
+			nestingLevelOfEqualBracketType,
+			bracketPairNode
+		);
 	}
 }

@@ -24,7 +24,8 @@ export interface IComputedStateAndDurationAccessor<T> extends IComputedStateAcce
 	setComputedDuration(item: T, duration: number | undefined): void;
 }
 
-const isDurationAccessor = <T>(accessor: IComputedStateAccessor<T>): accessor is IComputedStateAndDurationAccessor<T> => 'getOwnDuration' in accessor;
+const isDurationAccessor = <T>(accessor: IComputedStateAccessor<T>): accessor is IComputedStateAndDurationAccessor<T> =>
+	'getOwnDuration' in accessor;
 
 /**
  * Gets the computed state for the node.
@@ -46,8 +47,10 @@ const getComputedState = <T extends object>(accessor: IComputedStateAccessor<T>,
 			stateMap[childComputed]++;
 
 			// If all children are skipped, make the current state skipped too if unset (#131537)
-			computed = childComputed === TestResultState.Skipped && computed === TestResultState.Unset
-				? TestResultState.Skipped : maxPriority(computed, childComputed);
+			computed =
+				childComputed === TestResultState.Skipped && computed === TestResultState.Unset
+					? TestResultState.Skipped
+					: maxPriority(computed, childComputed);
 		}
 
 		if (childrenCount > LARGE_NODE_THRESHOLD) {
@@ -60,7 +63,11 @@ const getComputedState = <T extends object>(accessor: IComputedStateAccessor<T>,
 	return computed;
 };
 
-const getComputedDuration = <T>(accessor: IComputedStateAndDurationAccessor<T>, node: T, force = false): number | undefined => {
+const getComputedDuration = <T>(
+	accessor: IComputedStateAndDurationAccessor<T>,
+	node: T,
+	force = false
+): number | undefined => {
 	let computed = accessor.getCurrentComputedDuration(node);
 	if (computed === undefined || force) {
 		const own = accessor.getOwnDuration(node);
@@ -98,7 +105,7 @@ export const refreshComputedState = <T extends object>(
 	accessor: IComputedStateAccessor<T>,
 	node: T,
 	explicitNewComputedState?: TestResultState,
-	refreshDuration = true,
+	refreshDuration = true
 ) => {
 	const oldState = accessor.getCurrentComputedState(node);
 	const oldPriority = statePriority[oldState];

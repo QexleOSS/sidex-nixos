@@ -10,7 +10,6 @@ import { ICommand, ICursorStateComputerData, IEditOperationBuilder } from '../ed
 import { ITextModel } from '../model.js';
 
 export class ReplaceCommand implements ICommand {
-
 	private readonly _range: Range;
 	private readonly _text: string;
 	public readonly insertsAutoWhitespace: boolean;
@@ -33,7 +32,6 @@ export class ReplaceCommand implements ICommand {
 }
 
 export class ReplaceOvertypeCommand implements ICommand {
-
 	private readonly _range: Range;
 	private readonly _text: string;
 	public readonly insertsAutoWhitespace: boolean;
@@ -65,7 +63,6 @@ export class ReplaceOvertypeCommand implements ICommand {
 }
 
 export class ReplaceCommandThatSelectsText implements ICommand {
-
 	private readonly _range: Range;
 	private readonly _text: string;
 
@@ -86,7 +83,6 @@ export class ReplaceCommandThatSelectsText implements ICommand {
 }
 
 export class ReplaceCommandWithoutChangingPosition implements ICommand {
-
 	private readonly _range: Range;
 	private readonly _text: string;
 	public readonly insertsAutoWhitespace: boolean;
@@ -109,14 +105,19 @@ export class ReplaceCommandWithoutChangingPosition implements ICommand {
 }
 
 export class ReplaceCommandWithOffsetCursorState implements ICommand {
-
 	private readonly _range: Range;
 	private readonly _text: string;
 	private readonly _columnDeltaOffset: number;
 	private readonly _lineNumberDeltaOffset: number;
 	public readonly insertsAutoWhitespace: boolean;
 
-	constructor(range: Range, text: string, lineNumberDeltaOffset: number, columnDeltaOffset: number, insertsAutoWhitespace: boolean = false) {
+	constructor(
+		range: Range,
+		text: string,
+		lineNumberDeltaOffset: number,
+		columnDeltaOffset: number,
+		insertsAutoWhitespace: boolean = false
+	) {
 		this._range = range;
 		this._text = text;
 		this._columnDeltaOffset = columnDeltaOffset;
@@ -131,12 +132,13 @@ export class ReplaceCommandWithOffsetCursorState implements ICommand {
 	public computeCursorState(model: ITextModel, helper: ICursorStateComputerData): Selection {
 		const inverseEditOperations = helper.getInverseEditOperations();
 		const srcRange = inverseEditOperations[0].range;
-		return Selection.fromPositions(srcRange.getEndPosition().delta(this._lineNumberDeltaOffset, this._columnDeltaOffset));
+		return Selection.fromPositions(
+			srcRange.getEndPosition().delta(this._lineNumberDeltaOffset, this._columnDeltaOffset)
+		);
 	}
 }
 
 export class ReplaceOvertypeCommandOnCompositionEnd implements ICommand {
-
 	private readonly _range: Range;
 
 	constructor(range: Range) {
@@ -163,7 +165,6 @@ export class ReplaceOvertypeCommandOnCompositionEnd implements ICommand {
 }
 
 export class ReplaceCommandThatPreservesSelection implements ICommand {
-
 	private readonly _range: Range;
 	private readonly _text: string;
 	private readonly _initialSelection: Selection;

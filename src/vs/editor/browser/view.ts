@@ -13,7 +13,17 @@ import { Disposable, DisposableStore, IDisposable } from '../../base/common/life
 import { IPointerHandlerHelper } from './controller/mouseHandler.js';
 import { PointerHandlerLastRenderData } from './controller/mouseTarget.js';
 import { PointerHandler } from './controller/pointerHandler.js';
-import { IContentWidget, IContentWidgetPosition, IEditorAriaOptions, IGlyphMarginWidget, IGlyphMarginWidgetPosition, IMouseTarget, IOverlayWidget, IOverlayWidgetPosition, IViewZoneChangeAccessor } from './editorBrowser.js';
+import {
+	IContentWidget,
+	IContentWidgetPosition,
+	IEditorAriaOptions,
+	IGlyphMarginWidget,
+	IGlyphMarginWidgetPosition,
+	IMouseTarget,
+	IOverlayWidget,
+	IOverlayWidgetPosition,
+	IViewZoneChangeAccessor
+} from './editorBrowser.js';
 import { LineVisibleRanges, RenderingContext, RestrictedRenderingContext } from './view/renderingContext.js';
 import { ICommandDelegate, ViewController } from './view/viewController.js';
 import { ContentViewOverlays, MarginViewOverlays } from './view/viewOverlays.js';
@@ -21,7 +31,10 @@ import { PartFingerprint, PartFingerprints, ViewPart } from './view/viewPart.js'
 import { ViewUserInputEvents } from './view/viewUserInputEvents.js';
 import { BlockDecorations } from './viewParts/blockDecorations/blockDecorations.js';
 import { ViewContentWidgets } from './viewParts/contentWidgets/contentWidgets.js';
-import { CurrentLineHighlightOverlay, CurrentLineMarginHighlightOverlay } from './viewParts/currentLineHighlight/currentLineHighlight.js';
+import {
+	CurrentLineHighlightOverlay,
+	CurrentLineMarginHighlightOverlay
+} from './viewParts/currentLineHighlight/currentLineHighlight.js';
 import { DecorationsOverlay } from './viewParts/decorations/decorations.js';
 import { EditorScrollbar } from './viewParts/editorScrollbar/editorScrollbar.js';
 import { GlyphMarginWidgets } from './viewParts/glyphMargin/glyphMargin.js';
@@ -67,7 +80,6 @@ import { AccessibilitySupport } from '../../platform/accessibility/common/access
 import { Event, Emitter } from '../../base/common/event.js';
 import { IUserInteractionService } from '../../platform/userInteraction/browser/userInteractionService.js';
 
-
 export interface IContentWidgetData {
 	widget: IContentWidget;
 	position: IContentWidgetPosition | null;
@@ -84,7 +96,6 @@ export interface IGlyphMarginWidgetData {
 }
 
 export class View extends ViewEventHandler {
-
 	private _widgetFocusTracker: CodeEditorWidgetFocusTracker;
 
 	private readonly _scrollbar: EditorScrollbar;
@@ -141,7 +152,7 @@ export class View extends ViewEventHandler {
 		userInputEvents: ViewUserInputEvents,
 		overflowWidgetsDomNode: HTMLElement | undefined,
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
-		@IUserInteractionService private readonly _userInteractionService: IUserInteractionService,
+		@IUserInteractionService private readonly _userInteractionService: IUserInteractionService
 	) {
 		super();
 		this._ownerID = ownerID;
@@ -149,9 +160,11 @@ export class View extends ViewEventHandler {
 		this._widgetFocusTracker = this._register(
 			new CodeEditorWidgetFocusTracker(editorContainer, overflowWidgetsDomNode, this._userInteractionService)
 		);
-		this._register(this._widgetFocusTracker.onChange(() => {
-			this._context.viewModel.setHasWidgetFocus(this._widgetFocusTracker.hasFocus());
-		}));
+		this._register(
+			this._widgetFocusTracker.onChange(() => {
+				this._context.viewModel.setHasWidgetFocus(this._widgetFocusTracker.hasFocus());
+			})
+		);
 
 		this._selections = [new Selection(1, 1, 1, 1)];
 		this._renderAnimationFrame = null;
@@ -192,7 +205,12 @@ export class View extends ViewEventHandler {
 			this._viewGpuContext = this._instantiationService.createInstance(ViewGpuContext, this._context);
 		}
 
-		this._scrollbar = new EditorScrollbar(this._context, this._linesContent, this.domNode, this._overflowGuardContainer);
+		this._scrollbar = new EditorScrollbar(
+			this._context,
+			this._linesContent,
+			this.domNode,
+			this._overflowGuardContainer
+		);
 		this._viewParts.push(this._scrollbar);
 
 		// View Lines
@@ -208,7 +226,6 @@ export class View extends ViewEventHandler {
 		// Decorations overview ruler
 		const decorationsOverviewRuler = new DecorationsOverviewRuler(this._context);
 		this._viewParts.push(decorationsOverviewRuler);
-
 
 		const scrollDecoration = new ScrollDecorationViewPart(this._context);
 		this._viewParts.push(scrollDecoration);
@@ -300,15 +317,31 @@ export class View extends ViewEventHandler {
 		this._applyLayout();
 
 		// Pointer handler
-		this._pointerHandler = this._register(new PointerHandler(this._context, this._viewController, this._createPointerHandlerHelper()));
+		this._pointerHandler = this._register(
+			new PointerHandler(this._context, this._viewController, this._createPointerHandlerHelper())
+		);
 	}
 
 	private _instantiateEditContext(): AbstractEditContext {
 		const usingExperimentalEditContext = this._context.configuration.options.get(EditorOption.effectiveEditContext);
 		if (usingExperimentalEditContext) {
-			return this._instantiationService.createInstance(NativeEditContext, this._ownerID, this._context, this._overflowGuardContainer, this._viewController, this._createTextAreaHandlerHelper());
+			return this._instantiationService.createInstance(
+				NativeEditContext,
+				this._ownerID,
+				this._context,
+				this._overflowGuardContainer,
+				this._viewController,
+				this._createTextAreaHandlerHelper()
+			);
 		} else {
-			return this._instantiationService.createInstance(TextAreaEditContext, this._ownerID, this._context, this._overflowGuardContainer, this._viewController, this._createTextAreaHandlerHelper());
+			return this._instantiationService.createInstance(
+				TextAreaEditContext,
+				this._ownerID,
+				this._context,
+				this._overflowGuardContainer,
+				this._viewController,
+				this._createTextAreaHandlerHelper()
+			);
 		}
 	}
 
@@ -351,18 +384,22 @@ export class View extends ViewEventHandler {
 		let maxLineNumber = 0;
 
 		// Add all margin decorations
-		glyphs = glyphs.concat(model.getAllMarginDecorations().map((decoration) => {
-			const lane = decoration.options.glyphMargin?.position ?? GlyphMarginLane.Center;
-			maxLineNumber = Math.max(maxLineNumber, decoration.range.endLineNumber);
-			return { range: decoration.range, lane, persist: decoration.options.glyphMargin?.persistLane };
-		}));
+		glyphs = glyphs.concat(
+			model.getAllMarginDecorations().map(decoration => {
+				const lane = decoration.options.glyphMargin?.position ?? GlyphMarginLane.Center;
+				maxLineNumber = Math.max(maxLineNumber, decoration.range.endLineNumber);
+				return { range: decoration.range, lane, persist: decoration.options.glyphMargin?.persistLane };
+			})
+		);
 
 		// Add all glyph margin widgets
-		glyphs = glyphs.concat(this._glyphMarginWidgets.getWidgets().map((widget) => {
-			const range = model.validateRange(widget.preference.range);
-			maxLineNumber = Math.max(maxLineNumber, range.endLineNumber);
-			return { range, lane: widget.preference.lane };
-		}));
+		glyphs = glyphs.concat(
+			this._glyphMarginWidgets.getWidgets().map(widget => {
+				const range = model.validateRange(widget.preference.range);
+				maxLineNumber = Math.max(maxLineNumber, range.endLineNumber);
+				return { range, lane: widget.preference.lane };
+			})
+		);
 
 		// Sorted by their start position
 		glyphs.sort((a, b) => Range.compareRangesUsingStarts(a.range, b.range));
@@ -412,7 +449,11 @@ export class View extends ViewEventHandler {
 			visibleRangeForPosition: (lineNumber: number, column: number) => {
 				this._flushAccumulatedAndRenderNow();
 				const position = new Position(lineNumber, column);
-				return this._viewLines.visibleRangeForPosition(position) ?? this._viewLinesGpu?.visibleRangeForPosition(position) ?? null;
+				return (
+					this._viewLines.visibleRangeForPosition(position) ??
+					this._viewLinesGpu?.visibleRangeForPosition(position) ??
+					null
+				);
 			},
 
 			getLineWidth: (lineNumber: number) => {
@@ -458,7 +499,12 @@ export class View extends ViewEventHandler {
 
 	private _getEditorClassName() {
 		const focused = this._editContext.isFocused() ? ' focused' : '';
-		return this._context.configuration.options.get(EditorOption.editorClassName) + ' ' + getThemeTypeSelector(this._context.theme.type) + focused;
+		return (
+			this._context.configuration.options.get(EditorOption.editorClassName) +
+			' ' +
+			getThemeTypeSelector(this._context.theme.type) +
+			focused
+		);
 	}
 
 	// --- begin event handlers
@@ -611,7 +657,11 @@ export class View extends ViewEventHandler {
 				}
 
 				const partialViewportData = this._context.viewLayout.getLinesViewportData();
-				this._context.viewModel.setViewport(partialViewportData.startLineNumber, partialViewportData.endLineNumber, partialViewportData.centeredLineNumber);
+				this._context.viewModel.setViewport(
+					partialViewportData.startLineNumber,
+					partialViewportData.endLineNumber,
+					partialViewportData.centeredLineNumber
+				);
 
 				const viewportData = new ViewportData(
 					this._selections,
@@ -629,7 +679,6 @@ export class View extends ViewEventHandler {
 				return viewportData;
 			},
 			renderText: (viewportData: ViewportData): [ViewPart[], RenderingContext] => {
-
 				if (this._viewLines.shouldRender()) {
 					this._viewLines.renderText(viewportData);
 					this._viewLines.onDidRender();
@@ -643,7 +692,10 @@ export class View extends ViewEventHandler {
 				// Rendering of viewLines might cause scroll events to occur, so collect view parts to render again
 				const viewPartsToRender = this._getViewPartsToRender();
 
-				return [viewPartsToRender, new RenderingContext(this._context.viewLayout, viewportData, this._viewLines, this._viewLinesGpu)];
+				return [
+					viewPartsToRender,
+					new RenderingContext(this._context.viewLayout, viewportData, this._viewLines, this._viewLinesGpu)
+				];
 			},
 			prepareRender: (viewPartsToRender: ViewPart[], ctx: RenderingContext) => {
 				for (const viewPart of viewPartsToRender) {
@@ -670,10 +722,13 @@ export class View extends ViewEventHandler {
 	}
 
 	public restoreState(scrollPosition: { scrollLeft: number; scrollTop: number }): void {
-		this._context.viewModel.viewLayout.setScrollPosition({
-			scrollTop: scrollPosition.scrollTop,
-			scrollLeft: scrollPosition.scrollLeft
-		}, ScrollType.Immediate);
+		this._context.viewModel.viewLayout.setScrollPosition(
+			{
+				scrollTop: scrollPosition.scrollTop,
+				scrollLeft: scrollPosition.scrollLeft
+			},
+			ScrollType.Immediate
+		);
 		this._context.viewModel.visibleLinesStabilized();
 	}
 
@@ -684,7 +739,9 @@ export class View extends ViewEventHandler {
 		});
 		const viewPosition = this._context.viewModel.coordinatesConverter.convertModelPositionToViewPosition(modelPosition);
 		this._flushAccumulatedAndRenderNow();
-		const visibleRange = this._viewLines.visibleRangeForPosition(new Position(viewPosition.lineNumber, viewPosition.column));
+		const visibleRange = this._viewLines.visibleRangeForPosition(
+			new Position(viewPosition.lineNumber, viewPosition.column)
+		);
 		if (!visibleRange) {
 			return -1;
 		}
@@ -693,7 +750,9 @@ export class View extends ViewEventHandler {
 
 	public getLineWidth(modelLineNumber: number): number {
 		const model = this._context.viewModel.model;
-		const viewLine = this._context.viewModel.coordinatesConverter.convertModelPositionToViewPosition(new Position(modelLineNumber, model.getLineMaxColumn(modelLineNumber))).lineNumber;
+		const viewLine = this._context.viewModel.coordinatesConverter.convertModelPositionToViewPosition(
+			new Position(modelLineNumber, model.getLineMaxColumn(modelLineNumber))
+		).lineNumber;
 		this._flushAccumulatedAndRenderNow();
 		const width = this._viewLines.getLineWidth(viewLine);
 
@@ -825,7 +884,6 @@ export class View extends ViewEventHandler {
 	}
 
 	// --- END CodeEditor helpers
-
 }
 
 function safeInvokeNoArg<T>(func: () => T): T | null {
@@ -846,13 +904,12 @@ interface ICoordinatedRendering {
 }
 
 class EditorRenderingCoordinator {
-
 	public static INSTANCE = new EditorRenderingCoordinator();
 
 	private _coordinatedRenderings: ICoordinatedRendering[] = [];
 	private _animationFrameRunners = new Map<CodeWindow, IDisposable>();
 
-	private constructor() { }
+	private constructor() {}
 
 	scheduleCoordinatedRendering(rendering: ICoordinatedRendering): IDisposable {
 		this._coordinatedRenderings.push(rendering);
@@ -930,7 +987,6 @@ class EditorRenderingCoordinator {
 }
 
 class CodeEditorWidgetFocusTracker extends Disposable {
-
 	private _hasDomElementFocus: boolean;
 	private readonly _domFocusTracker: dom.IFocusTracker;
 	private readonly _overflowWidgetsDomNode: dom.IFocusTracker | undefined;
@@ -942,7 +998,11 @@ class CodeEditorWidgetFocusTracker extends Disposable {
 
 	private _hadFocus: boolean | undefined = undefined;
 
-	constructor(domElement: HTMLElement, overflowWidgetsDomNode: HTMLElement | undefined, userInteractionService: IUserInteractionService) {
+	constructor(
+		domElement: HTMLElement,
+		overflowWidgetsDomNode: HTMLElement | undefined,
+		userInteractionService: IUserInteractionService
+	) {
 		super();
 
 		this._hasDomElementFocus = false;
@@ -950,25 +1010,35 @@ class CodeEditorWidgetFocusTracker extends Disposable {
 
 		this._overflowWidgetsDomNodeHasFocus = false;
 
-		this._register(this._domFocusTracker.onDidFocus(() => {
-			this._hasDomElementFocus = true;
-			this._update();
-		}));
-		this._register(this._domFocusTracker.onDidBlur(() => {
-			this._hasDomElementFocus = false;
-			this._update();
-		}));
+		this._register(
+			this._domFocusTracker.onDidFocus(() => {
+				this._hasDomElementFocus = true;
+				this._update();
+			})
+		);
+		this._register(
+			this._domFocusTracker.onDidBlur(() => {
+				this._hasDomElementFocus = false;
+				this._update();
+			})
+		);
 
 		if (overflowWidgetsDomNode) {
-			this._overflowWidgetsDomNode = this._register(userInteractionService.createDomFocusTracker(overflowWidgetsDomNode));
-			this._register(this._overflowWidgetsDomNode.onDidFocus(() => {
-				this._overflowWidgetsDomNodeHasFocus = true;
-				this._update();
-			}));
-			this._register(this._overflowWidgetsDomNode.onDidBlur(() => {
-				this._overflowWidgetsDomNodeHasFocus = false;
-				this._update();
-			}));
+			this._overflowWidgetsDomNode = this._register(
+				userInteractionService.createDomFocusTracker(overflowWidgetsDomNode)
+			);
+			this._register(
+				this._overflowWidgetsDomNode.onDidFocus(() => {
+					this._overflowWidgetsDomNodeHasFocus = true;
+					this._update();
+				})
+			);
+			this._register(
+				this._overflowWidgetsDomNode.onDidBlur(() => {
+					this._overflowWidgetsDomNodeHasFocus = false;
+					this._update();
+				})
+			);
 		}
 	}
 

@@ -17,7 +17,7 @@ export const CDPErrorCode = {
 	/** Internal error */
 	InternalError: -32603,
 	/** Server error (generic) */
-	ServerError: -32000,
+	ServerError: -32000
 } as const;
 
 /**

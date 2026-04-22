@@ -3,9 +3,17 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IColorTheme, ICssStyleCollector, IThemingParticipant } from '../../../../platform/theme/common/themeService.js';
+import {
+	IColorTheme,
+	ICssStyleCollector,
+	IThemingParticipant
+} from '../../../../platform/theme/common/themeService.js';
 import { asCssVariableName, getColorRegistry } from '../../../../platform/theme/common/colorRegistry.js';
-import { asCssVariableName as asSizeCssVariableName, getSizeRegistry, sizeValueToCss } from '../../../../platform/theme/common/sizeRegistry.js';
+import {
+	asCssVariableName as asSizeCssVariableName,
+	getSizeRegistry,
+	sizeValueToCss
+} from '../../../../platform/theme/common/sizeRegistry.js';
 import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
 
 /**
@@ -68,5 +76,5 @@ export function generateColorThemeCSS(
  * A typed wrapper for CSS content
  */
 export class CSSValue {
-	constructor(readonly code: string) { }
+	constructor(readonly code: string) {}
 }

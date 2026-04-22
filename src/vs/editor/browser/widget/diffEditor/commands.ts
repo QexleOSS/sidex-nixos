@@ -34,8 +34,8 @@ export class ToggleCollapseUnchangedRegions extends Action2 {
 				when: ContextKeyExpr.has('isInDiffEditor'),
 				id: MenuId.EditorTitle,
 				order: 22,
-				group: 'navigation',
-			},
+				group: 'navigation'
+			}
 		});
 	}
 
@@ -51,7 +51,7 @@ export class ToggleShowMovedCodeBlocks extends Action2 {
 		super({
 			id: 'diffEditor.toggleShowMovedCodeBlocks',
 			title: localize2('toggleShowMovedCodeBlocks', 'Toggle Show Moved Code Blocks'),
-			precondition: ContextKeyExpr.has('isInDiffEditor'),
+			precondition: ContextKeyExpr.has('isInDiffEditor')
 		});
 	}
 
@@ -67,7 +67,7 @@ export class ToggleUseInlineViewWhenSpaceIsLimited extends Action2 {
 		super({
 			id: 'diffEditor.toggleUseInlineViewWhenSpaceIsLimited',
 			title: localize2('toggleUseInlineViewWhenSpaceIsLimited', 'Toggle Use Inline View When Space Is Limited'),
-			precondition: ContextKeyExpr.has('isInDiffEditor'),
+			precondition: ContextKeyExpr.has('isInDiffEditor')
 		});
 	}
 
@@ -78,7 +78,7 @@ export class ToggleUseInlineViewWhenSpaceIsLimited extends Action2 {
 	}
 }
 
-const diffEditorCategory: ILocalizedString = localize2('diffEditor', "Diff Editor");
+const diffEditorCategory: ILocalizedString = localize2('diffEditor', 'Diff Editor');
 
 export class SwitchSide extends EditorAction2 {
 	constructor() {
@@ -88,7 +88,7 @@ export class SwitchSide extends EditorAction2 {
 			icon: Codicon.arrowSwap,
 			precondition: ContextKeyExpr.has('isInDiffEditor'),
 			f1: true,
-			category: diffEditorCategory,
+			category: diffEditorCategory
 		});
 	}
 
@@ -115,7 +115,7 @@ export class ExitCompareMove extends EditorAction2 {
 			category: diffEditorCategory,
 			keybinding: {
 				weight: 10000,
-				primary: KeyCode.Escape,
+				primary: KeyCode.Escape
 			}
 		});
 	}
@@ -136,7 +136,7 @@ export class CollapseAllUnchangedRegions extends EditorAction2 {
 			icon: Codicon.fold,
 			precondition: ContextKeyExpr.has('isInDiffEditor'),
 			f1: true,
-			category: diffEditorCategory,
+			category: diffEditorCategory
 		});
 	}
 
@@ -156,7 +156,7 @@ export class ShowAllUnchangedRegions extends EditorAction2 {
 			icon: Codicon.unfold,
 			precondition: ContextKeyExpr.has('isInDiffEditor'),
 			f1: true,
-			category: diffEditorCategory,
+			category: diffEditorCategory
 		});
 	}
 
@@ -175,7 +175,7 @@ export class RevertHunkOrSelection extends Action2 {
 			title: localize2('revert', 'Revert'),
 			f1: true,
 			category: diffEditorCategory,
-			precondition: ContextKeyExpr.has('isInDiffEditor'),
+			precondition: ContextKeyExpr.has('isInDiffEditor')
 		});
 	}
 
@@ -200,7 +200,7 @@ export class RevertHunkOrSelection extends Action2 {
 	}
 }
 
-const accessibleDiffViewerCategory: ILocalizedString = localize2('accessibleDiffViewer', "Accessible Diff Viewer");
+const accessibleDiffViewerCategory: ILocalizedString = localize2('accessibleDiffViewer', 'Accessible Diff Viewer');
 
 export class AccessibleDiffViewerNext extends Action2 {
 	public static id = 'editor.action.accessibleDiffViewer.next';
@@ -215,7 +215,7 @@ export class AccessibleDiffViewerNext extends Action2 {
 				primary: KeyCode.F7,
 				weight: KeybindingWeight.EditorContrib
 			},
-			f1: true,
+			f1: true
 		});
 	}
 
@@ -238,7 +238,7 @@ export class AccessibleDiffViewerPrev extends Action2 {
 				primary: KeyMod.Shift | KeyCode.F7,
 				weight: KeybindingWeight.EditorContrib
 			},
-			f1: true,
+			f1: true
 		});
 	}
 
@@ -252,13 +252,19 @@ export function findDiffEditor(accessor: ServicesAccessor, originalUri: URI, mod
 	const codeEditorService = accessor.get(ICodeEditorService);
 	const diffEditors = codeEditorService.listDiffEditors();
 
-	return diffEditors.find(diffEditor => {
-		const modified = diffEditor.getModifiedEditor();
-		const original = diffEditor.getOriginalEditor();
+	return (
+		diffEditors.find(diffEditor => {
+			const modified = diffEditor.getModifiedEditor();
+			const original = diffEditor.getOriginalEditor();
 
-		return modified && modified.getModel()?.uri.toString() === modifiedUri.toString()
-			&& original && original.getModel()?.uri.toString() === originalUri.toString();
-	}) || null;
+			return (
+				modified &&
+				modified.getModel()?.uri.toString() === modifiedUri.toString() &&
+				original &&
+				original.getModel()?.uri.toString() === originalUri.toString()
+			);
+		}) || null
+	);
 }
 
 export function findFocusedDiffEditor(accessor: ServicesAccessor): IDiffEditor | null {
@@ -278,12 +284,14 @@ export function findFocusedDiffEditor(accessor: ServicesAccessor): IDiffEditor |
 	return null;
 }
 
-
 /**
  * If `editor` is the original or modified editor of a diff editor, it returns it.
  * It returns null otherwise.
  */
-export function findDiffEditorContainingCodeEditor(accessor: ServicesAccessor, editor: ICodeEditor): IDiffEditor | null {
+export function findDiffEditorContainingCodeEditor(
+	accessor: ServicesAccessor,
+	editor: ICodeEditor
+): IDiffEditor | null {
 	if (!editor.getOption(EditorOption.inDiffEditor)) {
 		return null;
 	}

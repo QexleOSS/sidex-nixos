@@ -50,7 +50,6 @@ export interface IRenderVariableOptions {
 	highlights?: IHighlight[];
 }
 
-
 const MAX_VALUE_RENDER_LENGTH_IN_VIEWLET = 1024;
 const booleanRegex = /^(true|false)$/i;
 const stringRegex = /^(['"]).*\1$/;
@@ -62,7 +61,7 @@ const enum Cls {
 	Changed = 'changed',
 	Boolean = 'boolean',
 	String = 'string',
-	Number = 'number',
+	Number = 'number'
 }
 
 const allClasses: readonly Cls[] = Object.keys({
@@ -72,7 +71,7 @@ const allClasses: readonly Cls[] = Object.keys({
 	[Cls.Changed]: 0,
 	[Cls.Boolean]: 0,
 	[Cls.String]: 0,
-	[Cls.Number]: 0,
+	[Cls.Number]: 0
 } satisfies { [key in Cls]: unknown }) as Cls[];
 
 export class DebugExpressionRenderer {
@@ -83,7 +82,7 @@ export class DebugExpressionRenderer {
 		@ICommandService private readonly commandService: ICommandService,
 		@IConfigurationService configurationService: IConfigurationService,
 		@IInstantiationService instantiationService: IInstantiationService,
-		@IHoverService private readonly hoverService: IHoverService,
+		@IHoverService private readonly hoverService: IHoverService
 	) {
 		this.linkDetector = instantiationService.createInstance(LinkDetector);
 		this.displayType = observableConfigValue('debug.showVariableTypes', false, configurationService);
@@ -113,9 +112,7 @@ export class DebugExpressionRenderer {
 		}
 
 		data.expression.classList.toggle('lazy', !!variable.presentationHint?.lazy);
-		const commands = [
-			{ id: COPY_VALUE_ID, args: [variable, [variable]] as unknown[] }
-		];
+		const commands = [{ id: COPY_VALUE_ID, args: [variable, [variable]] as unknown[] }];
 		if (variable.evaluateName) {
 			commands.push({ id: COPY_EVALUATE_PATH_ID, args: [{ variable }] });
 		}
@@ -126,14 +123,19 @@ export class DebugExpressionRenderer {
 			hover: { commands },
 			highlights: highlights.value,
 			colorize: true,
-			session: variable.getSession(),
+			session: variable.getSession()
 		});
 	}
 
-	renderValue(container: HTMLElement, expressionOrValue: IExpressionValue | string, options: IRenderValueOptions = {}): IDisposable {
+	renderValue(
+		container: HTMLElement,
+		expressionOrValue: IExpressionValue | string,
+		options: IRenderValueOptions = {}
+	): IDisposable {
 		const store = new DisposableStore();
 		// Use remembered capabilities so REPL elements can render even once a session ends
-		const supportsANSI: boolean = options.session?.rememberedCapabilities?.supportsANSIStyling ?? options.wasANSI ?? false;
+		const supportsANSI: boolean =
+			options.session?.rememberedCapabilities?.supportsANSIStyling ?? options.wasANSI ?? false;
 
 		let value = typeof expressionOrValue === 'string' ? expressionOrValue : expressionOrValue.value;
 
@@ -143,20 +145,35 @@ export class DebugExpressionRenderer {
 		}
 		container.classList.add(Cls.Value);
 		// when resolving expressions we represent errors from the server as a variable with name === null.
-		if (value === null || ((expressionOrValue instanceof Expression || expressionOrValue instanceof Variable || expressionOrValue instanceof ReplEvaluationResult) && !expressionOrValue.available)) {
+		if (
+			value === null ||
+			((expressionOrValue instanceof Expression ||
+				expressionOrValue instanceof Variable ||
+				expressionOrValue instanceof ReplEvaluationResult) &&
+				!expressionOrValue.available)
+		) {
 			container.classList.add(Cls.Unavailable);
 			if (value !== Expression.DEFAULT_VALUE) {
 				container.classList.add(Cls.Error);
 			}
 		} else {
-			if (typeof expressionOrValue !== 'string' && options.showChanged && expressionOrValue.valueChanged && value !== Expression.DEFAULT_VALUE) {
+			if (
+				typeof expressionOrValue !== 'string' &&
+				options.showChanged &&
+				expressionOrValue.valueChanged &&
+				value !== Expression.DEFAULT_VALUE
+			) {
 				// value changed color has priority over other colors.
 				container.classList.add(Cls.Changed);
 				expressionOrValue.valueChanged = false;
 			}
 
 			if (options.colorize && typeof expressionOrValue !== 'string') {
-				if (expressionOrValue.type === 'number' || expressionOrValue.type === 'boolean' || expressionOrValue.type === 'string') {
+				if (
+					expressionOrValue.type === 'number' ||
+					expressionOrValue.type === 'boolean' ||
+					expressionOrValue.type === 'string'
+				) {
 					container.classList.add(expressionOrValue.type);
 				} else if (!isNaN(+value)) {
 					container.classList.add(Cls.Number);
@@ -175,11 +192,18 @@ export class DebugExpressionRenderer {
 			value = '';
 		}
 
-		const session = options.session ?? ((expressionOrValue instanceof ExpressionContainer) ? expressionOrValue.getSession() : undefined);
+		const session =
+			options.session ??
+			(expressionOrValue instanceof ExpressionContainer ? expressionOrValue.getSession() : undefined);
 		// Only use hovers for links if thre's not going to be a hover for the value.
-		const hoverBehavior: DebugLinkHoverBehaviorTypeData = options.hover === false ? { type: DebugLinkHoverBehavior.Rich, store } : { type: DebugLinkHoverBehavior.None, store };
+		const hoverBehavior: DebugLinkHoverBehaviorTypeData =
+			options.hover === false
+				? { type: DebugLinkHoverBehavior.Rich, store }
+				: { type: DebugLinkHoverBehavior.None, store };
 		dom.clearNode(container);
-		const locationReference = options.locationReference ?? (expressionOrValue instanceof ExpressionContainer && expressionOrValue.valueLocationReference);
+		const locationReference =
+			options.locationReference ??
+			(expressionOrValue instanceof ExpressionContainer && expressionOrValue.valueLocationReference);
 
 		let linkDetector: ILinkDetector = this.linkDetector;
 		if (locationReference && session) {
@@ -187,37 +211,54 @@ export class DebugExpressionRenderer {
 		}
 
 		if (supportsANSI) {
-			container.appendChild(handleANSIOutput(value, linkDetector, session ? session.root : undefined, options.highlights, hoverBehavior));
+			container.appendChild(
+				handleANSIOutput(value, linkDetector, session ? session.root : undefined, options.highlights, hoverBehavior)
+			);
 		} else {
 			container.appendChild(linkDetector.linkify(value, hoverBehavior, false, session?.root, true, options.highlights));
 		}
 
 		if (options.hover !== false) {
 			const { commands = [] } = options.hover || {};
-			store.add(this.hoverService.setupManagedHover(getDefaultHoverDelegate('mouse'), container, () => {
-				const container = dom.$('div');
-				const markdownHoverElement = dom.$('div.hover-row');
-				const hoverContentsElement = dom.append(markdownHoverElement, dom.$('div.hover-contents'));
-				const hoverContentsPre = dom.append(hoverContentsElement, dom.$('pre.debug-var-hover-pre'));
-				if (supportsANSI) {
-					// note: intentionally using `this.linkDetector` so we don't blindly linkify the
-					// entire contents and instead only link file paths that it contains.
-					hoverContentsPre.appendChild(handleANSIOutput(value, this.linkDetector, session ? session.root : undefined, options.highlights, hoverBehavior));
-				} else {
-					hoverContentsPre.textContent = value;
-				}
-				container.appendChild(markdownHoverElement);
-				return container;
-			}, {
-				actions: commands.map(({ id, args }) => {
-					const description = CommandsRegistry.getCommand(id)?.metadata?.description;
-					return {
-						label: typeof description === 'string' ? description : description ? description.value : id,
-						commandId: id,
-						run: () => this.commandService.executeCommand(id, ...args),
-					};
-				})
-			}));
+			store.add(
+				this.hoverService.setupManagedHover(
+					getDefaultHoverDelegate('mouse'),
+					container,
+					() => {
+						const container = dom.$('div');
+						const markdownHoverElement = dom.$('div.hover-row');
+						const hoverContentsElement = dom.append(markdownHoverElement, dom.$('div.hover-contents'));
+						const hoverContentsPre = dom.append(hoverContentsElement, dom.$('pre.debug-var-hover-pre'));
+						if (supportsANSI) {
+							// note: intentionally using `this.linkDetector` so we don't blindly linkify the
+							// entire contents and instead only link file paths that it contains.
+							hoverContentsPre.appendChild(
+								handleANSIOutput(
+									value,
+									this.linkDetector,
+									session ? session.root : undefined,
+									options.highlights,
+									hoverBehavior
+								)
+							);
+						} else {
+							hoverContentsPre.textContent = value;
+						}
+						container.appendChild(markdownHoverElement);
+						return container;
+					},
+					{
+						actions: commands.map(({ id, args }) => {
+							const description = CommandsRegistry.getCommand(id)?.metadata?.description;
+							return {
+								label: typeof description === 'string' ? description : description ? description.value : id,
+								commandId: id,
+								run: () => this.commandService.executeCommand(id, ...args)
+							};
+						})
+					}
+				)
+			);
 		}
 
 		return store;

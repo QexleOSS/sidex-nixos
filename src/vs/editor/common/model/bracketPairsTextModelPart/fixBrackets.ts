@@ -12,15 +12,15 @@ import { DenseKeyProvider } from './bracketPairsTree/smallImmutableSet.js';
 import { ITokenizerSource, TextBufferTokenizer } from './bracketPairsTree/tokenizer.js';
 import { IViewLineTokens } from '../../tokens/lineTokens.js';
 
-export function fixBracketsInLine(tokens: IViewLineTokens, languageConfigurationService: ILanguageConfigurationService): string {
+export function fixBracketsInLine(
+	tokens: IViewLineTokens,
+	languageConfigurationService: ILanguageConfigurationService
+): string {
 	const denseKeyProvider = new DenseKeyProvider<string>();
-	const bracketTokens = new LanguageAgnosticBracketTokens(denseKeyProvider, (languageId) =>
+	const bracketTokens = new LanguageAgnosticBracketTokens(denseKeyProvider, languageId =>
 		languageConfigurationService.getLanguageConfiguration(languageId)
 	);
-	const tokenizer = new TextBufferTokenizer(
-		new StaticTokenizerSource([tokens]),
-		bracketTokens
-	);
+	const tokenizer = new TextBufferTokenizer(new StaticTokenizerSource([tokens]), bracketTokens);
 	const node = parseDocument(tokenizer, [], undefined, true);
 
 	let str = '';
@@ -65,7 +65,7 @@ export function fixBracketsInLine(tokens: IViewLineTokens, languageConfiguration
 }
 
 class StaticTokenizerSource implements ITokenizerSource {
-	constructor(private readonly lines: IViewLineTokens[]) { }
+	constructor(private readonly lines: IViewLineTokens[]) {}
 
 	getValue(): string {
 		return this.lines.map(l => l.getLineContent()).join('\n');

@@ -21,7 +21,7 @@ export class InlineEditClickEvent {
 	constructor(
 		public readonly event: IMouseEvent,
 		public readonly alternativeAction: boolean = false
-	) { }
+	) {}
 }
 
 export interface IInlineEditsView {
@@ -45,7 +45,6 @@ export enum InlineCompletionViewKind {
 }
 
 export class InlineCompletionViewData {
-
 	public longDistanceHintVisible: boolean | undefined = undefined;
 	public longDistanceHintDistance: number | undefined = undefined;
 
@@ -58,7 +57,7 @@ export class InlineCompletionViewData {
 		public readonly characterCountModified: number,
 		public readonly disjointReplacements: number,
 		public readonly sameShapeReplacements?: boolean
-	) { }
+	) {}
 
 	setLongDistanceViewData(lineNumber: number, inlineEditLineNumber: number): void {
 		this.longDistanceHintVisible = true;

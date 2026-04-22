@@ -14,14 +14,18 @@ import { createDecorator } from '../../../platform/instantiation/common/instanti
 import { ILogService } from '../../../platform/log/common/log.js';
 import { matchesScheme } from '../../../base/common/network.js';
 
-
-export const ILanguageFeatureDebounceService = createDecorator<ILanguageFeatureDebounceService>('ILanguageFeatureDebounceService');
+export const ILanguageFeatureDebounceService = createDecorator<ILanguageFeatureDebounceService>(
+	'ILanguageFeatureDebounceService'
+);
 
 export interface ILanguageFeatureDebounceService {
-
 	readonly _serviceBrand: undefined;
 
-	for(feature: LanguageFeatureRegistry<object>, debugName: string, config?: { min?: number; max?: number; salt?: string }): IFeatureDebounceInformation;
+	for(
+		feature: LanguageFeatureRegistry<object>,
+		debugName: string,
+		config?: { min?: number; max?: number; salt?: string }
+	): IFeatureDebounceInformation;
 }
 
 export interface IFeatureDebounceInformation {
@@ -44,8 +48,7 @@ namespace IdentityHash {
 }
 
 class NullDebounceInformation implements IFeatureDebounceInformation {
-
-	constructor(private readonly _default: number) { }
+	constructor(private readonly _default: number) {}
 
 	get(_model: ITextModel): number {
 		return this._default;
@@ -59,7 +62,6 @@ class NullDebounceInformation implements IFeatureDebounceInformation {
 }
 
 class FeatureDebounceInformation implements IFeatureDebounceInformation {
-
 	private readonly _cache = new LRUCache<string, SlidingWindowAverage>(50, 0.7);
 
 	constructor(
@@ -68,8 +70,8 @@ class FeatureDebounceInformation implements IFeatureDebounceInformation {
 		private readonly _registry: LanguageFeatureRegistry<object>,
 		private readonly _default: number,
 		private readonly _min: number,
-		private readonly _max: number,
-	) { }
+		private readonly _max: number
+	) {}
 
 	private _key(model: ITextModel): string {
 		return model.id + this._registry.all(model).reduce((hashVal, obj) => doHash(IdentityHash.of(obj), hashVal), 0);
@@ -78,9 +80,7 @@ class FeatureDebounceInformation implements IFeatureDebounceInformation {
 	get(model: ITextModel): number {
 		const key = this._key(model);
 		const avg = this._cache.get(key);
-		return avg
-			? clamp(avg.value, this._min, this._max)
-			: this.default();
+		return avg ? clamp(avg.value, this._min, this._max) : this.default();
 	}
 
 	update(model: ITextModel, value: number): number {
@@ -106,14 +106,12 @@ class FeatureDebounceInformation implements IFeatureDebounceInformation {
 	}
 
 	default() {
-		const value = (this._overall() | 0) || this._default;
+		const value = this._overall() | 0 || this._default;
 		return clamp(value, this._min, this._max);
 	}
 }
 
-
 export class LanguageFeatureDebounceService implements ILanguageFeatureDebounceService {
-
 	declare _serviceBrand: undefined;
 
 	private readonly _data = new Map<string, IFeatureDebounceInformation>();
@@ -121,13 +119,16 @@ export class LanguageFeatureDebounceService implements ILanguageFeatureDebounceS
 
 	constructor(
 		@ILogService private readonly _logService: ILogService,
-		@IEnvironmentService envService: IEnvironmentService,
+		@IEnvironmentService envService: IEnvironmentService
 	) {
-
 		this._isDev = envService.isExtensionDevelopment || !envService.isBuilt;
 	}
 
-	for(feature: LanguageFeatureRegistry<object>, name: string, config?: { min?: number; max?: number; key?: string }): IFeatureDebounceInformation {
+	for(
+		feature: LanguageFeatureRegistry<object>,
+		name: string,
+		config?: { min?: number; max?: number; key?: string }
+	): IFeatureDebounceInformation {
 		const min = config?.min ?? 50;
 		const max = config?.max ?? min ** 2;
 		const extra = config?.key ?? undefined;
@@ -142,7 +143,7 @@ export class LanguageFeatureDebounceService implements ILanguageFeatureDebounceS
 					this._logService,
 					name,
 					feature,
-					(this._overallAverage() | 0) || (min * 1.5), // default is overall default or derived from min-value
+					this._overallAverage() | 0 || min * 1.5, // default is overall default or derived from min-value
 					min,
 					max
 				);

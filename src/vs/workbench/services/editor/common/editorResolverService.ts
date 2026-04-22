@@ -12,11 +12,23 @@ import { basename } from '../../../../base/common/resources.js';
 import { URI } from '../../../../base/common/uri.js';
 import { localize } from '../../../../nls.js';
 import { workbenchConfigurationNodeBase } from '../../../common/configuration.js';
-import { Extensions as ConfigurationExtensions, IConfigurationNode, IConfigurationRegistry } from '../../../../platform/configuration/common/configurationRegistry.js';
+import {
+	Extensions as ConfigurationExtensions,
+	IConfigurationNode,
+	IConfigurationRegistry
+} from '../../../../platform/configuration/common/configurationRegistry.js';
 import { IResourceEditorInput, ITextResourceEditorInput } from '../../../../platform/editor/common/editor.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
-import { EditorInputWithOptions, EditorInputWithOptionsAndGroup, IResourceDiffEditorInput, IResourceMultiDiffEditorInput, IResourceMergeEditorInput, IUntitledTextResourceEditorInput, IUntypedEditorInput } from '../../../common/editor.js';
+import {
+	EditorInputWithOptions,
+	EditorInputWithOptionsAndGroup,
+	IResourceDiffEditorInput,
+	IResourceMultiDiffEditorInput,
+	IResourceMergeEditorInput,
+	IUntitledTextResourceEditorInput,
+	IUntypedEditorInput
+} from '../../../common/editor.js';
 import { IEditorGroup } from './editorGroupsService.js';
 import { PreferredGroup } from './editorService.js';
 import { AtLeastOne } from '../../../../base/common/types.js';
@@ -43,7 +55,10 @@ const editorAssociationsConfigurationNode: IConfigurationNode = {
 	properties: {
 		'workbench.editorAssociations': {
 			type: 'object',
-			markdownDescription: localize('editor.editorAssociations', "Configure [glob patterns](https://aka.ms/vscode-glob-patterns) to editors (for example `\"*.hex\": \"hexEditor.hexedit\"`). These have precedence over the default behavior."),
+			markdownDescription: localize(
+				'editor.editorAssociations',
+				'Configure [glob patterns](https://aka.ms/vscode-glob-patterns) to editors (for example `"*.hex": "hexEditor.hexedit"`). These have precedence over the default behavior.'
+			),
 			additionalProperties: {
 				type: 'string'
 			}
@@ -75,7 +90,7 @@ export enum RegisteredEditorPriority {
  */
 export const enum ResolvedStatus {
 	ABORT = 1,
-	NONE = 2,
+	NONE = 2
 }
 
 export type ResolvedEditor = EditorInputWithOptionsAndGroup | ResolvedStatus;
@@ -102,15 +117,30 @@ export type RegisteredEditorInfo = {
 
 type EditorInputFactoryResult = EditorInputWithOptions | Promise<EditorInputWithOptions>;
 
-export type EditorInputFactoryFunction = (editorInput: IResourceEditorInput | ITextResourceEditorInput, group: IEditorGroup) => EditorInputFactoryResult;
+export type EditorInputFactoryFunction = (
+	editorInput: IResourceEditorInput | ITextResourceEditorInput,
+	group: IEditorGroup
+) => EditorInputFactoryResult;
 
-export type UntitledEditorInputFactoryFunction = (untitledEditorInput: IUntitledTextResourceEditorInput, group: IEditorGroup) => EditorInputFactoryResult;
+export type UntitledEditorInputFactoryFunction = (
+	untitledEditorInput: IUntitledTextResourceEditorInput,
+	group: IEditorGroup
+) => EditorInputFactoryResult;
 
-export type DiffEditorInputFactoryFunction = (diffEditorInput: IResourceDiffEditorInput, group: IEditorGroup) => EditorInputFactoryResult;
+export type DiffEditorInputFactoryFunction = (
+	diffEditorInput: IResourceDiffEditorInput,
+	group: IEditorGroup
+) => EditorInputFactoryResult;
 
-export type MultiDiffEditorInputFactoryFunction = (multiDiffEditorInput: IResourceMultiDiffEditorInput, group: IEditorGroup) => EditorInputFactoryResult;
+export type MultiDiffEditorInputFactoryFunction = (
+	multiDiffEditorInput: IResourceMultiDiffEditorInput,
+	group: IEditorGroup
+) => EditorInputFactoryResult;
 
-export type MergeEditorInputFactoryFunction = (mergeEditorInput: IResourceMergeEditorInput, group: IEditorGroup) => EditorInputFactoryResult;
+export type MergeEditorInputFactoryFunction = (
+	mergeEditorInput: IResourceMergeEditorInput,
+	group: IEditorGroup
+) => EditorInputFactoryResult;
 
 type EditorInputFactories = {
 	createEditorInput?: EditorInputFactoryFunction;

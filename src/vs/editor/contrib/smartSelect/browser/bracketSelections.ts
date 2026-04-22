@@ -10,7 +10,6 @@ import { ITextModel } from '../../../common/model.js';
 import { SelectionRange, SelectionRangeProvider } from '../../../common/languages.js';
 
 export class BracketSelectionRangeProvider implements SelectionRangeProvider {
-
 	async provideSelectionRanges(model: ITextModel, positions: Position[]): Promise<SelectionRange[][]> {
 		const result: SelectionRange[][] = [];
 
@@ -19,8 +18,12 @@ export class BracketSelectionRangeProvider implements SelectionRangeProvider {
 			result.push(bucket);
 
 			const ranges = new Map<string, LinkedList<Range>>();
-			await new Promise<void>(resolve => BracketSelectionRangeProvider._bracketsRightYield(resolve, 0, model, position, ranges));
-			await new Promise<void>(resolve => BracketSelectionRangeProvider._bracketsLeftYield(resolve, 0, model, position, ranges, bucket));
+			await new Promise<void>(resolve =>
+				BracketSelectionRangeProvider._bracketsRightYield(resolve, 0, model, position, ranges)
+			);
+			await new Promise<void>(resolve =>
+				BracketSelectionRangeProvider._bracketsLeftYield(resolve, 0, model, position, ranges, bucket)
+			);
 		}
 
 		return result;
@@ -29,7 +32,13 @@ export class BracketSelectionRangeProvider implements SelectionRangeProvider {
 	public static _maxDuration = 30;
 	private static readonly _maxRounds = 2;
 
-	private static _bracketsRightYield(resolve: () => void, round: number, model: ITextModel, pos: Position, ranges: Map<string, LinkedList<Range>>): void {
+	private static _bracketsRightYield(
+		resolve: () => void,
+		round: number,
+		model: ITextModel,
+		pos: Position,
+		ranges: Map<string, LinkedList<Range>>
+	): void {
 		const counts = new Map<string, number>();
 		const t1 = Date.now();
 		while (true) {
@@ -75,7 +84,14 @@ export class BracketSelectionRangeProvider implements SelectionRangeProvider {
 		}
 	}
 
-	private static _bracketsLeftYield(resolve: () => void, round: number, model: ITextModel, pos: Position, ranges: Map<string, LinkedList<Range>>, bucket: SelectionRange[]): void {
+	private static _bracketsLeftYield(
+		resolve: () => void,
+		round: number,
+		model: ITextModel,
+		pos: Position,
+		ranges: Map<string, LinkedList<Range>>,
+		bucket: SelectionRange[]
+	): void {
 		const counts = new Map<string, number>();
 		const t1 = Date.now();
 		while (true) {
@@ -94,7 +110,9 @@ export class BracketSelectionRangeProvider implements SelectionRangeProvider {
 			}
 			const d = Date.now() - t1;
 			if (d > BracketSelectionRangeProvider._maxDuration) {
-				setTimeout(() => BracketSelectionRangeProvider._bracketsLeftYield(resolve, round + 1, model, pos, ranges, bucket));
+				setTimeout(() =>
+					BracketSelectionRangeProvider._bracketsLeftYield(resolve, round + 1, model, pos, ranges, bucket)
+				);
 				break;
 			}
 			if (!bracket.bracketInfo.isOpeningBracket) {

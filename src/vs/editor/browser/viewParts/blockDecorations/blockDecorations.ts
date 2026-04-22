@@ -12,7 +12,6 @@ import * as viewEvents from '../../../common/viewEvents.js';
 import { ViewContext } from '../../../common/viewModel/viewContext.js';
 
 export class BlockDecorations extends ViewPart {
-
 	public domNode: FastDomNode<HTMLElement>;
 
 	private readonly blocks: FastDomNode<HTMLElement>[] = [];
@@ -99,9 +98,10 @@ export class BlockDecorations extends ViewPart {
 				bottom = ctx.getVerticalOffsetAfterLineNumber(decoration.range.endLineNumber, true);
 			} else {
 				top = ctx.getVerticalOffsetForLineNumber(decoration.range.startLineNumber, true);
-				bottom = decoration.range.isEmpty() && !decoration.options.blockDoesNotCollapse
-					? ctx.getVerticalOffsetForLineNumber(decoration.range.startLineNumber, false)
-					: ctx.getVerticalOffsetAfterLineNumber(decoration.range.endLineNumber, true);
+				bottom =
+					decoration.range.isEmpty() && !decoration.options.blockDoesNotCollapse
+						? ctx.getVerticalOffsetForLineNumber(decoration.range.startLineNumber, false)
+						: ctx.getVerticalOffsetAfterLineNumber(decoration.range.endLineNumber, true);
 			}
 
 			const [paddingTop, paddingRight, paddingBottom, paddingLeft] = decoration.options.blockPadding ?? [0, 0, 0, 0];

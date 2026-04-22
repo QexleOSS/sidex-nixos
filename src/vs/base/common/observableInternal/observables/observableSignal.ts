@@ -16,7 +16,10 @@ import { DebugLocation } from '../debugLocation.js';
  */
 export function observableSignal<TDelta = void>(debugName: string): IObservableSignal<TDelta>;
 export function observableSignal<TDelta = void>(owner: object): IObservableSignal<TDelta>;
-export function observableSignal<TDelta = void>(debugNameOrOwner: string | object, debugLocation = DebugLocation.ofCaller()): IObservableSignal<TDelta> {
+export function observableSignal<TDelta = void>(
+	debugNameOrOwner: string | object,
+	debugLocation = DebugLocation.ofCaller()
+): IObservableSignal<TDelta> {
 	if (typeof debugNameOrOwner === 'string') {
 		return new ObservableSignal<TDelta>(debugNameOrOwner, undefined, debugLocation);
 	} else {
@@ -47,9 +50,12 @@ class ObservableSignal<TChange> extends BaseObservable<void, TChange> implements
 
 	public trigger(tx: ITransaction | undefined, change: TChange): void {
 		if (!tx) {
-			transaction(tx => {
-				this.trigger(tx, change);
-			}, () => `Trigger signal ${this.debugName}`);
+			transaction(
+				tx => {
+					this.trigger(tx, change);
+				},
+				() => `Trigger signal ${this.debugName}`
+			);
 			return;
 		}
 

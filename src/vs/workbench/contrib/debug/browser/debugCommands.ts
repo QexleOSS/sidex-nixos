@@ -35,7 +35,38 @@ import { IPaneCompositePartService } from '../../../services/panecomposite/brows
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { IExtensionsWorkbenchService } from '../../extensions/common/extensions.js';
 import { TEXT_FILE_EDITOR_ID } from '../../files/common/files.js';
-import { CONTEXT_BREAKPOINT_INPUT_FOCUSED, CONTEXT_BREAKPOINTS_FOCUSED, CONTEXT_DEBUG_STATE, CONTEXT_DEBUGGERS_AVAILABLE, CONTEXT_DISASSEMBLY_VIEW_FOCUS, CONTEXT_EXPRESSION_SELECTED, CONTEXT_FOCUSED_SESSION_IS_ATTACH, CONTEXT_IN_DEBUG_MODE, CONTEXT_IN_DEBUG_REPL, CONTEXT_JUMP_TO_CURSOR_SUPPORTED, CONTEXT_STEP_INTO_TARGETS_SUPPORTED, CONTEXT_VARIABLES_FOCUSED, CONTEXT_WATCH_EXPRESSIONS_FOCUSED, DataBreakpointSetType, EDITOR_CONTRIBUTION_ID, getStateLabel, IConfig, IDataBreakpointInfoResponse, IDebugConfiguration, IDebugEditorContribution, IDebugService, IDebugSession, IEnablement, IExceptionBreakpoint, isFrameDeemphasized, IStackFrame, IThread, REPL_VIEW_ID, State, VIEWLET_ID } from '../common/debug.js';
+import {
+	CONTEXT_BREAKPOINT_INPUT_FOCUSED,
+	CONTEXT_BREAKPOINTS_FOCUSED,
+	CONTEXT_DEBUG_STATE,
+	CONTEXT_DEBUGGERS_AVAILABLE,
+	CONTEXT_DISASSEMBLY_VIEW_FOCUS,
+	CONTEXT_EXPRESSION_SELECTED,
+	CONTEXT_FOCUSED_SESSION_IS_ATTACH,
+	CONTEXT_IN_DEBUG_MODE,
+	CONTEXT_IN_DEBUG_REPL,
+	CONTEXT_JUMP_TO_CURSOR_SUPPORTED,
+	CONTEXT_STEP_INTO_TARGETS_SUPPORTED,
+	CONTEXT_VARIABLES_FOCUSED,
+	CONTEXT_WATCH_EXPRESSIONS_FOCUSED,
+	DataBreakpointSetType,
+	EDITOR_CONTRIBUTION_ID,
+	getStateLabel,
+	IConfig,
+	IDataBreakpointInfoResponse,
+	IDebugConfiguration,
+	IDebugEditorContribution,
+	IDebugService,
+	IDebugSession,
+	IEnablement,
+	IExceptionBreakpoint,
+	isFrameDeemphasized,
+	IStackFrame,
+	IThread,
+	REPL_VIEW_ID,
+	State,
+	VIEWLET_ID
+} from '../common/debug.js';
 import { Breakpoint, DataBreakpoint, Expression, FunctionBreakpoint, Thread, Variable } from '../common/debugModel.js';
 import { saveAllBeforeDebugStart, resolveChildSession } from '../common/debugUtils.js';
 import { showLoadedScriptMenu } from '../common/loadedScriptsPicker.js';
@@ -91,35 +122,35 @@ export const TOGGLE_EXCEPTION_BREAKPOINTS_ID = 'debug.toggleExceptionBreakpoints
 export const ATTACH_TO_CURRENT_CODE_RENDERER = 'debug.attachToCurrentCodeRenderer';
 
 export const DEBUG_COMMAND_CATEGORY: ILocalizedString = nls.localize2('debug', 'Debug');
-export const RESTART_LABEL = nls.localize2('restartDebug', "Restart");
-export const STEP_OVER_LABEL = nls.localize2('stepOverDebug', "Step Over");
-export const STEP_INTO_LABEL = nls.localize2('stepIntoDebug', "Step Into");
-export const STEP_INTO_TARGET_LABEL = nls.localize2('stepIntoTargetDebug', "Step Into Target");
-export const STEP_OUT_LABEL = nls.localize2('stepOutDebug', "Step Out");
-export const PAUSE_LABEL = nls.localize2('pauseDebug', "Pause");
-export const DISCONNECT_LABEL = nls.localize2('disconnect', "Disconnect");
-export const DISCONNECT_AND_SUSPEND_LABEL = nls.localize2('disconnectSuspend', "Disconnect and Suspend");
-export const STOP_LABEL = nls.localize2('stop', "Stop");
-export const CONTINUE_LABEL = nls.localize2('continueDebug', "Continue");
-export const FOCUS_SESSION_LABEL = nls.localize2('focusSession', "Focus Session");
-export const SELECT_AND_START_LABEL = nls.localize2('selectAndStartDebugging', "Select and Start Debugging");
+export const RESTART_LABEL = nls.localize2('restartDebug', 'Restart');
+export const STEP_OVER_LABEL = nls.localize2('stepOverDebug', 'Step Over');
+export const STEP_INTO_LABEL = nls.localize2('stepIntoDebug', 'Step Into');
+export const STEP_INTO_TARGET_LABEL = nls.localize2('stepIntoTargetDebug', 'Step Into Target');
+export const STEP_OUT_LABEL = nls.localize2('stepOutDebug', 'Step Out');
+export const PAUSE_LABEL = nls.localize2('pauseDebug', 'Pause');
+export const DISCONNECT_LABEL = nls.localize2('disconnect', 'Disconnect');
+export const DISCONNECT_AND_SUSPEND_LABEL = nls.localize2('disconnectSuspend', 'Disconnect and Suspend');
+export const STOP_LABEL = nls.localize2('stop', 'Stop');
+export const CONTINUE_LABEL = nls.localize2('continueDebug', 'Continue');
+export const FOCUS_SESSION_LABEL = nls.localize2('focusSession', 'Focus Session');
+export const SELECT_AND_START_LABEL = nls.localize2('selectAndStartDebugging', 'Select and Start Debugging');
 export const DEBUG_CONFIGURE_LABEL = nls.localize('openLaunchJson', "Open '{0}'", 'launch.json');
-export const DEBUG_START_LABEL = nls.localize2('startDebug', "Start Debugging");
-export const DEBUG_RUN_LABEL = nls.localize2('startWithoutDebugging', "Start Without Debugging");
-export const NEXT_DEBUG_CONSOLE_LABEL = nls.localize2('nextDebugConsole', "Focus Next Debug Console");
-export const PREV_DEBUG_CONSOLE_LABEL = nls.localize2('prevDebugConsole', "Focus Previous Debug Console");
-export const OPEN_LOADED_SCRIPTS_LABEL = nls.localize2('openLoadedScript', "Open Loaded Script...");
-export const CALLSTACK_TOP_LABEL = nls.localize2('callStackTop', "Navigate to Top of Call Stack");
-export const CALLSTACK_BOTTOM_LABEL = nls.localize2('callStackBottom', "Navigate to Bottom of Call Stack");
-export const CALLSTACK_UP_LABEL = nls.localize2('callStackUp', "Navigate Up Call Stack");
-export const CALLSTACK_DOWN_LABEL = nls.localize2('callStackDown', "Navigate Down Call Stack");
-export const COPY_EVALUATE_PATH_LABEL = nls.localize2('copyAsExpression', "Copy as Expression");
-export const COPY_VALUE_LABEL = nls.localize2('copyValue', "Copy Value");
-export const COPY_ADDRESS_LABEL = nls.localize2('copyAddress', "Copy Address");
-export const ADD_TO_WATCH_LABEL = nls.localize2('addToWatchExpressions', "Add to Watch");
+export const DEBUG_START_LABEL = nls.localize2('startDebug', 'Start Debugging');
+export const DEBUG_RUN_LABEL = nls.localize2('startWithoutDebugging', 'Start Without Debugging');
+export const NEXT_DEBUG_CONSOLE_LABEL = nls.localize2('nextDebugConsole', 'Focus Next Debug Console');
+export const PREV_DEBUG_CONSOLE_LABEL = nls.localize2('prevDebugConsole', 'Focus Previous Debug Console');
+export const OPEN_LOADED_SCRIPTS_LABEL = nls.localize2('openLoadedScript', 'Open Loaded Script...');
+export const CALLSTACK_TOP_LABEL = nls.localize2('callStackTop', 'Navigate to Top of Call Stack');
+export const CALLSTACK_BOTTOM_LABEL = nls.localize2('callStackBottom', 'Navigate to Bottom of Call Stack');
+export const CALLSTACK_UP_LABEL = nls.localize2('callStackUp', 'Navigate Up Call Stack');
+export const CALLSTACK_DOWN_LABEL = nls.localize2('callStackDown', 'Navigate Down Call Stack');
+export const COPY_EVALUATE_PATH_LABEL = nls.localize2('copyAsExpression', 'Copy as Expression');
+export const COPY_VALUE_LABEL = nls.localize2('copyValue', 'Copy Value');
+export const COPY_ADDRESS_LABEL = nls.localize2('copyAddress', 'Copy Address');
+export const ADD_TO_WATCH_LABEL = nls.localize2('addToWatchExpressions', 'Add to Watch');
 
-export const SELECT_DEBUG_CONSOLE_LABEL = nls.localize2('selectDebugConsole', "Select Debug Console");
-export const SELECT_DEBUG_SESSION_LABEL = nls.localize2('selectDebugSession', "Select Debug Session");
+export const SELECT_DEBUG_CONSOLE_LABEL = nls.localize2('selectDebugConsole', 'Select Debug Console');
+export const SELECT_DEBUG_SESSION_LABEL = nls.localize2('selectDebugSession', 'Select Debug Session');
 
 export const DEBUG_QUICK_ACCESS_PREFIX = 'debug ';
 export const DEBUG_CONSOLE_QUICK_ACCESS_PREFIX = 'debug consoles ';
@@ -140,7 +171,11 @@ function isThreadContext(obj: any): obj is CallStackContext {
 	return obj && typeof obj.sessionId === 'string' && typeof obj.threadId === 'string';
 }
 
-async function getThreadAndRun(accessor: ServicesAccessor, sessionAndThreadId: CallStackContext | unknown, run: (thread: IThread) => Promise<void>): Promise<void> {
+async function getThreadAndRun(
+	accessor: ServicesAccessor,
+	sessionAndThreadId: CallStackContext | unknown,
+	run: (thread: IThread) => Promise<void>
+): Promise<void> {
 	const debugService = accessor.get(IDebugService);
 	let thread: IThread | undefined;
 	if (isThreadContext(sessionAndThreadId)) {
@@ -171,7 +206,9 @@ async function getThreadAndRun(accessor: ServicesAccessor, sessionAndThreadId: C
 }
 
 function isStackFrameContext(obj: any): obj is CallStackContext {
-	return obj && typeof obj.sessionId === 'string' && typeof obj.threadId === 'string' && typeof obj.frameId === 'string';
+	return (
+		obj && typeof obj.sessionId === 'string' && typeof obj.threadId === 'string' && typeof obj.frameId === 'string'
+	);
 }
 
 function getFrame(debugService: IDebugService, context: CallStackContext | unknown): IStackFrame | undefined {
@@ -197,7 +234,10 @@ function isSessionContext(obj: any): obj is CallStackContext {
 async function changeDebugConsoleFocus(accessor: ServicesAccessor, next: boolean) {
 	const debugService = accessor.get(IDebugService);
 	const viewsService = accessor.get(IViewsService);
-	const sessions = debugService.getModel().getSessions(true).filter(s => s.hasSeparateRepl());
+	const sessions = debugService
+		.getModel()
+		.getSessions(true)
+		.filter(s => s.hasSeparateRepl());
 	let currSession = debugService.getViewModel().focusedSession;
 
 	let nextIndex = 0;
@@ -209,9 +249,9 @@ async function changeDebugConsoleFocus(accessor: ServicesAccessor, next: boolean
 		if (currSession) {
 			const currIndex = sessions.indexOf(currSession);
 			if (next) {
-				nextIndex = (currIndex === (sessions.length - 1) ? 0 : (currIndex + 1));
+				nextIndex = currIndex === sessions.length - 1 ? 0 : currIndex + 1;
 			} else {
-				nextIndex = (currIndex === 0 ? (sessions.length - 1) : (currIndex - 1));
+				nextIndex = currIndex === 0 ? sessions.length - 1 : currIndex - 1;
 			}
 		}
 	}
@@ -225,7 +265,6 @@ async function changeDebugConsoleFocus(accessor: ServicesAccessor, next: boolean
 async function navigateCallStack(debugService: IDebugService, down: boolean) {
 	const frame = debugService.getViewModel().focusedStackFrame;
 	if (frame) {
-
 		let callStack = frame.thread.getCallStack();
 		let index = callStack.findIndex(elem => elem.frameId === frame.frameId);
 		let nextVisibleFrame;
@@ -285,7 +324,6 @@ function goToTopOfCallStack(debugService: IDebugService) {
  * @param startIndex the index to start the search at
  */
 function findNextVisibleFrame(down: boolean, callStack: readonly IStackFrame[], startIndex: number) {
-
 	if (startIndex >= callStack.length) {
 		startIndex = callStack.length - 1;
 	} else if (startIndex < 0) {
@@ -332,7 +370,12 @@ CommandsRegistry.registerCommand({
 		const frame = getFrame(debugService, context);
 		if (frame) {
 			const eol = textResourcePropertiesService.getEOL(frame.source.uri);
-			await clipboardService.writeText(frame.thread.getCallStack().map(sf => sf.toString()).join(eol));
+			await clipboardService.writeText(
+				frame.thread
+					.getCallStack()
+					.map(sf => sf.toString())
+					.join(eol)
+			);
 		}
 	}
 });
@@ -384,7 +427,9 @@ CommandsRegistry.registerCommand({
 					let id = targets[0].id;
 					if (targets.length > 1) {
 						const picks = targets.map(t => ({ label: t.label, _id: t.id }));
-						const pick = await quickInputService.pick(picks, { placeHolder: nls.localize('chooseLocation', "Choose the specific location") });
+						const pick = await quickInputService.pick(picks, {
+							placeHolder: nls.localize('chooseLocation', 'Choose the specific location')
+						});
 						if (!pick) {
 							return;
 						}
@@ -392,15 +437,18 @@ CommandsRegistry.registerCommand({
 						id = pick._id;
 					}
 
-					return await stackFrame.thread.session.goto(stackFrame.thread.threadId, id).catch(e => notificationService.warn(e));
+					return await stackFrame.thread.session
+						.goto(stackFrame.thread.threadId, id)
+						.catch(e => notificationService.warn(e));
 				}
 			}
 		}
 
-		return notificationService.warn(nls.localize('noExecutableCode', "No executable code is associated at the current cursor position."));
+		return notificationService.warn(
+			nls.localize('noExecutableCode', 'No executable code is associated at the current cursor position.')
+		);
 	}
 });
-
 
 CommandsRegistry.registerCommand({
 	id: CALLSTACK_TOP_ID,
@@ -437,7 +485,7 @@ CommandsRegistry.registerCommand({
 MenuRegistry.appendMenuItem(MenuId.EditorContext, {
 	command: {
 		id: JUMP_TO_CURSOR_ID,
-		title: nls.localize('jumpToCursor', "Jump to Cursor"),
+		title: nls.localize('jumpToCursor', 'Jump to Cursor'),
 		category: DEBUG_COMMAND_CATEGORY
 	},
 	when: ContextKeyExpr.and(CONTEXT_JUMP_TO_CURSOR_SUPPORTED, EditorContextKeys.editorTextFocus),
@@ -513,7 +561,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 });
 
 // Windows browsers use F11 for full screen, thus use alt+F11 as the default shortcut
-const STEP_INTO_KEYBINDING = (isWeb && isWindows) ? (KeyMod.Alt | KeyCode.F11) : KeyCode.F11;
+const STEP_INTO_KEYBINDING = isWeb && isWindows ? KeyMod.Alt | KeyCode.F11 : KeyCode.F11;
 
 KeybindingsRegistry.registerCommandAndKeybindingRule({
 	id: STEP_INTO_ID,
@@ -556,11 +604,14 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	}
 });
 
-
 KeybindingsRegistry.registerCommandAndKeybindingRule({
 	id: STEP_INTO_TARGET_ID,
 	primary: STEP_INTO_KEYBINDING | KeyMod.CtrlCmd,
-	when: ContextKeyExpr.and(CONTEXT_STEP_INTO_TARGETS_SUPPORTED, CONTEXT_IN_DEBUG_MODE, CONTEXT_DEBUG_STATE.isEqualTo('stopped')),
+	when: ContextKeyExpr.and(
+		CONTEXT_STEP_INTO_TARGETS_SUPPORTED,
+		CONTEXT_IN_DEBUG_MODE,
+		CONTEXT_DEBUG_STATE.isEqualTo('stopped')
+	),
 	weight: KeybindingWeight.WorkbenchContrib,
 	handler: async (accessor: ServicesAccessor, _: string, context: CallStackContext | unknown) => {
 		const quickInputService = accessor.get(IQuickInputService);
@@ -593,23 +644,27 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 		qp.busy = true;
 		qp.show();
 
-		disposables.add(qp.onDidChangeActive(([item]) => {
-			if (codeEditor && item && item.target.line !== undefined) {
-				codeEditor.revealLineInCenterIfOutsideViewport(item.target.line);
-				codeEditor.setSelection({
-					startLineNumber: item.target.line,
-					startColumn: item.target.column || 1,
-					endLineNumber: item.target.endLine || item.target.line,
-					endColumn: item.target.endColumn || item.target.column || 1,
-				});
-			}
-		}));
+		disposables.add(
+			qp.onDidChangeActive(([item]) => {
+				if (codeEditor && item && item.target.line !== undefined) {
+					codeEditor.revealLineInCenterIfOutsideViewport(item.target.line);
+					codeEditor.setSelection({
+						startLineNumber: item.target.line,
+						startColumn: item.target.column || 1,
+						endLineNumber: item.target.endLine || item.target.line,
+						endColumn: item.target.endColumn || item.target.column || 1
+					});
+				}
+			})
+		);
 
-		disposables.add(qp.onDidAccept(() => {
-			if (qp.activeItems.length) {
-				session.stepIn(frame.thread.threadId, qp.activeItems[0].target.id);
-			}
-		}));
+		disposables.add(
+			qp.onDidAccept(() => {
+				if (qp.activeItems.length) {
+					session.stepIn(frame.thread.threadId, qp.activeItems[0].target.id);
+				}
+			})
+		);
 
 		disposables.add(qp.onDidHide(() => disposables.dispose()));
 
@@ -618,13 +673,19 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 			if (targets?.length) {
 				qp.items = targets?.map(target => ({ target, label: target.label }));
 			} else {
-				qp.placeholder = nls.localize('editor.debug.action.stepIntoTargets.none', "No step targets available");
+				qp.placeholder = nls.localize('editor.debug.action.stepIntoTargets.none', 'No step targets available');
 			}
 		});
 	}
 });
 
-async function stopHandler(accessor: ServicesAccessor, _: unknown, context: CallStackContext | unknown, disconnect: boolean, suspend?: boolean): Promise<void> {
+async function stopHandler(
+	accessor: ServicesAccessor,
+	_: unknown,
+	context: CallStackContext | unknown,
+	disconnect: boolean,
+	suspend?: boolean
+): Promise<void> {
 	const debugService = accessor.get(IDebugService);
 	let session: IDebugSession | undefined;
 	if (isSessionContext(context)) {
@@ -692,7 +753,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 
 CommandsRegistry.registerCommand({
 	id: SHOW_LOADED_SCRIPTS_ID,
-	handler: async (accessor) => {
+	handler: async accessor => {
 		await showLoadedScriptMenu(accessor);
 	}
 });
@@ -721,7 +782,11 @@ CommandsRegistry.registerCommand({
 
 CommandsRegistry.registerCommand({
 	id: SELECT_AND_START_ID,
-	handler: async (accessor: ServicesAccessor, debugType: string | unknown, debugStartOptions?: { noDebug?: boolean }) => {
+	handler: async (
+		accessor: ServicesAccessor,
+		debugType: string | unknown,
+		debugStartOptions?: { noDebug?: boolean }
+	) => {
 		const quickInputService = accessor.get(IQuickInputService);
 		const debugService = accessor.get(IDebugService);
 
@@ -732,8 +797,13 @@ CommandsRegistry.registerCommand({
 				if (provider.type === debugType) {
 					const pick = await provider.pick();
 					if (pick) {
-						await configManager.selectConfiguration(pick.launch, pick.config.name, pick.config, { type: provider.type });
-						debugService.startDebugging(pick.launch, pick.config, { noDebug: debugStartOptions?.noDebug, startedByUser: true });
+						await configManager.selectConfiguration(pick.launch, pick.config.name, pick.config, {
+							type: provider.type
+						});
+						debugService.startDebugging(pick.launch, pick.config, {
+							noDebug: debugStartOptions?.noDebug,
+							startedByUser: true
+						});
 
 						return;
 					}
@@ -771,7 +841,12 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 		const { launch, name, getConfig } = debugService.getConfigurationManager().selectedConfiguration;
 		const config = await getConfig();
 		const configOrName = config ? Object.assign(deepClone(config), debugStartOptions?.config) : name;
-		await debugService.startDebugging(launch, configOrName, { noDebug: debugStartOptions?.noDebug, startedByUser: true }, false);
+		await debugService.startDebugging(
+			launch,
+			configOrName,
+			{ noDebug: debugStartOptions?.noDebug, startedByUser: true },
+			false
+		);
 	}
 });
 
@@ -780,7 +855,10 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	primary: KeyMod.CtrlCmd | KeyCode.F5,
 	mac: { primary: KeyMod.WinCtrl | KeyCode.F5 },
-	when: ContextKeyExpr.and(CONTEXT_DEBUGGERS_AVAILABLE, CONTEXT_DEBUG_STATE.notEqualsTo(getStateLabel(State.Initializing))),
+	when: ContextKeyExpr.and(
+		CONTEXT_DEBUGGERS_AVAILABLE,
+		CONTEXT_DEBUG_STATE.notEqualsTo(getStateLabel(State.Initializing))
+	),
 	handler: async (accessor: ServicesAccessor) => {
 		const commandService = accessor.get(ICommandService);
 		await commandService.executeCommand(DEBUG_START_COMMAND_ID, { noDebug: true });
@@ -792,7 +870,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib + 5,
 	when: ContextKeyExpr.and(CONTEXT_BREAKPOINTS_FOCUSED, InputFocusedContext.toNegated()),
 	primary: KeyCode.Space,
-	handler: (accessor) => {
+	handler: accessor => {
 		const listService = accessor.get(IListService);
 		const debugService = accessor.get(IDebugService);
 		const list = listService.lastFocusedList;
@@ -810,7 +888,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	primary: undefined,
 	when: EditorContextKeys.editorTextFocus,
-	handler: (accessor) => {
+	handler: accessor => {
 		const debugService = accessor.get(IDebugService);
 		const editorService = accessor.get(IEditorService);
 		const control = editorService.activeTextEditorControl;
@@ -870,7 +948,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	when: CONTEXT_VARIABLES_FOCUSED,
 	primary: KeyCode.F2,
 	mac: { primary: KeyCode.Enter },
-	handler: (accessor) => {
+	handler: accessor => {
 		const listService = accessor.get(IListService);
 		const debugService = accessor.get(IDebugService);
 		const focused = listService.lastFocusedList;
@@ -918,7 +996,13 @@ CommandsRegistry.registerCommand({
 	handler: async (accessor: ServicesAccessor) => {
 		const debugService = accessor.get(IDebugService);
 		if (dataBreakpointInfoResponse) {
-			await debugService.addDataBreakpoint({ description: dataBreakpointInfoResponse.description, src: { type: DataBreakpointSetType.Variable, dataId: dataBreakpointInfoResponse.dataId! }, canPersist: !!dataBreakpointInfoResponse.canPersist, accessTypes: dataBreakpointInfoResponse.accessTypes, accessType: 'write' });
+			await debugService.addDataBreakpoint({
+				description: dataBreakpointInfoResponse.description,
+				src: { type: DataBreakpointSetType.Variable, dataId: dataBreakpointInfoResponse.dataId! },
+				canPersist: !!dataBreakpointInfoResponse.canPersist,
+				accessTypes: dataBreakpointInfoResponse.accessTypes,
+				accessType: 'write'
+			});
 		}
 	}
 });
@@ -928,7 +1012,13 @@ CommandsRegistry.registerCommand({
 	handler: async (accessor: ServicesAccessor) => {
 		const debugService = accessor.get(IDebugService);
 		if (dataBreakpointInfoResponse) {
-			await debugService.addDataBreakpoint({ description: dataBreakpointInfoResponse.description, src: { type: DataBreakpointSetType.Variable, dataId: dataBreakpointInfoResponse.dataId! }, canPersist: !!dataBreakpointInfoResponse.canPersist, accessTypes: dataBreakpointInfoResponse.accessTypes, accessType: 'readWrite' });
+			await debugService.addDataBreakpoint({
+				description: dataBreakpointInfoResponse.description,
+				src: { type: DataBreakpointSetType.Variable, dataId: dataBreakpointInfoResponse.dataId! },
+				canPersist: !!dataBreakpointInfoResponse.canPersist,
+				accessTypes: dataBreakpointInfoResponse.accessTypes,
+				accessType: 'readWrite'
+			});
 		}
 	}
 });
@@ -938,7 +1028,13 @@ CommandsRegistry.registerCommand({
 	handler: async (accessor: ServicesAccessor) => {
 		const debugService = accessor.get(IDebugService);
 		if (dataBreakpointInfoResponse) {
-			await debugService.addDataBreakpoint({ description: dataBreakpointInfoResponse.description, src: { type: DataBreakpointSetType.Variable, dataId: dataBreakpointInfoResponse.dataId! }, canPersist: !!dataBreakpointInfoResponse.canPersist, accessTypes: dataBreakpointInfoResponse.accessTypes, accessType: 'read' });
+			await debugService.addDataBreakpoint({
+				description: dataBreakpointInfoResponse.description,
+				src: { type: DataBreakpointSetType.Variable, dataId: dataBreakpointInfoResponse.dataId! },
+				canPersist: !!dataBreakpointInfoResponse.canPersist,
+				accessTypes: dataBreakpointInfoResponse.accessTypes,
+				accessType: 'read'
+			});
 		}
 	}
 });
@@ -949,7 +1045,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	when: ContextKeyExpr.and(CONTEXT_BREAKPOINTS_FOCUSED, CONTEXT_BREAKPOINT_INPUT_FOCUSED.toNegated()),
 	primary: KeyCode.Delete,
 	mac: { primary: KeyMod.CtrlCmd | KeyCode.Backspace },
-	handler: (accessor) => {
+	handler: accessor => {
 		const listService = accessor.get(IListService);
 		const debugService = accessor.get(IDebugService);
 		const list = listService.lastFocusedList;
@@ -983,37 +1079,43 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	}
 });
 
-registerAction2(class AddConfigurationAction extends Action2 {
-	constructor() {
-		super({
-			id: ADD_CONFIGURATION_ID,
-			title: nls.localize2('addConfiguration', "Add Configuration..."),
-			category: DEBUG_COMMAND_CATEGORY,
-			f1: true,
-			menu: {
-				id: MenuId.EditorContent,
-				when: ContextKeyExpr.and(
-					ContextKeyExpr.regex(ResourceContextKey.Path.key, /\.vscode[/\\]launch\.json$/),
-					ActiveEditorContext.isEqualTo(TEXT_FILE_EDITOR_ID))
-			}
-		});
-	}
+registerAction2(
+	class AddConfigurationAction extends Action2 {
+		constructor() {
+			super({
+				id: ADD_CONFIGURATION_ID,
+				title: nls.localize2('addConfiguration', 'Add Configuration...'),
+				category: DEBUG_COMMAND_CATEGORY,
+				f1: true,
+				menu: {
+					id: MenuId.EditorContent,
+					when: ContextKeyExpr.and(
+						ContextKeyExpr.regex(ResourceContextKey.Path.key, /\.vscode[/\\]launch\.json$/),
+						ActiveEditorContext.isEqualTo(TEXT_FILE_EDITOR_ID)
+					)
+				}
+			});
+		}
 
-	async run(accessor: ServicesAccessor, launchUri: string): Promise<void> {
-		const manager = accessor.get(IDebugService).getConfigurationManager();
+		async run(accessor: ServicesAccessor, launchUri: string): Promise<void> {
+			const manager = accessor.get(IDebugService).getConfigurationManager();
 
-		const launch = manager.getLaunches().find(l => l.uri.toString() === launchUri) || manager.selectedConfiguration.launch;
-		if (launch) {
-			const { editor, created } = await launch.openConfigFile({ preserveFocus: false });
-			if (editor && !created) {
-				const codeEditor = <ICodeEditor>editor.getControl();
-				if (codeEditor) {
-					await codeEditor.getContribution<IDebugEditorContribution>(EDITOR_CONTRIBUTION_ID)?.addLaunchConfiguration();
+			const launch =
+				manager.getLaunches().find(l => l.uri.toString() === launchUri) || manager.selectedConfiguration.launch;
+			if (launch) {
+				const { editor, created } = await launch.openConfigFile({ preserveFocus: false });
+				if (editor && !created) {
+					const codeEditor = <ICodeEditor>editor.getControl();
+					if (codeEditor) {
+						await codeEditor
+							.getContribution<IDebugEditorContribution>(EDITOR_CONTRIBUTION_ID)
+							?.addLaunchConfiguration();
+					}
 				}
 			}
 		}
 	}
-});
+);
 
 const inlineBreakpointHandler = (accessor: ServicesAccessor) => {
 	const debugService = accessor.get(IDebugService);
@@ -1023,11 +1125,15 @@ const inlineBreakpointHandler = (accessor: ServicesAccessor) => {
 		const position = control.getPosition();
 		if (position && control.hasModel() && debugService.canSetBreakpointsIn(control.getModel())) {
 			const modelUri = control.getModel().uri;
-			const breakpointAlreadySet = debugService.getModel().getBreakpoints({ lineNumber: position.lineNumber, uri: modelUri })
-				.some(bp => (bp.sessionAgnosticData.column === position.column || (!bp.column && position.column <= 1)));
+			const breakpointAlreadySet = debugService
+				.getModel()
+				.getBreakpoints({ lineNumber: position.lineNumber, uri: modelUri })
+				.some(bp => bp.sessionAgnosticData.column === position.column || (!bp.column && position.column <= 1));
 
 			if (!breakpointAlreadySet) {
-				debugService.addBreakpoints(modelUri, [{ lineNumber: position.lineNumber, column: position.column > 1 ? position.column : undefined }]);
+				debugService.addBreakpoints(modelUri, [
+					{ lineNumber: position.lineNumber, column: position.column > 1 ? position.column : undefined }
+				]);
 			}
 		}
 	}
@@ -1044,13 +1150,10 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 MenuRegistry.appendMenuItem(MenuId.EditorContext, {
 	command: {
 		id: TOGGLE_INLINE_BREAKPOINT_ID,
-		title: nls.localize('addInlineBreakpoint', "Add Inline Breakpoint"),
+		title: nls.localize('addInlineBreakpoint', 'Add Inline Breakpoint'),
 		category: DEBUG_COMMAND_CATEGORY
 	},
-	when: ContextKeyExpr.and(
-		CONTEXT_IN_DEBUG_MODE,
-		PanelFocusContext.toNegated(),
-		EditorContextKeys.editorTextFocus),
+	when: ContextKeyExpr.and(CONTEXT_IN_DEBUG_MODE, PanelFocusContext.toNegated(), EditorContextKeys.editorTextFocus),
 	group: 'debug',
 	order: 1
 });
@@ -1061,13 +1164,20 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	when: CONTEXT_BREAKPOINTS_FOCUSED,
 	primary: KeyMod.CtrlCmd | KeyCode.Enter,
 	secondary: [KeyMod.Alt | KeyCode.Enter],
-	handler: (accessor) => {
+	handler: accessor => {
 		const listService = accessor.get(IListService);
 		const list = listService.lastFocusedList;
 		if (list instanceof List) {
 			const focus = list.getFocusedElements();
 			if (focus.length && focus[0] instanceof Breakpoint) {
-				return openBreakpointSource(focus[0], true, false, true, accessor.get(IDebugService), accessor.get(IEditorService));
+				return openBreakpointSource(
+					focus[0],
+					true,
+					false,
+					true,
+					accessor.get(IDebugService),
+					accessor.get(IEditorService)
+				);
 			}
 		}
 
@@ -1075,89 +1185,98 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	}
 });
 
-registerAction2(class ToggleExceptionBreakpointsAction extends Action2 {
-	constructor() {
-		super({
-			id: TOGGLE_EXCEPTION_BREAKPOINTS_ID,
-			title: nls.localize2('toggleExceptionBreakpoints', "Toggle Exception Breakpoints"),
-			category: DEBUG_COMMAND_CATEGORY,
-			f1: true,
-			precondition: CONTEXT_DEBUGGERS_AVAILABLE
-		});
+registerAction2(
+	class ToggleExceptionBreakpointsAction extends Action2 {
+		constructor() {
+			super({
+				id: TOGGLE_EXCEPTION_BREAKPOINTS_ID,
+				title: nls.localize2('toggleExceptionBreakpoints', 'Toggle Exception Breakpoints'),
+				category: DEBUG_COMMAND_CATEGORY,
+				f1: true,
+				precondition: CONTEXT_DEBUGGERS_AVAILABLE
+			});
+		}
+
+		async run(accessor: ServicesAccessor): Promise<void> {
+			const debugService = accessor.get(IDebugService);
+			const quickInputService = accessor.get(IQuickInputService);
+
+			// Get the focused session or the first available session
+			const debugModel = debugService.getModel();
+			const session = debugService.getViewModel().focusedSession || debugModel.getSessions()[0];
+			const exceptionBreakpoints = session
+				? debugModel.getExceptionBreakpointsForSession(session.getId())
+				: debugModel.getExceptionBreakpoints();
+			if (exceptionBreakpoints.length === 0) {
+				return;
+			}
+
+			// If only one exception breakpoint type, toggle it directly
+			if (exceptionBreakpoints.length === 1) {
+				const breakpoint = exceptionBreakpoints[0];
+				await debugService.enableOrDisableBreakpoints(!breakpoint.enabled, breakpoint);
+				return;
+			}
+
+			// Multiple exception breakpoint types - show quickpick for selection
+			interface IExceptionBreakpointItem extends IQuickPickItem {
+				breakpoint: IExceptionBreakpoint;
+			}
+
+			const disposables = new DisposableStore();
+			const quickPick = disposables.add(quickInputService.createQuickPick<IExceptionBreakpointItem>());
+			quickPick.placeholder = nls.localize(
+				'selectExceptionBreakpointsPlaceholder',
+				'Pick enabled exception breakpoints'
+			);
+			quickPick.canSelectMany = true;
+			quickPick.matchOnDescription = true;
+			quickPick.matchOnDetail = true;
+
+			// Create quickpick items from exception breakpoints
+			quickPick.items = exceptionBreakpoints.map(bp => ({
+				label: bp.label,
+				description: bp.description,
+				picked: bp.enabled,
+				breakpoint: bp
+			}));
+
+			quickPick.selectedItems = quickPick.items.filter(item => item.picked);
+
+			disposables.add(
+				quickPick.onDidAccept(() => {
+					const selectedItems = quickPick.selectedItems;
+					const toEnable: IExceptionBreakpoint[] = [];
+					const toDisable: IExceptionBreakpoint[] = [];
+
+					// Determine which breakpoints need to be toggled
+					for (const bp of exceptionBreakpoints) {
+						const isSelected = selectedItems.some(item => item.breakpoint === bp);
+						if (isSelected && !bp.enabled) {
+							toEnable.push(bp);
+						} else if (!isSelected && bp.enabled) {
+							toDisable.push(bp);
+						}
+					}
+
+					// Toggle the breakpoints
+					const promises: Promise<void>[] = [];
+					for (const bp of toEnable) {
+						promises.push(debugService.enableOrDisableBreakpoints(true, bp));
+					}
+					for (const bp of toDisable) {
+						promises.push(debugService.enableOrDisableBreakpoints(false, bp));
+					}
+
+					Promise.all(promises).then(() => disposables.dispose());
+				})
+			);
+
+			disposables.add(quickPick.onDidHide(() => disposables.dispose()));
+			quickPick.show();
+		}
 	}
-
-	async run(accessor: ServicesAccessor): Promise<void> {
-		const debugService = accessor.get(IDebugService);
-		const quickInputService = accessor.get(IQuickInputService);
-
-		// Get the focused session or the first available session
-		const debugModel = debugService.getModel();
-		const session = debugService.getViewModel().focusedSession || debugModel.getSessions()[0];
-		const exceptionBreakpoints = session ? debugModel.getExceptionBreakpointsForSession(session.getId()) : debugModel.getExceptionBreakpoints();
-		if (exceptionBreakpoints.length === 0) {
-			return;
-		}
-
-		// If only one exception breakpoint type, toggle it directly
-		if (exceptionBreakpoints.length === 1) {
-			const breakpoint = exceptionBreakpoints[0];
-			await debugService.enableOrDisableBreakpoints(!breakpoint.enabled, breakpoint);
-			return;
-		}
-
-		// Multiple exception breakpoint types - show quickpick for selection
-		interface IExceptionBreakpointItem extends IQuickPickItem {
-			breakpoint: IExceptionBreakpoint;
-		}
-
-		const disposables = new DisposableStore();
-		const quickPick = disposables.add(quickInputService.createQuickPick<IExceptionBreakpointItem>());
-		quickPick.placeholder = nls.localize('selectExceptionBreakpointsPlaceholder', "Pick enabled exception breakpoints");
-		quickPick.canSelectMany = true;
-		quickPick.matchOnDescription = true;
-		quickPick.matchOnDetail = true;
-
-		// Create quickpick items from exception breakpoints
-		quickPick.items = exceptionBreakpoints.map(bp => ({
-			label: bp.label,
-			description: bp.description,
-			picked: bp.enabled,
-			breakpoint: bp
-		}));
-
-		quickPick.selectedItems = quickPick.items.filter(item => item.picked);
-
-		disposables.add(quickPick.onDidAccept(() => {
-			const selectedItems = quickPick.selectedItems;
-			const toEnable: IExceptionBreakpoint[] = [];
-			const toDisable: IExceptionBreakpoint[] = [];
-
-			// Determine which breakpoints need to be toggled
-			for (const bp of exceptionBreakpoints) {
-				const isSelected = selectedItems.some(item => item.breakpoint === bp);
-				if (isSelected && !bp.enabled) {
-					toEnable.push(bp);
-				} else if (!isSelected && bp.enabled) {
-					toDisable.push(bp);
-				}
-			}
-
-			// Toggle the breakpoints
-			const promises: Promise<void>[] = [];
-			for (const bp of toEnable) {
-				promises.push(debugService.enableOrDisableBreakpoints(true, bp));
-			}
-			for (const bp of toDisable) {
-				promises.push(debugService.enableOrDisableBreakpoints(false, bp));
-			}
-
-			Promise.all(promises).then(() => disposables.dispose());
-		}));
-
-		disposables.add(quickPick.onDidHide(() => disposables.dispose()));
-		quickPick.show();
-	}
-});
+);
 
 // When there are no debug extensions, open the debug viewlet when F5 is pressed so the user can read the limitations
 KeybindingsRegistry.registerCommandAndKeybindingRule({
@@ -1166,30 +1285,32 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	when: CONTEXT_DEBUGGERS_AVAILABLE.toNegated(),
 	primary: KeyCode.F5,
 	secondary: [KeyMod.CtrlCmd | KeyCode.F5],
-	handler: async (accessor) => {
+	handler: async accessor => {
 		const paneCompositeService = accessor.get(IPaneCompositePartService);
 		await paneCompositeService.openPaneComposite(VIEWLET_ID, ViewContainerLocation.Sidebar, true);
 	}
 });
 
-registerAction2(class extends Action2 {
-	constructor() {
-		super({
-			id: ATTACH_TO_CURRENT_CODE_RENDERER,
-			title: nls.localize2('attachToCurrentCodeRenderer', "Attach to Current Code Renderer"),
-		});
-	}
-
-	override async run(accessor: ServicesAccessor): Promise<any> {
-		const env = accessor.get(IEnvironmentService);
-		if (!env.isExtensionDevelopment && !env.extensionTestsLocationURI) {
-			throw new Error('Refusing to attach to renderer outside of development context');
+registerAction2(
+	class extends Action2 {
+		constructor() {
+			super({
+				id: ATTACH_TO_CURRENT_CODE_RENDERER,
+				title: nls.localize2('attachToCurrentCodeRenderer', 'Attach to Current Code Renderer')
+			});
 		}
 
-		const windowId = getWindowId(mainWindow);
-		const extDebugService = accessor.get(IExtensionHostDebugService);
-		const result = await extDebugService.attachToCurrentWindowRenderer(windowId);
+		override async run(accessor: ServicesAccessor): Promise<any> {
+			const env = accessor.get(IEnvironmentService);
+			if (!env.isExtensionDevelopment && !env.extensionTestsLocationURI) {
+				throw new Error('Refusing to attach to renderer outside of development context');
+			}
 
-		return result;
+			const windowId = getWindowId(mainWindow);
+			const extDebugService = accessor.get(IExtensionHostDebugService);
+			const result = await extDebugService.attachToCurrentWindowRenderer(windowId);
+
+			return result;
+		}
 	}
-});
+);

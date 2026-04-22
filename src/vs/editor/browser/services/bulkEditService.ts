@@ -4,7 +4,14 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ICodeEditor } from '../editorBrowser.js';
-import { TextEdit, WorkspaceEdit, WorkspaceEditMetadata, IWorkspaceFileEdit, WorkspaceFileEditOptions, IWorkspaceTextEdit } from '../../common/languages.js';
+import {
+	TextEdit,
+	WorkspaceEdit,
+	WorkspaceEditMetadata,
+	IWorkspaceFileEdit,
+	WorkspaceFileEditOptions,
+	IWorkspaceTextEdit
+} from '../../common/languages.js';
 import { createDecorator } from '../../../platform/instantiation/common/instantiation.js';
 import { IProgress, IProgressStep } from '../../../platform/progress/common/progress.js';
 import { IDisposable } from '../../../base/common/lifecycle.js';
@@ -17,11 +24,9 @@ import { TextModelEditSource } from '../../common/textModelEditSource.js';
 export const IBulkEditService = createDecorator<IBulkEditService>('IWorkspaceEditService');
 
 export class ResourceEdit {
-
-	protected constructor(readonly metadata?: WorkspaceEditMetadata) { }
+	protected constructor(readonly metadata?: WorkspaceEditMetadata) {}
 
 	static convert(edit: WorkspaceEdit): ResourceEdit[] {
-
 		return edit.edits.map(edit => {
 			if (ResourceTextEdit.is(edit)) {
 				return ResourceTextEdit.lift(edit);
@@ -36,14 +41,15 @@ export class ResourceEdit {
 }
 
 export class ResourceTextEdit extends ResourceEdit implements IWorkspaceTextEdit {
-
 	static is(candidate: unknown): candidate is IWorkspaceTextEdit {
 		if (candidate instanceof ResourceTextEdit) {
 			return true;
 		}
-		return isObject(candidate)
-			&& URI.isUri((<IWorkspaceTextEdit>candidate).resource)
-			&& isObject((<IWorkspaceTextEdit>candidate).textEdit);
+		return (
+			isObject(candidate) &&
+			URI.isUri((<IWorkspaceTextEdit>candidate).resource) &&
+			isObject((<IWorkspaceTextEdit>candidate).textEdit)
+		);
 	}
 
 	static lift(edit: IWorkspaceTextEdit): ResourceTextEdit {
@@ -58,20 +64,21 @@ export class ResourceTextEdit extends ResourceEdit implements IWorkspaceTextEdit
 		readonly resource: URI,
 		readonly textEdit: TextEdit & { insertAsSnippet?: boolean; keepWhitespace?: boolean },
 		readonly versionId: number | undefined = undefined,
-		metadata?: WorkspaceEditMetadata,
+		metadata?: WorkspaceEditMetadata
 	) {
 		super(metadata);
 	}
 }
 
 export class ResourceFileEdit extends ResourceEdit implements IWorkspaceFileEdit {
-
 	static is(candidate: unknown): candidate is IWorkspaceFileEdit {
 		if (candidate instanceof ResourceFileEdit) {
 			return true;
 		} else {
-			return isObject(candidate)
-				&& (Boolean((<IWorkspaceFileEdit>candidate).newResource) || Boolean((<IWorkspaceFileEdit>candidate).oldResource));
+			return (
+				isObject(candidate) &&
+				(Boolean((<IWorkspaceFileEdit>candidate).newResource) || Boolean((<IWorkspaceFileEdit>candidate).oldResource))
+			);
 		}
 	}
 

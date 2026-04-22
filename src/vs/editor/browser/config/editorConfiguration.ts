@@ -13,7 +13,16 @@ import { ElementSizeObserver } from './elementSizeObserver.js';
 import { FontMeasurements } from './fontMeasurements.js';
 import { migrateOptions } from './migrateOptions.js';
 import { TabFocus } from './tabFocus.js';
-import { ComputeOptionsMemory, ConfigurationChangedEvent, EditorOption, editorOptionsRegistry, FindComputedEditorOptionValueById, IComputedEditorOptions, IEditorOptions, IEnvironmentalOptions } from '../../common/config/editorOptions.js';
+import {
+	ComputeOptionsMemory,
+	ConfigurationChangedEvent,
+	EditorOption,
+	editorOptionsRegistry,
+	FindComputedEditorOptionValueById,
+	IComputedEditorOptions,
+	IEditorOptions,
+	IEnvironmentalOptions
+} from '../../common/config/editorOptions.js';
 import { EditorZoom } from '../../common/config/editorZoom.js';
 import { BareFontInfo, FontInfo, IValidatedEditorOptions } from '../../common/config/fontInfo.js';
 import { createBareFontInfoFromValidatedSettings } from '../../common/config/fontInfoFromSettings.js';
@@ -38,7 +47,6 @@ export interface IEditorConstructionOptions extends IEditorOptions {
 }
 
 export class EditorConfiguration extends Disposable implements IEditorConfiguration {
-
 	private _onDidChange = this._register(new Emitter<ConfigurationChangedEvent>());
 	public readonly onDidChange: Event<ConfigurationChangedEvent> = this._onDidChange.event;
 
@@ -115,7 +123,11 @@ export class EditorConfiguration extends Disposable implements IEditorConfigurat
 
 	private _computeOptions(): ComputedEditorOptions {
 		const partialEnv = this._readEnvConfiguration();
-		const bareFontInfo = createBareFontInfoFromValidatedSettings(this._validatedOptions, partialEnv.pixelRatio, this.isSimpleWidget);
+		const bareFontInfo = createBareFontInfoFromValidatedSettings(
+			this._validatedOptions,
+			partialEnv.pixelRatio,
+			this.isSimpleWidget
+		);
 		const fontInfo = this._readFontInfo(bareFontInfo);
 		const env: IEnvironmentalOptions = {
 			memory: this._computeOptionsMemory,
@@ -144,13 +156,11 @@ export class EditorConfiguration extends Disposable implements IEditorConfigurat
 			outerHeight: this._containerObserver.getHeight(),
 			emptySelectionClipboard: browser.isWebKit || browser.isFirefox,
 			pixelRatio: PixelRatio.getInstance(getWindowById(this._targetWindowId, true).window).value,
-			// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+			// eslint-disable-next-line local/code-no-any-casts
 			editContextSupported: typeof (globalThis as any).EditContext === 'function',
-			accessibilitySupport: (
-				this._accessibilityService.isScreenReaderOptimized()
-					? AccessibilitySupport.Enabled
-					: this._accessibilityService.getAccessibilitySupport()
-			)
+			accessibilitySupport: this._accessibilityService.isScreenReaderOptimized()
+				? AccessibilitySupport.Enabled
+				: this._accessibilityService.getAccessibilitySupport()
 		};
 	}
 
@@ -285,11 +295,11 @@ export class ComputedEditorOptions implements IComputedEditorOptions {
 }
 
 class EditorOptionsUtil {
-
 	public static validateOptions(options: IEditorOptions): ValidatedEditorOptions {
 		const result = new ValidatedEditorOptions();
 		for (const editorOption of editorOptionsRegistry) {
-			const value = (editorOption.name === '_never_' ? undefined : (options as Record<string, unknown>)[editorOption.name]);
+			const value =
+				editorOption.name === '_never_' ? undefined : (options as Record<string, unknown>)[editorOption.name];
 			result._write(editorOption.id, editorOption.validate(value));
 		}
 		return result;
@@ -308,7 +318,7 @@ class EditorOptionsUtil {
 			return a === b;
 		}
 		if (Array.isArray(a) || Array.isArray(b)) {
-			return (Array.isArray(a) && Array.isArray(b) ? arrays.equals(a, b) : false);
+			return Array.isArray(a) && Array.isArray(b) ? arrays.equals(a, b) : false;
 		}
 		if (Object.keys(a as unknown as object).length !== Object.keys(b as unknown as object).length) {
 			return false;
@@ -331,18 +341,21 @@ class EditorOptionsUtil {
 				somethingChanged = true;
 			}
 		}
-		return (somethingChanged ? new ConfigurationChangedEvent(result) : null);
+		return somethingChanged ? new ConfigurationChangedEvent(result) : null;
 	}
 
 	/**
 	 * Returns true if something changed.
 	 * Modifies `options`.
-	*/
+	 */
 	public static applyUpdate(options: IEditorOptions, update: Readonly<IEditorOptions>): boolean {
 		let changed = false;
 		for (const editorOption of editorOptionsRegistry) {
 			if (update.hasOwnProperty(editorOption.name)) {
-				const result = editorOption.applyUpdate((options as Record<string, unknown>)[editorOption.name], (update as Record<string, unknown>)[editorOption.name]);
+				const result = editorOption.applyUpdate(
+					(options as Record<string, unknown>)[editorOption.name],
+					(update as Record<string, unknown>)[editorOption.name]
+				);
 				(options as Record<string, unknown>)[editorOption.name] = result.newValue;
 				changed = changed || result.didChange;
 			}

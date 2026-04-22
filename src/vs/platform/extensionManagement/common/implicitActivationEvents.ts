@@ -12,7 +12,6 @@ export interface IActivationEventsGenerator<T> {
 }
 
 export class ImplicitActivationEventsImpl {
-
 	private readonly _generators = new Map<string, IActivationEventsGenerator<unknown>>();
 	private readonly _cache = new WeakMap<IExtensionDescription, string[]>();
 
@@ -35,7 +34,9 @@ export class ImplicitActivationEventsImpl {
 	 * This can run correctly only on the renderer process because that is the only place
 	 * where all extension points and all implicit activation events generators are known.
 	 */
-	public createActivationEventsMap(extensionDescriptions: IExtensionDescription[]): { [extensionId: string]: string[] } {
+	public createActivationEventsMap(extensionDescriptions: IExtensionDescription[]): {
+		[extensionId: string]: string[];
+	} {
 		const result: { [extensionId: string]: string[] } = Object.create(null);
 		for (const extensionDescription of extensionDescriptions) {
 			const activationEvents = this.readActivationEvents(extensionDescription);
@@ -51,7 +52,7 @@ export class ImplicitActivationEventsImpl {
 			return [];
 		}
 
-		const activationEvents: string[] = (Array.isArray(desc.activationEvents) ? desc.activationEvents.slice(0) : []);
+		const activationEvents: string[] = Array.isArray(desc.activationEvents) ? desc.activationEvents.slice(0) : [];
 
 		for (let i = 0; i < activationEvents.length; i++) {
 			// TODO@joao: there's no easy way to contribute this

@@ -15,19 +15,18 @@ import { DebugLocation } from '../debugLocation.js';
  * {@link fn} should start with a JS Doc using `@description` to name the autorun.
  */
 export function autorun(fn: (reader: IReaderWithStore) => void, debugLocation = DebugLocation.ofCaller()): IDisposable {
-	return new AutorunObserver(
-		new DebugNameData(undefined, undefined, fn),
-		fn,
-		undefined,
-		debugLocation
-	);
+	return new AutorunObserver(new DebugNameData(undefined, undefined, fn), fn, undefined, debugLocation);
 }
 
 /**
  * Runs immediately and whenever a transaction ends and an observed observable changed.
  * {@link fn} should start with a JS Doc using `@description` to name the autorun.
  */
-export function autorunOpts(options: IDebugNameData & {}, fn: (reader: IReaderWithStore) => void, debugLocation = DebugLocation.ofCaller()): IDisposable {
+export function autorunOpts(
+	options: IDebugNameData & {},
+	fn: (reader: IReaderWithStore) => void,
+	debugLocation = DebugLocation.ofCaller()
+): IDisposable {
 	return new AutorunObserver(
 		new DebugNameData(options.owner, options.debugName, options.debugReferenceFn ?? fn),
 		fn,
@@ -77,7 +76,7 @@ export function autorunWithStoreHandleChanges<TChangeSummary>(
 			owner: options.owner,
 			debugName: options.debugName,
 			debugReferenceFn: options.debugReferenceFn ?? fn,
-			changeTracker: options.changeTracker,
+			changeTracker: options.changeTracker
 		},
 		(reader, changeSummary) => {
 			store.clear();
@@ -101,7 +100,7 @@ export function autorunWithStore(fn: (reader: IReader, store: DisposableStore) =
 		{
 			owner: undefined,
 			debugName: undefined,
-			debugReferenceFn: fn,
+			debugReferenceFn: fn
 		},
 		reader => {
 			store.clear();
@@ -119,7 +118,7 @@ export function autorunDelta<T>(
 	handler: (args: { lastValue: T | undefined; newValue: T }) => void
 ): IDisposable {
 	let _lastValue: T | undefined;
-	return autorunOpts({ debugReferenceFn: handler }, (reader) => {
+	return autorunOpts({ debugReferenceFn: handler }, reader => {
 		const newValue = observable.read(reader);
 		const lastValue = _lastValue;
 		_lastValue = newValue;
@@ -133,7 +132,7 @@ export function autorunIterableDelta<T>(
 	getUniqueIdentifier: (value: T) => unknown = v => v
 ) {
 	const lastValues = new Map<unknown, T>();
-	return autorunOpts({ debugReferenceFn: getValue }, (reader) => {
+	return autorunOpts({ debugReferenceFn: getValue }, reader => {
 		const newValues = new Map();
 		const removedValues = new Map(lastValues);
 		for (const value of getValue(reader)) {
@@ -155,13 +154,16 @@ export function autorunIterableDelta<T>(
 	});
 }
 
-export interface IReaderWithDispose extends IReaderWithStore, IDisposable { }
+export interface IReaderWithDispose extends IReaderWithStore, IDisposable {}
 
 /**
  * An autorun with a `dispose()` method on its `reader` which cancels the autorun.
  * It it safe to call `dispose()` synchronously.
  */
-export function autorunSelfDisposable(fn: (reader: IReaderWithDispose) => void, debugLocation = DebugLocation.ofCaller()): IDisposable {
+export function autorunSelfDisposable(
+	fn: (reader: IReaderWithDispose) => void,
+	debugLocation = DebugLocation.ofCaller()
+): IDisposable {
 	let ar: IDisposable | undefined;
 	let disposed = false;
 

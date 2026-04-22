@@ -8,10 +8,19 @@ import { debounce, throttle } from '../../../../base/common/decorators.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { IExtensionService } from '../../../services/extensions/common/extensions.js';
 import { MergedEnvironmentVariableCollection } from '../../../../platform/terminal/common/environmentVariableCollection.js';
-import { deserializeEnvironmentDescriptionMap, deserializeEnvironmentVariableCollection, serializeEnvironmentDescriptionMap, serializeEnvironmentVariableCollection } from '../../../../platform/terminal/common/environmentVariableShared.js';
+import {
+	deserializeEnvironmentDescriptionMap,
+	deserializeEnvironmentVariableCollection,
+	serializeEnvironmentDescriptionMap,
+	serializeEnvironmentVariableCollection
+} from '../../../../platform/terminal/common/environmentVariableShared.js';
 import { IEnvironmentVariableCollectionWithPersistence, IEnvironmentVariableService } from './environmentVariable.js';
 import { TerminalStorageKeys } from './terminalStorageKeys.js';
-import { IMergedEnvironmentVariableCollection, ISerializableEnvironmentDescriptionMap, ISerializableEnvironmentVariableCollection } from '../../../../platform/terminal/common/environmentVariable.js';
+import {
+	IMergedEnvironmentVariableCollection,
+	ISerializableEnvironmentDescriptionMap,
+	ISerializableEnvironmentVariableCollection
+} from '../../../../platform/terminal/common/environmentVariable.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 
 interface ISerializableExtensionEnvironmentVariableCollection {
@@ -30,7 +39,9 @@ export class EnvironmentVariableService extends Disposable implements IEnvironme
 	mergedCollection: IMergedEnvironmentVariableCollection;
 
 	private readonly _onDidChangeCollections = this._register(new Emitter<IMergedEnvironmentVariableCollection>());
-	get onDidChangeCollections(): Event<IMergedEnvironmentVariableCollection> { return this._onDidChangeCollections.event; }
+	get onDidChangeCollections(): Event<IMergedEnvironmentVariableCollection> {
+		return this._onDidChangeCollections.event;
+	}
 
 	constructor(
 		@IExtensionService private readonly _extensionService: IExtensionService,
@@ -39,14 +50,20 @@ export class EnvironmentVariableService extends Disposable implements IEnvironme
 		super();
 
 		this._storageService.remove(TerminalStorageKeys.DeprecatedEnvironmentVariableCollections, StorageScope.WORKSPACE);
-		const serializedPersistedCollections = this._storageService.get(TerminalStorageKeys.EnvironmentVariableCollections, StorageScope.WORKSPACE);
+		const serializedPersistedCollections = this._storageService.get(
+			TerminalStorageKeys.EnvironmentVariableCollections,
+			StorageScope.WORKSPACE
+		);
 		if (serializedPersistedCollections) {
-			const collectionsJson: ISerializableExtensionEnvironmentVariableCollection[] = JSON.parse(serializedPersistedCollections);
-			collectionsJson.forEach(c => this.collections.set(c.extensionIdentifier, {
-				persistent: true,
-				map: deserializeEnvironmentVariableCollection(c.collection),
-				descriptionMap: deserializeEnvironmentDescriptionMap(c.description)
-			}));
+			const collectionsJson: ISerializableExtensionEnvironmentVariableCollection[] =
+				JSON.parse(serializedPersistedCollections);
+			collectionsJson.forEach(c =>
+				this.collections.set(c.extensionIdentifier, {
+					persistent: true,
+					map: deserializeEnvironmentVariableCollection(c.collection),
+					descriptionMap: deserializeEnvironmentDescriptionMap(c.description)
+				})
+			);
 
 			// Asynchronously invalidate collections where extensions have been uninstalled, this is
 			// async to avoid making all functions on the service synchronous and because extensions
@@ -92,7 +109,12 @@ export class EnvironmentVariableService extends Disposable implements IEnvironme
 			}
 		});
 		const stringifiedJson = JSON.stringify(collectionsJson);
-		this._storageService.store(TerminalStorageKeys.EnvironmentVariableCollections, stringifiedJson, StorageScope.WORKSPACE, StorageTarget.MACHINE);
+		this._storageService.store(
+			TerminalStorageKeys.EnvironmentVariableCollections,
+			stringifiedJson,
+			StorageScope.WORKSPACE,
+			StorageTarget.MACHINE
+		);
 	}
 
 	@debounce(1000)

@@ -12,7 +12,6 @@ import { ILanguagePackService } from '../../../platform/languagePacks/common/lan
 
 @extHostNamedCustomer(MainContext.MainThreadLocalization)
 export class MainThreadLocalization extends Disposable implements MainThreadLocalizationShape {
-
 	constructor(
 		extHostContext: IExtHostContext,
 		@IFileService private readonly fileService: IFileService,

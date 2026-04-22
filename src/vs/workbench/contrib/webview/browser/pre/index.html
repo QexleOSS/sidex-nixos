@@ -5,7 +5,7 @@
 	<meta charset="UTF-8">
 
 	<meta http-equiv="Content-Security-Policy"
-		content="default-src 'none'; script-src 'sha256-TaWGDzV7c9rUH2q/5ygOyYUHSyHIqBMYfucPh3lnKvU=' 'self'; frame-src 'self'; style-src 'unsafe-inline';">
+		content="default-src 'none'; script-src 'sha256-TaWGDzV7c9rUH2q/5ygOyYUHSyHIqBMYfucPh3lnKvU=' 'self' https://tauri.localhost https://*.tauri.localhost; frame-src 'self' https://tauri.localhost https://*.tauri.localhost; style-src 'unsafe-inline'; img-src 'self' https: data: blob: https://tauri.localhost https://*.tauri.localhost asset:; font-src 'self' https: data: https://tauri.localhost; connect-src 'self' https://tauri.localhost https://*.tauri.localhost ws://localhost:*;">
 
 	<!-- Disable pinch zooming -->
 	<meta name="viewport"
@@ -375,7 +375,7 @@
 
 				const hostname = location.hostname;
 
-				if (hostname === 'localhost' || hostname === '127.0.0.1') {
+				if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === 'tauri.localhost' || hostname.endsWith('.tauri.localhost')) {
 					return start(parentOrigin);
 				}
 
@@ -1187,7 +1187,9 @@
 					loadTimeout = setTimeout(() => {
 						clearTimeout(loadTimeout);
 						loadTimeout = undefined;
-						onLoad(assertIsDefined(newFrame.contentDocument), assertIsDefined(newFrame.contentWindow));
+						if (newFrame.contentDocument && newFrame.contentWindow) {
+							onLoad(newFrame.contentDocument, newFrame.contentWindow);
+						}
 					}, 200);
 
 					const contentWindow = assertIsDefined(newFrame.contentWindow);

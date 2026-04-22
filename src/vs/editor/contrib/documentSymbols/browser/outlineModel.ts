@@ -15,7 +15,10 @@ import { IRange, Range } from '../../../common/core/range.js';
 import { ITextModel } from '../../../common/model.js';
 import { DocumentSymbol, DocumentSymbolProvider } from '../../../common/languages.js';
 import { MarkerSeverity } from '../../../../platform/markers/common/markers.js';
-import { IFeatureDebounceInformation, ILanguageFeatureDebounceService } from '../../../common/services/languageFeatureDebounce.js';
+import {
+	IFeatureDebounceInformation,
+	ILanguageFeatureDebounceService
+} from '../../../common/services/languageFeatureDebounce.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { IModelService } from '../../../common/services/model.js';
@@ -24,7 +27,6 @@ import { LanguageFeatureRegistry } from '../../../common/languageFeatureRegistry
 import { ILanguageFeaturesService } from '../../../common/services/languageFeatures.js';
 
 export abstract class TreeElement {
-
 	abstract id: string;
 	abstract children: Map<string, TreeElement>;
 	abstract parent: TreeElement | undefined;
@@ -66,7 +68,6 @@ export abstract class TreeElement {
 			return undefined;
 		}
 		for (const [, child] of element.children) {
-			// eslint-disable-next-line no-restricted-syntax
 			const candidate = TreeElement.getElementById(id, child);
 			if (candidate) {
 				return candidate;
@@ -97,7 +98,6 @@ export interface IOutlineMarker {
 }
 
 export class OutlineElement extends TreeElement {
-
 	children = new Map<string, OutlineElement>();
 	marker: { count: number; topSev: MarkerSeverity } | undefined;
 
@@ -111,14 +111,13 @@ export class OutlineElement extends TreeElement {
 }
 
 export class OutlineGroup extends TreeElement {
-
 	children = new Map<string, OutlineElement>();
 
 	constructor(
 		readonly id: string,
 		public parent: TreeElement | undefined,
 		readonly label: string,
-		readonly order: number,
+		readonly order: number
 	) {
 		super();
 	}
@@ -127,7 +126,10 @@ export class OutlineGroup extends TreeElement {
 		return position ? this._getItemEnclosingPosition(position, this.children) : undefined;
 	}
 
-	private _getItemEnclosingPosition(position: IPosition, children: Map<string, OutlineElement>): OutlineElement | undefined {
+	private _getItemEnclosingPosition(
+		position: IPosition,
+		children: Map<string, OutlineElement>
+	): OutlineElement | undefined {
 		for (const [, item] of children) {
 			if (!item.symbol.range || !Range.containsPosition(item.symbol.range, position)) {
 				continue;
@@ -192,33 +194,38 @@ export class OutlineGroup extends TreeElement {
 }
 
 export class OutlineModel extends TreeElement {
-
-	static create(registry: LanguageFeatureRegistry<DocumentSymbolProvider>, textModel: ITextModel, token: CancellationToken): Promise<OutlineModel> {
-
+	static create(
+		registry: LanguageFeatureRegistry<DocumentSymbolProvider>,
+		textModel: ITextModel,
+		token: CancellationToken
+	): Promise<OutlineModel> {
 		const cts = new CancellationTokenSource(token);
 		const result = new OutlineModel(textModel.uri);
 		const provider = registry.ordered(textModel);
 		const promises = provider.map((provider, index) => {
-
 			const id = TreeElement.findId(`provider_${index}`, result);
 			const group = new OutlineGroup(id, result, provider.displayName ?? 'Unknown Outline Provider', index);
 
-
-			return Promise.resolve(provider.provideDocumentSymbols(textModel, cts.token)).then(result => {
-				for (const info of result || []) {
-					OutlineModel._makeOutlineElement(info, group);
-				}
-				return group;
-			}, err => {
-				onUnexpectedExternalError(err);
-				return group;
-			}).then(group => {
-				if (!TreeElement.empty(group)) {
-					result._groups.set(id, group);
-				} else {
-					group.remove();
-				}
-			});
+			return Promise.resolve(provider.provideDocumentSymbols(textModel, cts.token))
+				.then(
+					result => {
+						for (const info of result || []) {
+							OutlineModel._makeOutlineElement(info, group);
+						}
+						return group;
+					},
+					err => {
+						onUnexpectedExternalError(err);
+						return group;
+					}
+				)
+				.then(group => {
+					if (!TreeElement.empty(group)) {
+						result._groups.set(id, group);
+					} else {
+						group.remove();
+					}
+				});
 		});
 
 		const listener = registry.onDidChange(() => {
@@ -228,17 +235,19 @@ export class OutlineModel extends TreeElement {
 			}
 		});
 
-		return Promise.all(promises).then(() => {
-			if (cts.token.isCancellationRequested && !token.isCancellationRequested) {
-				return OutlineModel.create(registry, textModel, token);
-			} else {
-				return result._compact();
-			}
-		}).finally(() => {
-			cts.dispose();
-			listener.dispose();
-			cts.dispose();
-		});
+		return Promise.all(promises)
+			.then(() => {
+				if (cts.token.isCancellationRequested && !token.isCancellationRequested) {
+					return OutlineModel.create(registry, textModel, token);
+				} else {
+					return result._compact();
+				}
+			})
+			.finally(() => {
+				cts.dispose();
+				listener.dispose();
+				cts.dispose();
+			});
 	}
 
 	private static _makeOutlineElement(info: DocumentSymbol, container: OutlineGroup | OutlineElement): void {
@@ -278,7 +287,8 @@ export class OutlineModel extends TreeElement {
 	private _compact(): this {
 		let count = 0;
 		for (const [key, group] of this._groups) {
-			if (group.children.size === 0) { // empty
+			if (group.children.size === 0) {
+				// empty
 				this._groups.delete(key);
 			} else {
 				count += 1;
@@ -311,7 +321,6 @@ export class OutlineModel extends TreeElement {
 	}
 
 	getItemEnclosingPosition(position: IPosition, context?: OutlineElement): OutlineElement | undefined {
-
 		let preferredGroup: OutlineGroup | undefined;
 		if (context) {
 			let candidate = context.parent;
@@ -334,7 +343,6 @@ export class OutlineModel extends TreeElement {
 	}
 
 	getItemById(id: string): TreeElement | undefined {
-		// eslint-disable-next-line no-restricted-syntax
 		return TreeElement.getElementById(id, this);
 	}
 
@@ -364,12 +372,18 @@ export class OutlineModel extends TreeElement {
 		const roots = this.getTopLevelSymbols();
 		const bucket: DocumentSymbol[] = [];
 		OutlineModel._flattenDocumentSymbols(bucket, roots, '');
-		return bucket.sort((a, b) =>
-			Position.compare(Range.getStartPosition(a.range), Range.getStartPosition(b.range)) || Position.compare(Range.getEndPosition(b.range), Range.getEndPosition(a.range))
+		return bucket.sort(
+			(a, b) =>
+				Position.compare(Range.getStartPosition(a.range), Range.getStartPosition(b.range)) ||
+				Position.compare(Range.getEndPosition(b.range), Range.getEndPosition(a.range))
 		);
 	}
 
-	private static _flattenDocumentSymbols(bucket: DocumentSymbol[], entries: DocumentSymbol[], overrideContainerLabel: string): void {
+	private static _flattenDocumentSymbols(
+		bucket: DocumentSymbol[],
+		entries: DocumentSymbol[],
+		overrideContainerLabel: string
+	): void {
 		for (const entry of entries) {
 			bucket.push({
 				kind: entry.kind,
@@ -379,7 +393,7 @@ export class OutlineModel extends TreeElement {
 				containerName: entry.containerName || overrideContainerLabel,
 				range: entry.range,
 				selectionRange: entry.selectionRange,
-				children: undefined, // we flatten it...
+				children: undefined // we flatten it...
 			});
 
 			// Recurse over children
@@ -389,7 +403,6 @@ export class OutlineModel extends TreeElement {
 		}
 	}
 }
-
 
 export const IOutlineModelService = createDecorator<IOutlineModelService>('IOutlineModelService');
 
@@ -411,7 +424,6 @@ interface CacheEntry {
 }
 
 export class OutlineModelService implements IOutlineModelService {
-
 	declare _serviceBrand: undefined;
 
 	private readonly _disposables = new DisposableStore();
@@ -423,12 +435,16 @@ export class OutlineModelService implements IOutlineModelService {
 		@ILanguageFeatureDebounceService debounces: ILanguageFeatureDebounceService,
 		@IModelService modelService: IModelService
 	) {
-		this._debounceInformation = debounces.for(_languageFeaturesService.documentSymbolProvider, 'DocumentSymbols', { min: 350 });
+		this._debounceInformation = debounces.for(_languageFeaturesService.documentSymbolProvider, 'DocumentSymbols', {
+			min: 350
+		});
 
 		// don't cache outline models longer than their text model
-		this._disposables.add(modelService.onModelRemoved(textModel => {
-			this._cache.delete(textModel.id);
-		}));
+		this._disposables.add(
+			modelService.onModelRemoved(textModel => {
+				this._cache.delete(textModel.id);
+			})
+		);
 	}
 
 	dispose(): void {
@@ -436,7 +452,6 @@ export class OutlineModelService implements IOutlineModelService {
 	}
 
 	async getOrCreate(textModel: ITextModel, token: CancellationToken): Promise<OutlineModel> {
-
 		const registry = this._languageFeaturesService.documentSymbolProvider;
 		const provider = registry.ordered(textModel);
 
@@ -449,17 +464,19 @@ export class OutlineModelService implements IOutlineModelService {
 				promiseCnt: 0,
 				source,
 				promise: OutlineModel.create(registry, textModel, source.token),
-				model: undefined,
+				model: undefined
 			};
 			this._cache.set(textModel.id, data);
 
 			const now = Date.now();
-			data.promise.then(outlineModel => {
-				data!.model = outlineModel;
-				this._debounceInformation.update(textModel, Date.now() - now);
-			}).catch(_err => {
-				this._cache.delete(textModel.id);
-			});
+			data.promise
+				.then(outlineModel => {
+					data!.model = outlineModel;
+					this._debounceInformation.update(textModel, Date.now() - now);
+				})
+				.catch(_err => {
+					this._cache.delete(textModel.id);
+				});
 		}
 
 		if (data.model) {
@@ -490,7 +507,10 @@ export class OutlineModelService implements IOutlineModelService {
 	}
 
 	getCachedModels(): Iterable<OutlineModel> {
-		return Iterable.filter<OutlineModel | undefined, OutlineModel>(Iterable.map(this._cache.values(), entry => entry.model), model => model !== undefined);
+		return Iterable.filter<OutlineModel | undefined, OutlineModel>(
+			Iterable.map(this._cache.values(), entry => entry.model),
+			model => model !== undefined
+		);
 	}
 }
 

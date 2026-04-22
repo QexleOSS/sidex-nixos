@@ -18,11 +18,13 @@ import { URI } from '../base/common/uri.js';
 import { Event, Emitter } from '../base/common/event.js';
 import { Disposable } from '../base/common/lifecycle.js';
 import { GroupOrientation } from './services/editor/common/editorGroupsService.js';
-import { RemoteAuthorityResolverError, RemoteAuthorityResolverErrorCode } from '../platform/remote/common/remoteAuthorityResolver.js';
+import {
+	RemoteAuthorityResolverError,
+	RemoteAuthorityResolverErrorCode
+} from '../platform/remote/common/remoteAuthorityResolver.js';
 import { LogLevel } from '../platform/log/common/log.js';
 
 export {
-
 	// Factory
 	create,
 

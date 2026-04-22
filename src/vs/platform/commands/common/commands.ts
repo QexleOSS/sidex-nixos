@@ -28,7 +28,10 @@ export interface ICommandService {
 
 export type ICommandsMap = Map<string, ICommand>;
 
-export type ICommandHandler<Args extends unknown[] = unknown[], R = void> = (accessor: ServicesAccessor, ...args: Args) => R;
+export type ICommandHandler<Args extends unknown[] = unknown[], R = void> = (
+	accessor: ServicesAccessor,
+	...args: Args
+) => R;
 
 export interface ICommand<Args extends unknown[] = unknown[], R = void> {
 	id: string;
@@ -64,15 +67,13 @@ export interface ICommandRegistry {
 	getCommands(): ICommandsMap;
 }
 
-export const CommandsRegistry: ICommandRegistry = new class implements ICommandRegistry {
-
+export const CommandsRegistry: ICommandRegistry = new (class implements ICommandRegistry {
 	private readonly _commands = new Map<string, LinkedList<ICommand>>();
 
 	private readonly _onDidRegisterCommand = new Emitter<string>();
 	readonly onDidRegisterCommand: Event<string> = this._onDidRegisterCommand.event;
 
 	registerCommand(idOrCommand: string | ICommand, handler?: ICommandHandler): IDisposable {
-
 		if (!idOrCommand) {
 			throw new Error(`invalid command`);
 		}
@@ -123,7 +124,9 @@ export const CommandsRegistry: ICommandRegistry = new class implements ICommandR
 	}
 
 	registerCommandAlias(oldId: string, newId: string): IDisposable {
-		return CommandsRegistry.registerCommand(oldId, (accessor, ...args) => accessor.get(ICommandService).executeCommand(newId, ...args));
+		return CommandsRegistry.registerCommand(oldId, (accessor, ...args) =>
+			accessor.get(ICommandService).executeCommand(newId, ...args)
+		);
 	}
 
 	getCommand(id: string): ICommand | undefined {
@@ -144,6 +147,6 @@ export const CommandsRegistry: ICommandRegistry = new class implements ICommandR
 		}
 		return result;
 	}
-};
+})();
 
-CommandsRegistry.registerCommand('noop', () => { });
+CommandsRegistry.registerCommand('noop', () => {});

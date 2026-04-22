@@ -39,7 +39,6 @@ export const enum LayoutPriority {
  * to each view's {@link IView.layout} calls.
  */
 export interface IView<TLayoutContext = undefined> {
-
 	/**
 	 * The DOM element for this view.
 	 */
@@ -119,8 +118,10 @@ export interface IView<TLayoutContext = undefined> {
 /**
  * A descriptor for a {@link SplitView} instance.
  */
-export interface ISplitViewDescriptor<TLayoutContext = undefined, TView extends IView<TLayoutContext> = IView<TLayoutContext>> {
-
+export interface ISplitViewDescriptor<
+	TLayoutContext = undefined,
+	TView extends IView<TLayoutContext> = IView<TLayoutContext>
+> {
 	/**
 	 * The layout size of the {@link SplitView}.
 	 */
@@ -130,7 +131,6 @@ export interface ISplitViewDescriptor<TLayoutContext = undefined, TView extends 
 	 * Descriptors for each {@link IView view}.
 	 */
 	readonly views: {
-
 		/**
 		 * Whether the {@link IView view} is visible.
 		 *
@@ -154,8 +154,10 @@ export interface ISplitViewDescriptor<TLayoutContext = undefined, TView extends 
 	}[];
 }
 
-export interface ISplitViewOptions<TLayoutContext = undefined, TView extends IView<TLayoutContext> = IView<TLayoutContext>> {
-
+export interface ISplitViewOptions<
+	TLayoutContext = undefined,
+	TView extends IView<TLayoutContext> = IView<TLayoutContext>
+> {
 	/**
 	 * Which axis the views align on.
 	 *
@@ -208,7 +210,6 @@ interface ISashEvent {
 type ViewItemSize = number | { cachedVisibleSize: number };
 
 abstract class ViewItem<TLayoutContext, TView extends IView<TLayoutContext>> {
-
 	private _size: number;
 	set size(size: number) {
 		this._size = size;
@@ -219,7 +220,9 @@ abstract class ViewItem<TLayoutContext, TView extends IView<TLayoutContext>> {
 	}
 
 	private _cachedVisibleSize: number | undefined = undefined;
-	get cachedVisibleSize(): number | undefined { return this._cachedVisibleSize; }
+	get cachedVisibleSize(): number | undefined {
+		return this._cachedVisibleSize;
+	}
 
 	get visible(): boolean {
 		return typeof this._cachedVisibleSize === 'undefined';
@@ -248,15 +251,29 @@ abstract class ViewItem<TLayoutContext, TView extends IView<TLayoutContext>> {
 		}
 	}
 
-	get minimumSize(): number { return this.visible ? this.view.minimumSize : 0; }
-	get viewMinimumSize(): number { return this.view.minimumSize; }
+	get minimumSize(): number {
+		return this.visible ? this.view.minimumSize : 0;
+	}
+	get viewMinimumSize(): number {
+		return this.view.minimumSize;
+	}
 
-	get maximumSize(): number { return this.visible ? this.view.maximumSize : 0; }
-	get viewMaximumSize(): number { return this.view.maximumSize; }
+	get maximumSize(): number {
+		return this.visible ? this.view.maximumSize : 0;
+	}
+	get viewMaximumSize(): number {
+		return this.view.maximumSize;
+	}
 
-	get priority(): LayoutPriority | undefined { return this.view.priority; }
-	get proportionalLayout(): boolean { return this.view.proportionalLayout ?? true; }
-	get snap(): boolean { return !!this.view.snap; }
+	get priority(): LayoutPriority | undefined {
+		return this.view.priority;
+	}
+	get proportionalLayout(): boolean {
+		return this.view.proportionalLayout ?? true;
+	}
+	get snap(): boolean {
+		return !!this.view.snap;
+	}
 
 	set enabled(enabled: boolean) {
 		this.container.style.pointerEvents = enabled ? '' : 'none';
@@ -297,7 +314,6 @@ abstract class ViewItem<TLayoutContext, TView extends IView<TLayoutContext>> {
 }
 
 class VerticalViewItem<TLayoutContext, TView extends IView<TLayoutContext>> extends ViewItem<TLayoutContext, TView> {
-
 	layoutContainer(offset: number): void {
 		this.container.style.top = `${offset}px`;
 		this.container.style.height = `${this.size}px`;
@@ -305,7 +321,6 @@ class VerticalViewItem<TLayoutContext, TView extends IView<TLayoutContext>> exte
 }
 
 class HorizontalViewItem<TLayoutContext, TView extends IView<TLayoutContext>> extends ViewItem<TLayoutContext, TView> {
-
 	layoutContainer(offset: number): void {
 		this.container.style.left = `${offset}px`;
 		this.container.style.width = `${this.size}px`;
@@ -371,7 +386,6 @@ export type InvisibleSizing = { type: 'invisible'; cachedVisibleSize: number };
 export type Sizing = DistributeSizing | SplitSizing | AutoSizing | InvisibleSizing;
 
 export namespace Sizing {
-
 	/**
 	 * When adding or removing views, distribute the delta space among
 	 * all other views.
@@ -382,18 +396,24 @@ export namespace Sizing {
 	 * When adding or removing views, split the delta space with another
 	 * specific view, indexed by the provided `index`.
 	 */
-	export function Split(index: number): SplitSizing { return { type: 'split', index }; }
+	export function Split(index: number): SplitSizing {
+		return { type: 'split', index };
+	}
 
 	/**
 	 * When adding a view, use DistributeSizing when all pre-existing views are
 	 * distributed evenly, otherwise use SplitSizing.
 	 */
-	export function Auto(index: number): AutoSizing { return { type: 'auto', index }; }
+	export function Auto(index: number): AutoSizing {
+		return { type: 'auto', index };
+	}
 
 	/**
 	 * When adding or removing views, assume the view is invisible.
 	 */
-	export function Invisible(cachedVisibleSize: number): InvisibleSizing { return { type: 'invisible', cachedVisibleSize }; }
+	export function Invisible(cachedVisibleSize: number): InvisibleSizing {
+		return { type: 'invisible', cachedVisibleSize };
+	}
 }
 
 /**
@@ -424,8 +444,10 @@ export namespace Sizing {
  * - View swap/move support
  * - Alt key modifier behavior, macOS style
  */
-export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutContext> = IView<TLayoutContext>> extends Disposable {
-
+export class SplitView<
+	TLayoutContext = undefined,
+	TView extends IView<TLayoutContext> = IView<TLayoutContext>
+> extends Disposable {
 	/**
 	 * This {@link SplitView}'s orientation.
 	 */
@@ -462,7 +484,9 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 	/**
 	 * The sum of all views' sizes.
 	 */
-	get contentSize(): number { return this._contentSize; }
+	get contentSize(): number {
+		return this._contentSize;
+	}
 
 	/**
 	 * Fires whenever the user resizes a {@link Sash sash}.
@@ -500,10 +524,18 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 		return this.length === 0 ? Number.POSITIVE_INFINITY : this.viewItems.reduce((r, item) => r + item.maximumSize, 0);
 	}
 
-	get orthogonalStartSash(): Sash | undefined { return this._orthogonalStartSash; }
-	get orthogonalEndSash(): Sash | undefined { return this._orthogonalEndSash; }
-	get startSnappingEnabled(): boolean { return this._startSnappingEnabled; }
-	get endSnappingEnabled(): boolean { return this._endSnappingEnabled; }
+	get orthogonalStartSash(): Sash | undefined {
+		return this._orthogonalStartSash;
+	}
+	get orthogonalEndSash(): Sash | undefined {
+		return this._orthogonalEndSash;
+	}
+	get startSnappingEnabled(): boolean {
+		return this._startSnappingEnabled;
+	}
+	get endSnappingEnabled(): boolean {
+		return this._endSnappingEnabled;
+	}
 
 	/**
 	 * A reference to a sash, perpendicular to all sashes in this {@link SplitView},
@@ -581,38 +613,60 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 		this.sashContainer = append(this.el, $('.sash-container'));
 		this.viewContainer = $('.split-view-container');
 
-		this.scrollable = this._register(new Scrollable({
-			forceIntegerValues: true,
-			smoothScrollDuration: 125,
-			scheduleAtNextAnimationFrame: callback => scheduleAtNextAnimationFrame(getWindow(this.el), callback),
-		}));
-		this.scrollableElement = this._register(new SmoothScrollableElement(this.viewContainer, {
-			vertical: this.orientation === Orientation.VERTICAL ? (options.scrollbarVisibility ?? ScrollbarVisibility.Auto) : ScrollbarVisibility.Hidden,
-			horizontal: this.orientation === Orientation.HORIZONTAL ? (options.scrollbarVisibility ?? ScrollbarVisibility.Auto) : ScrollbarVisibility.Hidden
-		}, this.scrollable));
+		this.scrollable = this._register(
+			new Scrollable({
+				forceIntegerValues: true,
+				smoothScrollDuration: 125,
+				scheduleAtNextAnimationFrame: callback => scheduleAtNextAnimationFrame(getWindow(this.el), callback)
+			})
+		);
+		this.scrollableElement = this._register(
+			new SmoothScrollableElement(
+				this.viewContainer,
+				{
+					vertical:
+						this.orientation === Orientation.VERTICAL
+							? (options.scrollbarVisibility ?? ScrollbarVisibility.Auto)
+							: ScrollbarVisibility.Hidden,
+					horizontal:
+						this.orientation === Orientation.HORIZONTAL
+							? (options.scrollbarVisibility ?? ScrollbarVisibility.Auto)
+							: ScrollbarVisibility.Hidden
+				},
+				this.scrollable
+			)
+		);
 
 		// https://github.com/microsoft/vscode/issues/157737
 		const onDidScrollViewContainer = this._register(new DomEmitter(this.viewContainer, 'scroll')).event;
-		this._register(onDidScrollViewContainer(_ => {
-			const position = this.scrollableElement.getScrollPosition();
-			const scrollLeft = Math.abs(this.viewContainer.scrollLeft - position.scrollLeft) <= 1 ? undefined : this.viewContainer.scrollLeft;
-			const scrollTop = Math.abs(this.viewContainer.scrollTop - position.scrollTop) <= 1 ? undefined : this.viewContainer.scrollTop;
+		this._register(
+			onDidScrollViewContainer(_ => {
+				const position = this.scrollableElement.getScrollPosition();
+				const scrollLeft =
+					Math.abs(this.viewContainer.scrollLeft - position.scrollLeft) <= 1
+						? undefined
+						: this.viewContainer.scrollLeft;
+				const scrollTop =
+					Math.abs(this.viewContainer.scrollTop - position.scrollTop) <= 1 ? undefined : this.viewContainer.scrollTop;
 
-			if (scrollLeft !== undefined || scrollTop !== undefined) {
-				this.scrollableElement.setScrollPosition({ scrollLeft, scrollTop });
-			}
-		}));
+				if (scrollLeft !== undefined || scrollTop !== undefined) {
+					this.scrollableElement.setScrollPosition({ scrollLeft, scrollTop });
+				}
+			})
+		);
 
 		this.onDidScroll = this.scrollableElement.onScroll;
-		this._register(this.onDidScroll(e => {
-			if (e.scrollTopChanged) {
-				this.viewContainer.scrollTop = e.scrollTop;
-			}
+		this._register(
+			this.onDidScroll(e => {
+				if (e.scrollTopChanged) {
+					this.viewContainer.scrollTop = e.scrollTop;
+				}
 
-			if (e.scrollLeftChanged) {
-				this.viewContainer.scrollLeft = e.scrollLeft;
-			}
-		}));
+				if (e.scrollLeftChanged) {
+					this.viewContainer.scrollLeft = e.scrollLeft;
+				}
+			})
+		);
 
 		append(this.el, this.scrollableElement.getDomNode());
 
@@ -622,7 +676,10 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 		if (options.descriptor) {
 			this.size = options.descriptor.size;
 			options.descriptor.views.forEach((viewDescriptor, index) => {
-				const sizing = types.isUndefined(viewDescriptor.visible) || viewDescriptor.visible ? viewDescriptor.size : { type: 'invisible', cachedVisibleSize: viewDescriptor.size } satisfies InvisibleSizing;
+				const sizing =
+					types.isUndefined(viewDescriptor.visible) || viewDescriptor.visible
+						? viewDescriptor.size
+						: ({ type: 'invisible', cachedVisibleSize: viewDescriptor.size } satisfies InvisibleSizing);
 
 				const view = viewDescriptor.view;
 				this.doAddView(view, sizing, index, true);
@@ -709,7 +766,6 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 			const result = viewItemToRemove.view;
 			viewItemToRemove.dispose();
 			return result;
-
 		} finally {
 			this.state = State.Idle;
 		}
@@ -737,7 +793,6 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 
 			this.relayout();
 			return viewItems.map(i => i.view);
-
 		} finally {
 			this.state = State.Idle;
 		}
@@ -755,11 +810,11 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 		}
 
 		const cachedVisibleSize = this.getViewCachedVisibleSize(from);
-		const sizing = typeof cachedVisibleSize === 'undefined' ? this.getViewSize(from) : Sizing.Invisible(cachedVisibleSize);
+		const sizing =
+			typeof cachedVisibleSize === 'undefined' ? this.getViewSize(from) : Sizing.Invisible(cachedVisibleSize);
 		const view = this.removeView(from);
 		this.addView(view, sizing, to);
 	}
-
 
 	/**
 	 * Swap two {@link IView views}.
@@ -868,7 +923,7 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 				const proportion = this.proportions[i];
 
 				if (typeof proportion === 'number' && total > 0) {
-					item.size = clamp(Math.round(proportion * size / total), item.minimumSize, item.maximumSize);
+					item.size = clamp(Math.round((proportion * size) / total), item.minimumSize, item.maximumSize);
 				}
 			}
 		}
@@ -879,7 +934,9 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 
 	private saveProportions(): void {
 		if (this.proportionalLayout && this._contentSize > 0) {
-			this.proportions = this.viewItems.map(v => v.proportionalLayout && v.visible ? v.size / this._contentSize : undefined);
+			this.proportions = this.viewItems.map(v =>
+				v.proportionalLayout && v.visible ? v.size / this._contentSize : undefined
+			);
 		}
 	}
 
@@ -892,8 +949,12 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 
 		// This way, we can press Alt while we resize a sash, macOS style!
 		const disposable = combinedDisposable(
-			addDisposableListener(this.el.ownerDocument.body, 'keydown', e => resetSashDragState(this.sashDragState!.current, e.altKey)),
-			addDisposableListener(this.el.ownerDocument.body, 'keyup', () => resetSashDragState(this.sashDragState!.current, false))
+			addDisposableListener(this.el.ownerDocument.body, 'keydown', e =>
+				resetSashDragState(this.sashDragState!.current, e.altKey)
+			),
+			addDisposableListener(this.el.ownerDocument.body, 'keyup', () =>
+				resetSashDragState(this.sashDragState!.current, false)
+			)
 		);
 
 		const resetSashDragState = (start: number, alt: boolean) => {
@@ -930,8 +991,14 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 				const downIndexes = range(index + 1, this.viewItems.length);
 				const minDeltaUp = upIndexes.reduce((r, i) => r + (this.viewItems[i].minimumSize - sizes[i]), 0);
 				const maxDeltaUp = upIndexes.reduce((r, i) => r + (this.viewItems[i].viewMaximumSize - sizes[i]), 0);
-				const maxDeltaDown = downIndexes.length === 0 ? Number.POSITIVE_INFINITY : downIndexes.reduce((r, i) => r + (sizes[i] - this.viewItems[i].minimumSize), 0);
-				const minDeltaDown = downIndexes.length === 0 ? Number.NEGATIVE_INFINITY : downIndexes.reduce((r, i) => r + (sizes[i] - this.viewItems[i].viewMaximumSize), 0);
+				const maxDeltaDown =
+					downIndexes.length === 0
+						? Number.POSITIVE_INFINITY
+						: downIndexes.reduce((r, i) => r + (sizes[i] - this.viewItems[i].minimumSize), 0);
+				const minDeltaDown =
+					downIndexes.length === 0
+						? Number.NEGATIVE_INFINITY
+						: downIndexes.reduce((r, i) => r + (sizes[i] - this.viewItems[i].viewMaximumSize), 0);
 				const minDelta = Math.max(minDeltaUp, minDeltaDown);
 				const maxDelta = Math.min(maxDeltaDown, maxDeltaUp);
 				const snapBeforeIndex = this.findFirstSnapIndex(upIndexes);
@@ -960,7 +1027,18 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 				}
 			}
 
-			this.sashDragState = { start, current: start, index, sizes, minDelta, maxDelta, alt, snapBefore, snapAfter, disposable };
+			this.sashDragState = {
+				start,
+				current: start,
+				index,
+				sizes,
+				minDelta,
+				maxDelta,
+				alt,
+				snapBefore,
+				snapAfter,
+				disposable
+			};
 		};
 
 		resetSashDragState(start, alt);
@@ -1152,9 +1230,10 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 				}
 			}
 
-			const item = this.orientation === Orientation.VERTICAL
-				? new VerticalViewItem(container, view, viewSize, disposable)
-				: new HorizontalViewItem(container, view, viewSize, disposable);
+			const item =
+				this.orientation === Orientation.VERTICAL
+					? new VerticalViewItem(container, view, viewSize, disposable)
+					: new HorizontalViewItem(container, view, viewSize, disposable);
 
 			this.viewItems.splice(index, 0, item);
 
@@ -1162,13 +1241,29 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 			if (this.viewItems.length > 1) {
 				const opts = { orthogonalStartSash: this.orthogonalStartSash, orthogonalEndSash: this.orthogonalEndSash };
 
-				const sash = this.orientation === Orientation.VERTICAL
-					? new Sash(this.sashContainer, { getHorizontalSashTop: s => this.getSashPosition(s), getHorizontalSashWidth: this.getSashOrthogonalSize }, { ...opts, orientation: Orientation.HORIZONTAL })
-					: new Sash(this.sashContainer, { getVerticalSashLeft: s => this.getSashPosition(s), getVerticalSashHeight: this.getSashOrthogonalSize }, { ...opts, orientation: Orientation.VERTICAL });
+				const sash =
+					this.orientation === Orientation.VERTICAL
+						? new Sash(
+								this.sashContainer,
+								{
+									getHorizontalSashTop: s => this.getSashPosition(s),
+									getHorizontalSashWidth: this.getSashOrthogonalSize
+								},
+								{ ...opts, orientation: Orientation.HORIZONTAL }
+							)
+						: new Sash(
+								this.sashContainer,
+								{
+									getVerticalSashLeft: s => this.getSashPosition(s),
+									getVerticalSashHeight: this.getSashOrthogonalSize
+								},
+								{ ...opts, orientation: Orientation.VERTICAL }
+							);
 
-				const sashEventMapper = this.orientation === Orientation.VERTICAL
-					? (e: IBaseSashEvent) => ({ sash, start: e.startY, current: e.currentY, alt: e.altKey })
-					: (e: IBaseSashEvent) => ({ sash, start: e.startX, current: e.currentX, alt: e.altKey });
+				const sashEventMapper =
+					this.orientation === Orientation.VERTICAL
+						? (e: IBaseSashEvent) => ({ sash, start: e.startY, current: e.currentY, alt: e.altKey })
+						: (e: IBaseSashEvent) => ({ sash, start: e.startX, current: e.currentX, alt: e.altKey });
 
 				const onStart = Event.map(sash.onDidStart, sashEventMapper);
 				const onStartDisposable = onStart(this.onSashStart, this);
@@ -1195,7 +1290,13 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 					this._onDidSashReset.fire(index);
 				});
 
-				const disposable = combinedDisposable(onStartDisposable, onChangeDisposable, onEndDisposable, onDidResetDisposable, sash);
+				const disposable = combinedDisposable(
+					onStartDisposable,
+					onChangeDisposable,
+					onEndDisposable,
+					onDidResetDisposable,
+					sash
+				);
 				const sashItem: ISashItem = { sash, disposable };
 
 				this.sashItems.splice(index - 1, 0, sashItem);
@@ -1213,11 +1314,9 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 				this.relayout([index], highPriorityIndexes);
 			}
 
-
 			if (!skipLayout && typeof size !== 'number' && size.type === 'distribute') {
 				this.distributeViewSizes();
 			}
-
 		} finally {
 			this.state = State.Idle;
 		}
@@ -1272,8 +1371,14 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 
 		const minDeltaUp = upIndexes.reduce((r, i) => r + (this.viewItems[i].minimumSize - sizes[i]), 0);
 		const maxDeltaUp = upIndexes.reduce((r, i) => r + (this.viewItems[i].maximumSize - sizes[i]), 0);
-		const maxDeltaDown = downIndexes.length === 0 ? Number.POSITIVE_INFINITY : downIndexes.reduce((r, i) => r + (sizes[i] - this.viewItems[i].minimumSize), 0);
-		const minDeltaDown = downIndexes.length === 0 ? Number.NEGATIVE_INFINITY : downIndexes.reduce((r, i) => r + (sizes[i] - this.viewItems[i].maximumSize), 0);
+		const maxDeltaDown =
+			downIndexes.length === 0
+				? Number.POSITIVE_INFINITY
+				: downIndexes.reduce((r, i) => r + (sizes[i] - this.viewItems[i].minimumSize), 0);
+		const minDeltaDown =
+			downIndexes.length === 0
+				? Number.NEGATIVE_INFINITY
+				: downIndexes.reduce((r, i) => r + (sizes[i] - this.viewItems[i].maximumSize), 0);
 		const minDelta = Math.max(minDeltaUp, minDeltaDown, overloadMinDelta);
 		const maxDelta = Math.min(maxDeltaDown, maxDeltaUp, overloadMaxDelta);
 
@@ -1294,7 +1399,15 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 		}
 
 		if (snapped) {
-			return this.resize(index, delta, sizes, lowPriorityIndexes, highPriorityIndexes, overloadMinDelta, overloadMaxDelta);
+			return this.resize(
+				index,
+				delta,
+				sizes,
+				lowPriorityIndexes,
+				highPriorityIndexes,
+				overloadMinDelta,
+				overloadMaxDelta
+			);
 		}
 
 		delta = clamp(delta, minDelta, maxDelta);
@@ -1384,17 +1497,17 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 
 	private updateSashEnablement(): void {
 		let previous = false;
-		const collapsesDown = this.viewItems.map(i => previous = (i.size - i.minimumSize > 0) || previous);
+		const collapsesDown = this.viewItems.map(i => (previous = i.size - i.minimumSize > 0 || previous));
 
 		previous = false;
-		const expandsDown = this.viewItems.map(i => previous = (i.maximumSize - i.size > 0) || previous);
+		const expandsDown = this.viewItems.map(i => (previous = i.maximumSize - i.size > 0 || previous));
 
 		const reverseViews = [...this.viewItems].reverse();
 		previous = false;
-		const collapsesUp = reverseViews.map(i => previous = (i.size - i.minimumSize > 0) || previous).reverse();
+		const collapsesUp = reverseViews.map(i => (previous = i.size - i.minimumSize > 0 || previous)).reverse();
 
 		previous = false;
-		const expandsUp = reverseViews.map(i => previous = (i.maximumSize - i.size > 0) || previous).reverse();
+		const expandsUp = reverseViews.map(i => (previous = i.maximumSize - i.size > 0 || previous)).reverse();
 
 		let position = 0;
 		for (let index = 0; index < this.sashItems.length; index++) {
@@ -1476,7 +1589,8 @@ export class SplitView<TLayoutContext = undefined, TView extends IView<TLayoutCo
 	}
 
 	private areViewsDistributed() {
-		let min = undefined, max = undefined;
+		let min = undefined,
+			max = undefined;
 
 		for (const view of this.viewItems) {
 			min = min === undefined ? view.size : Math.min(min, view.size);

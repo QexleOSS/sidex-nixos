@@ -26,7 +26,6 @@ import { IUserDataProfileService } from '../../userDataProfile/common/userDataPr
 import { ILogService } from '../../../../platform/log/common/log.js';
 
 export class BrowserWorkspaceEditingService extends AbstractWorkspaceEditingService {
-
 	constructor(
 		@IJSONEditingService jsonEditingService: IJSONEditingService,
 		@IWorkspaceContextService contextService: WorkspaceService,
@@ -44,16 +43,33 @@ export class BrowserWorkspaceEditingService extends AbstractWorkspaceEditingServ
 		@IWorkspaceTrustManagementService workspaceTrustManagementService: IWorkspaceTrustManagementService,
 		@IUserDataProfilesService userDataProfilesService: IUserDataProfilesService,
 		@IUserDataProfileService userDataProfileService: IUserDataProfileService,
-		@ILogService logService: ILogService,
+		@ILogService logService: ILogService
 	) {
-		super(jsonEditingService, contextService, configurationService, notificationService, commandService, fileService, textFileService, workspacesService, environmentService, fileDialogService, dialogService, hostService, uriIdentityService, workspaceTrustManagementService, userDataProfilesService, userDataProfileService, logService);
+		super(
+			jsonEditingService,
+			contextService,
+			configurationService,
+			notificationService,
+			commandService,
+			fileService,
+			textFileService,
+			workspacesService,
+			environmentService,
+			fileDialogService,
+			dialogService,
+			hostService,
+			uriIdentityService,
+			workspaceTrustManagementService,
+			userDataProfilesService,
+			userDataProfileService,
+			logService
+		);
 	}
 
 	async enterWorkspace(workspaceUri: URI): Promise<void> {
 		const oldWorkspace = toWorkspaceIdentifier(this.contextService.getWorkspace());
 		const result = await this.doEnterWorkspace(workspaceUri);
 		if (result) {
-
 			// Fire event to allow participants to join
 			// and possibly migrate data into this workspace
 			await this.fireDidEnterWorkspace(oldWorkspace, result.workspace);

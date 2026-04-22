@@ -6,13 +6,26 @@
 import { Emitter } from '../../../../base/common/event.js';
 import { Barrier } from '../../../../base/common/async.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
-import { ILifecycleService, WillShutdownEvent, StartupKind, LifecyclePhase, LifecyclePhaseToString, ShutdownReason, BeforeShutdownErrorEvent, InternalBeforeShutdownEvent } from './lifecycle.js';
+import {
+	ILifecycleService,
+	WillShutdownEvent,
+	StartupKind,
+	LifecyclePhase,
+	LifecyclePhaseToString,
+	ShutdownReason,
+	BeforeShutdownErrorEvent,
+	InternalBeforeShutdownEvent
+} from './lifecycle.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { mark } from '../../../../base/common/performance.js';
-import { IStorageService, StorageScope, StorageTarget, WillSaveStateReason } from '../../../../platform/storage/common/storage.js';
+import {
+	IStorageService,
+	StorageScope,
+	StorageTarget,
+	WillSaveStateReason
+} from '../../../../platform/storage/common/storage.js';
 
 export abstract class AbstractLifecycleService extends Disposable implements ILifecycleService {
-
 	private static readonly LAST_SHUTDOWN_REASON_KEY = 'lifecyle.lastShutdownReason';
 
 	declare readonly _serviceBrand: undefined;
@@ -33,13 +46,19 @@ export abstract class AbstractLifecycleService extends Disposable implements ILi
 	readonly onShutdownVeto = this._onShutdownVeto.event;
 
 	private _startupKind: StartupKind;
-	get startupKind(): StartupKind { return this._startupKind; }
+	get startupKind(): StartupKind {
+		return this._startupKind;
+	}
 
 	private _phase = LifecyclePhase.Starting;
-	get phase(): LifecyclePhase { return this._phase; }
+	get phase(): LifecyclePhase {
+		return this._phase;
+	}
 
 	protected _willShutdown = false;
-	get willShutdown(): boolean { return this._willShutdown; }
+	get willShutdown(): boolean {
+		return this._willShutdown;
+	}
 
 	private readonly phaseWhen = new Map<LifecyclePhase, Barrier>();
 
@@ -55,11 +74,18 @@ export abstract class AbstractLifecycleService extends Disposable implements ILi
 		this._startupKind = this.resolveStartupKind();
 
 		// Save shutdown reason to retrieve on next startup
-		this._register(this.storageService.onWillSaveState(e => {
-			if (e.reason === WillSaveStateReason.SHUTDOWN) {
-				this.storageService.store(AbstractLifecycleService.LAST_SHUTDOWN_REASON_KEY, this.shutdownReason, StorageScope.WORKSPACE, StorageTarget.MACHINE);
-			}
-		}));
+		this._register(
+			this.storageService.onWillSaveState(e => {
+				if (e.reason === WillSaveStateReason.SHUTDOWN) {
+					this.storageService.store(
+						AbstractLifecycleService.LAST_SHUTDOWN_REASON_KEY,
+						this.shutdownReason,
+						StorageScope.WORKSPACE,
+						StorageTarget.MACHINE
+					);
+				}
+			})
+		);
 	}
 
 	private resolveStartupKind(): StartupKind {
@@ -70,9 +96,11 @@ export abstract class AbstractLifecycleService extends Disposable implements ILi
 	}
 
 	protected doResolveStartupKind(): StartupKind | undefined {
-
 		// Retrieve and reset last shutdown reason
-		const lastShutdownReason = this.storageService.getNumber(AbstractLifecycleService.LAST_SHUTDOWN_REASON_KEY, StorageScope.WORKSPACE);
+		const lastShutdownReason = this.storageService.getNumber(
+			AbstractLifecycleService.LAST_SHUTDOWN_REASON_KEY,
+			StorageScope.WORKSPACE
+		);
 		this.storageService.remove(AbstractLifecycleService.LAST_SHUTDOWN_REASON_KEY, StorageScope.WORKSPACE);
 
 		// Convert into startup kind

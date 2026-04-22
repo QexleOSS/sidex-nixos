@@ -9,13 +9,19 @@ import { Range } from '../../../../common/core/range.js';
 import { ITextModel, EndOfLinePreference } from '../../../../common/model.js';
 import { singleTextRemoveCommonPrefix } from './singleTextEditHelpers.js';
 
-export function inlineCompletionIsVisible(singleTextEdit: TextReplacement, originalRange: Range | undefined, model: ITextModel, cursorPosition: Position): boolean {
+export function inlineCompletionIsVisible(
+	singleTextEdit: TextReplacement,
+	originalRange: Range | undefined,
+	model: ITextModel,
+	cursorPosition: Position
+): boolean {
 	const minimizedReplacement = singleTextRemoveCommonPrefix(singleTextEdit, model);
 	const editRange = singleTextEdit.range;
-	if (!editRange
-		|| (originalRange && !originalRange.getStartPosition().equals(editRange.getStartPosition()))
-		|| cursorPosition.lineNumber !== minimizedReplacement.range.startLineNumber
-		|| minimizedReplacement.isEmpty // if the completion is empty after removing the common prefix of the completion and the model, the completion item would not be visible
+	if (
+		!editRange ||
+		(originalRange && !originalRange.getStartPosition().equals(editRange.getStartPosition())) ||
+		cursorPosition.lineNumber !== minimizedReplacement.range.startLineNumber ||
+		minimizedReplacement.isEmpty // if the completion is empty after removing the common prefix of the completion and the model, the completion item would not be visible
 	) {
 		return false;
 	}
@@ -45,6 +51,5 @@ export function inlineCompletionIsVisible(singleTextEdit: TextReplacement, origi
 		}
 	}
 
-	return filterTextBefore.startsWith(originalValueBefore)
-		&& !!matchesSubString(originalValueAfter, filterTextAfter);
+	return filterTextBefore.startsWith(originalValueBefore) && !!matchesSubString(originalValueAfter, filterTextAfter);
 }

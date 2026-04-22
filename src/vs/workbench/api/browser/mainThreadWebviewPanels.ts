@@ -14,10 +14,24 @@ import { DiffEditorInput } from '../../common/editor/diffEditorInput.js';
 import { EditorInput } from '../../common/editor/editorInput.js';
 import { ExtensionKeyedWebviewOriginStore, WebviewOptions } from '../../contrib/webview/browser/webview.js';
 import { WebviewIconPath, WebviewInput } from '../../contrib/webviewPanel/browser/webviewEditorInput.js';
-import { IWebViewShowOptions, IWebviewWorkbenchService } from '../../contrib/webviewPanel/browser/webviewWorkbenchService.js';
+import {
+	IWebViewShowOptions,
+	IWebviewWorkbenchService
+} from '../../contrib/webviewPanel/browser/webviewWorkbenchService.js';
 import { editorGroupToColumn } from '../../services/editor/common/editorGroupColumn.js';
-import { GroupLocation, GroupsOrder, IEditorGroup, IEditorGroupsService, preferredSideBySideGroupDirection } from '../../services/editor/common/editorGroupsService.js';
-import { ACTIVE_GROUP, IEditorService, PreferredGroup, SIDE_GROUP } from '../../services/editor/common/editorService.js';
+import {
+	GroupLocation,
+	GroupsOrder,
+	IEditorGroup,
+	IEditorGroupsService,
+	preferredSideBySideGroupDirection
+} from '../../services/editor/common/editorGroupsService.js';
+import {
+	ACTIVE_GROUP,
+	IEditorService,
+	PreferredGroup,
+	SIDE_GROUP
+} from '../../services/editor/common/editorService.js';
 import { IExtensionService } from '../../services/extensions/common/extensions.js';
 import { IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
 import * as extHostProtocol from '../common/extHost.protocol.js';
@@ -62,23 +76,18 @@ class WebviewInputStore {
 }
 
 class WebviewViewTypeTransformer {
-	public constructor(
-		public readonly prefix: string,
-	) { }
+	public constructor(public readonly prefix: string) {}
 
 	public fromExternal(viewType: string): string {
 		return this.prefix + viewType;
 	}
 
 	public toExternal(viewType: string): string | undefined {
-		return viewType.startsWith(this.prefix)
-			? viewType.substr(this.prefix.length)
-			: undefined;
+		return viewType.startsWith(this.prefix) ? viewType.substr(this.prefix.length) : undefined;
 	}
 }
 
 export class MainThreadWebviewPanels extends Disposable implements extHostProtocol.MainThreadWebviewPanelsShape {
-
 	private readonly webviewPanelViewType = new WebviewViewTypeTransformer('mainThreadWebview-');
 
 	private readonly _proxy: extHostProtocol.ExtHostWebviewPanelsShape;
@@ -97,7 +106,7 @@ export class MainThreadWebviewPanels extends Disposable implements extHostProtoc
 		@IEditorService private readonly _editorService: IEditorService,
 		@IExtensionService extensionService: IExtensionService,
 		@IStorageService storageService: IStorageService,
-		@IWebviewWorkbenchService private readonly _webviewWorkbenchService: IWebviewWorkbenchService,
+		@IWebviewWorkbenchService private readonly _webviewWorkbenchService: IWebviewWorkbenchService
 	) {
 		super();
 
@@ -105,37 +114,51 @@ export class MainThreadWebviewPanels extends Disposable implements extHostProtoc
 
 		this._proxy = context.getProxy(extHostProtocol.ExtHostContext.ExtHostWebviewPanels);
 
-		this._register(Event.any(
-			_editorService.onDidActiveEditorChange,
-			_editorService.onDidVisibleEditorsChange,
-			_editorGroupService.onDidAddGroup,
-			_editorGroupService.onDidRemoveGroup,
-			_editorGroupService.onDidMoveGroup,
-		)(() => {
-			this.updateWebviewViewStates(this._editorService.activeEditor);
-		}));
+		this._register(
+			Event.any(
+				_editorService.onDidActiveEditorChange,
+				_editorService.onDidVisibleEditorsChange,
+				_editorGroupService.onDidAddGroup,
+				_editorGroupService.onDidRemoveGroup,
+				_editorGroupService.onDidMoveGroup
+			)(() => {
+				this.updateWebviewViewStates(this._editorService.activeEditor);
+			})
+		);
 
-		this._register(_webviewWorkbenchService.onDidChangeActiveWebviewEditor(input => {
-			this.updateWebviewViewStates(input);
-		}));
+		this._register(
+			_webviewWorkbenchService.onDidChangeActiveWebviewEditor(input => {
+				this.updateWebviewViewStates(input);
+			})
+		);
 
 		// This reviver's only job is to activate extensions.
 		// This should trigger the real reviver to be registered from the extension host side.
-		this._register(_webviewWorkbenchService.registerResolver({
-			canResolve: (webview: WebviewInput) => {
-				const viewType = this.webviewPanelViewType.toExternal(webview.viewType);
-				if (typeof viewType === 'string') {
-					extensionService.activateByEvent(`onWebviewPanel:${viewType}`);
+		this._register(
+			_webviewWorkbenchService.registerResolver({
+				canResolve: (webview: WebviewInput) => {
+					const viewType = this.webviewPanelViewType.toExternal(webview.viewType);
+					if (typeof viewType === 'string') {
+						extensionService.activateByEvent(`onWebviewPanel:${viewType}`);
+					}
+					return false;
+				},
+				resolveWebview: () => {
+					throw new Error('not implemented');
 				}
-				return false;
-			},
-			resolveWebview: () => { throw new Error('not implemented'); }
-		}));
+			})
+		);
 	}
 
-	public get webviewInputs(): Iterable<WebviewInput> { return this._webviewInputs; }
+	public get webviewInputs(): Iterable<WebviewInput> {
+		return this._webviewInputs;
+	}
 
-	public addWebviewInput(handle: extHostProtocol.WebviewHandle, input: WebviewInput, options: { serializeBuffersForPostMessage: boolean }): void {
+	public addWebviewInput(
+		handle: extHostProtocol.WebviewHandle,
+		input: WebviewInput,
+		options: { serializeBuffersForPostMessage: boolean }
+	): void {
 		this._webviewInputs.add(handle, input);
 		this._mainThreadWebviews.addWebview(handle, input.webview, options);
 
@@ -153,25 +176,33 @@ export class MainThreadWebviewPanels extends Disposable implements extHostProtoc
 		handle: extHostProtocol.WebviewHandle,
 		viewType: string,
 		initData: extHostProtocol.IWebviewInitData,
-		showOptions: extHostProtocol.WebviewPanelShowOptions,
+		showOptions: extHostProtocol.WebviewPanelShowOptions
 	): void {
 		const targetGroup = this.getTargetGroupFromShowOptions(showOptions);
-		const mainThreadShowOptions: IWebViewShowOptions = showOptions ? {
-			preserveFocus: !!showOptions.preserveFocus,
-			group: targetGroup
-		} : {};
+		const mainThreadShowOptions: IWebViewShowOptions = showOptions
+			? {
+					preserveFocus: !!showOptions.preserveFocus,
+					group: targetGroup
+				}
+			: {};
 
 		const extension = reviveWebviewExtension(extensionData);
 		const origin = this.webviewOriginStore.getOrigin(viewType, extension.id);
 
-		const webview = this._webviewWorkbenchService.openWebview({
-			origin,
-			providedViewType: viewType,
-			title: initData.title,
-			options: reviveWebviewOptions(initData.panelOptions),
-			contentOptions: reviveWebviewContentOptions(initData.webviewOptions),
-			extension
-		}, this.webviewPanelViewType.fromExternal(viewType), initData.title, undefined, mainThreadShowOptions);
+		const webview = this._webviewWorkbenchService.openWebview(
+			{
+				origin,
+				providedViewType: viewType,
+				title: initData.title,
+				options: reviveWebviewOptions(initData.panelOptions),
+				contentOptions: reviveWebviewContentOptions(initData.webviewOptions),
+				extension
+			},
+			this.webviewPanelViewType.fromExternal(viewType),
+			initData.title,
+			undefined,
+			mainThreadShowOptions
+		);
 
 		this.addWebviewInput(handle, webview, { serializeBuffersForPostMessage: initData.serializeBuffersForPostMessage });
 	}
@@ -188,7 +219,10 @@ export class MainThreadWebviewPanels extends Disposable implements extHostProtoc
 		this.tryGetWebviewInput(handle)?.setWebviewTitle(value);
 	}
 
-	public $setIconPath(handle: extHostProtocol.WebviewHandle, value: extHostProtocol.IWebviewIconPath | undefined): void {
+	public $setIconPath(
+		handle: extHostProtocol.WebviewHandle,
+		value: extHostProtocol.IWebviewIconPath | undefined
+	): void {
 		const webview = this.tryGetWebviewInput(handle);
 		if (webview) {
 			webview.iconPath = reviveWebviewIcon(value);
@@ -206,9 +240,10 @@ export class MainThreadWebviewPanels extends Disposable implements extHostProtoc
 	}
 
 	private getTargetGroupFromShowOptions(showOptions: extHostProtocol.WebviewPanelShowOptions): PreferredGroup {
-		if (typeof showOptions.viewColumn === 'undefined'
-			|| showOptions.viewColumn === ACTIVE_GROUP
-			|| (this._editorGroupService.count === 1 && this._editorGroupService.activeGroup.isEmpty)
+		if (
+			typeof showOptions.viewColumn === 'undefined' ||
+			showOptions.viewColumn === ACTIVE_GROUP ||
+			(this._editorGroupService.count === 1 && this._editorGroupService.activeGroup.isEmpty)
 		) {
 			return ACTIVE_GROUP;
 		}
@@ -244,44 +279,54 @@ export class MainThreadWebviewPanels extends Disposable implements extHostProtoc
 			throw new Error(`Reviver for ${viewType} already registered`);
 		}
 
-		this._revivers.set(viewType, this._webviewWorkbenchService.registerResolver({
-			canResolve: (webviewInput) => {
-				return webviewInput.viewType === this.webviewPanelViewType.fromExternal(viewType);
-			},
-			resolveWebview: async (webviewInput): Promise<void> => {
-				const viewType = this.webviewPanelViewType.toExternal(webviewInput.viewType);
-				if (!viewType) {
-					webviewInput.webview.setHtml(this._mainThreadWebviews.getWebviewResolvedFailedContent(webviewInput.viewType));
-					return;
-				}
+		this._revivers.set(
+			viewType,
+			this._webviewWorkbenchService.registerResolver({
+				canResolve: webviewInput => {
+					return webviewInput.viewType === this.webviewPanelViewType.fromExternal(viewType);
+				},
+				resolveWebview: async (webviewInput): Promise<void> => {
+					const viewType = this.webviewPanelViewType.toExternal(webviewInput.viewType);
+					if (!viewType) {
+						webviewInput.webview.setHtml(
+							this._mainThreadWebviews.getWebviewResolvedFailedContent(webviewInput.viewType)
+						);
+						return;
+					}
 
-				const handle = generateUuid();
+					const handle = generateUuid();
 
-				this.addWebviewInput(handle, webviewInput, options);
+					this.addWebviewInput(handle, webviewInput, options);
 
-				let state = undefined;
-				if (webviewInput.webview.state) {
+					let state = undefined;
+					if (webviewInput.webview.state) {
+						try {
+							state = JSON.parse(webviewInput.webview.state);
+						} catch (e) {
+							console.error('Could not load webview state', e, webviewInput.webview.state);
+						}
+					}
+
 					try {
-						state = JSON.parse(webviewInput.webview.state);
-					} catch (e) {
-						console.error('Could not load webview state', e, webviewInput.webview.state);
+						await this._proxy.$deserializeWebviewPanel(
+							handle,
+							viewType,
+							{
+								title: webviewInput.getTitle(),
+								state,
+								panelOptions: webviewInput.webview.options,
+								webviewOptions: webviewInput.webview.contentOptions,
+								active: webviewInput === this._editorService.activeEditor
+							},
+							editorGroupToColumn(this._editorGroupService, webviewInput.group || 0)
+						);
+					} catch (error) {
+						onUnexpectedError(error);
+						webviewInput.webview.setHtml(this._mainThreadWebviews.getWebviewResolvedFailedContent(viewType));
 					}
 				}
-
-				try {
-					await this._proxy.$deserializeWebviewPanel(handle, viewType, {
-						title: webviewInput.getTitle(),
-						state,
-						panelOptions: webviewInput.webview.options,
-						webviewOptions: webviewInput.webview.contentOptions,
-						active: webviewInput === this._editorService.activeEditor,
-					}, editorGroupToColumn(this._editorGroupService, webviewInput.group || 0));
-				} catch (error) {
-					onUnexpectedError(error);
-					webviewInput.webview.setHtml(this._mainThreadWebviews.getWebviewResolvedFailedContent(viewType));
-				}
-			}
-		}));
+			})
+		);
 	}
 
 	public $unregisterSerializer(viewType: string): void {
@@ -311,7 +356,7 @@ export class MainThreadWebviewPanels extends Disposable implements extHostProtoc
 				viewStates[handle] = {
 					visible: topLevelInput === group.activeEditor,
 					active: editorInput === activeEditorInput,
-					position: editorGroupToColumn(this._editorGroupService, group.id),
+					position: editorGroupToColumn(this._editorGroupService, group.id)
 				};
 			}
 		};
@@ -348,13 +393,13 @@ function reviveWebviewIcon(value: extHostProtocol.IWebviewIconPath | undefined):
 
 	return {
 		light: URI.revive(value.light),
-		dark: URI.revive(value.dark),
+		dark: URI.revive(value.dark)
 	};
 }
 
 function reviveWebviewOptions(panelOptions: extHostProtocol.IWebviewPanelOptions): WebviewOptions {
 	return {
 		enableFindWidget: panelOptions.enableFindWidget,
-		retainContextWhenHidden: panelOptions.retainContextWhenHidden,
+		retainContextWhenHidden: panelOptions.retainContextWhenHidden
 	};
 }

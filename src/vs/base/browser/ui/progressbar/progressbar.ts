@@ -16,7 +16,7 @@ const CSS_ACTIVE = 'active';
 const CSS_INFINITE = 'infinite';
 const CSS_INFINITE_LONG_RUNNING = 'infinite-long-running';
 const CSS_DISCRETE = 'discrete';
-const NLS_PROGRESS_LABEL = localize('progress', "Progress");
+const NLS_PROGRESS_LABEL = localize('progress', 'Progress');
 
 export interface IProgressBarOptions extends IProgressBarStyles {
 	ariaLabel?: string;
@@ -34,7 +34,6 @@ export const unthemedProgressBarOptions: IProgressBarOptions = {
  * A progress bar with support for infinite or discrete progress.
  */
 export class ProgressBar extends Disposable {
-
 	/**
 	 * After a certain time of showing the progress bar, switch
 	 * to long-running mode and throttle animations to reduce
@@ -61,7 +60,9 @@ export class ProgressBar extends Disposable {
 		this.workedVal = 0;
 
 		this.showDelayedScheduler = this._register(new RunOnceScheduler(() => show(this.element), 0));
-		this.longRunningScheduler = this._register(new RunOnceScheduler(() => this.infiniteLongRunning(), ProgressBar.LONG_RUNNING_INFINITE_THRESHOLD));
+		this.longRunningScheduler = this._register(
+			new RunOnceScheduler(() => this.infiniteLongRunning(), ProgressBar.LONG_RUNNING_INFINITE_THRESHOLD)
+		);
 
 		this.create(container, options);
 	}
@@ -71,7 +72,10 @@ export class ProgressBar extends Disposable {
 		this.element.classList.add('monaco-progress-container');
 		this.element.setAttribute('role', 'progressbar');
 		this.element.setAttribute('aria-valuemin', '0');
-		this.element.setAttribute('aria-label', options?.ariaLabel && options.ariaLabel.trim() ? options.ariaLabel : NLS_PROGRESS_LABEL);
+		this.element.setAttribute(
+			'aria-label',
+			options?.ariaLabel && options.ariaLabel.trim() ? options.ariaLabel : NLS_PROGRESS_LABEL
+		);
 		container.appendChild(this.element);
 
 		this.bit = document.createElement('div');
@@ -199,7 +203,7 @@ export class ProgressBar extends Disposable {
 		this.element.classList.add(CSS_ACTIVE, CSS_DISCRETE);
 		this.element.setAttribute('aria-valuenow', value.toString());
 
-		this.bit.style.width = 100 * (this.workedVal / (totalWork)) + '%';
+		this.bit.style.width = 100 * (this.workedVal / totalWork) + '%';
 
 		return this;
 	}

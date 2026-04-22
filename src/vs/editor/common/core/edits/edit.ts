@@ -7,11 +7,11 @@ import { sumBy } from '../../../../base/common/arrays.js';
 import { BugIndicatingError } from '../../../../base/common/errors.js';
 import { OffsetRange } from '../ranges/offsetRange.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export abstract class BaseEdit<T extends BaseReplacement<T> = BaseReplacement<any>, TEdit extends BaseEdit<T, TEdit> = BaseEdit<T, any>> {
-	constructor(
-		public readonly replacements: readonly T[],
-	) {
+export abstract class BaseEdit<
+	T extends BaseReplacement<T> = BaseReplacement<any>,
+	TEdit extends BaseEdit<T, TEdit> = BaseEdit<T, any>
+> {
+	constructor(public readonly replacements: readonly T[]) {
 		let lastEndEx = -1;
 		for (const replacement of replacements) {
 			if (!(replacement.replaceRange.start >= lastEndEx)) {
@@ -27,7 +27,7 @@ export abstract class BaseEdit<T extends BaseReplacement<T> = BaseReplacement<an
 	 * Returns true if and only if this edit and the given edit are structurally equal.
 	 * Note that this does not mean that the edits have the same effect on a given input!
 	 * See `.normalize()` or `.normalizeOnBase(base)` for that.
-	*/
+	 */
 	public equals(other: TEdit): boolean {
 		if (this.replacements.length !== other.replacements.length) {
 			return false;
@@ -102,8 +102,12 @@ export abstract class BaseEdit<T extends BaseReplacement<T> = BaseReplacement<an
 		const edits1 = this.normalize();
 		const edits2 = other.normalize();
 
-		if (edits1.isEmpty()) { return edits2; }
-		if (edits2.isEmpty()) { return edits1; }
+		if (edits1.isEmpty()) {
+			return edits2;
+		}
+		if (edits2.isEmpty()) {
+			return edits1;
+		}
 
 		const edit1Queue = [...edits1.replacements];
 		const result: T[] = [];
@@ -146,17 +150,23 @@ export abstract class BaseEdit<T extends BaseReplacement<T> = BaseReplacement<an
 			if (!firstIntersecting) {
 				result.push(r2.delta(-edit1ToEdit2));
 			} else {
-				const newReplaceRangeStart = Math.min(firstIntersecting.replaceRange.start, r2.replaceRange.start - firstEdit1ToEdit2);
+				const newReplaceRangeStart = Math.min(
+					firstIntersecting.replaceRange.start,
+					r2.replaceRange.start - firstEdit1ToEdit2
+				);
 
 				const prefixLength = r2.replaceRange.start - (firstIntersecting.replaceRange.start + firstEdit1ToEdit2);
 				if (prefixLength > 0) {
-					const prefix = firstIntersecting.slice(OffsetRange.emptyAt(newReplaceRangeStart), new OffsetRange(0, prefixLength));
+					const prefix = firstIntersecting.slice(
+						OffsetRange.emptyAt(newReplaceRangeStart),
+						new OffsetRange(0, prefixLength)
+					);
 					result.push(prefix);
 				}
 				if (!lastIntersecting) {
 					throw new BugIndicatingError(`Invariant violation: lastIntersecting is undefined`);
 				}
-				const suffixLength = (lastIntersecting.replaceRange.endExclusive + edit1ToEdit2) - r2.replaceRange.endExclusive;
+				const suffixLength = lastIntersecting.replaceRange.endExclusive + edit1ToEdit2 - r2.replaceRange.endExclusive;
 				if (suffixLength > 0) {
 					const e = lastIntersecting.slice(
 						OffsetRange.ofStartAndLength(lastIntersecting.replaceRange.endExclusive, 0),
@@ -166,10 +176,7 @@ export abstract class BaseEdit<T extends BaseReplacement<T> = BaseReplacement<an
 					edit1ToEdit2 -= e.getNewLength() - e.replaceRange.length;
 				}
 
-				const newReplaceRange = new OffsetRange(
-					newReplaceRangeStart,
-					r2.replaceRange.endExclusive - edit1ToEdit2
-				);
+				const newReplaceRange = new OffsetRange(newReplaceRangeStart, r2.replaceRange.endExclusive - edit1ToEdit2);
 				const middle = r2.slice(newReplaceRange, new OffsetRange(0, r2.getNewLength()));
 				result.push(middle);
 			}
@@ -177,7 +184,9 @@ export abstract class BaseEdit<T extends BaseReplacement<T> = BaseReplacement<an
 
 		while (true) {
 			const item = edit1Queue.shift();
-			if (!item) { break; }
+			if (!item) {
+				break;
+			}
 			result.push(item);
 		}
 
@@ -202,7 +211,7 @@ export abstract class BaseEdit<T extends BaseReplacement<T> = BaseReplacement<an
 
 	/**
 	 * Returns the range of each replacement in the applied value.
-	*/
+	 */
 	public getNewRanges(): OffsetRange[] {
 		const ranges: OffsetRange[] = [];
 		let offset = 0;
@@ -225,7 +234,7 @@ export abstract class BaseEdit<T extends BaseReplacement<T> = BaseReplacement<an
 	}
 
 	public getLengthDelta(): number {
-		return sumBy(this.replacements, (replacement) => replacement.getLengthDelta());
+		return sumBy(this.replacements, replacement => replacement.getLengthDelta());
 	}
 
 	public getNewDataLength(dataLength: number): number {
@@ -249,10 +258,7 @@ export abstract class BaseEdit<T extends BaseReplacement<T> = BaseReplacement<an
 	}
 
 	public applyToOffsetRange(originalRange: OffsetRange): OffsetRange {
-		return new OffsetRange(
-			this.applyToOffset(originalRange.start),
-			this.applyToOffset(originalRange.endExclusive)
-		);
+		return new OffsetRange(this.applyToOffset(originalRange.start), this.applyToOffset(originalRange.endExclusive));
 	}
 
 	public applyInverseToOffset(postEditsOffset: number): number {
@@ -311,15 +317,15 @@ export abstract class BaseReplacement<TSelf extends BaseReplacement<TSelf>> {
 	constructor(
 		/**
 		 * The range to be replaced.
-		*/
-		public readonly replaceRange: OffsetRange,
-	) { }
+		 */
+		public readonly replaceRange: OffsetRange
+	) {}
 
 	public abstract getNewLength(): number;
 
 	/**
 	 * Precondition: TEdit.range.endExclusive === other.range.start
-	*/
+	 */
 	public abstract tryJoinTouching(other: TSelf): TSelf | undefined;
 
 	public abstract slice(newReplaceRange: OffsetRange, rangeInReplacement?: OffsetRange): TSelf;
@@ -354,7 +360,7 @@ export class Edit<T extends BaseReplacement<T>> extends BaseEdit<T, Edit<T>> {
 	/**
 	 * Represents a set of edits to a string.
 	 * All these edits are applied at once.
-	*/
+	 */
 	public static readonly empty = new Edit<never>([]);
 
 	public static create<T extends BaseReplacement<T>>(replacements: readonly T[]): Edit<T> {
@@ -374,25 +380,39 @@ export class AnnotationReplacement<TAnnotation> extends BaseReplacement<Annotati
 	constructor(
 		range: OffsetRange,
 		public readonly newLength: number,
-		public readonly annotation: TAnnotation,
+		public readonly annotation: TAnnotation
 	) {
 		super(range);
 	}
 
 	override equals(other: AnnotationReplacement<TAnnotation>): boolean {
-		return this.replaceRange.equals(other.replaceRange) && this.newLength === other.newLength && this.annotation === other.annotation;
+		return (
+			this.replaceRange.equals(other.replaceRange) &&
+			this.newLength === other.newLength &&
+			this.annotation === other.annotation
+		);
 	}
 
-	getNewLength(): number { return this.newLength; }
+	getNewLength(): number {
+		return this.newLength;
+	}
 
 	tryJoinTouching(other: AnnotationReplacement<TAnnotation>): AnnotationReplacement<TAnnotation> | undefined {
 		if (this.annotation !== other.annotation) {
 			return undefined;
 		}
-		return new AnnotationReplacement<TAnnotation>(this.replaceRange.joinRightTouching(other.replaceRange), this.newLength + other.newLength, this.annotation);
+		return new AnnotationReplacement<TAnnotation>(
+			this.replaceRange.joinRightTouching(other.replaceRange),
+			this.newLength + other.newLength,
+			this.annotation
+		);
 	}
 
 	slice(range: OffsetRange, rangeInReplacement?: OffsetRange): AnnotationReplacement<TAnnotation> {
-		return new AnnotationReplacement<TAnnotation>(range, rangeInReplacement ? rangeInReplacement.length : this.newLength, this.annotation);
+		return new AnnotationReplacement<TAnnotation>(
+			range,
+			rangeInReplacement ? rangeInReplacement.length : this.newLength,
+			this.annotation
+		);
 	}
 }

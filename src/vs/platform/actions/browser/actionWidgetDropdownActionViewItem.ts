@@ -29,7 +29,7 @@ export class ActionWidgetDropdownActionViewItem extends BaseActionViewItem {
 		@IActionWidgetService private readonly _actionWidgetService: IActionWidgetService,
 		@IKeybindingService private readonly _keybindingService: IKeybindingService,
 		@IContextKeyService private readonly _contextKeyService: IContextKeyService,
-		@ITelemetryService private readonly _telemetryService: ITelemetryService,
+		@ITelemetryService private readonly _telemetryService: ITelemetryService
 	) {
 		super(undefined, action);
 	}
@@ -42,10 +42,20 @@ export class ActionWidgetDropdownActionViewItem extends BaseActionViewItem {
 			return this.renderLabel(this.element);
 		};
 
-		this.actionWidgetDropdown = this._register(new ActionWidgetDropdown(container, { ...this.actionWidgetOptions, labelRenderer }, this._actionWidgetService, this._keybindingService, this._telemetryService));
-		this._register(this.actionWidgetDropdown.onDidChangeVisibility(visible => {
-			this.element?.setAttribute('aria-expanded', `${visible}`);
-		}));
+		this.actionWidgetDropdown = this._register(
+			new ActionWidgetDropdown(
+				container,
+				{ ...this.actionWidgetOptions, labelRenderer },
+				this._actionWidgetService,
+				this._keybindingService,
+				this._telemetryService
+			)
+		);
+		this._register(
+			this.actionWidgetDropdown.onDidChangeVisibility(visible => {
+				this.element?.setAttribute('aria-expanded', `${visible}`);
+			})
+		);
 
 		this.updateTooltip();
 		this.updateEnabled();
@@ -56,7 +66,13 @@ export class ActionWidgetDropdownActionViewItem extends BaseActionViewItem {
 		element.classList.add('codicon');
 
 		if (this._action.label) {
-			this._register(getBaseLayerHoverDelegate().setupManagedHover(this.options.hoverDelegate ?? getDefaultHoverDelegate('mouse'), element, this._action.label));
+			this._register(
+				getBaseLayerHoverDelegate().setupManagedHover(
+					this.options.hoverDelegate ?? getDefaultHoverDelegate('mouse'),
+					element,
+					this._action.label
+				)
+			);
 		}
 
 		return null;
@@ -72,7 +88,7 @@ export class ActionWidgetDropdownActionViewItem extends BaseActionViewItem {
 		element.setAttribute('role', 'button');
 		element.setAttribute('aria-haspopup', 'true');
 		element.setAttribute('aria-expanded', 'false');
-		element.ariaLabel = (this.getTooltip() + ' - ' + (element.textContent || this._action.label)) || '';
+		element.ariaLabel = this.getTooltip() + ' - ' + (element.textContent || this._action.label) || '';
 	}
 
 	protected override getTooltip() {
@@ -90,5 +106,4 @@ export class ActionWidgetDropdownActionViewItem extends BaseActionViewItem {
 		this.element?.classList.toggle('disabled', disabled);
 		this.actionWidgetDropdown?.setEnabled(!disabled);
 	}
-
 }

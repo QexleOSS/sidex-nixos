@@ -104,25 +104,25 @@ export class ScrollState implements IScrollDimensions, IScrollPosition {
 
 	public equals(other: ScrollState): boolean {
 		return (
-			this.rawScrollLeft === other.rawScrollLeft
-			&& this.rawScrollTop === other.rawScrollTop
-			&& this.width === other.width
-			&& this.scrollWidth === other.scrollWidth
-			&& this.scrollLeft === other.scrollLeft
-			&& this.height === other.height
-			&& this.scrollHeight === other.scrollHeight
-			&& this.scrollTop === other.scrollTop
+			this.rawScrollLeft === other.rawScrollLeft &&
+			this.rawScrollTop === other.rawScrollTop &&
+			this.width === other.width &&
+			this.scrollWidth === other.scrollWidth &&
+			this.scrollLeft === other.scrollLeft &&
+			this.height === other.height &&
+			this.scrollHeight === other.scrollHeight &&
+			this.scrollTop === other.scrollTop
 		);
 	}
 
 	public withScrollDimensions(update: INewScrollDimensions, useRawScrollPositions: boolean): ScrollState {
 		return new ScrollState(
 			this._forceIntegerValues,
-			(typeof update.width !== 'undefined' ? update.width : this.width),
-			(typeof update.scrollWidth !== 'undefined' ? update.scrollWidth : this.scrollWidth),
+			typeof update.width !== 'undefined' ? update.width : this.width,
+			typeof update.scrollWidth !== 'undefined' ? update.scrollWidth : this.scrollWidth,
 			useRawScrollPositions ? this.rawScrollLeft : this.scrollLeft,
-			(typeof update.height !== 'undefined' ? update.height : this.height),
-			(typeof update.scrollHeight !== 'undefined' ? update.scrollHeight : this.scrollHeight),
+			typeof update.height !== 'undefined' ? update.height : this.height,
+			typeof update.scrollHeight !== 'undefined' ? update.scrollHeight : this.scrollHeight,
 			useRawScrollPositions ? this.rawScrollTop : this.scrollTop
 		);
 	}
@@ -132,21 +132,21 @@ export class ScrollState implements IScrollDimensions, IScrollPosition {
 			this._forceIntegerValues,
 			this.width,
 			this.scrollWidth,
-			(typeof update.scrollLeft !== 'undefined' ? update.scrollLeft : this.rawScrollLeft),
+			typeof update.scrollLeft !== 'undefined' ? update.scrollLeft : this.rawScrollLeft,
 			this.height,
 			this.scrollHeight,
-			(typeof update.scrollTop !== 'undefined' ? update.scrollTop : this.rawScrollTop)
+			typeof update.scrollTop !== 'undefined' ? update.scrollTop : this.rawScrollTop
 		);
 	}
 
 	public createScrollEvent(previous: ScrollState, inSmoothScrolling: boolean): ScrollEvent {
-		const widthChanged = (this.width !== previous.width);
-		const scrollWidthChanged = (this.scrollWidth !== previous.scrollWidth);
-		const scrollLeftChanged = (this.scrollLeft !== previous.scrollLeft);
+		const widthChanged = this.width !== previous.width;
+		const scrollWidthChanged = this.scrollWidth !== previous.scrollWidth;
+		const scrollLeftChanged = this.scrollLeft !== previous.scrollLeft;
 
-		const heightChanged = (this.height !== previous.height);
-		const scrollHeightChanged = (this.scrollHeight !== previous.scrollHeight);
-		const scrollTopChanged = (this.scrollTop !== previous.scrollTop);
+		const heightChanged = this.height !== previous.height;
+		const scrollHeightChanged = this.scrollHeight !== previous.scrollHeight;
+		const scrollTopChanged = this.scrollTop !== previous.scrollTop;
 
 		return {
 			inSmoothScrolling: inSmoothScrolling,
@@ -172,10 +172,9 @@ export class ScrollState implements IScrollDimensions, IScrollPosition {
 
 			heightChanged: heightChanged,
 			scrollHeightChanged: scrollHeightChanged,
-			scrollTopChanged: scrollTopChanged,
+			scrollTopChanged: scrollTopChanged
 		};
 	}
-
 }
 
 export interface IScrollDimensions {
@@ -223,7 +222,6 @@ export interface IScrollableOptions {
 }
 
 export class Scrollable extends Disposable {
-
 	_scrollableBrand: void = undefined;
 
 	private _smoothScrollDuration: number;
@@ -312,20 +310,28 @@ export class Scrollable extends Disposable {
 		if (this._smoothScrolling) {
 			// Combine our pending scrollLeft/scrollTop with incoming scrollLeft/scrollTop
 			update = {
-				scrollLeft: (typeof update.scrollLeft === 'undefined' ? this._smoothScrolling.to.scrollLeft : update.scrollLeft),
-				scrollTop: (typeof update.scrollTop === 'undefined' ? this._smoothScrolling.to.scrollTop : update.scrollTop)
+				scrollLeft: typeof update.scrollLeft === 'undefined' ? this._smoothScrolling.to.scrollLeft : update.scrollLeft,
+				scrollTop: typeof update.scrollTop === 'undefined' ? this._smoothScrolling.to.scrollTop : update.scrollTop
 			};
 
 			// Validate `update`
 			const validTarget = this._state.withScrollPosition(update);
 
-			if (this._smoothScrolling.to.scrollLeft === validTarget.scrollLeft && this._smoothScrolling.to.scrollTop === validTarget.scrollTop) {
+			if (
+				this._smoothScrolling.to.scrollLeft === validTarget.scrollLeft &&
+				this._smoothScrolling.to.scrollTop === validTarget.scrollTop
+			) {
 				// No need to interrupt or extend the current animation since we're going to the same place
 				return;
 			}
 			let newSmoothScrolling: SmoothScrollingOperation;
 			if (reuseAnimation) {
-				newSmoothScrolling = new SmoothScrollingOperation(this._smoothScrolling.from, validTarget, this._smoothScrolling.startTime, this._smoothScrolling.duration);
+				newSmoothScrolling = new SmoothScrollingOperation(
+					this._smoothScrolling.from,
+					validTarget,
+					this._smoothScrolling.startTime,
+					this._smoothScrolling.duration
+				);
 			} else {
 				newSmoothScrolling = this._smoothScrolling.combine(this._state, validTarget, this._smoothScrollDuration);
 			}
@@ -395,7 +401,6 @@ export class Scrollable extends Disposable {
 }
 
 export class SmoothScrollingUpdate {
-
 	public readonly scrollLeft: number;
 	public readonly scrollTop: number;
 	public readonly isDone: boolean;
@@ -405,7 +410,6 @@ export class SmoothScrollingUpdate {
 		this.scrollTop = scrollTop;
 		this.isDone = isDone;
 	}
-
 }
 
 interface IAnimation {
@@ -429,7 +433,6 @@ function createComposed(a: IAnimation, b: IAnimation, cut: number): IAnimation {
 }
 
 export class SmoothScrollingOperation {
-
 	public readonly from: ISmoothScrollPosition;
 	public to: ISmoothScrollPosition;
 	public readonly duration: number;
@@ -504,7 +507,11 @@ export class SmoothScrollingOperation {
 		return SmoothScrollingOperation.start(from, to, duration);
 	}
 
-	public static start(from: ISmoothScrollPosition, to: ISmoothScrollPosition, duration: number): SmoothScrollingOperation {
+	public static start(
+		from: ISmoothScrollPosition,
+		to: ISmoothScrollPosition,
+		duration: number
+	): SmoothScrollingOperation {
 		// +10 / -10 : pretend the animation already started for a quicker response to a scroll request
 		duration = duration + 10;
 		const startTime = Date.now() - 10;

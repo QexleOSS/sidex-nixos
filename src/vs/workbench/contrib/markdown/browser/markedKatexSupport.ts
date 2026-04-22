@@ -12,17 +12,13 @@ import type * as marked from '../../../../base/common/marked/marked.js';
 import { katexContainerLatexAttributeName, MarkedKatexExtension } from '../common/markedKatexExtension.js';
 
 export class MarkedKatexSupport {
-
 	public static getSanitizerOptions(baseConfig: {
 		readonly allowedTags: readonly string[];
 		readonly allowedAttributes: ReadonlyArray<string | domSanitize.SanitizeAttributeRule>;
 	}): MarkdownSanitizerConfig {
 		return {
 			allowedTags: {
-				override: [
-					...baseConfig.allowedTags,
-					...trustedMathMlTags,
-				]
+				override: [...baseConfig.allowedTags, ...trustedMathMlTags]
 			},
 			allowedAttributes: {
 				override: [
@@ -45,10 +41,10 @@ export class MarkedKatexSupport {
 					// Sanitize allowed styles for katex
 					{
 						attributeName: 'style',
-						shouldKeep: (_el, data) => this.sanitizeKatexStyles(data.attrValue),
-					},
+						shouldKeep: (_el, data) => this.sanitizeKatexStyles(data.attrValue)
+					}
 				]
-			},
+			}
 		};
 	}
 
@@ -124,7 +120,7 @@ export class MarkedKatexSupport {
 			'text-align',
 			'line-height',
 			'float',
-			'clear',
+			'clear'
 		];
 		return this.sanitizeStyles(styleString, allowedProperties);
 	}
@@ -135,7 +131,10 @@ export class MarkedKatexSupport {
 		return this._katex;
 	});
 
-	public static getExtension(window: CodeWindow, options: MarkedKatexExtension.MarkedKatexOptions = {}): marked.MarkedExtension | undefined {
+	public static getExtension(
+		window: CodeWindow,
+		options: MarkedKatexExtension.MarkedKatexOptions = {}
+	): marked.MarkedExtension | undefined {
 		if (!this._katex) {
 			return undefined;
 		}
@@ -144,7 +143,10 @@ export class MarkedKatexSupport {
 		return MarkedKatexExtension.extension(this._katex, options);
 	}
 
-	public static async loadExtension(window: CodeWindow, options: MarkedKatexExtension.MarkedKatexOptions = {}): Promise<marked.MarkedExtension> {
+	public static async loadExtension(
+		window: CodeWindow,
+		options: MarkedKatexExtension.MarkedKatexOptions = {}
+	): Promise<marked.MarkedExtension> {
 		const katex = await this._katexPromise.value;
 		this.ensureKatexStyles(window);
 		return MarkedKatexExtension.extension(katex, options);
@@ -152,7 +154,7 @@ export class MarkedKatexSupport {
 
 	public static ensureKatexStyles(window: CodeWindow) {
 		const doc = window.document;
-		// eslint-disable-next-line no-restricted-syntax
+
 		if (!doc.querySelector('link.katex')) {
 			const katexStyle = document.createElement('link');
 			katexStyle.classList.add('katex');
@@ -235,6 +237,5 @@ const trustedMathMlTags = Object.freeze([
 	'tref',
 	'tspan',
 	'view',
-	'vkern',
+	'vkern'
 ]);
-

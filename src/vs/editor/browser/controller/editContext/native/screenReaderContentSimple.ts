@@ -5,7 +5,10 @@
 
 import { addDisposableListener, getActiveWindow } from '../../../../../base/browser/dom.js';
 import { FastDomNode } from '../../../../../base/browser/fastDomNode.js';
-import { AccessibilitySupport, IAccessibilityService } from '../../../../../platform/accessibility/common/accessibility.js';
+import {
+	AccessibilitySupport,
+	IAccessibilityService
+} from '../../../../../platform/accessibility/common/accessibility.js';
 import { EditorOption, IComputedEditorOptions } from '../../../../common/config/editorOptions.js';
 import { EndOfLineSequence } from '../../../../common/model.js';
 import { ViewContext } from '../../../../common/viewModel/viewContext.js';
@@ -18,7 +21,6 @@ import { ViewController } from '../../../view/viewController.js';
 import { IScreenReaderContent } from './screenReaderUtils.js';
 
 export class SimpleScreenReaderContent extends Disposable implements IScreenReaderContent {
-
 	private readonly _selectionChangeListener = this._register(new MutableDisposable());
 
 	private _accessibilityPageSize: number = 1;
@@ -59,12 +61,7 @@ export class SimpleScreenReaderContent extends Disposable implements IScreenRead
 				return;
 			}
 			this._setIgnoreSelectionChangeTime('setRange');
-			selection.setBaseAndExtent(
-				data.anchorNode,
-				data.anchorOffset,
-				data.focusNode,
-				data.focusOffset
-			);
+			selection.setBaseAndExtent(data.anchorNode, data.anchorOffset, data.focusNode, data.focusOffset);
 		} else {
 			this._state = undefined;
 			this._setIgnoreSelectionChangeTime('setValue');
@@ -79,7 +76,9 @@ export class SimpleScreenReaderContent extends Disposable implements IScreenRead
 		const viewLayout = this._context.viewModel.viewLayout;
 		const stateStartLineNumber = this._state.startPositionWithinEditor.lineNumber;
 		const verticalOffsetOfStateStartLineNumber = viewLayout.getVerticalOffsetForLineNumber(stateStartLineNumber);
-		const verticalOffsetOfPositionLineNumber = viewLayout.getVerticalOffsetForLineNumber(primarySelection.positionLineNumber);
+		const verticalOffsetOfPositionLineNumber = viewLayout.getVerticalOffsetForLineNumber(
+			primarySelection.positionLineNumber
+		);
 		this._domNode.domNode.scrollTop = verticalOffsetOfPositionLineNumber - verticalOffsetOfStateStartLineNumber;
 	}
 
@@ -153,7 +152,9 @@ export class SimpleScreenReaderContent extends Disposable implements IScreenRead
 				return;
 			}
 
-			this._viewController.setSelection(this._getEditorSelectionFromDomRange(this._context, this._state, selection.direction, range));
+			this._viewController.setSelection(
+				this._getEditorSelectionFromDomRange(this._context, this._state, selection.direction, range)
+			);
 		});
 	}
 
@@ -173,7 +174,10 @@ export class SimpleScreenReaderContent extends Disposable implements IScreenRead
 		return state;
 	}
 
-	private _getScreenReaderRange(selectionOffsetStart: number, selectionOffsetEnd: number): { anchorNode: Node; anchorOffset: number; focusNode: Node; focusOffset: number } | undefined {
+	private _getScreenReaderRange(
+		selectionOffsetStart: number,
+		selectionOffsetEnd: number
+	): { anchorNode: Node; anchorOffset: number; focusNode: Node; focusOffset: number } | undefined {
 		const textContent = this._domNode.domNode.firstChild;
 		if (!textContent) {
 			return;
@@ -189,11 +193,18 @@ export class SimpleScreenReaderContent extends Disposable implements IScreenRead
 		};
 	}
 
-	private _getEditorSelectionFromDomRange(context: ViewContext, state: ISimpleScreenReaderContentState, direction: string, range: globalThis.Range): Selection {
+	private _getEditorSelectionFromDomRange(
+		context: ViewContext,
+		state: ISimpleScreenReaderContentState,
+		direction: string,
+		range: globalThis.Range
+	): Selection {
 		const viewModel = context.viewModel;
 		const model = viewModel.model;
 		const coordinatesConverter = viewModel.coordinatesConverter;
-		const modelScreenReaderContentStartPositionWithinEditor = coordinatesConverter.convertViewPositionToModelPosition(state.startPositionWithinEditor);
+		const modelScreenReaderContentStartPositionWithinEditor = coordinatesConverter.convertViewPositionToModelPosition(
+			state.startPositionWithinEditor
+		);
 		const offsetOfStartOfScreenReaderContent = model.getOffsetAt(modelScreenReaderContentStartPositionWithinEditor);
 		let offsetOfSelectionStart = range.startOffset + offsetOfStartOfScreenReaderContent;
 		let offsetOfSelectionEnd = range.endOffset + offsetOfStartOfScreenReaderContent;

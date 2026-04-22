@@ -65,10 +65,16 @@ interface RepositoryTemplate {
 	readonly templateDisposable: IDisposable;
 }
 
-export class RepositoryRenderer implements ICompressibleTreeRenderer<ISCMRepository, FuzzyScore, RepositoryTemplate>, IListRenderer<ISCMRepository, RepositoryTemplate>, ITreeRenderer<ISCMRepository, FuzzyScore, RepositoryTemplate> {
-
+export class RepositoryRenderer
+	implements
+		ICompressibleTreeRenderer<ISCMRepository, FuzzyScore, RepositoryTemplate>,
+		IListRenderer<ISCMRepository, RepositoryTemplate>,
+		ITreeRenderer<ISCMRepository, FuzzyScore, RepositoryTemplate>
+{
 	static readonly TEMPLATE_ID = 'repository';
-	get templateId(): string { return RepositoryRenderer.TEMPLATE_ID; }
+	get templateId(): string {
+		return RepositoryRenderer.TEMPLATE_ID;
+	}
 
 	private readonly onDidChangeVisibleRepositoriesSignal: IObservable<void>;
 
@@ -85,7 +91,10 @@ export class RepositoryRenderer implements ICompressibleTreeRenderer<ISCMReposit
 		@ITelemetryService private telemetryService: ITelemetryService,
 		@IUriIdentityService private uriIdentityService: IUriIdentityService
 	) {
-		this.onDidChangeVisibleRepositoriesSignal = observableSignalFromEvent(this, this.scmViewService.onDidChangeVisibleRepositories);
+		this.onDidChangeVisibleRepositoriesSignal = observableSignalFromEvent(
+			this,
+			this.scmViewService.onDidChangeVisibleRepositories
+		);
 	}
 
 	renderTemplate(container: HTMLElement): RepositoryTemplate {
@@ -94,54 +103,85 @@ export class RepositoryRenderer implements ICompressibleTreeRenderer<ISCMReposit
 		const label = new IconLabel(provider, { supportIcons: false });
 
 		const actions = append(provider, $('.actions'));
-		const toolBar = new WorkbenchToolBar(actions, { actionViewItemProvider: this.actionViewItemProvider, resetMenu: this.toolbarMenuId, responsiveBehavior: { enabled: true, kind: 'all', minItems: 2 } }, this.menuService, this.contextKeyService, this.contextMenuService, this.keybindingService, this.commandService, this.telemetryService);
+		const toolBar = new WorkbenchToolBar(
+			actions,
+			{
+				actionViewItemProvider: this.actionViewItemProvider,
+				resetMenu: this.toolbarMenuId,
+				responsiveBehavior: { enabled: true, kind: 'all', minItems: 2 }
+			},
+			this.menuService,
+			this.contextKeyService,
+			this.contextMenuService,
+			this.keybindingService,
+			this.commandService,
+			this.telemetryService
+		);
 		const countContainer = append(provider, $('.count'));
 		const count = new CountBadge(countContainer, {}, defaultCountBadgeStyles);
 		const visibilityDisposable = toolBar.onDidChangeDropdownVisibility(e => provider.classList.toggle('active', e));
 
 		const templateDisposable = combinedDisposable(label, visibilityDisposable, toolBar);
 
-		return { icon, label, countContainer, count, toolBar, elementDisposables: new DisposableStore(), templateDisposable };
+		return {
+			icon,
+			label,
+			countContainer,
+			count,
+			toolBar,
+			elementDisposables: new DisposableStore(),
+			templateDisposable
+		};
 	}
 
-	renderElement(arg: ISCMRepository | ITreeNode<ISCMRepository, FuzzyScore>, index: number, templateData: RepositoryTemplate): void {
+	renderElement(
+		arg: ISCMRepository | ITreeNode<ISCMRepository, FuzzyScore>,
+		index: number,
+		templateData: RepositoryTemplate
+	): void {
 		const repository = isSCMRepository(arg) ? arg : arg.element;
 
-		templateData.elementDisposables.add(autorun(reader => {
-			this.onDidChangeVisibleRepositoriesSignal.read(reader);
+		templateData.elementDisposables.add(
+			autorun(reader => {
+				this.onDidChangeVisibleRepositoriesSignal.read(reader);
 
-			const isVisible = this.scmViewService.isVisible(repository);
-			const icon = ThemeIcon.isThemeIcon(repository.provider.iconPath)
-				? repository.provider.iconPath
-				: Codicon.repo;
+				const isVisible = this.scmViewService.isVisible(repository);
+				const icon = ThemeIcon.isThemeIcon(repository.provider.iconPath) ? repository.provider.iconPath : Codicon.repo;
 
-			// Only show the selected icon if there are multiple repositories in the workspace
-			const showSelectedIcon = icon.id === Codicon.repo.id && isVisible && this.scmViewService.repositories.length > 1;
+				// Only show the selected icon if there are multiple repositories in the workspace
+				const showSelectedIcon =
+					icon.id === Codicon.repo.id && isVisible && this.scmViewService.repositories.length > 1;
 
-			templateData.icon.className = showSelectedIcon
-				? `icon ${ThemeIcon.asClassName(Codicon.repoSelected)}`
-				: `icon ${ThemeIcon.asClassName(icon)}`;
-		}));
+				templateData.icon.className = showSelectedIcon
+					? `icon ${ThemeIcon.asClassName(Codicon.repoSelected)}`
+					: `icon ${ThemeIcon.asClassName(icon)}`;
+			})
+		);
 
 		// Use the description to disambiguate repositories with the same name and have
 		// a `rootUri`. Use the `provider.rootUri` for disambiguation. If they have the
 		// same path, we will use the provider label to disambiguate.
 		let description: string | undefined = undefined;
 		if (repository.provider.rootUri) {
-			const repositoriesWithRootUri = this.scmViewService.repositories
-				.filter(r => r.provider.rootUri !== undefined &&
-					this.uriIdentityService.extUri.isEqual(r.provider.rootUri, repository.provider.rootUri));
+			const repositoriesWithRootUri = this.scmViewService.repositories.filter(
+				r =>
+					r.provider.rootUri !== undefined &&
+					this.uriIdentityService.extUri.isEqual(r.provider.rootUri, repository.provider.rootUri)
+			);
 
-			const repositoriesWithSameName = this.scmViewService.repositories
-				.filter(r => r.provider.rootUri !== undefined &&
-					r.provider.name === repository.provider.name);
+			const repositoriesWithSameName = this.scmViewService.repositories.filter(
+				r => r.provider.rootUri !== undefined && r.provider.name === repository.provider.name
+			);
 
 			if (repositoriesWithRootUri.length > 1) {
 				description = repository.provider.label;
 			} else if (repositoriesWithSameName.length > 1) {
 				const repositoryIndex = repositoriesWithSameName.findIndex(r => r === repository);
-				const shortDescription = shorten(repositoriesWithSameName
-					.map(r => this.labelService.getUriLabel(dirname(r.provider.rootUri!), { relative: true })));
+				const shortDescription = shorten(
+					repositoriesWithSameName.map(r =>
+						this.labelService.getUriLabel(dirname(r.provider.rootUri!), { relative: true })
+					)
+				);
 
 				description = shortDescription[repositoryIndex];
 			}
@@ -151,8 +191,9 @@ export class RepositoryRenderer implements ICompressibleTreeRenderer<ISCMReposit
 		if (this.scmViewService.explorerEnabledConfig.get() === false) {
 			label = repository.provider.name;
 		} else {
-			const parentRepository = this.scmViewService.repositories
-				.find(r => r.provider.id === repository.provider.parentId);
+			const parentRepository = this.scmViewService.repositories.find(
+				r => r.provider.id === repository.provider.parentId
+			);
 
 			label = parentRepository
 				? `${parentRepository.provider.name} / ${repository.provider.name}`
@@ -172,32 +213,45 @@ export class RepositoryRenderer implements ICompressibleTreeRenderer<ISCMReposit
 			templateData.toolBar.setActions([...statusPrimaryActions, ...menuPrimaryActions], menuSecondaryActions);
 		};
 
-		templateData.elementDisposables.add(autorun(reader => {
-			const commands = repository.provider.statusBarCommands.read(reader) ?? [];
-			statusPrimaryActions = commands.map(c => reader.store.add(new StatusBarAction(c, this.commandService)));
-			updateToolbar();
-		}));
-
-		templateData.elementDisposables.add(autorun(reader => {
-			const count = repository.provider.count.read(reader) ?? getRepositoryResourceCount(repository.provider);
-			templateData.countContainer.setAttribute('data-count', String(count));
-			templateData.count.setCount(count);
-		}));
-
-		templateData.elementDisposables.add(autorun(reader => {
-			repository.provider.contextValue.read(reader);
-
-			const repositoryMenus = this.scmViewService.menus.getRepositoryMenus(repository.provider);
-			const menu = this.toolbarMenuId === MenuId.SCMTitle
-				? repositoryMenus.titleMenu.menu
-				: repositoryMenus.getRepositoryMenu(repository);
-
-			reader.store.add(connectPrimaryMenu(menu, (primary, secondary) => {
-				menuPrimaryActions = primary;
-				menuSecondaryActions = secondary;
+		templateData.elementDisposables.add(
+			autorun(reader => {
+				const commands = repository.provider.statusBarCommands.read(reader) ?? [];
+				statusPrimaryActions = commands.map(c => reader.store.add(new StatusBarAction(c, this.commandService)));
 				updateToolbar();
-			}, this.toolbarMenuId === MenuId.SCMTitle ? 'navigation' : 'inline'));
-		}));
+			})
+		);
+
+		templateData.elementDisposables.add(
+			autorun(reader => {
+				const count = repository.provider.count.read(reader) ?? getRepositoryResourceCount(repository.provider);
+				templateData.countContainer.setAttribute('data-count', String(count));
+				templateData.count.setCount(count);
+			})
+		);
+
+		templateData.elementDisposables.add(
+			autorun(reader => {
+				repository.provider.contextValue.read(reader);
+
+				const repositoryMenus = this.scmViewService.menus.getRepositoryMenus(repository.provider);
+				const menu =
+					this.toolbarMenuId === MenuId.SCMTitle
+						? repositoryMenus.titleMenu.menu
+						: repositoryMenus.getRepositoryMenu(repository);
+
+				reader.store.add(
+					connectPrimaryMenu(
+						menu,
+						(primary, secondary) => {
+							menuPrimaryActions = primary;
+							menuSecondaryActions = secondary;
+							updateToolbar();
+						},
+						this.toolbarMenuId === MenuId.SCMTitle ? 'navigation' : 'inline'
+					)
+				);
+			})
+		);
 
 		templateData.toolBar.context = repository.provider;
 	}
@@ -206,7 +260,11 @@ export class RepositoryRenderer implements ICompressibleTreeRenderer<ISCMReposit
 		throw new Error('Should never happen since node is incompressible');
 	}
 
-	disposeElement(group: ISCMRepository | ITreeNode<ISCMRepository, FuzzyScore>, index: number, template: RepositoryTemplate): void {
+	disposeElement(
+		group: ISCMRepository | ITreeNode<ISCMRepository, FuzzyScore>,
+		index: number,
+		template: RepositoryTemplate
+	): void {
 		template.elementDisposables.clear();
 	}
 

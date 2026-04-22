@@ -37,7 +37,7 @@ export class TerminalLinkDetectorAdapter extends Disposable implements ILinkProv
 
 	constructor(
 		private readonly _detector: ITerminalLinkDetector,
-		@IInstantiationService private readonly _instantiationService: IInstantiationService,
+		@IInstantiationService private readonly _instantiationService: IInstantiationService
 	) {
 		super();
 	}
@@ -65,9 +65,7 @@ export class TerminalLinkDetectorAdapter extends Disposable implements ILinkProv
 		let startLine = bufferLineNumber - 1;
 		let endLine = startLine;
 
-		const lines: IBufferLine[] = [
-			this._detector.xterm.buffer.active.getLine(startLine)!
-		];
+		const lines: IBufferLine[] = [this._detector.xterm.buffer.active.getLine(startLine)!];
 
 		// Cap the maximum context on either side of the line being provided, by taking the context
 		// around the line being provided for this ensures the line the pointer is on will have
@@ -89,7 +87,7 @@ export class TerminalLinkDetectorAdapter extends Disposable implements ILinkProv
 
 		const detectedLinks = await this._detector.detect(lines, startLine, endLine);
 		for (const link of detectedLinks) {
-			const terminalLink = this._createTerminalLink(link, async (event) => this._onDidActivateLink.fire({ link, event }));
+			const terminalLink = this._createTerminalLink(link, async event => this._onDidActivateLink.fire({ link, event }));
 			links.push(terminalLink);
 			this._activeLinksStore.add(terminalLink);
 		}
@@ -103,7 +101,8 @@ export class TerminalLinkDetectorAdapter extends Disposable implements ILinkProv
 			l.text = l.text.slice(0, -1);
 			l.bufferRange.end.x--;
 		}
-		return this._instantiationService.createInstance(TerminalLink,
+		return this._instantiationService.createInstance(
+			TerminalLink,
 			this._detector.xterm,
 			l.bufferRange,
 			l.text,
@@ -112,12 +111,13 @@ export class TerminalLinkDetectorAdapter extends Disposable implements ILinkProv
 			l.actions,
 			this._detector.xterm.buffer.active.viewportY,
 			activateCallback,
-			(link, viewportRange, modifierDownCallback, modifierUpCallback) => this._onDidShowHover.fire({
-				link,
-				viewportRange,
-				modifierDownCallback,
-				modifierUpCallback
-			}),
+			(link, viewportRange, modifierDownCallback, modifierUpCallback) =>
+				this._onDidShowHover.fire({
+					link,
+					viewportRange,
+					modifierDownCallback,
+					modifierUpCallback
+				}),
 			l.type !== TerminalBuiltinLinkType.Search, // Only search is low confidence
 			l.label || this._getLabel(l.type),
 			l.type
@@ -126,10 +126,14 @@ export class TerminalLinkDetectorAdapter extends Disposable implements ILinkProv
 
 	private _getLabel(type: TerminalLinkType): string {
 		switch (type) {
-			case TerminalBuiltinLinkType.Search: return localize('searchWorkspace', 'Search workspace');
-			case TerminalBuiltinLinkType.LocalFile: return localize('openFile', 'Open file in editor');
-			case TerminalBuiltinLinkType.LocalFolderInWorkspace: return localize('focusFolder', 'Focus folder in explorer');
-			case TerminalBuiltinLinkType.LocalFolderOutsideWorkspace: return localize('openFolder', 'Open folder in new window');
+			case TerminalBuiltinLinkType.Search:
+				return localize('searchWorkspace', 'Search workspace');
+			case TerminalBuiltinLinkType.LocalFile:
+				return localize('openFile', 'Open file in editor');
+			case TerminalBuiltinLinkType.LocalFolderInWorkspace:
+				return localize('focusFolder', 'Focus folder in explorer');
+			case TerminalBuiltinLinkType.LocalFolderOutsideWorkspace:
+				return localize('openFolder', 'Open folder in new window');
 			case TerminalBuiltinLinkType.Url:
 			default:
 				return localize('followLink', 'Follow link');

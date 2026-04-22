@@ -7,14 +7,20 @@ import { Emitter, Event } from '../../../../base/common/event.js';
 import { autorun, IReader, observableValue } from '../../../../base/common/observable.js';
 import { setTimeout0 } from '../../../../base/common/platform.js';
 import { localize } from '../../../../nls.js';
-import { IQuickTree, IQuickTreeItem, IQuickTreeItemButtonEvent, QuickInputType, QuickPickFocus } from '../../common/quickInput.js';
+import {
+	IQuickTree,
+	IQuickTreeItem,
+	IQuickTreeItemButtonEvent,
+	QuickInputType,
+	QuickPickFocus
+} from '../../common/quickInput.js';
 import { QuickInput, QuickInputUI, Visibilities } from '../quickInput.js';
 import { getParentNodeState } from './quickInputTree.js';
 
 // Contains the API
 
 export class QuickTree<T extends IQuickTreeItem> extends QuickInput implements IQuickTree<T> {
-	private static readonly DEFAULT_ARIA_LABEL = localize('quickInputBox.ariaLabel', "Type to narrow down results.");
+	private static readonly DEFAULT_ARIA_LABEL = localize('quickInputBox.ariaLabel', 'Type to narrow down results.');
 
 	readonly type = QuickInputType.QuickTree;
 
@@ -46,33 +52,65 @@ export class QuickTree<T extends IQuickTreeItem> extends QuickInput implements I
 		this._register(ui.tree.onDidChangeCheckedLeafItems(e => this._onDidChangeCheckedLeafItems.fire(e as T[])));
 		this._register(ui.tree.onDidChangeCheckboxState(e => this._onDidChangeCheckboxState.fire(e.item as T)));
 		// Sync active items with tree focus changes
-		this._register(ui.tree.tree.onDidChangeFocus(e => {
-			this._activeItems.set(ui.tree.getActiveItems() as T[], undefined);
-		}));
+		this._register(
+			ui.tree.tree.onDidChangeFocus(e => {
+				this._activeItems.set(ui.tree.getActiveItems() as T[], undefined);
+			})
+		);
 	}
 
-	get value(): string { return this._value.get(); }
-	set value(value: string) { this._value.set(value, undefined); }
+	get value(): string {
+		return this._value.get();
+	}
+	set value(value: string) {
+		this._value.set(value, undefined);
+	}
 
-	get ariaLabel(): string | undefined { return this._ariaLabel.get(); }
-	set ariaLabel(ariaLabel: string | undefined) { this._ariaLabel.set(ariaLabel, undefined); }
+	get ariaLabel(): string | undefined {
+		return this._ariaLabel.get();
+	}
+	set ariaLabel(ariaLabel: string | undefined) {
+		this._ariaLabel.set(ariaLabel, undefined);
+	}
 
-	get placeholder(): string | undefined { return this._placeholder.get(); }
-	set placeholder(placeholder: string | undefined) { this._placeholder.set(placeholder, undefined); }
+	get placeholder(): string | undefined {
+		return this._placeholder.get();
+	}
+	set placeholder(placeholder: string | undefined) {
+		this._placeholder.set(placeholder, undefined);
+	}
 
-	get matchOnDescription(): boolean { return this._matchOnDescription.get(); }
-	set matchOnDescription(matchOnDescription: boolean) { this._matchOnDescription.set(matchOnDescription, undefined); }
+	get matchOnDescription(): boolean {
+		return this._matchOnDescription.get();
+	}
+	set matchOnDescription(matchOnDescription: boolean) {
+		this._matchOnDescription.set(matchOnDescription, undefined);
+	}
 
-	get matchOnLabel(): boolean { return this._matchOnLabel.get(); }
-	set matchOnLabel(matchOnLabel: boolean) { this._matchOnLabel.set(matchOnLabel, undefined); }
+	get matchOnLabel(): boolean {
+		return this._matchOnLabel.get();
+	}
+	set matchOnLabel(matchOnLabel: boolean) {
+		this._matchOnLabel.set(matchOnLabel, undefined);
+	}
 
-	get sortByLabel(): boolean { return this._sortByLabel.get(); }
-	set sortByLabel(sortByLabel: boolean) { this._sortByLabel.set(sortByLabel, undefined); }
+	get sortByLabel(): boolean {
+		return this._sortByLabel.get();
+	}
+	set sortByLabel(sortByLabel: boolean) {
+		this._sortByLabel.set(sortByLabel, undefined);
+	}
 
-	get activeItems(): readonly T[] { return this._activeItems.get(); }
-	set activeItems(activeItems: readonly T[]) { this._activeItems.set(activeItems, undefined); }
+	get activeItems(): readonly T[] {
+		return this._activeItems.get();
+	}
+	set activeItems(activeItems: readonly T[]) {
+		this._activeItems.set(activeItems, undefined);
+	}
 
-	get itemTree(): ReadonlyArray<Readonly<T>> { return this._itemTree.get(); }
+	get itemTree(): ReadonlyArray<Readonly<T>> {
+		return this._itemTree.get();
+	}
 
 	get onDidTriggerItemButton(): Event<IQuickTreeItemButtonEvent<T>> {
 		// Is there a cleaner way to avoid the `as` cast here?
@@ -80,15 +118,17 @@ export class QuickTree<T extends IQuickTreeItem> extends QuickInput implements I
 	}
 
 	// TODO: Fix the any casting
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
-	get checkedLeafItems(): readonly T[] { return this.ui.tree.getCheckedLeafItems() as any as readonly T[]; }
+	// eslint-disable-next-line local/code-no-any-casts
+	get checkedLeafItems(): readonly T[] {
+		return this.ui.tree.getCheckedLeafItems() as any as readonly T[];
+	}
 
 	setItemTree(itemTree: T[]): void {
 		this._itemTree.set(itemTree, undefined);
 	}
 
 	getParent(element: T): T | undefined {
-		return this.ui.tree.tree.getParentElement(element) as T ?? undefined;
+		return (this.ui.tree.tree.getParentElement(element) as T) ?? undefined;
 	}
 
 	expand(element: T): void {
@@ -127,22 +167,30 @@ export class QuickTree<T extends IQuickTreeItem> extends QuickInput implements I
 				customButton: false
 			};
 			this.ui.setVisibilities(visibilities);
-			this.visibleDisposables.add(this.ui.inputBox.onDidChange(value => {
-				this._value.set(value, undefined);
-			}));
-			this.visibleDisposables.add(this.ui.tree.onDidChangeCheckboxState((e) => {
-				const checkAllState = getParentNodeState([...this.ui.tree.tree.getNode().children]);
-				if (this.ui.checkAll.checked !== checkAllState) {
-					this.ui.checkAll.checked = checkAllState;
-				}
-			}));
-			this.visibleDisposables.add(this.ui.checkAll.onChange(_e => {
-				const checked = this.ui.checkAll.checked;
-				this.ui.tree.checkAll(checked);
-			}));
-			this.visibleDisposables.add(this.ui.tree.onDidChangeCheckedLeafItems(e => {
-				this.ui.count.setCount(e.length);
-			}));
+			this.visibleDisposables.add(
+				this.ui.inputBox.onDidChange(value => {
+					this._value.set(value, undefined);
+				})
+			);
+			this.visibleDisposables.add(
+				this.ui.tree.onDidChangeCheckboxState(e => {
+					const checkAllState = getParentNodeState([...this.ui.tree.tree.getNode().children]);
+					if (this.ui.checkAll.checked !== checkAllState) {
+						this.ui.checkAll.checked = checkAllState;
+					}
+				})
+			);
+			this.visibleDisposables.add(
+				this.ui.checkAll.onChange(_e => {
+					const checked = this.ui.checkAll.checked;
+					this.ui.tree.checkAll(checked);
+				})
+			);
+			this.visibleDisposables.add(
+				this.ui.tree.onDidChangeCheckedLeafItems(e => {
+					this.ui.count.setCount(e.length);
+				})
+			);
 		}
 		super.show(); // TODO: Why have show() bubble up while update() trickles down?
 
@@ -179,9 +227,7 @@ export class QuickTree<T extends IQuickTreeItem> extends QuickInput implements I
 		super.update();
 	}
 
-	_registerListeners(): void {
-
-	}
+	_registerListeners(): void {}
 
 	// TODO: Move to using autoruns instead of update function
 	_registerAutoruns(): void {
@@ -212,27 +258,29 @@ export class QuickTree<T extends IQuickTreeItem> extends QuickInput implements I
 				this.ui.inputBox.placeholder = placeholder ?? '';
 			}
 		});
-		this.registerVisibleAutorun((reader) => {
+		this.registerVisibleAutorun(reader => {
 			const matchOnLabel = this._matchOnLabel.read(reader);
 			const matchOnDescription = this._matchOnDescription.read(reader);
 			this.ui.tree.updateFilterOptions({ matchOnLabel, matchOnDescription });
 		});
-		this.registerVisibleAutorun((reader) => {
+		this.registerVisibleAutorun(reader => {
 			const sortByLabel = this._sortByLabel.read(reader);
 			this.ui.tree.sortByLabel = sortByLabel;
 		});
-		this.registerVisibleAutorun((reader) => {
+		this.registerVisibleAutorun(reader => {
 			const itemTree = this._itemTree.read(reader);
 			this.ui.tree.setTreeData(itemTree);
 		});
 	}
 
 	registerVisibleAutorun(fn: (reader: IReader) => void): void {
-		this._register(autorun((reader) => {
-			if (this._visible.read(reader)) {
-				fn(reader);
-			}
-		}));
+		this._register(
+			autorun(reader => {
+				if (this._visible.read(reader)) {
+					fn(reader);
+				}
+			})
+		);
 	}
 
 	focus(focus: QuickPickFocus): void {

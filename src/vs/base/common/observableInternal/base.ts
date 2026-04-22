@@ -12,7 +12,7 @@ import { DisposableStore, onUnexpectedError } from './commonFacade/deps.js';
  */
 // This interface exists so that, for example for string observables,
 // typescript renders the type as `IObservable<string>` instead of `IObservable<string, unknown>`.
-export interface IObservable<T> extends IObservableWithChange<T, unknown> { }
+export interface IObservable<T> extends IObservableWithChange<T, unknown> {}
 
 /**
  * Represents an observable value.
@@ -87,7 +87,7 @@ export interface IObservableWithChange<T, TChange = unknown> {
 	/**
 	 * ONLY FOR DEBUGGING!
 	 * Logs computations of this derived.
-	*/
+	 */
 	log(): IObservableWithChange<T, TChange>;
 
 	/**
@@ -151,7 +151,7 @@ export interface IObserver {
 /**
  * A reader allows code to track what it depends on, so the caller knows when the computed value or produced side-effect is no longer valid.
  * Use `derived(reader => ...)` to turn code that needs a reader into an observable value.
-*/
+ */
 export interface IReader {
 	/**
 	 * Reads the value of an observable and subscribes to it.
@@ -180,7 +180,7 @@ export interface ITransaction {
 
 /**
  * This function is used to indicate that the caller recovered from an error that indicates a bug.
-*/
+ */
 export function handleBugIndicatingErrorRecovery(message: string) {
 	const err = new Error('BugIndicatingErrorRecovery: ' + message);
 	onUnexpectedError(err);
@@ -190,13 +190,13 @@ export function handleBugIndicatingErrorRecovery(message: string) {
 /**
  * A settable observable.
  */
-export interface ISettableObservable<T, TChange = void> extends IObservableWithChange<T, TChange>, ISettable<T, TChange> {
-}
+export interface ISettableObservable<T, TChange = void>
+	extends IObservableWithChange<T, TChange>, ISettable<T, TChange> {}
 
 export interface IReaderWithStore extends IReader {
 	/**
 	 * Items in this store get disposed just before the observable recomputes/reruns or when it becomes unobserved.
-	*/
+	 */
 	get store(): DisposableStore;
 
 	/**
@@ -205,6 +205,6 @@ export interface IReaderWithStore extends IReader {
 	 *
 	 * Warning: Items in this store might still get disposed before dependents (that read the now disposed value in the past) are recomputed with the new (undisposed) value!
 	 * A clean solution for this is ref counting.
-	*/
+	 */
 	get delayedStore(): DisposableStore;
 }

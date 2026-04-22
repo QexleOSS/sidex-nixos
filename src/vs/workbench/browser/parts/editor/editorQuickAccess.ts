@@ -5,15 +5,35 @@
 
 import './media/editorquickaccess.css';
 import { localize } from '../../../../nls.js';
-import { IQuickPickSeparator, quickPickItemScorerAccessor, IQuickPickItemWithResource, IQuickPick } from '../../../../platform/quickinput/common/quickInput.js';
-import { PickerQuickAccessProvider, IPickerQuickAccessItem, TriggerAction } from '../../../../platform/quickinput/browser/pickerQuickAccess.js';
+import {
+	IQuickPickSeparator,
+	quickPickItemScorerAccessor,
+	IQuickPickItemWithResource,
+	IQuickPick
+} from '../../../../platform/quickinput/common/quickInput.js';
+import {
+	PickerQuickAccessProvider,
+	IPickerQuickAccessItem,
+	TriggerAction
+} from '../../../../platform/quickinput/browser/pickerQuickAccess.js';
 import { IEditorGroupsService, GroupsOrder } from '../../../services/editor/common/editorGroupsService.js';
-import { EditorsOrder, IEditorIdentifier, EditorResourceAccessor, SideBySideEditor, GroupIdentifier } from '../../../common/editor.js';
+import {
+	EditorsOrder,
+	IEditorIdentifier,
+	EditorResourceAccessor,
+	SideBySideEditor,
+	GroupIdentifier
+} from '../../../common/editor.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { IModelService } from '../../../../editor/common/services/model.js';
 import { ILanguageService } from '../../../../editor/common/languages/language.js';
 import { getIconClasses } from '../../../../editor/common/services/getIconClasses.js';
-import { prepareQuery, scoreItemFuzzy, compareItemsByFuzzyScore, FuzzyScorerCache } from '../../../../base/common/fuzzyScorer.js';
+import {
+	prepareQuery,
+	scoreItemFuzzy,
+	compareItemsByFuzzyScore,
+	FuzzyScorerCache
+} from '../../../../base/common/fuzzyScorer.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { IDisposable } from '../../../../base/common/lifecycle.js';
 import { Codicon } from '../../../../base/common/codicons.js';
@@ -24,14 +44,11 @@ interface IEditorQuickPickItem extends IQuickPickItemWithResource, IPickerQuickA
 }
 
 export abstract class BaseEditorQuickAccessProvider extends PickerQuickAccessProvider<IEditorQuickPickItem> {
-
-	private readonly pickState = new class {
-
+	private readonly pickState = new (class {
 		scorerCache: FuzzyScorerCache = Object.create(null);
 		isQuickNavigating: boolean | undefined = undefined;
 
 		reset(isQuickNavigating: boolean): void {
-
 			// Caches
 			if (!isQuickNavigating) {
 				this.scorerCache = Object.create(null);
@@ -40,7 +57,7 @@ export abstract class BaseEditorQuickAccessProvider extends PickerQuickAccessPro
 			// Other
 			this.isQuickNavigating = isQuickNavigating;
 		}
-	};
+	})();
 
 	constructor(
 		prefix: string,
@@ -49,19 +66,19 @@ export abstract class BaseEditorQuickAccessProvider extends PickerQuickAccessPro
 		@IModelService private readonly modelService: IModelService,
 		@ILanguageService private readonly languageService: ILanguageService
 	) {
-		super(prefix,
-			{
-				canAcceptInBackground: true,
-				noResultsPick: {
-					label: localize('noViewResults', "No matching editors"),
-					groupId: -1
-				}
+		super(prefix, {
+			canAcceptInBackground: true,
+			noResultsPick: {
+				label: localize('noViewResults', 'No matching editors'),
+				groupId: -1
 			}
-		);
+		});
 	}
 
-	override provide(picker: IQuickPick<IEditorQuickPickItem, { useSeparators: true }>, token: CancellationToken): IDisposable {
-
+	override provide(
+		picker: IQuickPick<IEditorQuickPickItem, { useSeparators: true }>,
+		token: CancellationToken
+	): IDisposable {
 		// Reset the pick state for this run
 		this.pickState.reset(!!picker.quickNavigate);
 
@@ -98,7 +115,14 @@ export abstract class BaseEditorQuickAccessProvider extends PickerQuickAccessPro
 					return groups.indexOf(entryA.groupId) - groups.indexOf(entryB.groupId); // older groups first
 				}
 
-				return compareItemsByFuzzyScore(entryA, entryB, query, true, quickPickItemScorerAccessor, this.pickState.scorerCache);
+				return compareItemsByFuzzyScore(
+					entryA,
+					entryB,
+					query,
+					true,
+					quickPickItemScorerAccessor,
+					this.pickState.scorerCache
+				);
 			});
 		}
 
@@ -149,21 +173,41 @@ export abstract class BaseEditorQuickAccessProvider extends PickerQuickAccessPro
 				label: editor.getName(),
 				ariaLabel: (() => {
 					if (mapGroupIdToGroupAriaLabel.size > 1) {
-						return isDirty ?
-							localize('entryAriaLabelWithGroupDirty', "{0}, unsaved changes, {1}", nameAndDescription, mapGroupIdToGroupAriaLabel.get(groupId)) :
-							localize('entryAriaLabelWithGroup', "{0}, {1}", nameAndDescription, mapGroupIdToGroupAriaLabel.get(groupId));
+						return isDirty
+							? localize(
+									'entryAriaLabelWithGroupDirty',
+									'{0}, unsaved changes, {1}',
+									nameAndDescription,
+									mapGroupIdToGroupAriaLabel.get(groupId)
+								)
+							: localize(
+									'entryAriaLabelWithGroup',
+									'{0}, {1}',
+									nameAndDescription,
+									mapGroupIdToGroupAriaLabel.get(groupId)
+								);
 					}
 
-					return isDirty ? localize('entryAriaLabelDirty', "{0}, unsaved changes", nameAndDescription) : nameAndDescription;
+					return isDirty
+						? localize('entryAriaLabelDirty', '{0}, unsaved changes', nameAndDescription)
+						: nameAndDescription;
 				})(),
 				description,
-				iconClasses: getIconClasses(this.modelService, this.languageService, resource, undefined, editor.getIcon()).concat(editor.getLabelExtraClasses()),
+				iconClasses: getIconClasses(
+					this.modelService,
+					this.languageService,
+					resource,
+					undefined,
+					editor.getIcon()
+				).concat(editor.getLabelExtraClasses()),
 				italic: !this.editorGroupService.getGroup(groupId)?.isPinned(editor),
 				buttons: (() => {
 					return [
 						{
-							iconClass: isDirty ? ('dirty-editor ' + ThemeIcon.asClassName(Codicon.closeDirty)) : ThemeIcon.asClassName(Codicon.close),
-							tooltip: localize('closeEditor', "Close Editor"),
+							iconClass: isDirty
+								? 'dirty-editor ' + ThemeIcon.asClassName(Codicon.closeDirty)
+								: ThemeIcon.asClassName(Codicon.close),
+							tooltip: localize('closeEditor', 'Close Editor'),
 							alwaysVisible: isDirty
 						}
 					];
@@ -180,7 +224,8 @@ export abstract class BaseEditorQuickAccessProvider extends PickerQuickAccessPro
 
 					return TriggerAction.NO_ACTION;
 				},
-				accept: (keyMods, event) => this.editorGroupService.getGroup(groupId)?.openEditor(editor, { preserveFocus: event.inBackground }),
+				accept: (keyMods, event) =>
+					this.editorGroupService.getGroup(groupId)?.openEditor(editor, { preserveFocus: event.inBackground })
 			};
 		});
 	}
@@ -191,7 +236,6 @@ export abstract class BaseEditorQuickAccessProvider extends PickerQuickAccessPro
 //#region Active Editor Group Editors by Most Recently Used
 
 export class ActiveGroupEditorsByMostRecentlyUsedQuickAccess extends BaseEditorQuickAccessProvider {
-
 	static PREFIX = 'edt active ';
 
 	constructor(
@@ -200,7 +244,13 @@ export class ActiveGroupEditorsByMostRecentlyUsedQuickAccess extends BaseEditorQ
 		@IModelService modelService: IModelService,
 		@ILanguageService languageService: ILanguageService
 	) {
-		super(ActiveGroupEditorsByMostRecentlyUsedQuickAccess.PREFIX, editorGroupService, editorService, modelService, languageService);
+		super(
+			ActiveGroupEditorsByMostRecentlyUsedQuickAccess.PREFIX,
+			editorGroupService,
+			editorService,
+			modelService,
+			languageService
+		);
 	}
 
 	protected doGetEditors(): IEditorIdentifier[] {
@@ -212,11 +262,9 @@ export class ActiveGroupEditorsByMostRecentlyUsedQuickAccess extends BaseEditorQ
 
 //#endregion
 
-
 //#region All Editors by Appearance
 
 export class AllEditorsByAppearanceQuickAccess extends BaseEditorQuickAccessProvider {
-
 	static PREFIX = 'edt ';
 
 	constructor(
@@ -243,11 +291,9 @@ export class AllEditorsByAppearanceQuickAccess extends BaseEditorQuickAccessProv
 
 //#endregion
 
-
 //#region All Editors by Most Recently Used
 
 export class AllEditorsByMostRecentlyUsedQuickAccess extends BaseEditorQuickAccessProvider {
-
 	static PREFIX = 'edt mru ';
 
 	constructor(
@@ -256,7 +302,13 @@ export class AllEditorsByMostRecentlyUsedQuickAccess extends BaseEditorQuickAcce
 		@IModelService modelService: IModelService,
 		@ILanguageService languageService: ILanguageService
 	) {
-		super(AllEditorsByMostRecentlyUsedQuickAccess.PREFIX, editorGroupService, editorService, modelService, languageService);
+		super(
+			AllEditorsByMostRecentlyUsedQuickAccess.PREFIX,
+			editorGroupService,
+			editorService,
+			modelService,
+			languageService
+		);
 	}
 
 	protected doGetEditors(): IEditorIdentifier[] {

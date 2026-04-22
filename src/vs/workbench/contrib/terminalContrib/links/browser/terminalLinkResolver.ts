@@ -19,12 +19,15 @@ export class TerminalLinkResolver implements ITerminalLinkResolver {
 	// both local and remote terminals are present
 	private readonly _resolvedLinkCaches: Map<string, LinkCache> = new Map();
 
-	constructor(
-		@IFileService private readonly _fileService: IFileService,
-	) {
-	}
+	constructor(@IFileService private readonly _fileService: IFileService) {}
 
-	async resolveLink(processManager: Pick<ITerminalProcessManager, 'initialCwd' | 'os' | 'remoteAuthority' | 'userHome'> & { backend?: Pick<ITerminalBackend, 'getWslPath'> }, link: string, uri?: URI): Promise<ResolvedLink> {
+	async resolveLink(
+		processManager: Pick<ITerminalProcessManager, 'initialCwd' | 'os' | 'remoteAuthority' | 'userHome'> & {
+			backend?: Pick<ITerminalBackend, 'getWslPath'>;
+		},
+		link: string,
+		uri?: URI
+	): Promise<ResolvedLink> {
 		// Correct scheme and authority for remote terminals
 		if (uri && uri.scheme === Schemas.file && processManager.remoteAuthority) {
 			uri = uri.with({
@@ -52,8 +55,7 @@ export class TerminalLinkResolver implements ITerminalLinkResolver {
 				const result = { uri, link, isDirectory: stat.isDirectory };
 				cache.set(uri, result);
 				return result;
-			}
-			catch (e) {
+			} catch (e) {
 				// Does not exist
 				cache.set(uri, null);
 				return null;
@@ -83,7 +85,12 @@ export class TerminalLinkResolver implements ITerminalLinkResolver {
 		}
 		// Handle all non-WSL links
 		else {
-			const preprocessedLink = this._preprocessPath(linkUrl, processManager.initialCwd, processManager.os, processManager.userHome);
+			const preprocessedLink = this._preprocessPath(
+				linkUrl,
+				processManager.initialCwd,
+				processManager.os,
+				processManager.userHome
+			);
 			if (!preprocessedLink) {
 				cache.set(link, null);
 				return null;
@@ -108,8 +115,7 @@ export class TerminalLinkResolver implements ITerminalLinkResolver {
 				const result = { uri, link, isDirectory: stat.isDirectory };
 				cache.set(link, result);
 				return result;
-			}
-			catch (e) {
+			} catch (e) {
 				// Does not exist
 				cache.set(link, null);
 				return null;
@@ -121,7 +127,12 @@ export class TerminalLinkResolver implements ITerminalLinkResolver {
 		}
 	}
 
-	protected _preprocessPath(link: string, initialCwd: string, os: OperatingSystem | undefined, userHome: string | undefined): string | null {
+	protected _preprocessPath(
+		link: string,
+		initialCwd: string,
+		os: OperatingSystem | undefined,
+		userHome: string | undefined
+	): string | null {
 		const osPath = this._getOsPath(os);
 		if (link.charAt(0) === '~') {
 			// Resolve ~ -> userHome

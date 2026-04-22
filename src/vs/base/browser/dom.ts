@@ -75,14 +75,18 @@ export const {
 			};
 			windows.set(window.vscodeWindowId, registeredWindow);
 
-			disposables.add(toDisposable(() => {
-				windows.delete(window.vscodeWindowId);
-				onDidUnregisterWindow.fire(window);
-			}));
+			disposables.add(
+				toDisposable(() => {
+					windows.delete(window.vscodeWindowId);
+					onDidUnregisterWindow.fire(window);
+				})
+			);
 
-			disposables.add(addDisposableListener(window, EventType.BEFORE_UNLOAD, () => {
-				onWillUnregisterWindow.fire(window);
-			}));
+			disposables.add(
+				addDisposableListener(window, EventType.BEFORE_UNLOAD, () => {
+					onWillUnregisterWindow.fire(window);
+				})
+			);
 
 			onDidRegisterWindow.fire(registeredWindow);
 
@@ -222,7 +226,6 @@ export function clearNode(node: HTMLElement): void {
 }
 
 class DomListener implements IDisposable {
-
 	private _handler: (e: any) => void;
 	private _node: EventTarget;
 	private readonly _type: string;
@@ -232,7 +235,7 @@ class DomListener implements IDisposable {
 		this._node = node;
 		this._type = type;
 		this._handler = handler;
-		this._options = (options || false);
+		this._options = options || false;
 		this._node.addEventListener(this._type, this._handler, this._options);
 	}
 
@@ -250,23 +253,88 @@ class DomListener implements IDisposable {
 	}
 }
 
-export function addDisposableListener<K extends keyof GlobalEventHandlersEventMap>(node: EventTarget, type: K, handler: (event: GlobalEventHandlersEventMap[K]) => void, useCapture?: boolean): IDisposable;
-export function addDisposableListener(node: EventTarget, type: string, handler: (event: any) => void, useCapture?: boolean): IDisposable;
-export function addDisposableListener(node: EventTarget, type: string, handler: (event: any) => void, options: AddEventListenerOptions): IDisposable;
-export function addDisposableListener(node: EventTarget, type: string, handler: (event: any) => void, useCaptureOrOptions?: boolean | AddEventListenerOptions): IDisposable {
+export function addDisposableListener<K extends keyof GlobalEventHandlersEventMap>(
+	node: EventTarget,
+	type: K,
+	handler: (event: GlobalEventHandlersEventMap[K]) => void,
+	useCapture?: boolean
+): IDisposable;
+export function addDisposableListener(
+	node: EventTarget,
+	type: string,
+	handler: (event: any) => void,
+	useCapture?: boolean
+): IDisposable;
+export function addDisposableListener(
+	node: EventTarget,
+	type: string,
+	handler: (event: any) => void,
+	options: AddEventListenerOptions
+): IDisposable;
+export function addDisposableListener(
+	node: EventTarget,
+	type: string,
+	handler: (event: any) => void,
+	useCaptureOrOptions?: boolean | AddEventListenerOptions
+): IDisposable {
 	return new DomListener(node, type, handler, useCaptureOrOptions);
 }
 
 export interface IAddStandardDisposableListenerSignature {
-	(node: HTMLElement | Element | Document, type: 'click', handler: (event: IMouseEvent) => void, useCapture?: boolean): IDisposable;
-	(node: HTMLElement | Element | Document, type: 'mousedown', handler: (event: IMouseEvent) => void, useCapture?: boolean): IDisposable;
-	(node: HTMLElement | Element | Document, type: 'keydown', handler: (event: IKeyboardEvent) => void, useCapture?: boolean): IDisposable;
-	(node: HTMLElement | Element | Document, type: 'keypress', handler: (event: IKeyboardEvent) => void, useCapture?: boolean): IDisposable;
-	(node: HTMLElement | Element | Document, type: 'keyup', handler: (event: IKeyboardEvent) => void, useCapture?: boolean): IDisposable;
-	(node: HTMLElement | Element | Document, type: 'pointerdown', handler: (event: PointerEvent) => void, useCapture?: boolean): IDisposable;
-	(node: HTMLElement | Element | Document, type: 'pointermove', handler: (event: PointerEvent) => void, useCapture?: boolean): IDisposable;
-	(node: HTMLElement | Element | Document, type: 'pointerup', handler: (event: PointerEvent) => void, useCapture?: boolean): IDisposable;
-	(node: HTMLElement | Element | Document, type: string, handler: (event: any) => void, useCapture?: boolean): IDisposable;
+	(
+		node: HTMLElement | Element | Document,
+		type: 'click',
+		handler: (event: IMouseEvent) => void,
+		useCapture?: boolean
+	): IDisposable;
+	(
+		node: HTMLElement | Element | Document,
+		type: 'mousedown',
+		handler: (event: IMouseEvent) => void,
+		useCapture?: boolean
+	): IDisposable;
+	(
+		node: HTMLElement | Element | Document,
+		type: 'keydown',
+		handler: (event: IKeyboardEvent) => void,
+		useCapture?: boolean
+	): IDisposable;
+	(
+		node: HTMLElement | Element | Document,
+		type: 'keypress',
+		handler: (event: IKeyboardEvent) => void,
+		useCapture?: boolean
+	): IDisposable;
+	(
+		node: HTMLElement | Element | Document,
+		type: 'keyup',
+		handler: (event: IKeyboardEvent) => void,
+		useCapture?: boolean
+	): IDisposable;
+	(
+		node: HTMLElement | Element | Document,
+		type: 'pointerdown',
+		handler: (event: PointerEvent) => void,
+		useCapture?: boolean
+	): IDisposable;
+	(
+		node: HTMLElement | Element | Document,
+		type: 'pointermove',
+		handler: (event: PointerEvent) => void,
+		useCapture?: boolean
+	): IDisposable;
+	(
+		node: HTMLElement | Element | Document,
+		type: 'pointerup',
+		handler: (event: PointerEvent) => void,
+		useCapture?: boolean
+	): IDisposable;
+	(
+		node: HTMLElement | Element | Document,
+		type: string,
+		handler: (event: any) => void,
+		useCapture?: boolean
+	): IDisposable;
 }
 function _wrapAsStandardMouseEvent(targetWindow: Window, handler: (e: IMouseEvent) => void): (e: MouseEvent) => void {
 	return function (e: MouseEvent) {
@@ -278,39 +346,80 @@ function _wrapAsStandardKeyboardEvent(handler: (e: IKeyboardEvent) => void): (e:
 		return handler(new StandardKeyboardEvent(e));
 	};
 }
-export const addStandardDisposableListener: IAddStandardDisposableListenerSignature = function addStandardDisposableListener(node: HTMLElement | Element | Document, type: string, handler: (event: any) => void, useCapture?: boolean): IDisposable {
-	let wrapHandler = handler;
+export const addStandardDisposableListener: IAddStandardDisposableListenerSignature =
+	function addStandardDisposableListener(
+		node: HTMLElement | Element | Document,
+		type: string,
+		handler: (event: any) => void,
+		useCapture?: boolean
+	): IDisposable {
+		let wrapHandler = handler;
 
-	if (type === 'click' || type === 'mousedown' || type === 'contextmenu') {
-		wrapHandler = _wrapAsStandardMouseEvent(getWindow(node), handler);
-	} else if (type === 'keydown' || type === 'keypress' || type === 'keyup') {
-		wrapHandler = _wrapAsStandardKeyboardEvent(handler);
-	}
+		if (type === 'click' || type === 'mousedown' || type === 'contextmenu') {
+			wrapHandler = _wrapAsStandardMouseEvent(getWindow(node), handler);
+		} else if (type === 'keydown' || type === 'keypress' || type === 'keyup') {
+			wrapHandler = _wrapAsStandardKeyboardEvent(handler);
+		}
 
-	return addDisposableListener(node, type, wrapHandler, useCapture);
-};
+		return addDisposableListener(node, type, wrapHandler, useCapture);
+	};
 
-export const addStandardDisposableGenericMouseDownListener = function addStandardDisposableListener(node: HTMLElement, handler: (event: any) => void, useCapture?: boolean): IDisposable {
+export const addStandardDisposableGenericMouseDownListener = function addStandardDisposableListener(
+	node: HTMLElement,
+	handler: (event: any) => void,
+	useCapture?: boolean
+): IDisposable {
 	const wrapHandler = _wrapAsStandardMouseEvent(getWindow(node), handler);
 
 	return addDisposableGenericMouseDownListener(node, wrapHandler, useCapture);
 };
 
-export const addStandardDisposableGenericMouseUpListener = function addStandardDisposableListener(node: HTMLElement, handler: (event: any) => void, useCapture?: boolean): IDisposable {
+export const addStandardDisposableGenericMouseUpListener = function addStandardDisposableListener(
+	node: HTMLElement,
+	handler: (event: any) => void,
+	useCapture?: boolean
+): IDisposable {
 	const wrapHandler = _wrapAsStandardMouseEvent(getWindow(node), handler);
 
 	return addDisposableGenericMouseUpListener(node, wrapHandler, useCapture);
 };
-export function addDisposableGenericMouseDownListener(node: EventTarget, handler: (event: any) => void, useCapture?: boolean): IDisposable {
-	return addDisposableListener(node, platform.isIOS && BrowserFeatures.pointerEvents ? EventType.POINTER_DOWN : EventType.MOUSE_DOWN, handler, useCapture);
+export function addDisposableGenericMouseDownListener(
+	node: EventTarget,
+	handler: (event: any) => void,
+	useCapture?: boolean
+): IDisposable {
+	return addDisposableListener(
+		node,
+		platform.isIOS && BrowserFeatures.pointerEvents ? EventType.POINTER_DOWN : EventType.MOUSE_DOWN,
+		handler,
+		useCapture
+	);
 }
 
-export function addDisposableGenericMouseMoveListener(node: EventTarget, handler: (event: any) => void, useCapture?: boolean): IDisposable {
-	return addDisposableListener(node, platform.isIOS && BrowserFeatures.pointerEvents ? EventType.POINTER_MOVE : EventType.MOUSE_MOVE, handler, useCapture);
+export function addDisposableGenericMouseMoveListener(
+	node: EventTarget,
+	handler: (event: any) => void,
+	useCapture?: boolean
+): IDisposable {
+	return addDisposableListener(
+		node,
+		platform.isIOS && BrowserFeatures.pointerEvents ? EventType.POINTER_MOVE : EventType.MOUSE_MOVE,
+		handler,
+		useCapture
+	);
 }
 
-export function addDisposableGenericMouseUpListener(node: EventTarget, handler: (event: any) => void, useCapture?: boolean): IDisposable {
-	return addDisposableListener(node, platform.isIOS && BrowserFeatures.pointerEvents ? EventType.POINTER_UP : EventType.MOUSE_UP, handler, useCapture);
+export function addDisposableGenericMouseUpListener(
+	node: EventTarget,
+	handler: (event: any) => void,
+	useCapture?: boolean
+): IDisposable {
+	return addDisposableListener(
+		node,
+		platform.isIOS && BrowserFeatures.pointerEvents ? EventType.POINTER_UP : EventType.MOUSE_UP,
+		handler,
+		useCapture
+	);
 }
 
 /**
@@ -332,7 +441,11 @@ export function addDisposableGenericMouseUpListener(node: EventTarget, handler: 
  * [requestIdleCallback]: https://developer.mozilla.org/en-US/docs/Web/API/Window/requestIdleCallback
  * [setTimeout]: https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout
  */
-export function runWhenWindowIdle(targetWindow: Window | typeof globalThis, callback: (idle: IdleDeadline) => void, timeout?: number): IDisposable {
+export function runWhenWindowIdle(
+	targetWindow: Window | typeof globalThis,
+	callback: (idle: IdleDeadline) => void,
+	timeout?: number
+): IDisposable {
 	return _runWhenIdle(targetWindow, callback, timeout);
 }
 
@@ -352,7 +465,11 @@ export class WindowIdleValue<T> extends AbstractIdleValue<T> {
  * If currently in an animation frame, `runner` will be executed immediately.
  * @return token that can be used to cancel the scheduled runner (only if `runner` was not executed immediately).
  */
-export let runAtThisOrScheduleAtNextAnimationFrame: (targetWindow: Window, runner: () => void, priority?: number) => IDisposable;
+export let runAtThisOrScheduleAtNextAnimationFrame: (
+	targetWindow: Window,
+	runner: () => void,
+	priority?: number
+) => IDisposable;
 /**
  * Schedule a callback to be run at the next animation frame.
  * This allows multiple parties to register callbacks that should run at the next animation frame.
@@ -361,7 +478,12 @@ export let runAtThisOrScheduleAtNextAnimationFrame: (targetWindow: Window, runne
  */
 export let scheduleAtNextAnimationFrame: (targetWindow: Window, runner: () => void, priority?: number) => IDisposable;
 
-export function disposableWindowInterval(targetWindow: Window, handler: () => void | boolean /* stop interval */ | Promise<unknown>, interval: number, iterations?: number): IDisposable {
+export function disposableWindowInterval(
+	targetWindow: Window,
+	handler: () => void | boolean /* stop interval */ | Promise<unknown>,
+	interval: number,
+	iterations?: number
+): IDisposable {
 	let iteration = 0;
 	const timer = targetWindow.setInterval(() => {
 		iteration++;
@@ -376,7 +498,6 @@ export function disposableWindowInterval(targetWindow: Window, handler: () => vo
 }
 
 export class WindowIntervalTimer extends IntervalTimer {
-
 	private readonly defaultTarget?: Window & typeof globalThis;
 
 	/**
@@ -394,7 +515,6 @@ export class WindowIntervalTimer extends IntervalTimer {
 }
 
 class AnimationFrameQueueItem implements IDisposable {
-
 	private _runner: () => void;
 	public priority: number;
 	private _canceled: boolean;
@@ -511,7 +631,6 @@ export function modify(targetWindow: Window, callback: () => void): IDisposable 
  * instead of timeouts.
  */
 export class AnimationFrameScheduler implements IDisposable {
-
 	private readonly runner: () => void;
 	private readonly node: Node;
 	private readonly pendingRunner = new MutableDisposable<IDisposable>();
@@ -569,8 +688,13 @@ function DEFAULT_EVENT_MERGER<T>(_lastEvent: unknown, currentEvent: T) {
 }
 
 class TimeoutThrottledDomListener<R, E extends Event> extends Disposable {
-
-	constructor(node: Node, type: string, handler: (event: R) => void, eventMerger: IEventMerger<R, E> = DEFAULT_EVENT_MERGER as IEventMerger<R, E>, minimumTimeMs: number = MINIMUM_TIME_MS) {
+	constructor(
+		node: Node,
+		type: string,
+		handler: (event: R) => void,
+		eventMerger: IEventMerger<R, E> = DEFAULT_EVENT_MERGER as IEventMerger<R, E>,
+		minimumTimeMs: number = MINIMUM_TIME_MS
+	) {
 		super();
 
 		let lastEvent: R | null = null;
@@ -578,27 +702,34 @@ class TimeoutThrottledDomListener<R, E extends Event> extends Disposable {
 		const timeout = this._register(new TimeoutTimer());
 
 		const invokeHandler = () => {
-			lastHandlerTime = (new Date()).getTime();
+			lastHandlerTime = new Date().getTime();
 			handler(<R>lastEvent);
 			lastEvent = null;
 		};
 
-		this._register(addDisposableListener(node, type, (e) => {
+		this._register(
+			addDisposableListener(node, type, e => {
+				lastEvent = eventMerger(lastEvent, e);
+				const elapsedTime = new Date().getTime() - lastHandlerTime;
 
-			lastEvent = eventMerger(lastEvent, e);
-			const elapsedTime = (new Date()).getTime() - lastHandlerTime;
-
-			if (elapsedTime >= minimumTimeMs) {
-				timeout.cancel();
-				invokeHandler();
-			} else {
-				timeout.setIfNotSet(invokeHandler, minimumTimeMs - elapsedTime);
-			}
-		}));
+				if (elapsedTime >= minimumTimeMs) {
+					timeout.cancel();
+					invokeHandler();
+				} else {
+					timeout.setIfNotSet(invokeHandler, minimumTimeMs - elapsedTime);
+				}
+			})
+		);
 	}
 }
 
-export function addDisposableThrottledListener<R, E extends Event = Event>(node: any, type: string, handler: (event: R) => void, eventMerger?: IEventMerger<R, E>, minimumTimeMs?: number): IDisposable {
+export function addDisposableThrottledListener<R, E extends Event = Event>(
+	node: any,
+	type: string,
+	handler: (event: R) => void,
+	eventMerger?: IEventMerger<R, E>,
+	minimumTimeMs?: number
+): IDisposable {
 	return new TimeoutThrottledDomListener<R, E>(node, type, handler, eventMerger, minimumTimeMs);
 }
 
@@ -606,7 +737,11 @@ export function getComputedStyle(el: HTMLElement): CSSStyleDeclaration {
 	return getWindow(el).getComputedStyle(el, null);
 }
 
-export function getClientArea(element: HTMLElement, defaultValue?: Dimension, fallbackElement?: HTMLElement): Dimension {
+export function getClientArea(
+	element: HTMLElement,
+	defaultValue?: Dimension,
+	fallbackElement?: HTMLElement
+): Dimension {
 	const elWindow = getWindow(element);
 	const elDocument = elWindow.document;
 
@@ -708,13 +843,12 @@ export interface IDimension {
 }
 
 export class Dimension implements IDimension {
-
 	static readonly None = new Dimension(0, 0);
 
 	constructor(
 		readonly width: number,
-		readonly height: number,
-	) { }
+		readonly height: number
+	) {}
 
 	with(width: number = this.width, height: number = this.height): Dimension {
 		if (width !== this.width || height !== this.height) {
@@ -725,7 +859,11 @@ export class Dimension implements IDimension {
 	}
 
 	static is(obj: unknown): obj is IDimension {
-		return typeof obj === 'object' && typeof (<IDimension>obj).height === 'number' && typeof (<IDimension>obj).width === 'number';
+		return (
+			typeof obj === 'object' &&
+			typeof (<IDimension>obj).height === 'number' &&
+			typeof (<IDimension>obj).width === 'number'
+		);
 	}
 
 	static lift(obj: IDimension): Dimension {
@@ -761,9 +899,9 @@ export function getTopLeftOffset(element: HTMLElement): IDomPosition {
 	let left = element.offsetLeft;
 
 	while (
-		(element = <HTMLElement>element.parentNode) !== null
-		&& element !== element.ownerDocument.body
-		&& element !== element.ownerDocument.documentElement
+		(element = <HTMLElement>element.parentNode) !== null &&
+		element !== element.ownerDocument.body &&
+		element !== element.ownerDocument.documentElement
 	) {
 		top -= element.scrollTop;
 		const c = isShadowRoot(element) ? null : getComputedStyle(element);
@@ -803,7 +941,14 @@ export function size(element: HTMLElement, width: number | null, height: number 
 	}
 }
 
-export function position(element: HTMLElement, top: number, right?: number, bottom?: number, left?: number, position: string = 'absolute'): void {
+export function position(
+	element: HTMLElement,
+	top: number,
+	right?: number,
+	bottom?: number,
+	left?: number,
+	position: string = 'absolute'
+): void {
 	if (typeof top === 'number') {
 		element.style.top = `${top}px`;
 	}
@@ -856,7 +1001,6 @@ export function getDomNodeZoomLevel(domNode: HTMLElement): number {
 	return zoom;
 }
 
-
 // Adapted from WinJS
 // Gets the width of the element, including margins.
 export function getTotalWidth(element: HTMLElement): number {
@@ -902,7 +1046,7 @@ function getRelativeLeft(element: HTMLElement, parent: HTMLElement): number {
 }
 
 export function getLargestChildWidth(parent: HTMLElement, children: HTMLElement[]): number {
-	const childWidths = children.map((child) => {
+	const childWidths = children.map(child => {
 		return Math.max(getTotalScrollWidth(child), getTotalWidth(child)) + getRelativeLeft(child, parent) || 0;
 	});
 	const maxWidth = Math.max(...childWidths);
@@ -928,7 +1072,6 @@ export function setParentFlowTo(fromChildElement: HTMLElement, toParentElement: 
 function getParentFlowToElement(node: HTMLElement): HTMLElement | null {
 	const flowToParentId = node.dataset[parentFlowToDataKey];
 	if (typeof flowToParentId === 'string') {
-		// eslint-disable-next-line no-restricted-syntax
 		return node.ownerDocument.getElementById(flowToParentId);
 	}
 	return null;
@@ -958,7 +1101,11 @@ export function isAncestorUsingFlowTo(testChild: Node, testAncestor: Node): bool
 	return false;
 }
 
-export function findParentWithClass(node: HTMLElement, clazz: string, stopAtClazzOrNode?: string | HTMLElement): HTMLElement | null {
+export function findParentWithClass(
+	node: HTMLElement,
+	clazz: string,
+	stopAtClazzOrNode?: string | HTMLElement
+): HTMLElement | null {
 	while (node && node.nodeType === node.ELEMENT_NODE) {
 		if (node.classList.contains(clazz)) {
 			return node;
@@ -982,14 +1129,16 @@ export function findParentWithClass(node: HTMLElement, clazz: string, stopAtClaz
 	return null;
 }
 
-export function hasParentWithClass(node: HTMLElement, clazz: string, stopAtClazzOrNode?: string | HTMLElement): boolean {
+export function hasParentWithClass(
+	node: HTMLElement,
+	clazz: string,
+	stopAtClazzOrNode?: string | HTMLElement
+): boolean {
 	return !!findParentWithClass(node, clazz, stopAtClazzOrNode);
 }
 
 export function isShadowRoot(node: Node): node is ShadowRoot {
-	return (
-		node && !!(<ShadowRoot>node).host && !!(<ShadowRoot>node).mode
-	);
+	return node && !!(<ShadowRoot>node).host && !!(<ShadowRoot>node).mode;
 }
 
 export function isInShadowDOM(domNode: Node): boolean {
@@ -1088,8 +1237,7 @@ interface IMutationObserver {
 	readonly onDidMutate: event.Event<MutationRecord[]>;
 }
 
-export const sharedMutationObserver = new class {
-
+export const sharedMutationObserver = new (class {
 	readonly mutationObservers = new Map<Node, Map<number, IMutationObserver>>();
 
 	observe(target: Node, disposables: DisposableStore, options?: MutationObserverInit): event.Event<MutationRecord[]> {
@@ -1106,25 +1254,27 @@ export const sharedMutationObserver = new class {
 			const observer = new MutationObserver(mutations => onDidMutate.fire(mutations));
 			observer.observe(target, options);
 
-			const resolvedMutationObserverPerOptions = mutationObserverPerOptions = {
+			const resolvedMutationObserverPerOptions = (mutationObserverPerOptions = {
 				users: 1,
 				observer,
 				onDidMutate: onDidMutate.event
-			};
+			});
 
-			disposables.add(toDisposable(() => {
-				resolvedMutationObserverPerOptions.users -= 1;
+			disposables.add(
+				toDisposable(() => {
+					resolvedMutationObserverPerOptions.users -= 1;
 
-				if (resolvedMutationObserverPerOptions.users === 0) {
-					onDidMutate.dispose();
-					observer.disconnect();
+					if (resolvedMutationObserverPerOptions.users === 0) {
+						onDidMutate.dispose();
+						observer.disconnect();
 
-					mutationObserversPerTarget?.delete(optionsHash);
-					if (mutationObserversPerTarget?.size === 0) {
-						this.mutationObservers.delete(target);
+						mutationObserversPerTarget?.delete(optionsHash);
+						if (mutationObserversPerTarget?.size === 0) {
+							this.mutationObservers.delete(target);
+						}
 					}
-				}
-			}));
+				})
+			);
 
 			mutationObserversPerTarget.set(optionsHash, mutationObserverPerOptions);
 		} else {
@@ -1133,7 +1283,7 @@ export const sharedMutationObserver = new class {
 
 		return mutationObserverPerOptions.onDidMutate;
 	}
-};
+})();
 
 export function createMetaElement(container: HTMLElement = mainWindow.document.head): HTMLMetaElement {
 	return createHeadElement('meta', container);
@@ -1143,69 +1293,60 @@ export function createLinkElement(container: HTMLElement = mainWindow.document.h
 	return createHeadElement('link', container);
 }
 
-function createHeadElement<K extends keyof HTMLElementTagNameMap>(tagName: K, container: HTMLElement = mainWindow.document.head): HTMLElementTagNameMap[K] {
+function createHeadElement<K extends keyof HTMLElementTagNameMap>(
+	tagName: K,
+	container: HTMLElement = mainWindow.document.head
+): HTMLElementTagNameMap[K] {
 	const element = document.createElement(tagName);
 	container.appendChild(element);
 	return element;
 }
 
 export function isHTMLElement(e: unknown): e is HTMLElement {
-	// eslint-disable-next-line no-restricted-syntax
 	return e instanceof HTMLElement || e instanceof getWindow(e as Node).HTMLElement;
 }
 
 export function isHTMLAnchorElement(e: unknown): e is HTMLAnchorElement {
-	// eslint-disable-next-line no-restricted-syntax
 	return e instanceof HTMLAnchorElement || e instanceof getWindow(e as Node).HTMLAnchorElement;
 }
 
 export function isHTMLSpanElement(e: unknown): e is HTMLSpanElement {
-	// eslint-disable-next-line no-restricted-syntax
 	return e instanceof HTMLSpanElement || e instanceof getWindow(e as Node).HTMLSpanElement;
 }
 
 export function isHTMLTextAreaElement(e: unknown): e is HTMLTextAreaElement {
-	// eslint-disable-next-line no-restricted-syntax
 	return e instanceof HTMLTextAreaElement || e instanceof getWindow(e as Node).HTMLTextAreaElement;
 }
 
 export function isHTMLInputElement(e: unknown): e is HTMLInputElement {
-	// eslint-disable-next-line no-restricted-syntax
 	return e instanceof HTMLInputElement || e instanceof getWindow(e as Node).HTMLInputElement;
 }
 
 export function isHTMLButtonElement(e: unknown): e is HTMLButtonElement {
-	// eslint-disable-next-line no-restricted-syntax
 	return e instanceof HTMLButtonElement || e instanceof getWindow(e as Node).HTMLButtonElement;
 }
 
 export function isHTMLDivElement(e: unknown): e is HTMLDivElement {
-	// eslint-disable-next-line no-restricted-syntax
 	return e instanceof HTMLDivElement || e instanceof getWindow(e as Node).HTMLDivElement;
 }
 
 export function isSVGElement(e: unknown): e is SVGElement {
-	// eslint-disable-next-line no-restricted-syntax
 	return e instanceof SVGElement || e instanceof getWindow(e as Node).SVGElement;
 }
 
 export function isMouseEvent(e: unknown): e is MouseEvent {
-	// eslint-disable-next-line no-restricted-syntax
 	return e instanceof MouseEvent || e instanceof getWindow(e as UIEvent).MouseEvent;
 }
 
 export function isKeyboardEvent(e: unknown): e is KeyboardEvent {
-	// eslint-disable-next-line no-restricted-syntax
 	return e instanceof KeyboardEvent || e instanceof getWindow(e as UIEvent).KeyboardEvent;
 }
 
 export function isPointerEvent(e: unknown): e is PointerEvent {
-	// eslint-disable-next-line no-restricted-syntax
 	return e instanceof PointerEvent || e instanceof getWindow(e as UIEvent).PointerEvent;
 }
 
 export function isDragEvent(e: unknown): e is DragEvent {
-	// eslint-disable-next-line no-restricted-syntax
 	return e instanceof DragEvent || e instanceof getWindow(e as UIEvent).DragEvent;
 }
 
@@ -1279,7 +1420,11 @@ export interface EventLike {
 export function isEventLike(obj: unknown): obj is EventLike {
 	const candidate = obj as EventLike | undefined;
 
-	return !!(candidate && typeof candidate.preventDefault === 'function' && typeof candidate.stopPropagation === 'function');
+	return !!(
+		candidate &&
+		typeof candidate.preventDefault === 'function' &&
+		typeof candidate.stopPropagation === 'function'
+	);
 }
 
 export const EventHelper = {
@@ -1317,19 +1462,22 @@ export function restoreParentsScrollTop(node: Element, state: number[]): void {
 }
 
 class FocusTracker extends Disposable implements IFocusTracker {
-
 	private readonly _onDidFocus = this._register(new event.Emitter<void>());
-	get onDidFocus() { return this._onDidFocus.event; }
+	get onDidFocus() {
+		return this._onDidFocus.event;
+	}
 
 	private readonly _onDidBlur = this._register(new event.Emitter<void>());
-	get onDidBlur() { return this._onDidBlur.event; }
+	get onDidBlur() {
+		return this._onDidBlur.event;
+	}
 
 	private _refreshStateHandler: () => void;
 
 	private static hasFocusWithin(element: HTMLElement | Window): boolean {
 		if (isHTMLElement(element)) {
 			const shadowRoot = getShadowRoot(element);
-			const activeElement = (shadowRoot ? shadowRoot.activeElement : element.ownerDocument.activeElement);
+			const activeElement = shadowRoot ? shadowRoot.activeElement : element.ownerDocument.activeElement;
 			return isAncestor(activeElement, element);
 		} else {
 			const window = element;
@@ -1380,7 +1528,6 @@ class FocusTracker extends Disposable implements IFocusTracker {
 			this._register(addDisposableListener(element, EventType.FOCUS_IN, () => this._refreshStateHandler()));
 			this._register(addDisposableListener(element, EventType.FOCUS_OUT, () => this._refreshStateHandler()));
 		}
-
 	}
 
 	refreshState() {
@@ -1432,7 +1579,12 @@ export enum Namespace {
 	SVG = 'http://www.w3.org/2000/svg'
 }
 
-function _$<T extends Element>(namespace: Namespace, description: string, attrs?: { [key: string]: any }, ...children: Array<Node | string>): T {
+function _$<T extends Element>(
+	namespace: Namespace,
+	description: string,
+	attrs?: { [key: string]: any },
+	...children: Array<Node | string>
+): T {
 	const match = SELECTOR_REGEX.exec(description);
 
 	if (!match) {
@@ -1468,7 +1620,6 @@ function _$<T extends Element>(namespace: Namespace, description: string, attrs?
 				if (value) {
 					result.setAttribute(name, 'true');
 				}
-
 			} else {
 				result.setAttribute(name, value);
 			}
@@ -1480,11 +1631,19 @@ function _$<T extends Element>(namespace: Namespace, description: string, attrs?
 	return result;
 }
 
-export function $<T extends HTMLElement>(description: string, attrs?: { [key: string]: any }, ...children: Array<Node | string>): T {
+export function $<T extends HTMLElement>(
+	description: string,
+	attrs?: { [key: string]: any },
+	...children: Array<Node | string>
+): T {
 	return _$(Namespace.HTML, description, attrs, ...children);
 }
 
-$.SVG = function <T extends SVGElement>(description: string, attrs?: { [key: string]: any }, ...children: Array<Node | string>): T {
+$.SVG = function <T extends SVGElement>(
+	description: string,
+	attrs?: { [key: string]: any },
+	...children: Array<Node | string>
+): T {
 	return _$(Namespace.SVG, description, attrs, ...children);
 };
 
@@ -1606,12 +1765,10 @@ export function computeScreenAwareSize(window: Window, cssPx: number): number {
  * See https://mathiasbynens.github.io/rel-noopener/
  */
 export function windowOpenNoOpener(url: string): void {
-	// By using 'noopener' in the `windowFeatures` argument, the newly created window will
-	// not be able to use `window.opener` to reach back to the current page.
-	// See https://stackoverflow.com/a/46958731
-	// See https://developer.mozilla.org/en-US/docs/Web/API/Window/open#noopener
-	// However, this also doesn't allow us to realize if the browser blocked
-	// the creation of the window.
+	if ((globalThis as any).__SIDEX_TAURI__ && (globalThis as any).__sidex_shellOpen) {
+		(globalThis as any).__sidex_shellOpen(url);
+		return;
+	}
 	mainWindow.open(url, '_blank', 'noopener');
 }
 
@@ -1626,15 +1783,12 @@ export function windowOpenNoOpener(url: string): void {
  *
  * In otherwords, you should almost always use {@link windowOpenNoOpener} instead of this function.
  */
-const popupWidth = 780, popupHeight = 640;
+const popupWidth = 780,
+	popupHeight = 640;
 export function windowOpenPopup(url: string): void {
 	const left = Math.floor(mainWindow.screenLeft + mainWindow.innerWidth / 2 - popupWidth / 2);
 	const top = Math.floor(mainWindow.screenTop + mainWindow.innerHeight / 2 - popupHeight / 2);
-	mainWindow.open(
-		url,
-		'_blank',
-		`width=${popupWidth},height=${popupHeight},top=${top},left=${left}`
-	);
+	mainWindow.open(url, '_blank', `width=${popupWidth},height=${popupHeight},top=${top},left=${left}`);
 }
 
 /**
@@ -1679,7 +1833,6 @@ export function animate(targetWindow: Window, fn: () => void): IDisposable {
 RemoteAuthorities.setPreferredWebSchema(/^https:/.test(mainWindow.location.href) ? 'https' : 'http');
 
 export function triggerDownload(dataOrUri: Uint8Array | URI, name: string): void {
-
 	// If the data is provided as Buffer, we create a
 	// blob URL out of it to produce a valid link
 	let url: string;
@@ -1710,7 +1863,6 @@ export function triggerDownload(dataOrUri: Uint8Array | URI, name: string): void
 
 export function triggerUpload(): Promise<FileList | undefined> {
 	return new Promise<FileList | undefined>(resolve => {
-
 		// In order to upload to the browser, create a
 		// input element of type `file` and click it
 		// to gather the selected files
@@ -1733,7 +1885,6 @@ export function triggerUpload(): Promise<FileList | undefined> {
 }
 
 export enum DetectedFullscreenMode {
-
 	/**
 	 * The document is fullscreen, e.g. because an element
 	 * in the document requested to be fullscreen.
@@ -1748,7 +1899,6 @@ export enum DetectedFullscreenMode {
 }
 
 export interface IDetectedFullscreen {
-
 	/**
 	 * Figure out if the document is fullscreen or the browser.
 	 */
@@ -1762,10 +1912,13 @@ export interface IDetectedFullscreen {
 }
 
 export function detectFullscreen(targetWindow: Window): IDetectedFullscreen | null {
-
 	// Browser fullscreen: use DOM APIs to detect
 	// eslint-disable-next-line local/code-no-any-casts
-	if (targetWindow.document.fullscreenElement || (<any>targetWindow.document).webkitFullscreenElement || (<any>targetWindow.document).webkitIsFullScreen) {
+	if (
+		targetWindow.document.fullscreenElement ||
+		(<any>targetWindow.document).webkitFullscreenElement ||
+		(<any>targetWindow.document).webkitIsFullScreen
+	) {
 		return { mode: DetectedFullscreenMode.DOCUMENT, guess: false };
 	}
 
@@ -1783,7 +1936,10 @@ export function detectFullscreen(targetWindow: Window): IDetectedFullscreen | nu
 
 	if (platform.isMacintosh || platform.isLinux) {
 		// macOS and Linux do not properly report `innerHeight`, only Windows does
-		if (targetWindow.outerHeight === targetWindow.screen.height && targetWindow.outerWidth === targetWindow.screen.width) {
+		if (
+			targetWindow.outerHeight === targetWindow.screen.height &&
+			targetWindow.outerWidth === targetWindow.screen.width
+		) {
 			// if the height of the browser matches the screen height, we can
 			// only guess that we are in fullscreen. It is also possible that
 			// the user has turned off taskbars in the OS and the browser is
@@ -1809,7 +1965,6 @@ export interface IModifierKeyStatus {
 }
 
 export class ModifierKeyEmitter extends event.Emitter<IModifierKeyStatus> {
-
 	private readonly _subscriptions = new DisposableStore();
 	private _keyStatus: IModifierKeyStatus;
 	private static instance: ModifierKeyEmitter | undefined;
@@ -1824,96 +1979,139 @@ export class ModifierKeyEmitter extends event.Emitter<IModifierKeyStatus> {
 			metaKey: false
 		};
 
-		this._subscriptions.add(event.Event.runAndSubscribe(onDidRegisterWindow, ({ window, disposables }) => this.registerListeners(window, disposables), { window: mainWindow, disposables: this._subscriptions }));
+		this._subscriptions.add(
+			event.Event.runAndSubscribe(
+				onDidRegisterWindow,
+				({ window, disposables }) => this.registerListeners(window, disposables),
+				{ window: mainWindow, disposables: this._subscriptions }
+			)
+		);
 	}
 
 	private registerListeners(window: Window, disposables: DisposableStore): void {
-		disposables.add(addDisposableListener(window, 'keydown', e => {
-			if (e.defaultPrevented) {
-				return;
-			}
+		disposables.add(
+			addDisposableListener(
+				window,
+				'keydown',
+				e => {
+					if (e.defaultPrevented) {
+						return;
+					}
 
-			const event = new StandardKeyboardEvent(e);
-			// If Alt-key keydown event is repeated, ignore it #112347
-			// Only known to be necessary for Alt-Key at the moment #115810
-			if (event.keyCode === KeyCode.Alt && e.repeat) {
-				return;
-			}
+					const event = new StandardKeyboardEvent(e);
+					// If Alt-key keydown event is repeated, ignore it #112347
+					// Only known to be necessary for Alt-Key at the moment #115810
+					if (event.keyCode === KeyCode.Alt && e.repeat) {
+						return;
+					}
 
-			if (e.altKey && !this._keyStatus.altKey) {
-				this._keyStatus.lastKeyPressed = 'alt';
-			} else if (e.ctrlKey && !this._keyStatus.ctrlKey) {
-				this._keyStatus.lastKeyPressed = 'ctrl';
-			} else if (e.metaKey && !this._keyStatus.metaKey) {
-				this._keyStatus.lastKeyPressed = 'meta';
-			} else if (e.shiftKey && !this._keyStatus.shiftKey) {
-				this._keyStatus.lastKeyPressed = 'shift';
-			} else if (event.keyCode !== KeyCode.Alt) {
-				this._keyStatus.lastKeyPressed = undefined;
-			} else {
-				return;
-			}
+					if (e.altKey && !this._keyStatus.altKey) {
+						this._keyStatus.lastKeyPressed = 'alt';
+					} else if (e.ctrlKey && !this._keyStatus.ctrlKey) {
+						this._keyStatus.lastKeyPressed = 'ctrl';
+					} else if (e.metaKey && !this._keyStatus.metaKey) {
+						this._keyStatus.lastKeyPressed = 'meta';
+					} else if (e.shiftKey && !this._keyStatus.shiftKey) {
+						this._keyStatus.lastKeyPressed = 'shift';
+					} else if (event.keyCode !== KeyCode.Alt) {
+						this._keyStatus.lastKeyPressed = undefined;
+					} else {
+						return;
+					}
 
-			this._keyStatus.altKey = e.altKey;
-			this._keyStatus.ctrlKey = e.ctrlKey;
-			this._keyStatus.metaKey = e.metaKey;
-			this._keyStatus.shiftKey = e.shiftKey;
+					this._keyStatus.altKey = e.altKey;
+					this._keyStatus.ctrlKey = e.ctrlKey;
+					this._keyStatus.metaKey = e.metaKey;
+					this._keyStatus.shiftKey = e.shiftKey;
 
-			if (this._keyStatus.lastKeyPressed) {
-				this._keyStatus.event = e;
-				this.fire(this._keyStatus);
-			}
-		}, true));
+					if (this._keyStatus.lastKeyPressed) {
+						this._keyStatus.event = e;
+						this.fire(this._keyStatus);
+					}
+				},
+				true
+			)
+		);
 
-		disposables.add(addDisposableListener(window, 'keyup', e => {
-			if (e.defaultPrevented) {
-				return;
-			}
+		disposables.add(
+			addDisposableListener(
+				window,
+				'keyup',
+				e => {
+					if (e.defaultPrevented) {
+						return;
+					}
 
-			if (!e.altKey && this._keyStatus.altKey) {
-				this._keyStatus.lastKeyReleased = 'alt';
-			} else if (!e.ctrlKey && this._keyStatus.ctrlKey) {
-				this._keyStatus.lastKeyReleased = 'ctrl';
-			} else if (!e.metaKey && this._keyStatus.metaKey) {
-				this._keyStatus.lastKeyReleased = 'meta';
-			} else if (!e.shiftKey && this._keyStatus.shiftKey) {
-				this._keyStatus.lastKeyReleased = 'shift';
-			} else {
-				this._keyStatus.lastKeyReleased = undefined;
-			}
+					if (!e.altKey && this._keyStatus.altKey) {
+						this._keyStatus.lastKeyReleased = 'alt';
+					} else if (!e.ctrlKey && this._keyStatus.ctrlKey) {
+						this._keyStatus.lastKeyReleased = 'ctrl';
+					} else if (!e.metaKey && this._keyStatus.metaKey) {
+						this._keyStatus.lastKeyReleased = 'meta';
+					} else if (!e.shiftKey && this._keyStatus.shiftKey) {
+						this._keyStatus.lastKeyReleased = 'shift';
+					} else {
+						this._keyStatus.lastKeyReleased = undefined;
+					}
 
-			if (this._keyStatus.lastKeyPressed !== this._keyStatus.lastKeyReleased) {
-				this._keyStatus.lastKeyPressed = undefined;
-			}
+					if (this._keyStatus.lastKeyPressed !== this._keyStatus.lastKeyReleased) {
+						this._keyStatus.lastKeyPressed = undefined;
+					}
 
-			this._keyStatus.altKey = e.altKey;
-			this._keyStatus.ctrlKey = e.ctrlKey;
-			this._keyStatus.metaKey = e.metaKey;
-			this._keyStatus.shiftKey = e.shiftKey;
+					this._keyStatus.altKey = e.altKey;
+					this._keyStatus.ctrlKey = e.ctrlKey;
+					this._keyStatus.metaKey = e.metaKey;
+					this._keyStatus.shiftKey = e.shiftKey;
 
-			if (this._keyStatus.lastKeyReleased) {
-				this._keyStatus.event = e;
-				this.fire(this._keyStatus);
-			}
-		}, true));
+					if (this._keyStatus.lastKeyReleased) {
+						this._keyStatus.event = e;
+						this.fire(this._keyStatus);
+					}
+				},
+				true
+			)
+		);
 
-		disposables.add(addDisposableListener(window.document.body, 'mousedown', () => {
-			this._keyStatus.lastKeyPressed = undefined;
-		}, true));
+		disposables.add(
+			addDisposableListener(
+				window.document.body,
+				'mousedown',
+				() => {
+					this._keyStatus.lastKeyPressed = undefined;
+				},
+				true
+			)
+		);
 
-		disposables.add(addDisposableListener(window.document.body, 'mouseup', () => {
-			this._keyStatus.lastKeyPressed = undefined;
-		}, true));
+		disposables.add(
+			addDisposableListener(
+				window.document.body,
+				'mouseup',
+				() => {
+					this._keyStatus.lastKeyPressed = undefined;
+				},
+				true
+			)
+		);
 
-		disposables.add(addDisposableListener(window.document.body, 'mousemove', e => {
-			if (e.buttons) {
-				this._keyStatus.lastKeyPressed = undefined;
-			}
-		}, true));
+		disposables.add(
+			addDisposableListener(
+				window.document.body,
+				'mousemove',
+				e => {
+					if (e.buttons) {
+						this._keyStatus.lastKeyPressed = undefined;
+					}
+				},
+				true
+			)
+		);
 
-		disposables.add(addDisposableListener(window, 'blur', () => {
-			this.resetKeyStatus();
-		}));
+		disposables.add(
+			addDisposableListener(window, 'blur', () => {
+				this.resetKeyStatus();
+			})
+		);
 	}
 
 	get keyStatus(): IModifierKeyStatus {
@@ -1979,7 +2177,6 @@ export interface IDragAndDropObserverCallbacks {
 }
 
 export class DragAndDropObserver extends Disposable {
-
 	// A helper to fix issues with repeated DRAG_ENTER / DRAG_LEAVE
 	// calls see https://github.com/microsoft/vscode/issues/14470
 	// when the element has child elements where the events are fired
@@ -1989,7 +2186,10 @@ export class DragAndDropObserver extends Disposable {
 	// Allows to measure the duration of the drag operation.
 	private dragStartTime = 0;
 
-	constructor(private readonly element: HTMLElement, private readonly callbacks: IDragAndDropObserverCallbacks) {
+	constructor(
+		private readonly element: HTMLElement,
+		private readonly callbacks: IDragAndDropObserverCallbacks
+	) {
 		super();
 
 		this.registerListeners();
@@ -1997,53 +2197,67 @@ export class DragAndDropObserver extends Disposable {
 
 	private registerListeners(): void {
 		if (this.callbacks.onDragStart) {
-			this._register(addDisposableListener(this.element, EventType.DRAG_START, (e: DragEvent) => {
-				this.callbacks.onDragStart?.(e);
-			}));
+			this._register(
+				addDisposableListener(this.element, EventType.DRAG_START, (e: DragEvent) => {
+					this.callbacks.onDragStart?.(e);
+				})
+			);
 		}
 
 		if (this.callbacks.onDrag) {
-			this._register(addDisposableListener(this.element, EventType.DRAG, (e: DragEvent) => {
-				this.callbacks.onDrag?.(e);
-			}));
+			this._register(
+				addDisposableListener(this.element, EventType.DRAG, (e: DragEvent) => {
+					this.callbacks.onDrag?.(e);
+				})
+			);
 		}
 
-		this._register(addDisposableListener(this.element, EventType.DRAG_ENTER, (e: DragEvent) => {
-			this.counter++;
-			this.dragStartTime = e.timeStamp;
+		this._register(
+			addDisposableListener(this.element, EventType.DRAG_ENTER, (e: DragEvent) => {
+				this.counter++;
+				this.dragStartTime = e.timeStamp;
 
-			this.callbacks.onDragEnter?.(e);
-		}));
+				this.callbacks.onDragEnter?.(e);
+			})
+		);
 
-		this._register(addDisposableListener(this.element, EventType.DRAG_OVER, (e: DragEvent) => {
-			e.preventDefault(); // needed so that the drop event fires (https://stackoverflow.com/questions/21339924/drop-event-not-firing-in-chrome)
+		this._register(
+			addDisposableListener(this.element, EventType.DRAG_OVER, (e: DragEvent) => {
+				e.preventDefault(); // needed so that the drop event fires (https://stackoverflow.com/questions/21339924/drop-event-not-firing-in-chrome)
 
-			this.callbacks.onDragOver?.(e, e.timeStamp - this.dragStartTime);
-		}));
+				this.callbacks.onDragOver?.(e, e.timeStamp - this.dragStartTime);
+			})
+		);
 
-		this._register(addDisposableListener(this.element, EventType.DRAG_LEAVE, (e: DragEvent) => {
-			this.counter--;
+		this._register(
+			addDisposableListener(this.element, EventType.DRAG_LEAVE, (e: DragEvent) => {
+				this.counter--;
 
-			if (this.counter === 0) {
+				if (this.counter === 0) {
+					this.dragStartTime = 0;
+
+					this.callbacks.onDragLeave?.(e);
+				}
+			})
+		);
+
+		this._register(
+			addDisposableListener(this.element, EventType.DRAG_END, (e: DragEvent) => {
+				this.counter = 0;
 				this.dragStartTime = 0;
 
-				this.callbacks.onDragLeave?.(e);
-			}
-		}));
+				this.callbacks.onDragEnd?.(e);
+			})
+		);
 
-		this._register(addDisposableListener(this.element, EventType.DRAG_END, (e: DragEvent) => {
-			this.counter = 0;
-			this.dragStartTime = 0;
+		this._register(
+			addDisposableListener(this.element, EventType.DROP, (e: DragEvent) => {
+				this.counter = 0;
+				this.dragStartTime = 0;
 
-			this.callbacks.onDragEnd?.(e);
-		}));
-
-		this._register(addDisposableListener(this.element, EventType.DROP, (e: DragEvent) => {
-			this.counter = 0;
-			this.dragStartTime = 0;
-
-			this.callbacks.onDrop?.(e);
-		}));
+				this.callbacks.onDrop?.(e);
+			})
+		);
 	}
 }
 
@@ -2051,7 +2265,6 @@ export class DragAndDropObserver extends Disposable {
  * A wrapper around ResizeObserver that is disposable.
  */
 export class DisposableResizeObserver extends Disposable {
-
 	private readonly observer: ResizeObserver;
 
 	constructor(callback: ResizeObserverCallback) {
@@ -2066,32 +2279,35 @@ export class DisposableResizeObserver extends Disposable {
 	}
 }
 
-type HTMLElementAttributeKeys<T> = Partial<{ [K in keyof T]: T[K] extends Function ? never : T[K] extends object ? HTMLElementAttributeKeys<T[K]> : T[K] }>;
+type HTMLElementAttributeKeys<T> = Partial<{
+	[K in keyof T]: T[K] extends Function ? never : T[K] extends object ? HTMLElementAttributeKeys<T[K]> : T[K];
+}>;
 type ElementAttributes<T> = HTMLElementAttributeKeys<T> & Record<string, any>;
 type RemoveHTMLElement<T> = T extends HTMLElement ? never : T;
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
 type ArrayToObj<T extends readonly any[]> = UnionToIntersection<RemoveHTMLElement<T[number]>>;
 type HHTMLElementTagNameMap = HTMLElementTagNameMap & { '': HTMLDivElement };
 
 type TagToElement<T> = T extends `${infer TStart}#${string}`
 	? TStart extends keyof HHTMLElementTagNameMap
-	? HHTMLElementTagNameMap[TStart]
-	: HTMLElement
+		? HHTMLElementTagNameMap[TStart]
+		: HTMLElement
 	: T extends `${infer TStart}.${string}`
-	? TStart extends keyof HHTMLElementTagNameMap
-	? HHTMLElementTagNameMap[TStart]
-	: HTMLElement
-	: T extends keyof HTMLElementTagNameMap
-	? HTMLElementTagNameMap[T]
-	: HTMLElement;
+		? TStart extends keyof HHTMLElementTagNameMap
+			? HHTMLElementTagNameMap[TStart]
+			: HTMLElement
+		: T extends keyof HTMLElementTagNameMap
+			? HTMLElementTagNameMap[T]
+			: HTMLElement;
 
 type TagToElementAndId<TTag> = TTag extends `${infer TTag}@${infer TId}`
 	? { element: TagToElement<TTag>; id: TId }
 	: { element: TagToElement<TTag>; id: 'root' };
 
-type TagToRecord<TTag> = TagToElementAndId<TTag> extends { element: infer TElement; id: infer TId }
-	? Record<(TId extends string ? TId : never) | 'root', TElement>
-	: never;
+type TagToRecord<TTag> =
+	TagToElementAndId<TTag> extends { element: infer TElement; id: infer TId }
+		? Record<(TId extends string ? TId : never) | 'root', TElement>
+		: never;
 
 type Child = HTMLElement | string | Record<string, HTMLElement>;
 
@@ -2111,24 +2327,34 @@ const H_REGEX = /(?<tag>[\w\-]+)?(?:#(?<id>[\w\-]+))?(?<class>(?:\.(?:[\w\-]+))*
  * ]);
  * const editor = createEditor(elements.editor);
  * ```
-*/
-export function h<TTag extends string>
-	(tag: TTag):
-	TagToRecord<TTag> extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
+ */
+export function h<TTag extends string>(
+	tag: TTag
+): TagToRecord<TTag> extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
 
-export function h<TTag extends string, T extends Child[]>
-	(tag: TTag, children: [...T]):
-	(ArrayToObj<T> & TagToRecord<TTag>) extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
+export function h<TTag extends string, T extends Child[]>(
+	tag: TTag,
+	children: [...T]
+): ArrayToObj<T> & TagToRecord<TTag> extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
 
-export function h<TTag extends string>
-	(tag: TTag, attributes: Partial<ElementAttributes<TagToElement<TTag>>>):
-	TagToRecord<TTag> extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
+export function h<TTag extends string>(
+	tag: TTag,
+	attributes: Partial<ElementAttributes<TagToElement<TTag>>>
+): TagToRecord<TTag> extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
 
-export function h<TTag extends string, T extends Child[]>
-	(tag: TTag, attributes: Partial<ElementAttributes<TagToElement<TTag>>>, children: [...T]):
-	(ArrayToObj<T> & TagToRecord<TTag>) extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
+export function h<TTag extends string, T extends Child[]>(
+	tag: TTag,
+	attributes: Partial<ElementAttributes<TagToElement<TTag>>>,
+	children: [...T]
+): ArrayToObj<T> & TagToRecord<TTag> extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
 
-export function h(tag: string, ...args: [] | [attributes: { $: string } & Partial<ElementAttributes<HTMLElement>> | Record<string, any>, children?: any[]] | [children: any[]]): Record<string, HTMLElement> {
+export function h(
+	tag: string,
+	...args:
+		| []
+		| [attributes: ({ $: string } & Partial<ElementAttributes<HTMLElement>>) | Record<string, any>, children?: any[]]
+		| [children: any[]]
+): Record<string, HTMLElement> {
 	let attributes: { $?: string } & Partial<ElementAttributes<HTMLElement>>;
 	let children: (Record<string, HTMLElement> | HTMLElement)[] | undefined;
 
@@ -2137,7 +2363,7 @@ export function h(tag: string, ...args: [] | [attributes: { $: string } & Partia
 		children = args[0];
 	} else {
 		// eslint-disable-next-line local/code-no-any-casts
-		attributes = args[0] as any || {};
+		attributes = (args[0] as any) || {};
 		children = args[1];
 	}
 
@@ -2215,23 +2441,33 @@ export function h(tag: string, ...args: [] | [attributes: { $: string } & Partia
 }
 
 /** @deprecated This is a duplication of the h function. Needs cleanup. */
-export function svgElem<TTag extends string>
-	(tag: TTag):
-	TagToRecord<TTag> extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
+export function svgElem<TTag extends string>(
+	tag: TTag
+): TagToRecord<TTag> extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
 /** @deprecated This is a duplication of the h function. Needs cleanup. */
-export function svgElem<TTag extends string, T extends Child[]>
-	(tag: TTag, children: [...T]):
-	(ArrayToObj<T> & TagToRecord<TTag>) extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
+export function svgElem<TTag extends string, T extends Child[]>(
+	tag: TTag,
+	children: [...T]
+): ArrayToObj<T> & TagToRecord<TTag> extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
 /** @deprecated This is a duplication of the h function. Needs cleanup. */
-export function svgElem<TTag extends string>
-	(tag: TTag, attributes: Partial<ElementAttributes<TagToElement<TTag>>>):
-	TagToRecord<TTag> extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
+export function svgElem<TTag extends string>(
+	tag: TTag,
+	attributes: Partial<ElementAttributes<TagToElement<TTag>>>
+): TagToRecord<TTag> extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
 /** @deprecated This is a duplication of the h function. Needs cleanup. */
-export function svgElem<TTag extends string, T extends Child[]>
-	(tag: TTag, attributes: Partial<ElementAttributes<TagToElement<TTag>>>, children: [...T]):
-	(ArrayToObj<T> & TagToRecord<TTag>) extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
+export function svgElem<TTag extends string, T extends Child[]>(
+	tag: TTag,
+	attributes: Partial<ElementAttributes<TagToElement<TTag>>>,
+	children: [...T]
+): ArrayToObj<T> & TagToRecord<TTag> extends infer Y ? { [TKey in keyof Y]: Y[TKey] } : never;
 /** @deprecated This is a duplication of the h function. Needs cleanup. */
-export function svgElem(tag: string, ...args: [] | [attributes: { $: string } & Partial<ElementAttributes<HTMLElement>> | Record<string, any>, children?: any[]] | [children: any[]]): Record<string, HTMLElement> {
+export function svgElem(
+	tag: string,
+	...args:
+		| []
+		| [attributes: ({ $: string } & Partial<ElementAttributes<HTMLElement>>) | Record<string, any>, children?: any[]]
+		| [children: any[]]
+): Record<string, HTMLElement> {
 	let attributes: { $?: string } & Partial<ElementAttributes<HTMLElement>>;
 	let children: (Record<string, HTMLElement> | HTMLElement)[] | undefined;
 
@@ -2240,7 +2476,7 @@ export function svgElem(tag: string, ...args: [] | [attributes: { $: string } & 
 		children = args[0];
 	} else {
 		// eslint-disable-next-line local/code-no-any-casts
-		attributes = args[0] as any || {};
+		attributes = (args[0] as any) || {};
 		children = args[1];
 	}
 
@@ -2344,19 +2580,25 @@ export function trackAttributes(from: Element, to: Element, filter?: string[]): 
 
 	const disposables = new DisposableStore();
 
-	disposables.add(sharedMutationObserver.observe(from, disposables, { attributes: true, attributeFilter: filter })(mutations => {
-		for (const mutation of mutations) {
-			if (mutation.type === 'attributes' && mutation.attributeName) {
-				copyAttribute(from, to, mutation.attributeName);
+	disposables.add(
+		sharedMutationObserver.observe(from, disposables, { attributes: true, attributeFilter: filter })(mutations => {
+			for (const mutation of mutations) {
+				if (mutation.type === 'attributes' && mutation.attributeName) {
+					copyAttribute(from, to, mutation.attributeName);
+				}
 			}
-		}
-	}));
+		})
+	);
 
 	return disposables;
 }
 
 export function isEditableElement(element: Element): boolean {
-	return element.tagName.toLowerCase() === 'input' || element.tagName.toLowerCase() === 'textarea' || isHTMLElement(element) && !!element.editContext;
+	return (
+		element.tagName.toLowerCase() === 'input' ||
+		element.tagName.toLowerCase() === 'textarea' ||
+		(isHTMLElement(element) && !!element.editContext)
+	);
 }
 
 /**
@@ -2403,7 +2645,6 @@ export class SafeTriangle {
 	}
 }
 
-
 export namespace n {
 	function nodeNs<TMap extends Record<string, any>>(elementNs: string | undefined = undefined): DomTagCreateFn<TMap> {
 		return (tag, attributes, children) => {
@@ -2419,7 +2660,10 @@ export namespace n {
 		};
 	}
 
-	function node<TMap extends Record<string, any>, TKey extends keyof TMap>(tag: TKey, elementNs: string | undefined = undefined): DomCreateFn<TMap[TKey], TMap[TKey]> {
+	function node<TMap extends Record<string, any>, TKey extends keyof TMap>(
+		tag: TKey,
+		elementNs: string | undefined = undefined
+	): DomCreateFn<TMap[TKey], TMap[TKey]> {
 		// eslint-disable-next-line local/code-no-any-casts
 		const f = nodeNs(elementNs) as any;
 		return (attributes, children) => {
@@ -2431,7 +2675,10 @@ export namespace n {
 
 	export const elem = nodeNs<HTMLElementTagNameMap>(undefined);
 
-	export const svg: DomCreateFn<SVGElementTagNameMap2['svg'], SVGElement> = node<SVGElementTagNameMap2, 'svg'>('svg', 'http://www.w3.org/2000/svg');
+	export const svg: DomCreateFn<SVGElementTagNameMap2['svg'], SVGElement> = node<SVGElementTagNameMap2, 'svg'>(
+		'svg',
+		'http://www.w3.org/2000/svg'
+	);
 
 	export const svgElem = nodeNs<SVGElementTagNameMap2>('http://www.w3.org/2000/svg');
 
@@ -2443,7 +2690,9 @@ export namespace n {
 		Object.defineProperty(result, 'element', {
 			get() {
 				if (!value) {
-					throw new BugIndicatingError('Make sure the ref is set before accessing the element. Maybe wrong initialization order?');
+					throw new BugIndicatingError(
+						'Make sure the ref is set before accessing the element. Maybe wrong initialization order?'
+					);
 				}
 				return value;
 			}
@@ -2488,11 +2737,19 @@ type SVGElementTagNameMap2 = {
 };
 type DomTagCreateFn<TMap extends Record<string, any>> = <TTag extends keyof TMap>(
 	tag: TTag,
-	attributes: ElementAttributeKeys<TMap[TTag]> & { class?: ValueOrList<string | false | undefined>; ref?: IRef<TMap[TTag]>; obsRef?: IRef<ObserverNodeWithElement<TMap[TTag]> | null> },
+	attributes: ElementAttributeKeys<TMap[TTag]> & {
+		class?: ValueOrList<string | false | undefined>;
+		ref?: IRef<TMap[TTag]>;
+		obsRef?: IRef<ObserverNodeWithElement<TMap[TTag]> | null>;
+	},
 	children?: ChildNode
 ) => ObserverNode<TMap[TTag]>;
 type DomCreateFn<TAttributes, TResult extends HTMLOrSVGElement> = (
-	attributes: ElementAttributeKeys<TAttributes> & { class?: ValueOrList<string | false | undefined>; ref?: IRef<TResult>; obsRef?: IRef<ObserverNodeWithElement<TResult> | null> },
+	attributes: ElementAttributeKeys<TAttributes> & {
+		class?: ValueOrList<string | false | undefined>;
+		ref?: IRef<TResult>;
+		obsRef?: IRef<ObserverNodeWithElement<TResult> | null>;
+	},
 	children?: ChildNode
 ) => ObserverNode<TResult>;
 
@@ -2505,7 +2762,7 @@ export interface IRefWithVal<T> extends IRef<T> {
 }
 
 export abstract class ObserverNode<T extends HTMLOrSVGElement = HTMLOrSVGElement> {
-	private readonly _deriveds: (IObservable<any>)[] = [];
+	private readonly _deriveds: IObservable<any>[] = [];
 
 	protected readonly _element: T;
 
@@ -2523,22 +2780,26 @@ export abstract class ObserverNode<T extends HTMLOrSVGElement = HTMLOrSVGElement
 			ref(this._element);
 		}
 		if (obsRef) {
-			this._deriveds.push(derived((_reader) => {
-				obsRef(this as unknown as ObserverNodeWithElement<T>);
-				_reader.store.add({
-					dispose: () => {
-						obsRef(null);
-					}
-				});
-			}));
+			this._deriveds.push(
+				derived(_reader => {
+					obsRef(this as unknown as ObserverNodeWithElement<T>);
+					_reader.store.add({
+						dispose: () => {
+							obsRef(null);
+						}
+					});
+				})
+			);
 		}
 
 		if (className) {
 			if (hasObservable(className)) {
-				this._deriveds.push(derived(this, reader => {
-					/** @description set.class */
-					setClassName(this._element, getClassName(className, reader));
-				}));
+				this._deriveds.push(
+					derived(this, reader => {
+						/** @description set.class */
+						setClassName(this._element, getClassName(className, reader));
+					})
+				);
 			} else {
 				setClassName(this._element, getClassName(className, undefined));
 			}
@@ -2549,20 +2810,24 @@ export abstract class ObserverNode<T extends HTMLOrSVGElement = HTMLOrSVGElement
 				for (const [cssKey, cssValue] of Object.entries(value)) {
 					const key = camelCaseToHyphenCase(cssKey);
 					if (isObservable(cssValue)) {
-						this._deriveds.push(derivedOpts({ owner: this, debugName: () => `set.style.${key}` }, reader => {
-							this._element.style.setProperty(key, convertCssValue(cssValue.read(reader)));
-						}));
+						this._deriveds.push(
+							derivedOpts({ owner: this, debugName: () => `set.style.${key}` }, reader => {
+								this._element.style.setProperty(key, convertCssValue(cssValue.read(reader)));
+							})
+						);
 					} else {
 						this._element.style.setProperty(key, convertCssValue(cssValue));
 					}
 				}
 			} else if (key === 'tabIndex') {
 				if (isObservable(value)) {
-					this._deriveds.push(derived(this, reader => {
-						/** @description set.tabIndex */
-						// eslint-disable-next-line local/code-no-any-casts
-						this._element.tabIndex = value.read(reader) as any;
-					}));
+					this._deriveds.push(
+						derived(this, reader => {
+							/** @description set.tabIndex */
+							// eslint-disable-next-line local/code-no-any-casts
+							this._element.tabIndex = value.read(reader) as any;
+						})
+					);
 				} else {
 					this._element.tabIndex = value;
 				}
@@ -2571,9 +2836,11 @@ export abstract class ObserverNode<T extends HTMLOrSVGElement = HTMLOrSVGElement
 				(this._element as any)[key] = value;
 			} else {
 				if (isObservable(value)) {
-					this._deriveds.push(derivedOpts({ owner: this, debugName: () => `set.${key}` }, reader => {
-						setOrRemoveAttribute(this._element, key, value.read(reader));
-					}));
+					this._deriveds.push(
+						derivedOpts({ owner: this, debugName: () => `set.${key}` }, reader => {
+							setOrRemoveAttribute(this._element, key, value.read(reader));
+						})
+					);
 				} else {
 					setOrRemoveAttribute(this._element, key, value);
 				}
@@ -2581,7 +2848,10 @@ export abstract class ObserverNode<T extends HTMLOrSVGElement = HTMLOrSVGElement
 		}
 
 		if (children) {
-			function getChildren(reader: IReader | undefined, children: ValueOrList2<HTMLOrSVGElement | string | ObserverNode | undefined>): (HTMLOrSVGElement | string)[] {
+			function getChildren(
+				reader: IReader | undefined,
+				children: ValueOrList2<HTMLOrSVGElement | string | ObserverNode | undefined>
+			): (HTMLOrSVGElement | string)[] {
 				if (isObservable(children)) {
 					return getChildren(reader, children.read(reader));
 				}
@@ -2627,7 +2897,7 @@ export abstract class ObserverNode<T extends HTMLOrSVGElement = HTMLOrSVGElement
 
 	/**
 	 * Creates a live element that will keep the element updated as long as the returned object is not disposed.
-	*/
+	 */
 	toDisposableLiveElement() {
 		const store = new DisposableStore();
 		this.keepUpdated(store);
@@ -2639,8 +2909,8 @@ export abstract class ObserverNode<T extends HTMLOrSVGElement = HTMLOrSVGElement
 	get isHovered(): IObservable<boolean> {
 		if (!this._isHovered) {
 			const hovered = observableValue<boolean>('hovered', false);
-			this._element.addEventListener('mouseenter', (_e) => hovered.set(true, undefined));
-			this._element.addEventListener('mouseleave', (_e) => hovered.set(false, undefined));
+			this._element.addEventListener('mouseenter', _e => hovered.set(true, undefined));
+			this._element.addEventListener('mouseleave', _e => hovered.set(false, undefined));
 			this._isHovered = hovered;
 		}
 		return this._isHovered;
@@ -2652,15 +2922,15 @@ export abstract class ObserverNode<T extends HTMLOrSVGElement = HTMLOrSVGElement
 		if (!this._didMouseMoveDuringHover) {
 			let _hovering = false;
 			const hovered = observableValue<boolean>('didMouseMoveDuringHover', false);
-			this._element.addEventListener('mouseenter', (_e) => {
+			this._element.addEventListener('mouseenter', _e => {
 				_hovering = true;
 			});
-			this._element.addEventListener('mousemove', (_e) => {
+			this._element.addEventListener('mousemove', _e => {
 				if (_hovering) {
 					hovered.set(true, undefined);
 				}
 			});
-			this._element.addEventListener('mouseleave', (_e) => {
+			this._element.addEventListener('mouseleave', _e => {
 				_hovering = false;
 				hovered.set(false, undefined);
 			});
@@ -2692,7 +2962,10 @@ function resolve<T>(value: ValueOrList<T>, reader: IReader | undefined, cb: (val
 	// eslint-disable-next-line local/code-no-any-casts
 	cb(value as any);
 }
-function getClassName(className: ValueOrList<string | undefined | false> | undefined, reader: IReader | undefined): string {
+function getClassName(
+	className: ValueOrList<string | undefined | false> | undefined,
+	reader: IReader | undefined
+): string {
 	let result = '';
 	resolve(className, reader, val => {
 		if (val) {
@@ -2734,7 +3007,7 @@ export class LiveElement<T extends HTMLOrSVGElement = HTMLElement> {
 	constructor(
 		public readonly element: T,
 		private readonly _disposable: IDisposable
-	) { }
+	) {}
 
 	dispose() {
 		this._disposable.dispose();
@@ -2755,7 +3028,11 @@ function setOrRemoveAttribute(element: HTMLOrSVGElement, key: string, value: unk
 }
 
 type ElementAttributeKeys<T> = Partial<{
-	[K in keyof T]: T[K] extends Function ? never : T[K] extends object ? ElementAttributeKeys<T[K]> : Value<number | T[K] | undefined | null>;
+	[K in keyof T]: T[K] extends Function
+		? never
+		: T[K] extends object
+			? ElementAttributeKeys<T[K]>
+			: Value<number | T[K] | undefined | null>;
 }>;
 
 /**

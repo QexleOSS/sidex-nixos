@@ -8,8 +8,7 @@ import { WindowIntervalTimer } from '../../../base/browser/dom.js';
 import { mainWindow } from '../../../base/browser/window.js';
 import { memoize } from '../../../base/common/decorators.js';
 import { IProductService } from '../../product/common/productService.js';
-import { AbstractSignService, IVsdaValidator } from '../common/abstractSignService.js';
-import { ISignService } from '../common/sign.js';
+import { IMessage, ISignService } from '../common/sign.js';
 
 declare namespace vsdaWeb {
 	export function sign(salted_message: string): string;
@@ -26,7 +25,6 @@ declare namespace vsdaWeb {
 	export function init(module_or_path?: InitInput | Promise<InitInput>): Promise<unknown>;
 }
 
-// Initialized if/when vsda is loaded
 declare const vsda_web: {
 	default: typeof vsdaWeb.init;
 	sign: typeof vsdaWeb.sign;
@@ -37,23 +35,51 @@ const KEY_SIZE = 32;
 const IV_SIZE = 16;
 const STEP_SIZE = KEY_SIZE + IV_SIZE;
 
-export class SignService extends AbstractSignService implements ISignService {
-	constructor(@IProductService private readonly productService: IProductService) {
-		super();
-	}
-	protected override getValidator(): Promise<IVsdaValidator> {
-		return this.vsda().then(vsda => {
+export class SignService implements ISignService {
+	declare readonly _serviceBrand: undefined;
+
+	private static _nextId = 1;
+	private readonly validators = new Map<string, vsdaWeb.validator>();
+
+	constructor(@IProductService private readonly productService: IProductService) {}
+
+	public async createNewMessage(value: string): Promise<IMessage> {
+		try {
+			const vsda = await this.vsda();
 			const v = new vsda.validator();
-			return {
-				createNewMessage: arg => v.createNewMessage(arg),
-				validate: arg => v.validate(arg),
-				dispose: () => v.free(),
-			};
-		});
+			const id = String(SignService._nextId++);
+			this.validators.set(id, v);
+			return { id, data: v.createNewMessage(value) };
+		} catch {
+			return { id: '', data: value };
+		}
 	}
 
-	protected override signValue(arg: string): Promise<string> {
-		return this.vsda().then(vsda => vsda.sign(arg));
+	async validate(message: IMessage, value: string): Promise<boolean> {
+		if (!message.id) {
+			return true;
+		}
+		const v = this.validators.get(message.id);
+		if (!v) {
+			return false;
+		}
+		this.validators.delete(message.id);
+		try {
+			return v.validate(value) === 'ok';
+		} catch {
+			return false;
+		} finally {
+			v.free();
+		}
+	}
+
+	async sign(value: string): Promise<string> {
+		try {
+			const vsda = await this.vsda();
+			return vsda.sign(value);
+		} catch {
+			return value;
+		}
 	}
 
 	@memoize
@@ -63,25 +89,31 @@ export class SignService extends AbstractSignService implements ISignService {
 			this.getWasmBytes(),
 			new Promise<void>((resolve, reject) => {
 				importAMDNodeModule('vsda', 'rust/web/vsda.js').then(() => resolve(), reject);
-
-				// todo@connor4312: there seems to be a bug(?) in vscode-loader with
-				// require() not resolving in web once the script loads, so check manually
-				checkInterval.cancelAndSet(() => {
-					if (typeof vsda_web !== 'undefined') {
-						resolve();
-					}
-				}, 50, mainWindow);
-			}).finally(() => checkInterval.dispose()),
+				checkInterval.cancelAndSet(
+					() => {
+						if (typeof vsda_web !== 'undefined') {
+							resolve();
+						}
+					},
+					50,
+					mainWindow
+				);
+			}).finally(() => checkInterval.dispose())
 		]);
 
 		const keyBytes = new TextEncoder().encode(this.productService.serverLicense?.join('\n') || '');
 		for (let i = 0; i + STEP_SIZE < keyBytes.length; i += STEP_SIZE) {
-			const key = await crypto.subtle.importKey('raw', keyBytes.slice(i + IV_SIZE, i + IV_SIZE + KEY_SIZE), { name: 'AES-CBC' }, false, ['decrypt']);
+			const key = await crypto.subtle.importKey(
+				'raw',
+				keyBytes.slice(i + IV_SIZE, i + IV_SIZE + KEY_SIZE),
+				{ name: 'AES-CBC' },
+				false,
+				['decrypt']
+			);
 			wasm = await crypto.subtle.decrypt({ name: 'AES-CBC', iv: keyBytes.slice(i, i + IV_SIZE) }, key, wasm);
 		}
 
 		await vsda_web.default(wasm);
-
 		return vsda_web;
 	}
 
@@ -91,7 +123,6 @@ export class SignService extends AbstractSignService implements ISignService {
 		if (!response.ok) {
 			throw new Error('error loading vsda');
 		}
-
 		return response.arrayBuffer();
 	}
 }

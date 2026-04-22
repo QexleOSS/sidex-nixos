@@ -13,7 +13,6 @@ import type { IMarker, Terminal } from '@xterm/headless';
  * from the buffer.
  */
 export class BufferMarkCapability extends Disposable implements IBufferMarkCapability {
-
 	readonly type = TerminalCapability.BufferMarkDetection;
 
 	private _idToMarkerMap: Map<string, IMarker> = new Map();
@@ -22,9 +21,7 @@ export class BufferMarkCapability extends Disposable implements IBufferMarkCapab
 	private readonly _onMarkAdded = this._register(new Emitter<IMarkProperties>());
 	readonly onMarkAdded = this._onMarkAdded.event;
 
-	constructor(
-		private readonly _terminal: Terminal
-	) {
+	constructor(private readonly _terminal: Terminal) {
 		super();
 	}
 

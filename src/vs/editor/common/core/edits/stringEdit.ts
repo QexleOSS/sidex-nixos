@@ -8,9 +8,10 @@ import { OffsetRange } from '../ranges/offsetRange.js';
 import { StringText } from '../text/abstractText.js';
 import { BaseEdit, BaseReplacement } from './edit.js';
 
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export abstract class BaseStringEdit<T extends BaseStringReplacement<T> = BaseStringReplacement<any>, TEdit extends BaseStringEdit<T, TEdit> = BaseStringEdit<any, any>> extends BaseEdit<T, TEdit> {
+export abstract class BaseStringEdit<
+	T extends BaseStringReplacement<T> = BaseStringReplacement<any>,
+	TEdit extends BaseStringEdit<T, TEdit> = BaseStringEdit<any, any>
+> extends BaseEdit<T, TEdit> {
 	get TReplacement(): T {
 		throw new Error('TReplacement is not defined for BaseStringEdit');
 	}
@@ -21,7 +22,7 @@ export abstract class BaseStringEdit<T extends BaseStringReplacement<T> = BaseSt
 		}
 		let result = edits[0];
 		for (let i = 1; i < edits.length; i++) {
-			// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+			// eslint-disable-next-line local/code-no-any-casts
 			result = result.compose(edits[i]) as any;
 		}
 		return result;
@@ -30,7 +31,7 @@ export abstract class BaseStringEdit<T extends BaseStringReplacement<T> = BaseSt
 	/**
 	 * r := trySwap(e1, e2);
 	 * e1.compose(e2) === r.e1.compose(r.e2)
-	*/
+	 */
 	public static trySwap(e1: BaseStringEdit, e2: BaseStringEdit): { e1: StringEdit; e2: StringEdit } | undefined {
 		// TODO make this more efficient
 		const e1Inv = e1.inverseOnSlice((start, endEx) => ' '.repeat(endEx - start));
@@ -59,7 +60,6 @@ export abstract class BaseStringEdit<T extends BaseStringReplacement<T> = BaseSt
 		return resultText.join('');
 	}
 
-
 	/**
 	 * Creates an edit that reverts this edit.
 	 */
@@ -67,10 +67,12 @@ export abstract class BaseStringEdit<T extends BaseStringReplacement<T> = BaseSt
 		const edits: StringReplacement[] = [];
 		let offset = 0;
 		for (const e of this.replacements) {
-			edits.push(StringReplacement.replace(
-				OffsetRange.ofStartAndLength(e.replaceRange.start + offset, e.newText.length),
-				getOriginalSlice(e.replaceRange.start, e.replaceRange.endExclusive)
-			));
+			edits.push(
+				StringReplacement.replace(
+					OffsetRange.ofStartAndLength(e.replaceRange.start + offset, e.newText.length),
+					getOriginalSlice(e.replaceRange.start, e.replaceRange.endExclusive)
+				)
+			);
 			offset += e.newText.length - e.replaceRange.length;
 		}
 		return new StringEdit(edits);
@@ -121,8 +123,10 @@ export abstract class BaseStringEdit<T extends BaseStringReplacement<T> = BaseSt
 				if (noOverlap) {
 					return undefined;
 				}
-			} else if (ourEdit.replaceRange.start < baseEdit.replaceRange.start ||
-				(ourEdit.replaceRange.isEmpty && ourEdit.replaceRange.start === baseEdit.replaceRange.start)) {
+			} else if (
+				ourEdit.replaceRange.start < baseEdit.replaceRange.start ||
+				(ourEdit.replaceRange.isEmpty && ourEdit.replaceRange.start === baseEdit.replaceRange.start)
+			) {
 				// Our edit starts first, or is an insert at the start of base's range
 				const transformedRange = ourEdit.replaceRange.delta(offset);
 				// Check if the transformed edit would violate the sorted/disjoint invariant
@@ -162,7 +166,7 @@ export abstract class BaseStringEdit<T extends BaseStringReplacement<T> = BaseSt
 
 	/**
 	 * If `e1.apply(source) === e2.apply(source)`, then `e1.normalizeOnSource(source).equals(e2.normalizeOnSource(source))`.
-	*/
+	 */
 	public normalizeOnSource(source: string): StringEdit {
 		const result = this.apply(source);
 
@@ -184,17 +188,14 @@ export abstract class BaseStringEdit<T extends BaseStringReplacement<T> = BaseSt
 
 	public mapData<TData extends IEditData<TData>>(f: (replacement: T) => TData): AnnotatedStringEdit<TData> {
 		return new AnnotatedStringEdit(
-			this.replacements.map(e => new AnnotatedStringReplacement(
-				e.replaceRange,
-				e.newText,
-				f(e)
-			))
+			this.replacements.map(e => new AnnotatedStringReplacement(e.replaceRange, e.newText, f(e)))
 		);
 	}
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export abstract class BaseStringReplacement<T extends BaseStringReplacement<T> = BaseStringReplacement<any>> extends BaseReplacement<T> {
+export abstract class BaseStringReplacement<
+	T extends BaseStringReplacement<T> = BaseStringReplacement<any>
+> extends BaseReplacement<T> {
 	constructor(
 		range: OffsetRange,
 		public readonly newText: string
@@ -202,7 +203,9 @@ export abstract class BaseStringReplacement<T extends BaseStringReplacement<T> =
 		super(range);
 	}
 
-	getNewLength(): number { return this.newText.length; }
+	getNewLength(): number {
+		return this.newText.length;
+	}
 
 	override toString(): string {
 		return `${this.replaceRange} -> ${JSON.stringify(this.newText)}`;
@@ -231,7 +234,7 @@ export abstract class BaseStringReplacement<T extends BaseStringReplacement<T> =
 
 		const replaceRange = new OffsetRange(
 			this.replaceRange.start + prefixLen,
-			this.replaceRange.endExclusive - suffixLen,
+			this.replaceRange.endExclusive - suffixLen
 		);
 		const newText = this.newText.substring(prefixLen, this.newText.length - suffixLen);
 
@@ -273,24 +276,23 @@ export abstract class BaseStringReplacement<T extends BaseStringReplacement<T> =
 	}
 
 	public toJson(): ISerializedStringReplacement {
-		return ({
+		return {
 			txt: this.newText,
 			pos: this.replaceRange.start,
-			len: this.replaceRange.length,
-		});
+			len: this.replaceRange.length
+		};
 	}
 }
-
 
 /**
  * Represents a set of replacements to a string.
  * All these replacements are applied at once.
-*/
+ */
 export class StringEdit extends BaseStringEdit<StringReplacement, StringEdit> {
 	/**
 	 * Parses an edit from its string representation.
 	 * E.g. [[2, 12) -> "fgh", [14, 20) -> "qrst", [22, 22) -> "de\n"]
-	*/
+	 */
 	public static parse(toStringValue: string): StringEdit {
 		const replacements: StringReplacement[] = [];
 		const regex = /\[(\d+),\s*(\d+)\)\s*->\s*"([^"]*)"/g;
@@ -346,7 +348,7 @@ export class StringEdit extends BaseStringEdit<StringReplacement, StringEdit> {
 	/**
 	 * The replacements are applied in order!
 	 * Equals `StringEdit.compose(replacements.map(r => r.toEdit()))`, but is much more performant.
-	*/
+	 */
 	public static composeSequentialReplacements(replacements: readonly StringReplacement[]): StringEdit {
 		let edit = StringEdit.empty;
 		let curEditReplacements: StringReplacement[] = []; // These are reverse sorted
@@ -378,12 +380,12 @@ export class StringEdit extends BaseStringEdit<StringReplacement, StringEdit> {
 
 /**
  * Warning: Be careful when changing this type, as it is used for serialization!
-*/
+ */
 export type ISerializedStringEdit = ISerializedStringReplacement[];
 
 /**
  * Warning: Be careful when changing this type, as it is used for serialization!
-*/
+ */
 export interface ISerializedStringReplacement {
 	txt: string;
 	pos: number;
@@ -489,7 +491,7 @@ export function applyEditsToRanges(sortedRanges: OffsetRange[], edit: StringEdit
 
 /**
  * Represents data associated to a single edit, which survives certain edit operations.
-*/
+ */
 export interface IEditData<T> {
 	join(other: T): T | undefined;
 }
@@ -503,11 +505,16 @@ export class VoidEditData implements IEditData<VoidEditData> {
 /**
  * Represents a set of replacements to a string.
  * All these replacements are applied at once.
-*/
-export class AnnotatedStringEdit<T extends IEditData<T>> extends BaseStringEdit<AnnotatedStringReplacement<T>, AnnotatedStringEdit<T>> {
+ */
+export class AnnotatedStringEdit<T extends IEditData<T>> extends BaseStringEdit<
+	AnnotatedStringReplacement<T>,
+	AnnotatedStringEdit<T>
+> {
 	public static readonly empty = new AnnotatedStringEdit<never>([]);
 
-	public static create<T extends IEditData<T>>(replacements: readonly AnnotatedStringReplacement<T>[]): AnnotatedStringEdit<T> {
+	public static create<T extends IEditData<T>>(
+		replacements: readonly AnnotatedStringReplacement<T>[]
+	): AnnotatedStringEdit<T> {
 		return new AnnotatedStringEdit(replacements);
 	}
 
@@ -515,7 +522,11 @@ export class AnnotatedStringEdit<T extends IEditData<T>> extends BaseStringEdit<
 		return new AnnotatedStringEdit([replacement]);
 	}
 
-	public static replace<T extends IEditData<T>>(range: OffsetRange, replacement: string, data: T): AnnotatedStringEdit<T> {
+	public static replace<T extends IEditData<T>>(
+		range: OffsetRange,
+		replacement: string,
+		data: T
+	): AnnotatedStringEdit<T> {
 		return new AnnotatedStringEdit([new AnnotatedStringReplacement(range, replacement, data)]);
 	}
 
@@ -557,12 +568,18 @@ export class AnnotatedStringEdit<T extends IEditData<T>> extends BaseStringEdit<
 	}
 }
 
-export class AnnotatedStringReplacement<T extends IEditData<T>> extends BaseStringReplacement<AnnotatedStringReplacement<T>> {
+export class AnnotatedStringReplacement<T extends IEditData<T>> extends BaseStringReplacement<
+	AnnotatedStringReplacement<T>
+> {
 	public static insert<T extends IEditData<T>>(offset: number, text: string, data: T): AnnotatedStringReplacement<T> {
 		return new AnnotatedStringReplacement<T>(OffsetRange.emptyAt(offset), text, data);
 	}
 
-	public static replace<T extends IEditData<T>>(range: OffsetRange, text: string, data: T): AnnotatedStringReplacement<T> {
+	public static replace<T extends IEditData<T>>(
+		range: OffsetRange,
+		text: string,
+		data: T
+	): AnnotatedStringReplacement<T> {
 		return new AnnotatedStringReplacement<T>(range, text, data);
 	}
 
@@ -587,11 +604,19 @@ export class AnnotatedStringReplacement<T extends IEditData<T>> extends BaseStri
 		if (joined === undefined) {
 			return undefined;
 		}
-		return new AnnotatedStringReplacement(this.replaceRange.joinRightTouching(other.replaceRange), this.newText + other.newText, joined);
+		return new AnnotatedStringReplacement(
+			this.replaceRange.joinRightTouching(other.replaceRange),
+			this.newText + other.newText,
+			joined
+		);
 	}
 
 	slice(range: OffsetRange, rangeInReplacement?: OffsetRange): AnnotatedStringReplacement<T> {
-		return new AnnotatedStringReplacement(range, rangeInReplacement ? rangeInReplacement.substring(this.newText) : this.newText, this.data);
+		return new AnnotatedStringReplacement(
+			range,
+			rangeInReplacement ? rangeInReplacement.substring(this.newText) : this.newText,
+			this.data
+		);
 	}
 }
 

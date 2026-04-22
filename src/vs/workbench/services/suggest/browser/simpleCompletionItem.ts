@@ -66,13 +66,9 @@ export class SimpleCompletionItem {
 	// validation
 	isInvalid: boolean = false;
 
-	constructor(
-		readonly completion: ISimpleCompletion
-	) {
+	constructor(readonly completion: ISimpleCompletion) {
 		// ensure lower-variants (perf)
-		this.textLabel = typeof completion.label === 'string'
-			? completion.label
-			: completion.label?.label;
+		this.textLabel = typeof completion.label === 'string' ? completion.label : completion.label?.label;
 		this.labelLow = this.textLabel.toLowerCase();
 	}
 }

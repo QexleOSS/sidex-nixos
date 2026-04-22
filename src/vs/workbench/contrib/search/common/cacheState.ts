@@ -16,7 +16,6 @@ enum LoadingPhase {
 }
 
 export class FileQueryCacheState {
-
 	private readonly _cacheKey;
 	get cacheKey(): string {
 		if (this.loadingPhase === LoadingPhase.Loaded || !this.previousCacheState) {

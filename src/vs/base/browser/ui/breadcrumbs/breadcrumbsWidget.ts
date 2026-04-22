@@ -36,7 +36,6 @@ export interface IBreadcrumbsItemEvent {
 }
 
 export class BreadcrumbsWidget {
-
 	private readonly _disposables = new DisposableStore();
 	private readonly _domNode: HTMLDivElement;
 	private readonly _scrollable: DomScrollableElement;
@@ -134,18 +133,21 @@ export class BreadcrumbsWidget {
 
 	private _updateDimensions(dim: dom.Dimension): IDisposable {
 		const disposables = new DisposableStore();
-		disposables.add(dom.modify(dom.getWindow(this._domNode), () => {
-			this._dimension = dim;
-			this._domNode.style.width = `${dim.width}px`;
-			this._domNode.style.height = `${dim.height}px`;
-			disposables.add(this._updateScrollbar());
-		}));
+		disposables.add(
+			dom.modify(dom.getWindow(this._domNode), () => {
+				this._dimension = dim;
+				this._domNode.style.width = `${dim.width}px`;
+				this._domNode.style.height = `${dim.height}px`;
+				disposables.add(this._updateScrollbar());
+			})
+		);
 		return disposables;
 	}
 
 	private _updateScrollbar(): IDisposable {
 		return dom.measure(dom.getWindow(this._domNode), () => {
-			dom.measure(dom.getWindow(this._domNode), () => { // double RAF
+			dom.measure(dom.getWindow(this._domNode), () => {
+				// double RAF
 				this._scrollable.setRevealOnScroll(false);
 				this._scrollable.scanDomNode();
 				this._scrollable.setRevealOnScroll(true);
@@ -224,7 +226,12 @@ export class BreadcrumbsWidget {
 			}
 		}
 		this._reveal(this._focusedItemIdx, true);
-		this._onDidFocusItem.fire({ type: 'focus', item: this._items[this._focusedItemIdx], node: this._nodes[this._focusedItemIdx], payload });
+		this._onDidFocusItem.fire({
+			type: 'focus',
+			item: this._items[this._focusedItemIdx],
+			node: this._nodes[this._focusedItemIdx],
+			payload
+		});
 	}
 
 	reveal(item: BreadcrumbsItem): void {
@@ -274,7 +281,12 @@ export class BreadcrumbsWidget {
 				node.classList.add('selected');
 			}
 		}
-		this._onDidSelectItem.fire({ type: 'select', item: this._items[this._selectedItemIdx], node: this._nodes[this._selectedItemIdx], payload });
+		this._onDidSelectItem.fire({
+			type: 'select',
+			item: this._items[this._selectedItemIdx],
+			node: this._nodes[this._selectedItemIdx],
+			payload
+		});
 	}
 
 	getItems(): readonly BreadcrumbsItem[] {
@@ -292,7 +304,9 @@ export class BreadcrumbsWidget {
 			dispose(items.slice(0, prefix));
 			this._focus(-1, undefined);
 		} catch (e) {
-			const newError = new Error(`BreadcrumbsItem#setItems: newItems: ${items.length}, prefix: ${prefix}, removed: ${removed.length}`);
+			const newError = new Error(
+				`BreadcrumbsItem#setItems: newItems: ${items.length}, prefix: ${prefix}, removed: ${removed.length}`
+			);
 			newError.name = e.name;
 			newError.stack = e.stack;
 			throw newError;

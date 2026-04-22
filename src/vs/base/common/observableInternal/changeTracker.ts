@@ -25,15 +25,19 @@ export interface IChangeContext {
 /**
  * Subscribes to and records changes and the last value of the given observables.
  * Don't use the key "changes", as it is reserved for the changes array!
-*/
-export function recordChanges<TObs extends Record<any, IObservableWithChange<any, any>>>(obs: TObs):
-	IChangeTracker<{ [TKey in keyof TObs]: ReturnType<TObs[TKey]['get']> }
-		& { changes: readonly ({ [TKey in keyof TObs]: { key: TKey; change: TObs[TKey]['TChange'] } }[keyof TObs])[] }> {
+ */
+export function recordChanges<TObs extends Record<any, IObservableWithChange<any, any>>>(
+	obs: TObs
+): IChangeTracker<
+	{ [TKey in keyof TObs]: ReturnType<TObs[TKey]['get']> } & {
+		changes: readonly { [TKey in keyof TObs]: { key: TKey; change: TObs[TKey]['TChange'] } }[keyof TObs][];
+	}
+> {
 	return {
-		createChangeSummary: (_previousChangeSummary) => {
+		createChangeSummary: _previousChangeSummary => {
 			// eslint-disable-next-line local/code-no-any-casts
 			return {
-				changes: [],
+				changes: []
 			} as any;
 		},
 		handleChange(ctx, changeSummary) {
@@ -59,16 +63,20 @@ export function recordChanges<TObs extends Record<any, IObservableWithChange<any
 /**
  * Subscribes to and records changes and the last value of the given observables.
  * Don't use the key "changes", as it is reserved for the changes array!
-*/
-export function recordChangesLazy<TObs extends Record<any, IObservableWithChange<any, any>>>(getObs: () => TObs):
-	IChangeTracker<{ [TKey in keyof TObs]: ReturnType<TObs[TKey]['get']> }
-		& { changes: readonly ({ [TKey in keyof TObs]: { key: TKey; change: TObs[TKey]['TChange'] } }[keyof TObs])[] }> {
+ */
+export function recordChangesLazy<TObs extends Record<any, IObservableWithChange<any, any>>>(
+	getObs: () => TObs
+): IChangeTracker<
+	{ [TKey in keyof TObs]: ReturnType<TObs[TKey]['get']> } & {
+		changes: readonly { [TKey in keyof TObs]: { key: TKey; change: TObs[TKey]['TChange'] } }[keyof TObs][];
+	}
+> {
 	let obs: TObs | undefined = undefined;
 	return {
-		createChangeSummary: (_previousChangeSummary) => {
+		createChangeSummary: _previousChangeSummary => {
 			// eslint-disable-next-line local/code-no-any-casts
 			return {
-				changes: [],
+				changes: []
 			} as any;
 		},
 		handleChange(ctx, changeSummary) {

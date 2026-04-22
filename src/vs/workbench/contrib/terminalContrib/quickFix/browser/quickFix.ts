@@ -9,7 +9,11 @@ import { IDisposable } from '../../../../../base/common/lifecycle.js';
 import { IAction } from '../../../../../base/common/actions.js';
 import { CancellationToken } from '../../../../../base/common/cancellation.js';
 import { URI } from '../../../../../base/common/uri.js';
-import { ITerminalCommandSelector, ITerminalOutputMatch, ITerminalOutputMatcher } from '../../../../../platform/terminal/common/terminal.js';
+import {
+	ITerminalCommandSelector,
+	ITerminalOutputMatch,
+	ITerminalOutputMatcher
+} from '../../../../../platform/terminal/common/terminal.js';
 import { ITerminalCommand } from '../../../../../platform/terminal/common/capabilities/capabilities.js';
 
 export const ITerminalQuickFixService = createDecorator<ITerminalQuickFixService>('terminalQuickFixService');
@@ -29,9 +33,19 @@ export interface ITerminalQuickFixProviderSelector {
 	provider: ITerminalQuickFixProvider;
 }
 
-export type TerminalQuickFixActionInternal = IAction | ITerminalQuickFixTerminalCommandAction | ITerminalQuickFixOpenerAction;
-export type TerminalQuickFixCallback = (matchResult: ITerminalCommandMatchResult) => TerminalQuickFixActionInternal[] | TerminalQuickFixActionInternal | undefined;
-export type TerminalQuickFixCallbackExtension = (terminalCommand: ITerminalCommand, lines: string[] | undefined, option: ITerminalQuickFixOptions, token: CancellationToken) => Promise<ITerminalQuickFix[] | ITerminalQuickFix | undefined>;
+export type TerminalQuickFixActionInternal =
+	| IAction
+	| ITerminalQuickFixTerminalCommandAction
+	| ITerminalQuickFixOpenerAction;
+export type TerminalQuickFixCallback = (
+	matchResult: ITerminalCommandMatchResult
+) => TerminalQuickFixActionInternal[] | TerminalQuickFixActionInternal | undefined;
+export type TerminalQuickFixCallbackExtension = (
+	terminalCommand: ITerminalCommand,
+	lines: string[] | undefined,
+	option: ITerminalQuickFixOptions,
+	token: CancellationToken
+) => Promise<ITerminalQuickFix[] | ITerminalQuickFix | undefined>;
 
 export interface ITerminalQuickFixProvider {
 	/**
@@ -40,7 +54,12 @@ export interface ITerminalQuickFixProvider {
 	 * @param token A cancellation token indicating the result is no longer needed
 	 * @return Terminal quick fix(es) if any
 	 */
-	provideTerminalQuickFixes(terminalCommand: ITerminalCommand, lines: string[] | undefined, option: ITerminalQuickFixOptions, token: CancellationToken): Promise<ITerminalQuickFix[] | ITerminalQuickFix | undefined>;
+	provideTerminalQuickFixes(
+		terminalCommand: ITerminalCommand,
+		lines: string[] | undefined,
+		option: ITerminalQuickFixOptions,
+		token: CancellationToken
+	): Promise<ITerminalQuickFix[] | ITerminalQuickFix | undefined>;
 }
 
 export enum TerminalQuickFixType {

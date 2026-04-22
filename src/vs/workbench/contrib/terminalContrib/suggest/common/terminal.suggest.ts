@@ -23,7 +23,7 @@ export const enum TerminalSuggestCommandId {
 	LearnMore = 'workbench.action.terminal.suggestLearnMore',
 	ResetDiscoverability = 'workbench.action.terminal.resetDiscoverability',
 	ShowOnType = 'workbench.action.terminal.showSuggestOnType',
-	DoNotShowOnType = 'workbench.action.terminal.doNotShowSuggestOnType',
+	DoNotShowOnType = 'workbench.action.terminal.doNotShowSuggestOnType'
 }
 
 export const defaultTerminalSuggestCommandsToSkipShell = [
@@ -36,5 +36,5 @@ export const defaultTerminalSuggestCommandsToSkipShell = [
 	TerminalSuggestCommandId.HideSuggestWidget,
 	TerminalSuggestCommandId.TriggerSuggest,
 	TerminalSuggestCommandId.ToggleDetails,
-	TerminalSuggestCommandId.ToggleDetailsFocus,
+	TerminalSuggestCommandId.ToggleDetailsFocus
 ];

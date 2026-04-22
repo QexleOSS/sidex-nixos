@@ -15,9 +15,18 @@ import { IEditor } from '../../../../editor/common/editorCommon.js';
 import { AbstractEditorCommandsQuickAccessProvider } from '../../../../editor/contrib/quickAccess/browser/commandsQuickAccess.js';
 import { localize, localize2 } from '../../../../nls.js';
 import { isLocalizedString } from '../../../../platform/action/common/action.js';
-import { Action2, IMenuService, MenuId, MenuItemAction, SubmenuItemAction } from '../../../../platform/actions/common/actions.js';
+import {
+	Action2,
+	IMenuService,
+	MenuId,
+	MenuItemAction,
+	SubmenuItemAction
+} from '../../../../platform/actions/common/actions.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
-import { IConfigurationChangeEvent, IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
+import {
+	IConfigurationChangeEvent,
+	IConfigurationService
+} from '../../../../platform/configuration/common/configuration.js';
 import { IDialogService } from '../../../../platform/dialogs/common/dialogs.js';
 import { IInstantiationService, ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
@@ -37,10 +46,11 @@ import { createKeybindingCommandQuery } from '../../../services/preferences/brow
 import { IPreferencesService } from '../../../services/preferences/common/preferences.js';
 
 export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAccessProvider {
-
 	private readonly extensionRegistrationRace: Promise<boolean | undefined>;
 
-	protected get activeTextEditorControl(): IEditor | undefined { return this.editorService.activeTextEditorControl; }
+	protected get activeTextEditorControl(): IEditor | undefined {
+		return this.editorService.activeTextEditorControl;
+	}
 
 	get defaultFilterValue(): DefaultQuickAccessFilterValue | undefined {
 		if (this.configuration.preserveInput) {
@@ -62,23 +72,31 @@ export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAcce
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IEditorGroupsService private readonly editorGroupService: IEditorGroupsService,
 		@IPreferencesService private readonly preferencesService: IPreferencesService,
-		@IProductService private readonly productService: IProductService,
+		@IProductService private readonly productService: IProductService
 	) {
-		super({
-			showAlias: !Language.isDefaultVariant(),
-			noResultsPick: () => ({
-				label: localize('noCommandResults', "No matching commands"),
-				commandId: ''
-			}),
-		}, instantiationService, keybindingService, commandService, telemetryService, dialogService);
+		super(
+			{
+				showAlias: !Language.isDefaultVariant(),
+				noResultsPick: () => ({
+					label: localize('noCommandResults', 'No matching commands'),
+					commandId: ''
+				})
+			},
+			instantiationService,
+			keybindingService,
+			commandService,
+			telemetryService,
+			dialogService
+		);
 
 		this.extensionRegistrationRace = raceTimeout(extensionService.whenInstalledExtensionsRegistered(), 800);
-		this._register(configurationService.onDidChangeConfiguration((e) => this.updateOptions(e)));
+		this._register(configurationService.onDidChangeConfiguration(e => this.updateOptions(e)));
 		this.updateOptions();
 	}
 
 	private get configuration() {
-		const commandPaletteConfig = this.configurationService.getValue<IWorkbenchQuickAccessConfiguration>().workbench.commandPalette;
+		const commandPaletteConfig =
+			this.configurationService.getValue<IWorkbenchQuickAccessConfiguration>().workbench.commandPalette;
 
 		return {
 			preserveInput: commandPaletteConfig.preserveInput,
@@ -92,14 +110,14 @@ export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAcce
 		}
 
 		const config = this.configuration;
-		const suggestedCommandIds = config.experimental.suggestCommands && this.productService.commandPaletteSuggestedCommandIds?.length
-			? new Set(this.productService.commandPaletteSuggestedCommandIds)
-			: undefined;
+		const suggestedCommandIds =
+			config.experimental.suggestCommands && this.productService.commandPaletteSuggestedCommandIds?.length
+				? new Set(this.productService.commandPaletteSuggestedCommandIds)
+				: undefined;
 		this.options.suggestedCommandIds = suggestedCommandIds;
 	}
 
 	protected async getCommandPicks(token: CancellationToken): Promise<Array<ICommandQuickPick>> {
-
 		// wait for extensions registration or 800ms once
 		await this.extensionRegistrationRace;
 
@@ -107,19 +125,20 @@ export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAcce
 			return [];
 		}
 
-		return [
-			...this.getCodeEditorCommandPicks(),
-			...this.getGlobalCommandPicks()
-		].map(picks => ({
+		return [...this.getCodeEditorCommandPicks(), ...this.getGlobalCommandPicks()].map(picks => ({
 			...picks,
-			buttons: [{
-				iconClass: ThemeIcon.asClassName(Codicon.gear),
-				tooltip: localize('configure keybinding', "Configure Keybinding"),
-			}],
+			buttons: [
+				{
+					iconClass: ThemeIcon.asClassName(Codicon.gear),
+					tooltip: localize('configure keybinding', 'Configure Keybinding')
+				}
+			],
 			trigger: (): TriggerAction => {
-				this.preferencesService.openGlobalKeybindingSettings(false, { query: createKeybindingCommandQuery(picks.commandId, picks.commandWhen) });
+				this.preferencesService.openGlobalKeybindingSettings(false, {
+					query: createKeybindingCommandQuery(picks.commandId, picks.commandWhen)
+				});
 				return TriggerAction.CLOSE_PICKER;
-			},
+			}
 		}));
 	}
 
@@ -127,48 +146,62 @@ export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAcce
 		return false;
 	}
 
-	protected async getAdditionalCommandPicks(allPicks: ICommandQuickPick[], picksSoFar: ICommandQuickPick[], filter: string, token: CancellationToken): Promise<Array<ICommandQuickPick | IQuickPickSeparator>> {
+	protected async getAdditionalCommandPicks(
+		allPicks: ICommandQuickPick[],
+		picksSoFar: ICommandQuickPick[],
+		filter: string,
+		token: CancellationToken
+	): Promise<Array<ICommandQuickPick | IQuickPickSeparator>> {
 		return [];
 	}
 
 	private getGlobalCommandPicks(): ICommandQuickPick[] {
 		const globalCommandPicks: ICommandQuickPick[] = [];
-		const scopedContextKeyService = this.editorService.activeEditorPane?.scopedContextKeyService || this.editorGroupService.activeGroup.scopedContextKeyService;
+		const scopedContextKeyService =
+			this.editorService.activeEditorPane?.scopedContextKeyService ||
+			this.editorGroupService.activeGroup.scopedContextKeyService;
 		const globalCommandsMenu = this.menuService.getMenuActions(MenuId.CommandPalette, scopedContextKeyService);
 		const globalCommandsMenuActions = globalCommandsMenu
 			.reduce((r, [, actions]) => [...r, ...actions], <Array<MenuItemAction | SubmenuItemAction | string>>[])
 			.filter(action => action instanceof MenuItemAction && action.enabled) as MenuItemAction[];
 
 		for (const action of globalCommandsMenuActions) {
-
 			// Label
-			let label = (typeof action.item.title === 'string' ? action.item.title : action.item.title.value) || action.item.id;
+			let label =
+				(typeof action.item.title === 'string' ? action.item.title : action.item.title.value) || action.item.id;
 
 			// Category
 			const category = typeof action.item.category === 'string' ? action.item.category : action.item.category?.value;
 			if (category) {
-				label = localize('commandWithCategory', "{0}: {1}", category, label);
+				label = localize('commandWithCategory', '{0}: {1}', category, label);
 			}
 
 			// Alias
 			const aliasLabel = typeof action.item.title !== 'string' ? action.item.title.original : undefined;
-			const aliasCategory = (category && action.item.category && typeof action.item.category !== 'string') ? action.item.category.original : undefined;
-			const commandAlias = (aliasLabel && category) ?
-				aliasCategory ? `${aliasCategory}: ${aliasLabel}` : `${category}: ${aliasLabel}` :
-				aliasLabel;
+			const aliasCategory =
+				category && action.item.category && typeof action.item.category !== 'string'
+					? action.item.category.original
+					: undefined;
+			const commandAlias =
+				aliasLabel && category
+					? aliasCategory
+						? `${aliasCategory}: ${aliasLabel}`
+						: `${category}: ${aliasLabel}`
+					: aliasLabel;
 
 			const metadataDescription = action.item.metadata?.description;
-			const commandDescription = metadataDescription === undefined || isLocalizedString(metadataDescription)
-				? metadataDescription
-				// TODO: this type will eventually not be a string and when that happens, this should simplified.
-				: { value: metadataDescription, original: metadataDescription };
+			const commandDescription =
+				metadataDescription === undefined || isLocalizedString(metadataDescription)
+					? metadataDescription
+					: // TODO: this type will eventually not be a string and when that happens, this should simplified.
+						{ value: metadataDescription, original: metadataDescription };
 			globalCommandPicks.push({
 				commandId: action.item.id,
 				commandWhen: action.item.precondition?.serialize(),
 				commandAlias,
 				label: stripIcons(label),
 				commandDescription,
-				commandCategory: category,
+				commandCategory: category
 			});
 		}
 
@@ -179,7 +212,6 @@ export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAcce
 //#region Actions
 
 export class ShowAllCommandsAction extends Action2 {
-
 	static readonly ID = 'workbench.action.showCommands';
 
 	constructor() {
@@ -189,7 +221,7 @@ export class ShowAllCommandsAction extends Action2 {
 			keybinding: {
 				weight: KeybindingWeight.WorkbenchContrib,
 				when: undefined,
-				primary: !isFirefox ? (KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyP) : undefined,
+				primary: !isFirefox ? KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyP : undefined,
 				secondary: [KeyCode.F1]
 			},
 			f1: true
@@ -202,7 +234,6 @@ export class ShowAllCommandsAction extends Action2 {
 }
 
 export class ClearCommandHistoryAction extends Action2 {
-
 	constructor() {
 		super({
 			id: 'workbench.action.clearCommandHistory',
@@ -218,13 +249,12 @@ export class ClearCommandHistoryAction extends Action2 {
 
 		const commandHistoryLength = CommandsHistory.getConfiguredCommandHistoryLength(configurationService);
 		if (commandHistoryLength > 0) {
-
 			// Ask for confirmation
 			const { confirmed } = await dialogService.confirm({
 				type: 'warning',
-				message: localize('confirmClearMessage', "Do you want to clear the history of recently used commands?"),
-				detail: localize('confirmClearDetail', "This action is irreversible!"),
-				primaryButton: localize({ key: 'clearButtonLabel', comment: ['&& denotes a mnemonic'] }, "&&Clear")
+				message: localize('confirmClearMessage', 'Do you want to clear the history of recently used commands?'),
+				detail: localize('confirmClearDetail', 'This action is irreversible!'),
+				primaryButton: localize({ key: 'clearButtonLabel', comment: ['&& denotes a mnemonic'] }, '&&Clear')
 			});
 
 			if (!confirmed) {

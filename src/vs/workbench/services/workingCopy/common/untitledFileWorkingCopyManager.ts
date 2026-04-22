@@ -5,7 +5,14 @@
 
 import { DisposableStore, dispose, IDisposable } from '../../../../base/common/lifecycle.js';
 import { URI } from '../../../../base/common/uri.js';
-import { IUntitledFileWorkingCopy, IUntitledFileWorkingCopyInitialContents, IUntitledFileWorkingCopyModel, IUntitledFileWorkingCopyModelFactory, IUntitledFileWorkingCopySaveDelegate, UntitledFileWorkingCopy } from './untitledFileWorkingCopy.js';
+import {
+	IUntitledFileWorkingCopy,
+	IUntitledFileWorkingCopyInitialContents,
+	IUntitledFileWorkingCopyModel,
+	IUntitledFileWorkingCopyModelFactory,
+	IUntitledFileWorkingCopySaveDelegate,
+	UntitledFileWorkingCopy
+} from './untitledFileWorkingCopy.js';
 import { Event, Emitter } from '../../../../base/common/event.js';
 import { Schemas } from '../../../../base/common/network.js';
 import { IWorkingCopyService } from './workingCopyService.js';
@@ -17,7 +24,6 @@ import { BaseFileWorkingCopyManager, IBaseFileWorkingCopyManager } from './abstr
 import { ResourceMap } from '../../../../base/common/map.js';
 
 export interface IUntitledFileWorkingCopySaveEvent {
-
 	/**
 	 * The source untitled file working copy that was saved. It is disposed at this point.
 	 */
@@ -34,8 +40,9 @@ export interface IUntitledFileWorkingCopySaveEvent {
  * handle all operations that are working copy related, such as save/revert,
  * backup and resolving.
  */
-export interface IUntitledFileWorkingCopyManager<M extends IUntitledFileWorkingCopyModel> extends IBaseFileWorkingCopyManager<M, IUntitledFileWorkingCopy<M>> {
-
+export interface IUntitledFileWorkingCopyManager<
+	M extends IUntitledFileWorkingCopyModel
+> extends IBaseFileWorkingCopyManager<M, IUntitledFileWorkingCopy<M>> {
 	/**
 	 * An event for when an untitled file working copy was saved.
 	 * At the point the event fires, the untitled file working copy is
@@ -85,7 +92,6 @@ export interface IUntitledFileWorkingCopyManager<M extends IUntitledFileWorkingC
 }
 
 export interface INewUntitledFileWorkingCopyOptions {
-
 	/**
 	 * Initial value of the untitled file working copy
 	 * with support to indicate whether this should turn
@@ -95,7 +101,6 @@ export interface INewUntitledFileWorkingCopyOptions {
 }
 
 export interface INewUntitledFileWorkingCopyWithAssociatedResourceOptions extends INewUntitledFileWorkingCopyOptions {
-
 	/**
 	 * Resource components to associate with the untitled file working copy.
 	 * When saving, the associated components will be used and the user
@@ -108,7 +113,6 @@ export interface INewUntitledFileWorkingCopyWithAssociatedResourceOptions extend
 }
 
 export interface INewOrExistingUntitledFileWorkingCopyOptions extends INewUntitledFileWorkingCopyOptions {
-
 	/**
 	 * A resource to identify the untitled file working copy
 	 * to create or return if already existing.
@@ -124,10 +128,14 @@ export interface INewOrExistingUntitledFileWorkingCopyOptions extends INewUntitl
 	isScratchpad?: boolean;
 }
 
-type IInternalUntitledFileWorkingCopyOptions = INewUntitledFileWorkingCopyOptions & INewUntitledFileWorkingCopyWithAssociatedResourceOptions & INewOrExistingUntitledFileWorkingCopyOptions;
+type IInternalUntitledFileWorkingCopyOptions = INewUntitledFileWorkingCopyOptions &
+	INewUntitledFileWorkingCopyWithAssociatedResourceOptions &
+	INewOrExistingUntitledFileWorkingCopyOptions;
 
-export class UntitledFileWorkingCopyManager<M extends IUntitledFileWorkingCopyModel> extends BaseFileWorkingCopyManager<M, IUntitledFileWorkingCopy<M>> implements IUntitledFileWorkingCopyManager<M> {
-
+export class UntitledFileWorkingCopyManager<M extends IUntitledFileWorkingCopyModel>
+	extends BaseFileWorkingCopyManager<M, IUntitledFileWorkingCopy<M>>
+	implements IUntitledFileWorkingCopyManager<M>
+{
 	//#region Events
 
 	private readonly _onDidSave = this._register(new Emitter<IUntitledFileWorkingCopySaveEvent>());
@@ -168,7 +176,9 @@ export class UntitledFileWorkingCopyManager<M extends IUntitledFileWorkingCopyMo
 		return workingCopy;
 	}
 
-	private doCreateOrGet(options: IInternalUntitledFileWorkingCopyOptions = Object.create(null)): IUntitledFileWorkingCopy<M> {
+	private doCreateOrGet(
+		options: IInternalUntitledFileWorkingCopyOptions = Object.create(null)
+	): IUntitledFileWorkingCopy<M> {
 		const massagedOptions = this.massageOptions(options);
 
 		// Return existing instance if asked for it
@@ -213,7 +223,6 @@ export class UntitledFileWorkingCopyManager<M extends IUntitledFileWorkingCopyMo
 	}
 
 	private doCreate(options: IInternalUntitledFileWorkingCopyOptions): IUntitledFileWorkingCopy<M> {
-
 		// Create a new untitled resource if none is provided
 		let untitledResource = options.untitledResource;
 		if (!untitledResource) {
@@ -222,9 +231,9 @@ export class UntitledFileWorkingCopyManager<M extends IUntitledFileWorkingCopyMo
 				untitledResource = URI.from({
 					scheme: Schemas.untitled,
 					path: options.isScratchpad ? `Scratchpad-${counter}` : `Untitled-${counter}`,
-					query: this.workingCopyTypeId ?
-						`typeId=${this.workingCopyTypeId}` : // distinguish untitled resources among others by encoding the `typeId` as query param
-						undefined							 // keep untitled resources for text files as they are (when `typeId === ''`)
+					query: this.workingCopyTypeId
+						? `typeId=${this.workingCopyTypeId}` // distinguish untitled resources among others by encoding the `typeId` as query param
+						: undefined // keep untitled resources for text files as they are (when `typeId === ''`)
 				});
 				counter++;
 			} while (this.has(untitledResource));
@@ -252,7 +261,6 @@ export class UntitledFileWorkingCopyManager<M extends IUntitledFileWorkingCopyMo
 	}
 
 	private registerWorkingCopy(workingCopy: IUntitledFileWorkingCopy<M>): void {
-
 		// Install working copy listeners
 		const workingCopyListeners = new DisposableStore();
 		workingCopyListeners.add(workingCopy.onDidChangeDirty(() => this._onDidChangeDirty.fire(workingCopy)));

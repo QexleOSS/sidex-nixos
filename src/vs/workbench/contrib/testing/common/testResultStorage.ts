@@ -3,7 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { bufferToStream, newWriteableBufferStream, VSBuffer, VSBufferReadableStream, VSBufferWriteableStream } from '../../../../base/common/buffer.js';
+import {
+	bufferToStream,
+	newWriteableBufferStream,
+	VSBuffer,
+	VSBufferReadableStream,
+	VSBufferWriteableStream
+} from '../../../../base/common/buffer.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { isDefined } from '../../../../base/common/types.js';
 import { URI } from '../../../../base/common/uri.js';
@@ -54,37 +60,44 @@ export abstract class BaseTestResultStorage extends Disposable implements ITestR
 	constructor(
 		@IUriIdentityService private readonly uriIdentityService: IUriIdentityService,
 		@IStorageService storageService: IStorageService,
-		@ILogService private readonly logService: ILogService,
+		@ILogService private readonly logService: ILogService
 	) {
 		super();
-		this.stored = this._register(new StoredValue<ReadonlyArray<{ rev: number; id: string; bytes: number }>>({
-			key: 'storedTestResults',
-			scope: StorageScope.WORKSPACE,
-			target: StorageTarget.MACHINE
-		}, storageService));
+		this.stored = this._register(
+			new StoredValue<ReadonlyArray<{ rev: number; id: string; bytes: number }>>(
+				{
+					key: 'storedTestResults',
+					scope: StorageScope.WORKSPACE,
+					target: StorageTarget.MACHINE
+				},
+				storageService
+			)
+		);
 	}
 
 	/**
 	 * @override
 	 */
 	public async read(): Promise<HydratedTestResult[]> {
-		const results = await Promise.all(this.stored.get([]).map(async (rec) => {
-			if (rec.rev !== currentRevision) {
-				return undefined;
-			}
-
-			try {
-				const contents = await this.readForResultId(rec.id);
-				if (!contents) {
+		const results = await Promise.all(
+			this.stored.get([]).map(async rec => {
+				if (rec.rev !== currentRevision) {
 					return undefined;
 				}
 
-				return { rec, result: new HydratedTestResult(this.uriIdentityService, contents) };
-			} catch (e) {
-				this.logService.warn(`Error deserializing stored test result ${rec.id}`, e);
-				return undefined;
-			}
-		}));
+				try {
+					const contents = await this.readForResultId(rec.id);
+					if (!contents) {
+						return undefined;
+					}
+
+					return { rec, result: new HydratedTestResult(this.uriIdentityService, contents) };
+				} catch (e) {
+					this.logService.warn(`Error deserializing stored test result ${rec.id}`, e);
+					return undefined;
+				}
+			})
+		);
 
 		const defined = results.filter(isDefined);
 		if (defined.length !== results.length) {
@@ -219,10 +232,14 @@ export class TestResultStorage extends BaseTestResultStorage {
 		@ILogService logService: ILogService,
 		@IWorkspaceContextService workspaceContext: IWorkspaceContextService,
 		@IFileService private readonly fileService: IFileService,
-		@IEnvironmentService environmentService: IEnvironmentService,
+		@IEnvironmentService environmentService: IEnvironmentService
 	) {
 		super(uriIdentityService, storageService, logService);
-		this.directory = URI.joinPath(environmentService.workspaceStorageHome, workspaceContext.getWorkspace().id, 'testResults');
+		this.directory = URI.joinPath(
+			environmentService.workspaceStorageHome,
+			workspaceContext.getWorkspace().id,
+			'testResults'
+		);
 	}
 
 	protected async readForResultId(id: string) {
@@ -246,7 +263,6 @@ export class TestResultStorage extends BaseTestResultStorage {
 			return VSBuffer.alloc(0);
 		}
 	}
-
 
 	protected async readOutputForResultId(id: string): Promise<VSBufferReadableStream> {
 		try {
@@ -281,7 +297,12 @@ export class TestResultStorage extends BaseTestResultStorage {
 			return;
 		}
 
-		const stored = new Set(this.stored.get([]).filter(s => s.rev === currentRevision).map(s => s.id));
+		const stored = new Set(
+			this.stored
+				.get([])
+				.filter(s => s.rev === currentRevision)
+				.map(s => s.id)
+		);
 
 		await Promise.all(
 			children

@@ -14,7 +14,6 @@ interface IEditOperation {
 }
 
 export class ReplaceAllCommand implements ICommand {
-
 	private readonly _editorSelection: Selection;
 	private _trackedEditorSelectionId: string | null;
 	private readonly _ranges: Range[];
@@ -47,7 +46,10 @@ export class ReplaceAllCommand implements ICommand {
 			const resultOps: IEditOperation[] = [];
 			let previousOp = ops[0];
 			for (let i = 1; i < ops.length; i++) {
-				if (previousOp.range.endLineNumber === ops[i].range.startLineNumber && previousOp.range.endColumn === ops[i].range.startColumn) {
+				if (
+					previousOp.range.endLineNumber === ops[i].range.startLineNumber &&
+					previousOp.range.endColumn === ops[i].range.startColumn
+				) {
 					// These operations are one after another and can be merged
 					previousOp.range = previousOp.range.plusRange(ops[i].range);
 					previousOp.text = previousOp.text + ops[i].text;

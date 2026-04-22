@@ -14,7 +14,13 @@ import { ITerminalCapabilityStore } from '../../../../platform/terminal/common/c
 import { TerminalCapabilityStore } from '../../../../platform/terminal/common/capabilities/terminalCapabilityStore.js';
 import { IMergedEnvironmentVariableCollection } from '../../../../platform/terminal/common/environmentVariable.js';
 import { ITerminalBackend } from '../../../../platform/terminal/common/terminal.js';
-import { IDetachedTerminalInstance, IDetachedXTermOptions, IDetachedXtermTerminal, ITerminalContribution, IXtermAttachToElementOptions } from './terminal.js';
+import {
+	IDetachedTerminalInstance,
+	IDetachedXTermOptions,
+	IDetachedXtermTerminal,
+	ITerminalContribution,
+	IXtermAttachToElementOptions
+} from './terminal.js';
 import { TerminalExtensionsRegistry } from './terminalExtensions.js';
 import { TerminalWidgetManager } from './widgets/widgetManager.js';
 import { XtermTerminal } from './xterm/xtermTerminal.js';
@@ -38,7 +44,7 @@ export class DetachedTerminal extends Disposable implements IDetachedTerminalIns
 	constructor(
 		private readonly _xterm: XtermTerminal,
 		options: IDetachedXTermOptions,
-		@IInstantiationService instantiationService: IInstantiationService,
+		@IInstantiationService instantiationService: IInstantiationService
 	) {
 		super();
 		this.onData = this._xterm.raw.onData;

@@ -13,7 +13,11 @@ import { isString } from '../../../../base/common/types.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { TelemetryTrustedValue } from '../../../../platform/telemetry/common/telemetryUtils.js';
 import { TerminalCapability } from '../../../../platform/terminal/common/capabilities/capabilities.js';
-import { TerminalLocation, type IShellLaunchConfig, type ShellIntegrationInjectionFailureReason } from '../../../../platform/terminal/common/terminal.js';
+import {
+	TerminalLocation,
+	type IShellLaunchConfig,
+	type ShellIntegrationInjectionFailureReason
+} from '../../../../platform/terminal/common/terminal.js';
 import type { IWorkbenchContribution } from '../../../common/contributions.js';
 import { ILifecycleService } from '../../../services/lifecycle/common/lifecycle.js';
 import { ITerminalEditorService, ITerminalService, type ITerminalInstance } from './terminal.js';
@@ -25,39 +29,40 @@ export class TerminalTelemetryContribution extends Disposable implements IWorkbe
 		@ILifecycleService lifecycleService: ILifecycleService,
 		@ITerminalService terminalService: ITerminalService,
 		@ITerminalEditorService terminalEditorService: ITerminalEditorService,
-		@ITelemetryService private readonly _telemetryService: ITelemetryService,
+		@ITelemetryService private readonly _telemetryService: ITelemetryService
 	) {
 		super();
 
-		this._register(terminalService.onDidCreateInstance(async instance => {
-			const store = new DisposableStore();
-			this._store.add(store);
+		this._register(
+			terminalService.onDidCreateInstance(async instance => {
+				const store = new DisposableStore();
+				this._store.add(store);
 
-			await Promise.race([
-				// Wait for process ready so the shell launch config is fully resolved, then
-				// allow another 10 seconds for the shell integration to be fully initialized
-				instance.processReady.then(() => {
-					return timeout(10000);
-				}),
-				// If the terminal is disposed, it's ready to report on immediately
-				Event.toPromise(instance.onDisposed, store),
-				// If the app is shutting down, flush
-				Event.toPromise(lifecycleService.onWillShutdown, store),
-			]);
+				await Promise.race([
+					// Wait for process ready so the shell launch config is fully resolved, then
+					// allow another 10 seconds for the shell integration to be fully initialized
+					instance.processReady.then(() => {
+						return timeout(10000);
+					}),
+					// If the terminal is disposed, it's ready to report on immediately
+					Event.toPromise(instance.onDisposed, store),
+					// If the app is shutting down, flush
+					Event.toPromise(lifecycleService.onWillShutdown, store)
+				]);
 
-			// Determine window status, this is done some time after the process is ready and could
-			// reflect the terminal being moved.
-			let isInAuxWindow = false;
-			try {
-				const input = terminalEditorService.getInputFromResource(instance.resource);
-				const windowId = input.group?.windowId;
-				isInAuxWindow = !!(windowId && isAuxiliaryWindow(getWindowById(windowId, true).window));
-			} catch {
-			}
+				// Determine window status, this is done some time after the process is ready and could
+				// reflect the terminal being moved.
+				let isInAuxWindow = false;
+				try {
+					const input = terminalEditorService.getInputFromResource(instance.resource);
+					const windowId = input.group?.windowId;
+					isInAuxWindow = !!(windowId && isAuxiliaryWindow(getWindowById(windowId, true).window));
+				} catch {}
 
-			this._logCreateInstance(instance, isInAuxWindow);
-			this._store.delete(store);
-		}));
+				this._logCreateInstance(instance, isInAuxWindow);
+				this._store.delete(store);
+			})
+		);
 	}
 
 	private _logCreateInstance(instance: ITerminalInstance, isInAuxWindow: boolean): void {
@@ -88,47 +93,109 @@ export class TerminalTelemetryContribution extends Disposable implements IWorkbe
 			owner: 'anthonykim1';
 			comment: 'Track details about terminal creation, such as the shell type';
 
-			location: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The location of the terminal.' };
+			location: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'The location of the terminal.';
+			};
 
-			shellType: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The detected shell type for the terminal.' };
-			promptType: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The detected prompt type for the terminal.' };
+			shellType: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'The detected shell type for the terminal.';
+			};
+			promptType: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'The detected prompt type for the terminal.';
+			};
 
-			isCustomPtyImplementation: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Whether the terminal was using a custom PTY implementation.' };
-			isExtensionOwnedTerminal: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Whether the terminal was created by an extension.' };
-			isLoginShell: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Whether the arguments contain -l or --login.' };
-			isReconnect: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Whether the terminal is reconnecting to an existing instance.' };
-			hasRemoteAuthority: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Whether the terminal has a remote authority, this is likely a connection terminal when undefined in a window with a remote authority.' };
+			isCustomPtyImplementation: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'Whether the terminal was using a custom PTY implementation.';
+			};
+			isExtensionOwnedTerminal: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'Whether the terminal was created by an extension.';
+			};
+			isLoginShell: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'Whether the arguments contain -l or --login.';
+			};
+			isReconnect: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'Whether the terminal is reconnecting to an existing instance.';
+			};
+			hasRemoteAuthority: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'Whether the terminal has a remote authority, this is likely a connection terminal when undefined in a window with a remote authority.';
+			};
 
-			shellIntegrationQuality: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The shell integration quality (rich=2, basic=1 or none=0).' };
-			shellIntegrationInjected: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Whether the shell integration script was injected.' };
-			shellIntegrationInjectionFailureReason: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Info about shell integration injection.' };
+			shellIntegrationQuality: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'The shell integration quality (rich=2, basic=1 or none=0).';
+			};
+			shellIntegrationInjected: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'Whether the shell integration script was injected.';
+			};
+			shellIntegrationInjectionFailureReason: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'Info about shell integration injection.';
+			};
 
-			imageAddonLoaded: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Whether the xterm.js image addon was loaded.' };
+			imageAddonLoaded: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'Whether the xterm.js image addon was loaded.';
+			};
 
-			terminalSessionId: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The session ID of the terminal instance.' };
+			terminalSessionId: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'The session ID of the terminal instance.';
+			};
 		};
-		this._telemetryService.publicLog2<TerminalCreationTelemetryData, TerminalCreationTelemetryClassification>('terminal/createInstance', {
-			location: (instance.target === TerminalLocation.Panel
-				? 'view'
-				: instance.target === TerminalLocation.Editor
-					? (isInAuxWindow ? 'editor-auxwindow' : 'editor')
-					: 'unknown'),
+		this._telemetryService.publicLog2<TerminalCreationTelemetryData, TerminalCreationTelemetryClassification>(
+			'terminal/createInstance',
+			{
+				location:
+					instance.target === TerminalLocation.Panel
+						? 'view'
+						: instance.target === TerminalLocation.Editor
+							? isInAuxWindow
+								? 'editor-auxwindow'
+								: 'editor'
+							: 'unknown',
 
-			shellType: new TelemetryTrustedValue(getSanitizedShellType(slc)),
-			promptType: new TelemetryTrustedValue(instance.capabilities.get(TerminalCapability.PromptTypeDetection)?.promptType),
+				shellType: new TelemetryTrustedValue(getSanitizedShellType(slc)),
+				promptType: new TelemetryTrustedValue(
+					instance.capabilities.get(TerminalCapability.PromptTypeDetection)?.promptType
+				),
 
-			isCustomPtyImplementation: !!slc.customPtyImplementation,
-			isExtensionOwnedTerminal: !!slc.isExtensionOwnedTerminal,
-			isLoginShell: (isString(slc.args) ? slc.args.split(' ') : slc.args)?.some(arg => arg === '-l' || arg === '--login') ?? false,
-			isReconnect: !!slc.attachPersistentProcess,
-			hasRemoteAuthority: instance.hasRemoteAuthority,
+				isCustomPtyImplementation: !!slc.customPtyImplementation,
+				isExtensionOwnedTerminal: !!slc.isExtensionOwnedTerminal,
+				isLoginShell:
+					(isString(slc.args) ? slc.args.split(' ') : slc.args)?.some(arg => arg === '-l' || arg === '--login') ??
+					false,
+				isReconnect: !!slc.attachPersistentProcess,
+				hasRemoteAuthority: instance.hasRemoteAuthority,
 
-			shellIntegrationQuality: commandDetection?.hasRichCommandDetection ? 2 : commandDetection ? 1 : 0,
-			shellIntegrationInjected: instance.usedShellIntegrationInjection,
-			shellIntegrationInjectionFailureReason: instance.shellIntegrationInjectionFailureReason,
-			imageAddonLoaded: instance.xterm?.isImageAddonLoaded ?? false,
-			terminalSessionId: instance.sessionId,
-		});
+				shellIntegrationQuality: commandDetection?.hasRichCommandDetection ? 2 : commandDetection ? 1 : 0,
+				shellIntegrationInjected: instance.usedShellIntegrationInjection,
+				shellIntegrationInjectionFailureReason: instance.shellIntegrationInjectionFailureReason,
+				imageAddonLoaded: instance.xterm?.isImageAddonLoaded ?? false,
+				terminalSessionId: instance.sessionId
+			}
+		);
 	}
 }
 
@@ -144,7 +211,6 @@ const enum AllowedShellType {
 	Msys2 = 'msys2-bash',
 	WindowsPowerShell = 'windows-powershell',
 	Wsl = 'wsl',
-
 
 	// Common Unix shells
 	Bash = 'bash',
@@ -200,7 +266,7 @@ const enum AllowedShellType {
 	SmalltalkGnu = 'gst',
 	SmalltalkPharo = 'pharo',
 	Tcl = 'tclsh',
-	TsNode = 'ts-node',
+	TsNode = 'ts-node'
 }
 
 // Types that match the executable name directly
@@ -261,13 +327,13 @@ const shellTypeExecutableAllowList: Set<string> = new Set([
 	AllowedShellType.SmalltalkGnu,
 	AllowedShellType.SmalltalkPharo,
 	AllowedShellType.Tcl,
-	AllowedShellType.TsNode,
+	AllowedShellType.TsNode
 ]) satisfies Set<AllowedShellType>;
 
 // Dynamic executables that map to a single type
 const shellTypeExecutableRegexAllowList: { regex: RegExp; type: AllowedShellType }[] = [
 	{ regex: /^(?:pwsh|powershell)-preview$/i, type: AllowedShellType.PwshPreview },
-	{ regex: /^python(?:\d+(?:\.\d+)?)?$/i, type: AllowedShellType.Python },
+	{ regex: /^python(?:\d+(?:\.\d+)?)?$/i, type: AllowedShellType.Python }
 ];
 
 // Path-based look ups
@@ -283,7 +349,7 @@ const shellTypePathRegexAllowList: { regex: RegExp; type: AllowedShellType }[] =
 	{ regex: /\\WindowsPowerShell\\v1.0\\powershell.exe$/i, type: AllowedShellType.WindowsPowerShell },
 	// WSL executables will represent some other shell in the end, but it's difficult to determine
 	// when we log
-	{ regex: /\\Windows\\(?:System32|SysWOW64|Sysnative)\\(?:bash|wsl)\.exe$/i, type: AllowedShellType.Wsl },
+	{ regex: /\\Windows\\(?:System32|SysWOW64|Sysnative)\\(?:bash|wsl)\.exe$/i, type: AllowedShellType.Wsl }
 ];
 
 function getSanitizedShellType(slc: IShellLaunchConfig): AllowedShellType {
@@ -302,7 +368,7 @@ function getSanitizedShellType(slc: IShellLaunchConfig): AllowedShellType {
 			return entry.type;
 		}
 	}
-	if ((shellTypeExecutableAllowList).has(executableFileWithoutExt)) {
+	if (shellTypeExecutableAllowList.has(executableFileWithoutExt)) {
 		return executableFileWithoutExt as AllowedShellType;
 	}
 	return AllowedShellType.Unknown;

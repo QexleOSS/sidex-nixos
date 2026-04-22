@@ -35,7 +35,6 @@ import { Disposable } from '../../../../base/common/lifecycle.js';
  *
  */
 export class DebugContentProvider extends Disposable implements IWorkbenchContribution, ITextModelContentProvider {
-
 	private static INSTANCE: DebugContentProvider;
 
 	private readonly pendingUpdates = new Map<string, CancellationTokenSource>();
@@ -73,7 +72,6 @@ export class DebugContentProvider extends Disposable implements IWorkbenchContri
 	 * Create or reload the model content of the given resource.
 	 */
 	private createOrUpdateContentModel(resource: uri, createIfNotExists: boolean): Promise<ITextModel> | null {
-
 		const model = this.modelService.getModel(resource);
 		if (!model && !createIfNotExists) {
 			// nothing to do
@@ -93,7 +91,9 @@ export class DebugContentProvider extends Disposable implements IWorkbenchContri
 		}
 
 		if (!session) {
-			return Promise.reject(new ErrorNoTelemetry(localize('unable', "Unable to resolve the resource without a debug session")));
+			return Promise.reject(
+				new ErrorNoTelemetry(localize('unable', 'Unable to resolve the resource without a debug session'))
+			);
 		}
 		const createErrModel = (errMsg?: string) => {
 			this.debugService.sourceIsNotAvailable(resource);
@@ -104,44 +104,44 @@ export class DebugContentProvider extends Disposable implements IWorkbenchContri
 			return this.modelService.createModel(message, languageSelection, resource);
 		};
 
-		return session.loadSource(resource).then(response => {
+		return session.loadSource(resource).then(
+			response => {
+				if (response && response.body) {
+					if (model) {
+						const newContent = response.body.content;
 
-			if (response && response.body) {
+						// cancel and dispose an existing update
+						const cancellationSource = this.pendingUpdates.get(model.id);
+						cancellationSource?.cancel();
 
-				if (model) {
+						// create and keep update token
+						const myToken = new CancellationTokenSource();
+						this.pendingUpdates.set(model.id, myToken);
 
-					const newContent = response.body.content;
+						// update text model
+						return this.editorWorkerService
+							.computeMoreMinimalEdits(model.uri, [{ text: newContent, range: model.getFullModelRange() }])
+							.then(edits => {
+								// remove token
+								this.pendingUpdates.delete(model.id);
 
-					// cancel and dispose an existing update
-					const cancellationSource = this.pendingUpdates.get(model.id);
-					cancellationSource?.cancel();
-
-					// create and keep update token
-					const myToken = new CancellationTokenSource();
-					this.pendingUpdates.set(model.id, myToken);
-
-					// update text model
-					return this.editorWorkerService.computeMoreMinimalEdits(model.uri, [{ text: newContent, range: model.getFullModelRange() }]).then(edits => {
-
-						// remove token
-						this.pendingUpdates.delete(model.id);
-
-						if (!myToken.token.isCancellationRequested && edits && edits.length > 0) {
-							// use the evil-edit as these models show in readonly-editor only
-							model.applyEdits(edits.map(edit => EditOperation.replace(Range.lift(edit.range), edit.text)));
-						}
-						return model;
-					});
-				} else {
-					// create text model
-					const mime = response.body.mimeType || getMimeTypes(resource)[0];
-					const languageSelection = this.languageService.createByMimeType(mime);
-					return this.modelService.createModel(response.body.content, languageSelection, resource);
+								if (!myToken.token.isCancellationRequested && edits && edits.length > 0) {
+									// use the evil-edit as these models show in readonly-editor only
+									model.applyEdits(edits.map(edit => EditOperation.replace(Range.lift(edit.range), edit.text)));
+								}
+								return model;
+							});
+					} else {
+						// create text model
+						const mime = response.body.mimeType || getMimeTypes(resource)[0];
+						const languageSelection = this.languageService.createByMimeType(mime);
+						return this.modelService.createModel(response.body.content, languageSelection, resource);
+					}
 				}
-			}
 
-			return createErrModel();
-
-		}, (err: DebugProtocol.ErrorResponse) => createErrModel(err.message));
+				return createErrModel();
+			},
+			(err: DebugProtocol.ErrorResponse) => createErrModel(err.message)
+		);
 	}
 }

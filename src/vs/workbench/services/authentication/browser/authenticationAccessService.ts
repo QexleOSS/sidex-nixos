@@ -12,7 +12,8 @@ import { IProductService } from '../../../../platform/product/common/productServ
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { AllowedExtension } from '../common/authentication.js';
 
-export const IAuthenticationAccessService = createDecorator<IAuthenticationAccessService>('IAuthenticationAccessService');
+export const IAuthenticationAccessService =
+	createDecorator<IAuthenticationAccessService>('IAuthenticationAccessService');
 export interface IAuthenticationAccessService {
 	readonly _serviceBrand: undefined;
 
@@ -37,8 +38,11 @@ export interface IAuthenticationAccessService {
 export class AuthenticationAccessService extends Disposable implements IAuthenticationAccessService {
 	_serviceBrand: undefined;
 
-	private _onDidChangeExtensionSessionAccess: Emitter<{ providerId: string; accountName: string }> = this._register(new Emitter<{ providerId: string; accountName: string }>());
-	readonly onDidChangeExtensionSessionAccess: Event<{ providerId: string; accountName: string }> = this._onDidChangeExtensionSessionAccess.event;
+	private _onDidChangeExtensionSessionAccess: Emitter<{ providerId: string; accountName: string }> = this._register(
+		new Emitter<{ providerId: string; accountName: string }>()
+	);
+	readonly onDidChangeExtensionSessionAccess: Event<{ providerId: string; accountName: string }> =
+		this._onDidChangeExtensionSessionAccess.event;
 
 	constructor(
 		@IStorageService private readonly _storageService: IStorageService,
@@ -64,9 +68,7 @@ export class AuthenticationAccessService extends Disposable implements IAuthenti
 			return undefined;
 		}
 		// This property didn't exist on this data previously, inclusion in the list at all indicates allowance
-		return extensionData.allowed !== undefined
-			? extensionData.allowed
-			: true;
+		return extensionData.allowed !== undefined ? extensionData.allowed : true;
 	}
 
 	readAllowedExtensions(providerId: string, accountName: string): AllowedExtension[] {
@@ -76,7 +78,7 @@ export class AuthenticationAccessService extends Disposable implements IAuthenti
 			if (trustedExtensionSrc) {
 				trustedExtensions = JSON.parse(trustedExtensionSrc);
 			}
-		} catch (err) { }
+		} catch (err) {}
 
 		// Add trusted extensions from product.json if they're not already in the list
 		const trustedExtensionAuthAccess = this._productService.trustedExtensionAuthAccess;
@@ -84,9 +86,9 @@ export class AuthenticationAccessService extends Disposable implements IAuthenti
 			// Case 1: trustedExtensionAuthAccess is an array
 			Array.isArray(trustedExtensionAuthAccess)
 				? trustedExtensionAuthAccess
-				// Case 2: trustedExtensionAuthAccess is an object
-				: typeof trustedExtensionAuthAccess === 'object'
-					? trustedExtensionAuthAccess[providerId] ?? []
+				: // Case 2: trustedExtensionAuthAccess is an object
+					typeof trustedExtensionAuthAccess === 'object'
+					? (trustedExtensionAuthAccess[providerId] ?? [])
 					: [];
 
 		for (const extensionId of trustedExtensionIds) {
@@ -131,7 +133,12 @@ export class AuthenticationAccessService extends Disposable implements IAuthenti
 
 		// Filter out trusted extensions before storing - they should only come from product.json, not user storage
 		const userManagedExtensions = allowList.filter(extension => !extension.trusted);
-		this._storageService.store(`${providerId}-${accountName}`, JSON.stringify(userManagedExtensions), StorageScope.APPLICATION, StorageTarget.USER);
+		this._storageService.store(
+			`${providerId}-${accountName}`,
+			JSON.stringify(userManagedExtensions),
+			StorageScope.APPLICATION,
+			StorageTarget.USER
+		);
 		this._onDidChangeExtensionSessionAccess.fire({ providerId, accountName });
 	}
 

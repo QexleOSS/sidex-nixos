@@ -17,15 +17,21 @@ export class TestExclusions extends Disposable {
 	constructor(@IStorageService private readonly storageService: IStorageService) {
 		super();
 		this.excluded = this._register(
-			MutableObservableValue.stored(new StoredValue<ReadonlySet<string>>({
-				key: 'excludedTestItems',
-				scope: StorageScope.WORKSPACE,
-				target: StorageTarget.MACHINE,
-				serialization: {
-					deserialize: v => new Set(JSON.parse(v)),
-					serialize: v => JSON.stringify([...v])
-				},
-			}, this.storageService), new Set())
+			MutableObservableValue.stored(
+				new StoredValue<ReadonlySet<string>>(
+					{
+						key: 'excludedTestItems',
+						scope: StorageScope.WORKSPACE,
+						target: StorageTarget.MACHINE,
+						serialization: {
+							deserialize: v => new Set(JSON.parse(v)),
+							serialize: v => JSON.stringify([...v])
+						}
+					},
+					this.storageService
+				),
+				new Set()
+			)
 		);
 		this.onTestExclusionsChanged = this.excluded.onDidChange;
 	}

@@ -9,7 +9,13 @@ import { KeyChord, KeyCode, KeyMod } from '../../../../base/common/keyCodes.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
 import { Constants } from '../../../../base/common/uint.js';
 import { ICodeEditor } from '../../../browser/editorBrowser.js';
-import { EditorAction, EditorContributionInstantiation, registerEditorAction, registerEditorContribution, ServicesAccessor } from '../../../browser/editorExtensions.js';
+import {
+	EditorAction,
+	EditorContributionInstantiation,
+	registerEditorAction,
+	registerEditorContribution,
+	ServicesAccessor
+} from '../../../browser/editorExtensions.js';
 import { EditorOption } from '../../../common/config/editorOptions.js';
 import { CursorState } from '../../../common/cursorCommon.js';
 import { CursorChangeReason, ICursorSelectionChangedEvent } from '../../../common/cursorEvents.js';
@@ -32,8 +38,13 @@ import { IInstantiationService } from '../../../../platform/instantiation/common
 function announceCursorChange(previousCursorState: CursorState[], cursorState: CursorState[]): void {
 	const cursorDiff = cursorState.filter(cs => !previousCursorState.find(pcs => pcs.equals(cs)));
 	if (cursorDiff.length >= 1) {
-		const cursorPositions = cursorDiff.map(cs => `line ${cs.viewState.position.lineNumber} column ${cs.viewState.position.column}`).join(', ');
-		const msg = cursorDiff.length === 1 ? nls.localize('cursorAdded', "Cursor added: {0}", cursorPositions) : nls.localize('cursorsAdded', "Cursors added: {0}", cursorPositions);
+		const cursorPositions = cursorDiff
+			.map(cs => `line ${cs.viewState.position.lineNumber} column ${cs.viewState.position.column}`)
+			.join(', ');
+		const msg =
+			cursorDiff.length === 1
+				? nls.localize('cursorAdded', 'Cursor added: {0}', cursorPositions)
+				: nls.localize('cursorsAdded', 'Cursors added: {0}', cursorPositions);
 		status(msg);
 	}
 }
@@ -44,11 +55,10 @@ interface InsertCursorArgs {
 }
 
 export class InsertCursorAbove extends EditorAction {
-
 	constructor() {
 		super({
 			id: 'editor.action.insertCursorAbove',
-			label: nls.localize2('mutlicursor.insertAbove', "Add Cursor Above"),
+			label: nls.localize2('mutlicursor.insertAbove', 'Add Cursor Above'),
 			precondition: undefined,
 			kbOpts: {
 				kbExpr: EditorContextKeys.editorTextFocus,
@@ -62,7 +72,7 @@ export class InsertCursorAbove extends EditorAction {
 			menuOpts: {
 				menuId: MenuId.MenubarSelectionMenu,
 				group: '3_multi',
-				title: nls.localize({ key: 'miInsertCursorAbove', comment: ['&& denotes a mnemonic'] }, "&&Add Cursor Above"),
+				title: nls.localize({ key: 'miInsertCursorAbove', comment: ['&& denotes a mnemonic'] }, '&&Add Cursor Above'),
 				order: 2
 			}
 		});
@@ -96,11 +106,10 @@ export class InsertCursorAbove extends EditorAction {
 }
 
 export class InsertCursorBelow extends EditorAction {
-
 	constructor() {
 		super({
 			id: 'editor.action.insertCursorBelow',
-			label: nls.localize2('mutlicursor.insertBelow', "Add Cursor Below"),
+			label: nls.localize2('mutlicursor.insertBelow', 'Add Cursor Below'),
 			precondition: undefined,
 			kbOpts: {
 				kbExpr: EditorContextKeys.editorTextFocus,
@@ -114,7 +123,7 @@ export class InsertCursorBelow extends EditorAction {
 			menuOpts: {
 				menuId: MenuId.MenubarSelectionMenu,
 				group: '3_multi',
-				title: nls.localize({ key: 'miInsertCursorBelow', comment: ['&& denotes a mnemonic'] }, "A&&dd Cursor Below"),
+				title: nls.localize({ key: 'miInsertCursorBelow', comment: ['&& denotes a mnemonic'] }, 'A&&dd Cursor Below'),
 				order: 3
 			}
 		});
@@ -148,11 +157,10 @@ export class InsertCursorBelow extends EditorAction {
 }
 
 class InsertCursorAtEndOfEachLineSelected extends EditorAction {
-
 	constructor() {
 		super({
 			id: 'editor.action.insertCursorAtEndOfEachLineSelected',
-			label: nls.localize2('mutlicursor.insertAtEndOfEachLineSelected', "Add Cursors to Line Ends"),
+			label: nls.localize2('mutlicursor.insertAtEndOfEachLineSelected', 'Add Cursors to Line Ends'),
 			precondition: undefined,
 			kbOpts: {
 				kbExpr: EditorContextKeys.editorTextFocus,
@@ -162,7 +170,10 @@ class InsertCursorAtEndOfEachLineSelected extends EditorAction {
 			menuOpts: {
 				menuId: MenuId.MenubarSelectionMenu,
 				group: '3_multi',
-				title: nls.localize({ key: 'miInsertCursorAtEndOfEachLineSelected', comment: ['&& denotes a mnemonic'] }, "Add C&&ursors to Line Ends"),
+				title: nls.localize(
+					{ key: 'miInsertCursorAtEndOfEachLineSelected', comment: ['&& denotes a mnemonic'] },
+					'Add C&&ursors to Line Ends'
+				),
 				order: 4
 			}
 		});
@@ -178,7 +189,9 @@ class InsertCursorAtEndOfEachLineSelected extends EditorAction {
 			result.push(new Selection(i, currentLineMaxColumn, i, currentLineMaxColumn));
 		}
 		if (selection.endColumn > 1) {
-			result.push(new Selection(selection.endLineNumber, selection.endColumn, selection.endLineNumber, selection.endColumn));
+			result.push(
+				new Selection(selection.endLineNumber, selection.endColumn, selection.endLineNumber, selection.endColumn)
+			);
 		}
 	}
 
@@ -192,7 +205,7 @@ class InsertCursorAtEndOfEachLineSelected extends EditorAction {
 		const viewModel = editor._getViewModel();
 		const previousCursorState = viewModel.getCursorStates();
 		const newSelections: Selection[] = [];
-		selections.forEach((sel) => this.getCursorsForSelection(sel, model, newSelections));
+		selections.forEach(sel => this.getCursorsForSelection(sel, model, newSelections));
 
 		if (newSelections.length > 0) {
 			editor.setSelections(newSelections);
@@ -202,11 +215,10 @@ class InsertCursorAtEndOfEachLineSelected extends EditorAction {
 }
 
 class InsertCursorAtEndOfLineSelected extends EditorAction {
-
 	constructor() {
 		super({
 			id: 'editor.action.addCursorsToBottom',
-			label: nls.localize2('mutlicursor.addCursorsToBottom', "Add Cursors to Bottom"),
+			label: nls.localize2('mutlicursor.addCursorsToBottom', 'Add Cursors to Bottom'),
 			precondition: undefined
 		});
 	}
@@ -234,11 +246,10 @@ class InsertCursorAtEndOfLineSelected extends EditorAction {
 }
 
 class InsertCursorAtTopOfLineSelected extends EditorAction {
-
 	constructor() {
 		super({
 			id: 'editor.action.addCursorsToTop',
-			label: nls.localize2('mutlicursor.addCursorsToTop', "Add Cursors to Top"),
+			label: nls.localize2('mutlicursor.addCursorsToTop', 'Add Cursors to Top'),
 			precondition: undefined
 		});
 	}
@@ -269,11 +280,10 @@ export class MultiCursorSessionResult {
 		public readonly selections: Selection[],
 		public readonly revealRange: Range,
 		public readonly revealScrollType: ScrollType
-	) { }
+	) {}
 }
 
 export class MultiCursorSession {
-
 	public static create(editor: ICodeEditor, findController: CommonFindController): MultiCursorSession | null {
 		if (!editor.hasModel()) {
 			return null;
@@ -286,7 +296,15 @@ export class MultiCursorSession {
 		//  - and the search string is non-empty
 		if (!editor.hasTextFocus() && findState.isRevealed && findState.searchString.length > 0) {
 			// Find widget owns what is searched for
-			return new MultiCursorSession(editor, findController, false, findState.searchString, findState.wholeWord, findState.matchCase, null);
+			return new MultiCursorSession(
+				editor,
+				findController,
+				false,
+				findState.searchString,
+				findState.wholeWord,
+				findState.matchCase,
+				null
+			);
 		}
 
 		// Otherwise, the selection gives the search text, and the find widget gives the search settings
@@ -322,7 +340,15 @@ export class MultiCursorSession {
 			searchText = editor.getModel().getValueInRange(s).replace(/\r\n/g, '\n');
 		}
 
-		return new MultiCursorSession(editor, findController, isDisconnectedFromFindController, searchText, wholeWord, matchCase, currentMatch);
+		return new MultiCursorSession(
+			editor,
+			findController,
+			isDisconnectedFromFindController,
+			searchText,
+			wholeWord,
+			matchCase,
+			currentMatch
+		);
 	}
 
 	constructor(
@@ -333,7 +359,7 @@ export class MultiCursorSession {
 		public readonly wholeWord: boolean,
 		public readonly matchCase: boolean,
 		public currentMatch: Selection | null
-	) { }
+	) {}
 
 	public addSelectionToNextFindMatch(): MultiCursorSessionResult | null {
 		if (!this._editor.hasModel()) {
@@ -360,7 +386,11 @@ export class MultiCursorSession {
 		}
 
 		const allSelections = this._editor.getSelections();
-		return new MultiCursorSessionResult(allSelections.slice(0, allSelections.length - 1).concat(nextMatch), nextMatch, ScrollType.Smooth);
+		return new MultiCursorSessionResult(
+			allSelections.slice(0, allSelections.length - 1).concat(nextMatch),
+			nextMatch,
+			ScrollType.Smooth
+		);
 	}
 
 	private _getNextMatch(): Selection | null {
@@ -378,12 +408,26 @@ export class MultiCursorSession {
 
 		const allSelections = this._editor.getSelections();
 		const lastAddedSelection = allSelections[allSelections.length - 1];
-		const nextMatch = this._editor.getModel().findNextMatch(this.searchText, lastAddedSelection.getEndPosition(), false, this.matchCase, this.wholeWord ? this._editor.getOption(EditorOption.wordSeparators) : null, false);
+		const nextMatch = this._editor
+			.getModel()
+			.findNextMatch(
+				this.searchText,
+				lastAddedSelection.getEndPosition(),
+				false,
+				this.matchCase,
+				this.wholeWord ? this._editor.getOption(EditorOption.wordSeparators) : null,
+				false
+			);
 
 		if (!nextMatch) {
 			return null;
 		}
-		return new Selection(nextMatch.range.startLineNumber, nextMatch.range.startColumn, nextMatch.range.endLineNumber, nextMatch.range.endColumn);
+		return new Selection(
+			nextMatch.range.startLineNumber,
+			nextMatch.range.startColumn,
+			nextMatch.range.endLineNumber,
+			nextMatch.range.endColumn
+		);
 	}
 
 	public addSelectionToPreviousFindMatch(): MultiCursorSessionResult | null {
@@ -411,7 +455,11 @@ export class MultiCursorSession {
 		}
 
 		const allSelections = this._editor.getSelections();
-		return new MultiCursorSessionResult(allSelections.slice(0, allSelections.length - 1).concat(previousMatch), previousMatch, ScrollType.Smooth);
+		return new MultiCursorSessionResult(
+			allSelections.slice(0, allSelections.length - 1).concat(previousMatch),
+			previousMatch,
+			ScrollType.Smooth
+		);
 	}
 
 	private _getPreviousMatch(): Selection | null {
@@ -429,12 +477,26 @@ export class MultiCursorSession {
 
 		const allSelections = this._editor.getSelections();
 		const lastAddedSelection = allSelections[allSelections.length - 1];
-		const previousMatch = this._editor.getModel().findPreviousMatch(this.searchText, lastAddedSelection.getStartPosition(), false, this.matchCase, this.wholeWord ? this._editor.getOption(EditorOption.wordSeparators) : null, false);
+		const previousMatch = this._editor
+			.getModel()
+			.findPreviousMatch(
+				this.searchText,
+				lastAddedSelection.getStartPosition(),
+				false,
+				this.matchCase,
+				this.wholeWord ? this._editor.getOption(EditorOption.wordSeparators) : null,
+				false
+			);
 
 		if (!previousMatch) {
 			return null;
 		}
-		return new Selection(previousMatch.range.startLineNumber, previousMatch.range.startColumn, previousMatch.range.endLineNumber, previousMatch.range.endColumn);
+		return new Selection(
+			previousMatch.range.startLineNumber,
+			previousMatch.range.startColumn,
+			previousMatch.range.endLineNumber,
+			previousMatch.range.endColumn
+		);
 	}
 
 	public selectAll(searchScope: Range[] | null): FindMatch[] {
@@ -446,14 +508,29 @@ export class MultiCursorSession {
 
 		const editorModel = this._editor.getModel();
 		if (searchScope) {
-			return editorModel.findMatches(this.searchText, searchScope, false, this.matchCase, this.wholeWord ? this._editor.getOption(EditorOption.wordSeparators) : null, false, Constants.MAX_SAFE_SMALL_INTEGER);
+			return editorModel.findMatches(
+				this.searchText,
+				searchScope,
+				false,
+				this.matchCase,
+				this.wholeWord ? this._editor.getOption(EditorOption.wordSeparators) : null,
+				false,
+				Constants.MAX_SAFE_SMALL_INTEGER
+			);
 		}
-		return editorModel.findMatches(this.searchText, true, false, this.matchCase, this.wholeWord ? this._editor.getOption(EditorOption.wordSeparators) : null, false, Constants.MAX_SAFE_SMALL_INTEGER);
+		return editorModel.findMatches(
+			this.searchText,
+			true,
+			false,
+			this.matchCase,
+			this.wholeWord ? this._editor.getOption(EditorOption.wordSeparators) : null,
+			false,
+			Constants.MAX_SAFE_SMALL_INTEGER
+		);
 	}
 }
 
 export class MultiCursorSelectionController extends Disposable implements IEditorContribution {
-
 	public static readonly ID = 'editor.contrib.multiCursorController';
 
 	private readonly _editor: ICodeEditor;
@@ -495,20 +572,26 @@ export class MultiCursorSelectionController extends Disposable implements IEdito
 			}
 			findController.getState().change(newState, false);
 
-			this._sessionDispose.add(this._editor.onDidChangeCursorSelection((e) => {
-				if (this._ignoreSelectionChange) {
-					return;
-				}
-				this._endSession();
-			}));
-			this._sessionDispose.add(this._editor.onDidBlurEditorText(() => {
-				this._endSession();
-			}));
-			this._sessionDispose.add(findController.getState().onFindReplaceStateChange((e) => {
-				if (e.matchCase || e.wholeWord) {
+			this._sessionDispose.add(
+				this._editor.onDidChangeCursorSelection(e => {
+					if (this._ignoreSelectionChange) {
+						return;
+					}
 					this._endSession();
-				}
-			}));
+				})
+			);
+			this._sessionDispose.add(
+				this._editor.onDidBlurEditorText(() => {
+					this._endSession();
+				})
+			);
+			this._sessionDispose.add(
+				findController.getState().onFindReplaceStateChange(e => {
+					if (e.matchCase || e.wholeWord) {
+						this._endSession();
+					}
+				})
+			);
 		}
 	}
 
@@ -518,7 +601,7 @@ export class MultiCursorSelectionController extends Disposable implements IEdito
 			const newState: INewFindReplaceState = {
 				wholeWordOverride: FindOptionOverride.NotSet,
 				matchCaseOverride: FindOptionOverride.NotSet,
-				isRegexOverride: FindOptionOverride.NotSet,
+				isRegexOverride: FindOptionOverride.NotSet
 			};
 			this._session.findController.getState().change(newState, false);
 		}
@@ -622,12 +705,27 @@ export class MultiCursorSelectionController extends Disposable implements IEdito
 		if (findState.isRevealed && findState.searchString.length > 0 && findState.isRegex) {
 			const editorModel = this._editor.getModel();
 			if (findState.searchScope) {
-				matches = editorModel.findMatches(findState.searchString, findState.searchScope, findState.isRegex, findState.matchCase, findState.wholeWord ? this._editor.getOption(EditorOption.wordSeparators) : null, false, Constants.MAX_SAFE_SMALL_INTEGER);
+				matches = editorModel.findMatches(
+					findState.searchString,
+					findState.searchScope,
+					findState.isRegex,
+					findState.matchCase,
+					findState.wholeWord ? this._editor.getOption(EditorOption.wordSeparators) : null,
+					false,
+					Constants.MAX_SAFE_SMALL_INTEGER
+				);
 			} else {
-				matches = editorModel.findMatches(findState.searchString, true, findState.isRegex, findState.matchCase, findState.wholeWord ? this._editor.getOption(EditorOption.wordSeparators) : null, false, Constants.MAX_SAFE_SMALL_INTEGER);
+				matches = editorModel.findMatches(
+					findState.searchString,
+					true,
+					findState.isRegex,
+					findState.matchCase,
+					findState.wholeWord ? this._editor.getOption(EditorOption.wordSeparators) : null,
+					false,
+					Constants.MAX_SAFE_SMALL_INTEGER
+				);
 			}
 		} else {
-
 			this._beginSessionIfNeeded(findController);
 			if (!this._session) {
 				return;
@@ -650,7 +748,11 @@ export class MultiCursorSelectionController extends Disposable implements IEdito
 				}
 			}
 
-			this._setSelections(matches.map(m => new Selection(m.range.startLineNumber, m.range.startColumn, m.range.endLineNumber, m.range.endColumn)));
+			this._setSelections(
+				matches.map(
+					m => new Selection(m.range.startLineNumber, m.range.startColumn, m.range.endLineNumber, m.range.endColumn)
+				)
+			);
 		}
 	}
 
@@ -662,7 +764,6 @@ export class MultiCursorSelectionController extends Disposable implements IEdito
 }
 
 export abstract class MultiCursorSelectionControllerAction extends EditorAction {
-
 	public run(accessor: ServicesAccessor, editor: ICodeEditor): void {
 		const multiCursorController = MultiCursorSelectionController.get(editor);
 		if (!multiCursorController) {
@@ -684,14 +785,17 @@ export abstract class MultiCursorSelectionControllerAction extends EditorAction 
 		}
 	}
 
-	protected abstract _run(multiCursorController: MultiCursorSelectionController, findController: CommonFindController): void;
+	protected abstract _run(
+		multiCursorController: MultiCursorSelectionController,
+		findController: CommonFindController
+	): void;
 }
 
 export class AddSelectionToNextFindMatchAction extends MultiCursorSelectionControllerAction {
 	constructor() {
 		super({
 			id: 'editor.action.addSelectionToNextFindMatch',
-			label: nls.localize2('addSelectionToNextFindMatch', "Add Selection to Next Find Match"),
+			label: nls.localize2('addSelectionToNextFindMatch', 'Add Selection to Next Find Match'),
 			precondition: undefined,
 			kbOpts: {
 				kbExpr: EditorContextKeys.focus,
@@ -701,7 +805,10 @@ export class AddSelectionToNextFindMatchAction extends MultiCursorSelectionContr
 			menuOpts: {
 				menuId: MenuId.MenubarSelectionMenu,
 				group: '3_multi',
-				title: nls.localize({ key: 'miAddSelectionToNextFindMatch', comment: ['&& denotes a mnemonic'] }, "Add &&Next Occurrence"),
+				title: nls.localize(
+					{ key: 'miAddSelectionToNextFindMatch', comment: ['&& denotes a mnemonic'] },
+					'Add &&Next Occurrence'
+				),
 				order: 5
 			}
 		});
@@ -715,12 +822,15 @@ export class AddSelectionToPreviousFindMatchAction extends MultiCursorSelectionC
 	constructor() {
 		super({
 			id: 'editor.action.addSelectionToPreviousFindMatch',
-			label: nls.localize2('addSelectionToPreviousFindMatch', "Add Selection to Previous Find Match"),
+			label: nls.localize2('addSelectionToPreviousFindMatch', 'Add Selection to Previous Find Match'),
 			precondition: undefined,
 			menuOpts: {
 				menuId: MenuId.MenubarSelectionMenu,
 				group: '3_multi',
-				title: nls.localize({ key: 'miAddSelectionToPreviousFindMatch', comment: ['&& denotes a mnemonic'] }, "Add P&&revious Occurrence"),
+				title: nls.localize(
+					{ key: 'miAddSelectionToPreviousFindMatch', comment: ['&& denotes a mnemonic'] },
+					'Add P&&revious Occurrence'
+				),
 				order: 6
 			}
 		});
@@ -734,7 +844,7 @@ export class MoveSelectionToNextFindMatchAction extends MultiCursorSelectionCont
 	constructor() {
 		super({
 			id: 'editor.action.moveSelectionToNextFindMatch',
-			label: nls.localize2('moveSelectionToNextFindMatch', "Move Last Selection to Next Find Match"),
+			label: nls.localize2('moveSelectionToNextFindMatch', 'Move Last Selection to Next Find Match'),
 			precondition: undefined,
 			kbOpts: {
 				kbExpr: EditorContextKeys.focus,
@@ -752,7 +862,7 @@ export class MoveSelectionToPreviousFindMatchAction extends MultiCursorSelection
 	constructor() {
 		super({
 			id: 'editor.action.moveSelectionToPreviousFindMatch',
-			label: nls.localize2('moveSelectionToPreviousFindMatch', "Move Last Selection to Previous Find Match"),
+			label: nls.localize2('moveSelectionToPreviousFindMatch', 'Move Last Selection to Previous Find Match'),
 			precondition: undefined
 		});
 	}
@@ -765,7 +875,7 @@ export class SelectHighlightsAction extends MultiCursorSelectionControllerAction
 	constructor() {
 		super({
 			id: 'editor.action.selectHighlights',
-			label: nls.localize2('selectAllOccurrencesOfFindMatch', "Select All Occurrences of Find Match"),
+			label: nls.localize2('selectAllOccurrencesOfFindMatch', 'Select All Occurrences of Find Match'),
 			precondition: undefined,
 			kbOpts: {
 				kbExpr: EditorContextKeys.focus,
@@ -775,7 +885,10 @@ export class SelectHighlightsAction extends MultiCursorSelectionControllerAction
 			menuOpts: {
 				menuId: MenuId.MenubarSelectionMenu,
 				group: '3_multi',
-				title: nls.localize({ key: 'miSelectHighlights', comment: ['&& denotes a mnemonic'] }, "Select All &&Occurrences"),
+				title: nls.localize(
+					{ key: 'miSelectHighlights', comment: ['&& denotes a mnemonic'] },
+					'Select All &&Occurrences'
+				),
 				order: 7
 			}
 		});
@@ -789,7 +902,7 @@ export class CompatChangeAll extends MultiCursorSelectionControllerAction {
 	constructor() {
 		super({
 			id: 'editor.action.changeAll',
-			label: nls.localize2('changeAll.label', "Change All Occurrences"),
+			label: nls.localize2('changeAll.label', 'Change All Occurrences'),
 			precondition: ContextKeyExpr.and(EditorContextKeys.writable, EditorContextKeys.editorTextFocus),
 			kbOpts: {
 				kbExpr: EditorContextKeys.editorTextFocus,
@@ -819,12 +932,13 @@ class SelectionHighlighterState {
 		prevState: SelectionHighlighterState | null
 	) {
 		this._modelVersionId = this._model.getVersionId();
-		if (prevState
-			&& this._model === prevState._model
-			&& this._searchText === prevState._searchText
-			&& this._matchCase === prevState._matchCase
-			&& this._wordSeparators === prevState._wordSeparators
-			&& this._modelVersionId === prevState._modelVersionId
+		if (
+			prevState &&
+			this._model === prevState._model &&
+			this._searchText === prevState._searchText &&
+			this._matchCase === prevState._matchCase &&
+			this._wordSeparators === prevState._wordSeparators &&
+			this._modelVersionId === prevState._modelVersionId
 		) {
 			this._cachedFindMatches = prevState._cachedFindMatches;
 		}
@@ -832,7 +946,9 @@ class SelectionHighlighterState {
 
 	public findMatches(): Range[] {
 		if (this._cachedFindMatches === null) {
-			this._cachedFindMatches = this._model.findMatches(this._searchText, true, false, this._matchCase, this._wordSeparators, false).map(m => m.range);
+			this._cachedFindMatches = this._model
+				.findMatches(this._searchText, true, false, this._matchCase, this._wordSeparators, false)
+				.map(m => m.range);
 			this._cachedFindMatches.sort(Range.compareRangesUsingStarts);
 		}
 		return this._cachedFindMatches;
@@ -863,55 +979,78 @@ export class SelectionHighlighter extends Disposable implements IEditorContribut
 		this.updateSoon = this._register(new RunOnceScheduler(() => this._update(), 300));
 		this.state = null;
 
-		this._register(editor.onDidChangeConfiguration((e) => {
-			this._isEnabled = editor.getOption(EditorOption.selectionHighlight);
-			this._isEnabledMultiline = editor.getOption(EditorOption.selectionHighlightMultiline);
-			this._maxLength = editor.getOption(EditorOption.selectionHighlightMaxLength);
-		}));
-		this._register(editor.onDidChangeCursorSelection((e: ICursorSelectionChangedEvent) => {
+		this._register(
+			editor.onDidChangeConfiguration(e => {
+				this._isEnabled = editor.getOption(EditorOption.selectionHighlight);
+				this._isEnabledMultiline = editor.getOption(EditorOption.selectionHighlightMultiline);
+				this._maxLength = editor.getOption(EditorOption.selectionHighlightMaxLength);
+			})
+		);
+		this._register(
+			editor.onDidChangeCursorSelection((e: ICursorSelectionChangedEvent) => {
+				if (!this._isEnabled) {
+					// Early exit if nothing needs to be done!
+					// Leave some form of early exit check here if you wish to continue being a cursor position change listener ;)
+					return;
+				}
 
-			if (!this._isEnabled) {
-				// Early exit if nothing needs to be done!
-				// Leave some form of early exit check here if you wish to continue being a cursor position change listener ;)
-				return;
-			}
-
-			if (e.selection.isEmpty()) {
-				if (e.reason === CursorChangeReason.Explicit) {
-					if (this.state) {
-						// no longer valid
+				if (e.selection.isEmpty()) {
+					if (e.reason === CursorChangeReason.Explicit) {
+						if (this.state) {
+							// no longer valid
+							this._setState(null);
+						}
+						this.updateSoon.schedule();
+					} else {
 						this._setState(null);
 					}
-					this.updateSoon.schedule();
 				} else {
-					this._setState(null);
+					this._update();
 				}
-			} else {
-				this._update();
-			}
-		}));
-		this._register(editor.onDidChangeModel((e) => {
-			this._setState(null);
-		}));
-		this._register(editor.onDidChangeModelContent((e) => {
-			if (this._isEnabled) {
-				this.updateSoon.schedule();
-			}
-		}));
+			})
+		);
+		this._register(
+			editor.onDidChangeModel(e => {
+				this._setState(null);
+			})
+		);
+		this._register(
+			editor.onDidChangeModelContent(e => {
+				if (this._isEnabled) {
+					this.updateSoon.schedule();
+				}
+			})
+		);
 		const findController = CommonFindController.get(editor);
 		if (findController) {
-			this._register(findController.getState().onFindReplaceStateChange((e) => {
-				this._update();
-			}));
+			this._register(
+				findController.getState().onFindReplaceStateChange(e => {
+					this._update();
+				})
+			);
 		}
 		this.updateSoon.schedule();
 	}
 
 	private _update(): void {
-		this._setState(SelectionHighlighter._createState(this.state, this._isEnabled, this._isEnabledMultiline, this._maxLength, this.editor));
+		this._setState(
+			SelectionHighlighter._createState(
+				this.state,
+				this._isEnabled,
+				this._isEnabledMultiline,
+				this._maxLength,
+				this.editor
+			)
+		);
 	}
 
-	private static _createState(oldState: SelectionHighlighterState | null, isEnabled: boolean, isEnabledMultiline: boolean, maxLength: number, editor: ICodeEditor): SelectionHighlighterState | null {
+	private static _createState(
+		oldState: SelectionHighlighterState | null,
+		isEnabled: boolean,
+		isEnabledMultiline: boolean,
+		maxLength: number,
+		editor: ICodeEditor
+	): SelectionHighlighterState | null {
 		if (!isEnabled) {
 			return null;
 		}
@@ -981,12 +1120,23 @@ export class SelectionHighlighter extends Disposable implements IEditorContribut
 				mySearchString = mySearchString.toLowerCase();
 			}
 
-			if (findStateSearchString === mySearchString && r.matchCase === findState.matchCase && r.wholeWord === findState.wholeWord && !findState.isRegex) {
+			if (
+				findStateSearchString === mySearchString &&
+				r.matchCase === findState.matchCase &&
+				r.wholeWord === findState.wholeWord &&
+				!findState.isRegex
+			) {
 				return null;
 			}
 		}
 
-		return new SelectionHighlighterState(editor.getModel(), r.searchText, r.matchCase, r.wholeWord ? editor.getOption(EditorOption.wordSeparators) : null, oldState);
+		return new SelectionHighlighterState(
+			editor.getModel(),
+			r.searchText,
+			r.matchCase,
+			r.wholeWord ? editor.getOption(EditorOption.wordSeparators) : null,
+			oldState
+		);
 	}
 
 	private _setState(newState: SelectionHighlighterState | null): void {
@@ -1014,7 +1164,7 @@ export class SelectionHighlighter extends Disposable implements IEditorContribut
 
 		// do not overlap with selection (issue #64 and #512)
 		const matches: Range[] = [];
-		for (let i = 0, j = 0, len = allMatches.length, lenJ = selections.length; i < len;) {
+		for (let i = 0, j = 0, len = allMatches.length, lenJ = selections.length; i < len; ) {
 			const match = allMatches[i];
 
 			if (j >= lenJ) {
@@ -1041,7 +1191,8 @@ export class SelectionHighlighter extends Disposable implements IEditorContribut
 		}
 
 		const occurrenceHighlighting: boolean = this.editor.getOption(EditorOption.occurrencesHighlight) !== 'off';
-		const hasSemanticHighlights = this._languageFeaturesService.documentHighlightProvider.has(model) && occurrenceHighlighting;
+		const hasSemanticHighlights =
+			this._languageFeaturesService.documentHighlightProvider.has(model) && occurrenceHighlighting;
 		const decorations = matches.map(r => {
 			return {
 				range: r,
@@ -1075,7 +1226,7 @@ function modelRangesContainSameText(model: ITextModel, ranges: Range[], matchCas
 
 function getValueInRange(model: ITextModel, range: Range, toLowerCase: boolean): string {
 	const text = model.getValueInRange(range);
-	return (toLowerCase ? text.toLowerCase() : text);
+	return toLowerCase ? text.toLowerCase() : text;
 }
 
 interface FocusCursorArgs {
@@ -1086,10 +1237,10 @@ export class FocusNextCursor extends EditorAction {
 	constructor() {
 		super({
 			id: 'editor.action.focusNextCursor',
-			label: nls.localize2('mutlicursor.focusNextCursor', "Focus Next Cursor"),
+			label: nls.localize2('mutlicursor.focusNextCursor', 'Focus Next Cursor'),
 			metadata: {
-				description: nls.localize('mutlicursor.focusNextCursor.description', "Focuses the next cursor"),
-				args: [],
+				description: nls.localize('mutlicursor.focusNextCursor.description', 'Focuses the next cursor'),
+				args: []
 			},
 			precondition: undefined
 		});
@@ -1124,10 +1275,10 @@ export class FocusPreviousCursor extends EditorAction {
 	constructor() {
 		super({
 			id: 'editor.action.focusPreviousCursor',
-			label: nls.localize2('mutlicursor.focusPreviousCursor', "Focus Previous Cursor"),
+			label: nls.localize2('mutlicursor.focusPreviousCursor', 'Focus Previous Cursor'),
 			metadata: {
-				description: nls.localize('mutlicursor.focusPreviousCursor.description', "Focuses the previous cursor"),
-				args: [],
+				description: nls.localize('mutlicursor.focusPreviousCursor.description', 'Focuses the previous cursor'),
+				args: []
 			},
 			precondition: undefined
 		});
@@ -1158,8 +1309,16 @@ export class FocusPreviousCursor extends EditorAction {
 	}
 }
 
-registerEditorContribution(MultiCursorSelectionController.ID, MultiCursorSelectionController, EditorContributionInstantiation.Lazy);
-registerEditorContribution(SelectionHighlighter.ID, SelectionHighlighter, EditorContributionInstantiation.AfterFirstRender);
+registerEditorContribution(
+	MultiCursorSelectionController.ID,
+	MultiCursorSelectionController,
+	EditorContributionInstantiation.Lazy
+);
+registerEditorContribution(
+	SelectionHighlighter.ID,
+	SelectionHighlighter,
+	EditorContributionInstantiation.AfterFirstRender
+);
 
 registerEditorAction(InsertCursorAbove);
 registerEditorAction(InsertCursorBelow);

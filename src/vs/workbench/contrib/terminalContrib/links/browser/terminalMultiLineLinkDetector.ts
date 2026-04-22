@@ -22,7 +22,7 @@ const enum Constants {
 	 * The maximum length of a link to resolve against the file system. This limit is put in place
 	 * to avoid sending excessive data when remote connections are in place.
 	 */
-	MaxResolvedLinkLength = 1024,
+	MaxResolvedLinkLength = 1024
 }
 
 const lineNumberPrefixMatchers = [
@@ -54,13 +54,15 @@ export class TerminalMultiLineLinkDetector implements ITerminalLinkDetector {
 
 	constructor(
 		readonly xterm: Terminal,
-		private readonly _processManager: Pick<ITerminalProcessManager, 'initialCwd' | 'os' | 'remoteAuthority' | 'userHome'> & { backend?: Pick<ITerminalBackend, 'getWslPath'> },
+		private readonly _processManager: Pick<
+			ITerminalProcessManager,
+			'initialCwd' | 'os' | 'remoteAuthority' | 'userHome'
+		> & { backend?: Pick<ITerminalBackend, 'getWslPath'> },
 		private readonly _linkResolver: ITerminalLinkResolver,
 		@ITerminalLogService private readonly _logService: ITerminalLogService,
 		@IUriIdentityService private readonly _uriIdentityService: IUriIdentityService,
 		@IWorkspaceContextService private readonly _workspaceContextService: IWorkspaceContextService
-	) {
-	}
+	) {}
 
 	async detect(lines: IBufferLine[], startLine: number, endLine: number): Promise<ITerminalSimpleLink[]> {
 		const links: ITerminalSimpleLink[] = [];
@@ -115,15 +117,25 @@ export class TerminalMultiLineLinkDetector implements ITerminalLinkDetector {
 			// Check if the first non-matching line is an absolute or relative link
 			const linkStat = await this._linkResolver.resolveLink(this._processManager, possiblePath);
 			if (linkStat) {
-				const type = getTerminalLinkType(linkStat.uri, linkStat.isDirectory, this._uriIdentityService, this._workspaceContextService);
+				const type = getTerminalLinkType(
+					linkStat.uri,
+					linkStat.isDirectory,
+					this._uriIdentityService,
+					this._workspaceContextService
+				);
 
 				// Convert the entire line's text string index into a wrapped buffer range
-				const bufferRange = convertLinkRangeToBuffer(lines, this.xterm.cols, {
-					startColumn: 1,
-					startLineNumber: 1,
-					endColumn: 1 + text.length,
-					endLineNumber: 1
-				}, startLine);
+				const bufferRange = convertLinkRangeToBuffer(
+					lines,
+					this.xterm.cols,
+					{
+						startColumn: 1,
+						startLineNumber: 1,
+						endColumn: 1 + text.length,
+						endLineNumber: 1
+					},
+					startLine
+				);
 
 				const simpleLink: ITerminalSimpleLink = {
 					text: link,
@@ -165,7 +177,6 @@ export class TerminalMultiLineLinkDetector implements ITerminalLinkDetector {
 
 				this._logService.trace('terminalMultiLineLinkDetector#detect candidate', link);
 
-
 				// Scan up looking for the first line that could be a path
 				let possiblePath: string | undefined;
 				for (let index = startLine - 1; index >= 0; index--) {
@@ -187,15 +198,25 @@ export class TerminalMultiLineLinkDetector implements ITerminalLinkDetector {
 				// Check if the first non-matching line is an absolute or relative link
 				const linkStat = await this._linkResolver.resolveLink(this._processManager, possiblePath);
 				if (linkStat) {
-					const type = getTerminalLinkType(linkStat.uri, linkStat.isDirectory, this._uriIdentityService, this._workspaceContextService);
+					const type = getTerminalLinkType(
+						linkStat.uri,
+						linkStat.isDirectory,
+						this._uriIdentityService,
+						this._workspaceContextService
+					);
 
 					// Convert the link to the buffer range
-					const bufferRange = convertLinkRangeToBuffer(lines, this.xterm.cols, {
-						startColumn: 1,
-						startLineNumber: 1,
-						endColumn: 1 + link.length,
-						endLineNumber: 1
-					}, startLine);
+					const bufferRange = convertLinkRangeToBuffer(
+						lines,
+						this.xterm.cols,
+						{
+							startColumn: 1,
+							startLineNumber: 1,
+							endColumn: 1 + link.length,
+							endLineNumber: 1
+						},
+						startLine
+					);
 
 					const simpleLink: ITerminalSimpleLink = {
 						text: link,

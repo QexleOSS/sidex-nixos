@@ -3,7 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AsyncIterableProducer, CancelableAsyncIterableProducer, createCancelableAsyncIterableProducer, RunOnceScheduler } from '../../../../base/common/async.js';
+import {
+	AsyncIterableProducer,
+	CancelableAsyncIterableProducer,
+	createCancelableAsyncIterableProducer,
+	RunOnceScheduler
+} from '../../../../base/common/async.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { onUnexpectedError } from '../../../../base/common/errors.js';
 import { Emitter } from '../../../../base/common/event.js';
@@ -27,7 +32,7 @@ const enum HoverOperationState {
 	FirstWait,
 	SecondWait,
 	WaitingForAsync = 3,
-	WaitingForAsyncShowingLoading = 4,
+	WaitingForAsyncShowingLoading = 4
 }
 
 export const enum HoverStartMode {
@@ -47,7 +52,7 @@ export class HoverResult<TArgs, TResult> {
 		public readonly isComplete: boolean,
 		public readonly hasLoadingMessage: boolean,
 		public readonly options: TArgs
-	) { }
+	) {}
 }
 
 /**
@@ -61,13 +66,18 @@ export class HoverResult<TArgs, TResult> {
  * - at 900ms, if the async computation hasn't finished, a "Loading..." result is added.
  */
 export class HoverOperation<TArgs, TResult> extends Disposable {
-
 	private readonly _onResult = this._register(new Emitter<HoverResult<TArgs, TResult>>());
 	public readonly onResult = this._onResult.event;
 
-	private readonly _asyncComputationScheduler = this._register(new Debouncer((options: TArgs) => this._triggerAsyncComputation(options), 0));
-	private readonly _syncComputationScheduler = this._register(new Debouncer((options: TArgs) => this._triggerSyncComputation(options), 0));
-	private readonly _loadingMessageScheduler = this._register(new Debouncer((options: TArgs) => this._triggerLoadingMessage(options), 0));
+	private readonly _asyncComputationScheduler = this._register(
+		new Debouncer((options: TArgs) => this._triggerAsyncComputation(options), 0)
+	);
+	private readonly _syncComputationScheduler = this._register(
+		new Debouncer((options: TArgs) => this._triggerSyncComputation(options), 0)
+	);
+	private readonly _loadingMessageScheduler = this._register(
+		new Debouncer((options: TArgs) => this._triggerLoadingMessage(options), 0)
+	);
 
 	private _state = HoverOperationState.Idle;
 	private _asyncIterable: CancelableAsyncIterableProducer<TResult> | null = null;
@@ -119,7 +129,9 @@ export class HoverOperation<TArgs, TResult> extends Disposable {
 
 		if (this._computer.computeAsync) {
 			this._asyncIterableDone = false;
-			this._asyncIterable = createCancelableAsyncIterableProducer(token => this._computer.computeAsync!(options, token));
+			this._asyncIterable = createCancelableAsyncIterableProducer(token =>
+				this._computer.computeAsync!(options, token)
+			);
 
 			(async () => {
 				try {
@@ -131,15 +143,16 @@ export class HoverOperation<TArgs, TResult> extends Disposable {
 					}
 					this._asyncIterableDone = true;
 
-					if (this._state === HoverOperationState.WaitingForAsync || this._state === HoverOperationState.WaitingForAsyncShowingLoading) {
+					if (
+						this._state === HoverOperationState.WaitingForAsync ||
+						this._state === HoverOperationState.WaitingForAsyncShowingLoading
+					) {
 						this._setState(HoverOperationState.Idle, options);
 					}
-
 				} catch (e) {
 					onUnexpectedError(e);
 				}
 			})();
-
 		} else {
 			this._asyncIterableDone = true;
 		}
@@ -163,8 +176,8 @@ export class HoverOperation<TArgs, TResult> extends Disposable {
 			// Do not send out results before the hover time
 			return;
 		}
-		const isComplete = (this._state === HoverOperationState.Idle);
-		const hasLoadingMessage = (this._state === HoverOperationState.WaitingForAsyncShowingLoading);
+		const isComplete = this._state === HoverOperationState.Idle;
+		const hasLoadingMessage = this._state === HoverOperationState.WaitingForAsyncShowingLoading;
 		this._onResult.fire(new HoverResult(this._result.slice(0), isComplete, hasLoadingMessage, options));
 	}
 
@@ -209,7 +222,6 @@ export class HoverOperation<TArgs, TResult> extends Disposable {
 }
 
 class Debouncer<TArgs> extends Disposable {
-
 	private readonly _scheduler: RunOnceScheduler;
 
 	private _options: TArgs | undefined;

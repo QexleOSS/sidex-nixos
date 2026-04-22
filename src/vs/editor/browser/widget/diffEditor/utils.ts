@@ -6,8 +6,24 @@
 import { IDimension } from '../../../../base/browser/dom.js';
 import { findLast } from '../../../../base/common/arraysFind.js';
 import { CancellationTokenSource } from '../../../../base/common/cancellation.js';
-import { Disposable, DisposableStore, IDisposable, IReference, toDisposable } from '../../../../base/common/lifecycle.js';
-import { IObservable, IObservableWithChange, ISettableObservable, autorun, autorunHandleChanges, autorunOpts, autorunWithStore, observableValue, transaction } from '../../../../base/common/observable.js';
+import {
+	Disposable,
+	DisposableStore,
+	IDisposable,
+	IReference,
+	toDisposable
+} from '../../../../base/common/lifecycle.js';
+import {
+	IObservable,
+	IObservableWithChange,
+	ISettableObservable,
+	autorun,
+	autorunHandleChanges,
+	autorunOpts,
+	autorunWithStore,
+	observableValue,
+	transaction
+} from '../../../../base/common/observable.js';
 import { ElementSizeObserver } from '../../config/elementSizeObserver.js';
 import { ICodeEditor, IOverlayWidget, IViewZone } from '../../editorBrowser.js';
 import { Position } from '../../../common/core/position.js';
@@ -16,7 +32,12 @@ import { DetailedLineRangeMapping } from '../../../common/diff/rangeMapping.js';
 import { IModelDeltaDecoration } from '../../../common/model.js';
 import { TextLength } from '../../../common/core/text/textLength.js';
 
-export function joinCombine<T>(arr1: readonly T[], arr2: readonly T[], keySelector: (val: T) => number, combine: (v1: T, v2: T) => T): readonly T[] {
+export function joinCombine<T>(
+	arr1: readonly T[],
+	arr2: readonly T[],
+	keySelector: (val: T) => number,
+	combine: (v1: T, v2: T) => T
+): readonly T[] {
 	if (arr1.length === 0) {
 		return arr2;
 	}
@@ -57,13 +78,18 @@ export function joinCombine<T>(arr1: readonly T[], arr2: readonly T[], keySelect
 }
 
 // TODO make utility
-export function applyObservableDecorations(editor: ICodeEditor, decorations: IObservable<IModelDeltaDecoration[]>): IDisposable {
+export function applyObservableDecorations(
+	editor: ICodeEditor,
+	decorations: IObservable<IModelDeltaDecoration[]>
+): IDisposable {
 	const d = new DisposableStore();
 	const decorationsCollection = editor.createDecorationsCollection();
-	d.add(autorunOpts({ debugName: () => `Apply decorations from ${decorations.debugName}` }, reader => {
-		const d = decorations.read(reader);
-		decorationsCollection.set(d);
-	}));
+	d.add(
+		autorunOpts({ debugName: () => `Apply decorations from ${decorations.debugName}` }, reader => {
+			const d = decorations.read(reader);
+			decorationsCollection.set(d);
+		})
+	);
 	d.add({
 		dispose: () => {
 			decorationsCollection.clear();
@@ -90,13 +116,19 @@ export class ObservableElementSizeObserver extends Disposable {
 	private readonly elementSizeObserver: ElementSizeObserver;
 
 	private readonly _width: ISettableObservable<number>;
-	public get width(): IObservable<number> { return this._width; }
+	public get width(): IObservable<number> {
+		return this._width;
+	}
 
 	private readonly _height: ISettableObservable<number>;
-	public get height(): IObservable<number> { return this._height; }
+	public get height(): IObservable<number> {
+		return this._height;
+	}
 
 	private _automaticLayout: boolean = false;
-	public get automaticLayout(): boolean { return this._automaticLayout; }
+	public get automaticLayout(): boolean {
+		return this._automaticLayout;
+	}
 
 	constructor(element: HTMLElement | null, dimension: IDimension | undefined) {
 		super();
@@ -105,11 +137,15 @@ export class ObservableElementSizeObserver extends Disposable {
 		this._width = observableValue(this, this.elementSizeObserver.getWidth());
 		this._height = observableValue(this, this.elementSizeObserver.getHeight());
 
-		this._register(this.elementSizeObserver.onDidChange(e => transaction(tx => {
-			/** @description Set width/height from elementSizeObserver */
-			this._width.set(this.elementSizeObserver.getWidth(), tx);
-			this._height.set(this.elementSizeObserver.getHeight(), tx);
-		})));
+		this._register(
+			this.elementSizeObserver.onDidChange(e =>
+				transaction(tx => {
+					/** @description Set width/height from elementSizeObserver */
+					this._width.set(this.elementSizeObserver.getWidth(), tx);
+					this._height.set(this.elementSizeObserver.getHeight(), tx);
+				})
+			)
+		);
 	}
 
 	public observe(dimension?: IDimension): void {
@@ -126,7 +162,11 @@ export class ObservableElementSizeObserver extends Disposable {
 	}
 }
 
-export function animatedObservable(targetWindow: Window, base: IObservableWithChange<number, boolean>, store: DisposableStore): IObservable<number> {
+export function animatedObservable(
+	targetWindow: Window,
+	base: IObservableWithChange<number, boolean>,
+	store: DisposableStore
+): IObservable<number> {
 	let targetVal = base.get();
 	let startVal = targetVal;
 	let curVal = targetVal;
@@ -136,29 +176,34 @@ export function animatedObservable(targetWindow: Window, base: IObservableWithCh
 	const durationMs = 300;
 	let animationFrame: number | undefined = undefined;
 
-	store.add(autorunHandleChanges({
-		changeTracker: {
-			createChangeSummary: () => ({ animate: false }),
-			handleChange: (ctx, s) => {
-				if (ctx.didChange(base)) {
-					s.animate = s.animate || ctx.change;
+	store.add(
+		autorunHandleChanges(
+			{
+				changeTracker: {
+					createChangeSummary: () => ({ animate: false }),
+					handleChange: (ctx, s) => {
+						if (ctx.didChange(base)) {
+							s.animate = s.animate || ctx.change;
+						}
+						return true;
+					}
 				}
-				return true;
+			},
+			(reader, s) => {
+				/** @description update value */
+				if (animationFrame !== undefined) {
+					targetWindow.cancelAnimationFrame(animationFrame);
+					animationFrame = undefined;
+				}
+
+				startVal = curVal;
+				targetVal = base.read(reader);
+				animationStartMs = Date.now() - (s.animate ? 0 : durationMs);
+
+				update();
 			}
-		}
-	}, (reader, s) => {
-		/** @description update value */
-		if (animationFrame !== undefined) {
-			targetWindow.cancelAnimationFrame(animationFrame);
-			animationFrame = undefined;
-		}
-
-		startVal = curVal;
-		targetVal = base.read(reader);
-		animationStartMs = Date.now() - (s.animate ? 0 : durationMs);
-
-		update();
-	}));
+		)
+	);
 
 	function update() {
 		const passedMs = Date.now() - animationStartMs;
@@ -177,11 +222,11 @@ export function animatedObservable(targetWindow: Window, base: IObservableWithCh
 }
 
 function easeOutExpo(t: number, b: number, c: number, d: number): number {
-	return t === d ? b + c : c * (-Math.pow(2, -10 * t / d) + 1) + b;
+	return t === d ? b + c : c * (-Math.pow(2, (-10 * t) / d) + 1) + b;
 }
 
 export function deepMerge<T extends {}>(source1: T, source2: Partial<T>): T {
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	const result = {} as any as T;
 	for (const key in source1) {
 		result[key] = source1[key];
@@ -189,10 +234,9 @@ export function deepMerge<T extends {}>(source1: T, source2: Partial<T>): T {
 	for (const key in source2) {
 		const source2Value = source2[key];
 		if (typeof result[key] === 'object' && source2Value && typeof source2Value === 'object') {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			result[key] = deepMerge<any>(result[key], source2Value);
 		} else {
-			// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+			// eslint-disable-next-line local/code-no-any-casts
 			result[key] = source2Value as any;
 		}
 	}
@@ -200,18 +244,16 @@ export function deepMerge<T extends {}>(source1: T, source2: Partial<T>): T {
 }
 
 export abstract class ViewZoneOverlayWidget extends Disposable {
-	constructor(
-		editor: ICodeEditor,
-		viewZone: PlaceholderViewZone,
-		htmlElement: HTMLElement,
-	) {
+	constructor(editor: ICodeEditor, viewZone: PlaceholderViewZone, htmlElement: HTMLElement) {
 		super();
 
 		this._register(new ManagedOverlayWidget(editor, htmlElement));
-		this._register(applyStyle(htmlElement, {
-			height: viewZone.actualHeight,
-			top: viewZone.actualTop,
-		}));
+		this._register(
+			applyStyle(htmlElement, {
+				height: viewZone.actualHeight,
+				top: viewZone.actualTop
+			})
+		);
 	}
 }
 
@@ -234,13 +276,15 @@ export class PlaceholderViewZone implements IObservableViewZone {
 
 	public readonly showInHiddenAreas;
 
-	public get afterLineNumber(): number { return this._afterLineNumber.get(); }
+	public get afterLineNumber(): number {
+		return this._afterLineNumber.get();
+	}
 
 	public readonly onChange?: IObservable<unknown>;
 
 	constructor(
 		private readonly _afterLineNumber: IObservable<number>,
-		public readonly heightInPx: number,
+		public readonly heightInPx: number
 	) {
 		this.domNode = document.createElement('div');
 		this._actualTop = observableValue<number | undefined>(this, undefined);
@@ -262,7 +306,6 @@ export class PlaceholderViewZone implements IObservableViewZone {
 	onComputedHeight;
 }
 
-
 export class ManagedOverlayWidget implements IDisposable {
 	private static _counter = 0;
 	private readonly _overlayWidgetId = `managedOverlayWidget-${ManagedOverlayWidget._counter++}`;
@@ -275,7 +318,7 @@ export class ManagedOverlayWidget implements IDisposable {
 
 	constructor(
 		private readonly _editor: ICodeEditor,
-		private readonly _domElement: HTMLElement,
+		private readonly _domElement: HTMLElement
 	) {
 		this._editor.addOverlayWidget(this._overlayWidget);
 	}
@@ -295,85 +338,125 @@ export interface CSSStyle {
 	paddingRight: number | string;
 }
 
-export function applyStyle(domNode: HTMLElement, style: Partial<{ [TKey in keyof CSSStyle]: CSSStyle[TKey] | IObservable<CSSStyle[TKey] | undefined> | undefined }>) {
+export function applyStyle(
+	domNode: HTMLElement,
+	style: Partial<{ [TKey in keyof CSSStyle]: CSSStyle[TKey] | IObservable<CSSStyle[TKey] | undefined> | undefined }>
+) {
 	return autorun(reader => {
 		/** @description applyStyle */
 		for (let [key, val] of Object.entries(style)) {
 			if (val && typeof val === 'object' && 'read' in val) {
-				// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+				// eslint-disable-next-line local/code-no-any-casts
 				val = val.read(reader) as any;
 			}
 			if (typeof val === 'number') {
 				val = `${val}px`;
 			}
 			key = key.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
-			// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+			// eslint-disable-next-line local/code-no-any-casts
 			domNode.style[key as any] = val as any;
 		}
 	});
 }
 
-export function applyViewZones(editor: ICodeEditor, viewZones: IObservable<IObservableViewZone[]>, setIsUpdating?: (isUpdatingViewZones: boolean) => void, zoneIds?: Set<string>): IDisposable {
+export function applyViewZones(
+	editor: ICodeEditor,
+	viewZones: IObservable<IObservableViewZone[]>,
+	setIsUpdating?: (isUpdatingViewZones: boolean) => void,
+	zoneIds?: Set<string>
+): IDisposable {
 	const store = new DisposableStore();
 	const lastViewZoneIds: string[] = [];
 
-	store.add(autorunWithStore((reader, store) => {
-		/** @description applyViewZones */
-		const curViewZones = viewZones.read(reader);
+	store.add(
+		autorunWithStore((reader, store) => {
+			/** @description applyViewZones */
+			const curViewZones = viewZones.read(reader);
 
-		const viewZonIdsPerViewZone = new Map<IObservableViewZone, string>();
-		const viewZoneIdPerOnChangeObservable = new Map<IObservable<unknown>, string>();
+			const viewZonIdsPerViewZone = new Map<IObservableViewZone, string>();
+			const viewZoneIdPerOnChangeObservable = new Map<IObservable<unknown>, string>();
 
-		// Add/remove view zones
-		if (setIsUpdating) { setIsUpdating(true); }
-		editor.changeViewZones(a => {
-			for (const id of lastViewZoneIds) { a.removeZone(id); zoneIds?.delete(id); }
-			lastViewZoneIds.length = 0;
-
-			for (const z of curViewZones) {
-				const id = a.addZone(z);
-				if (z.setZoneId) {
-					z.setZoneId(id);
+			// Add/remove view zones
+			if (setIsUpdating) {
+				setIsUpdating(true);
+			}
+			editor.changeViewZones(a => {
+				for (const id of lastViewZoneIds) {
+					a.removeZone(id);
+					zoneIds?.delete(id);
 				}
-				lastViewZoneIds.push(id);
-				zoneIds?.add(id);
-				viewZonIdsPerViewZone.set(z, id);
-			}
-		});
-		if (setIsUpdating) { setIsUpdating(false); }
+				lastViewZoneIds.length = 0;
 
-		// Layout zone on change
-		store.add(autorunHandleChanges({
-			changeTracker: {
-				createChangeSummary() {
-					return { zoneIds: [] as string[] };
-				},
-				handleChange(context, changeSummary) {
-					const id = viewZoneIdPerOnChangeObservable.get(context.changedObservable);
-					if (id !== undefined) { changeSummary.zoneIds.push(id); }
-					return true;
-				},
-			}
-		}, (reader, changeSummary) => {
-			/** @description layoutZone on change */
-			for (const vz of curViewZones) {
-				if (vz.onChange) {
-					viewZoneIdPerOnChangeObservable.set(vz.onChange, viewZonIdsPerViewZone.get(vz)!);
-					vz.onChange.read(reader);
+				for (const z of curViewZones) {
+					const id = a.addZone(z);
+					if (z.setZoneId) {
+						z.setZoneId(id);
+					}
+					lastViewZoneIds.push(id);
+					zoneIds?.add(id);
+					viewZonIdsPerViewZone.set(z, id);
 				}
+			});
+			if (setIsUpdating) {
+				setIsUpdating(false);
 			}
-			if (setIsUpdating) { setIsUpdating(true); }
-			editor.changeViewZones(a => { for (const id of changeSummary.zoneIds) { a.layoutZone(id); } });
-			if (setIsUpdating) { setIsUpdating(false); }
-		}));
-	}));
+
+			// Layout zone on change
+			store.add(
+				autorunHandleChanges(
+					{
+						changeTracker: {
+							createChangeSummary() {
+								return { zoneIds: [] as string[] };
+							},
+							handleChange(context, changeSummary) {
+								const id = viewZoneIdPerOnChangeObservable.get(context.changedObservable);
+								if (id !== undefined) {
+									changeSummary.zoneIds.push(id);
+								}
+								return true;
+							}
+						}
+					},
+					(reader, changeSummary) => {
+						/** @description layoutZone on change */
+						for (const vz of curViewZones) {
+							if (vz.onChange) {
+								viewZoneIdPerOnChangeObservable.set(vz.onChange, viewZonIdsPerViewZone.get(vz)!);
+								vz.onChange.read(reader);
+							}
+						}
+						if (setIsUpdating) {
+							setIsUpdating(true);
+						}
+						editor.changeViewZones(a => {
+							for (const id of changeSummary.zoneIds) {
+								a.layoutZone(id);
+							}
+						});
+						if (setIsUpdating) {
+							setIsUpdating(false);
+						}
+					}
+				)
+			);
+		})
+	);
 
 	store.add({
 		dispose() {
-			if (setIsUpdating) { setIsUpdating(true); }
-			editor.changeViewZones(a => { for (const id of lastViewZoneIds) { a.removeZone(id); } });
+			if (setIsUpdating) {
+				setIsUpdating(true);
+			}
+			editor.changeViewZones(a => {
+				for (const id of lastViewZoneIds) {
+					a.removeZone(id);
+				}
+			});
 			zoneIds?.clear();
-			if (setIsUpdating) { setIsUpdating(false); }
+			if (setIsUpdating) {
+				setIsUpdating(false);
+			}
 		}
 	});
 
@@ -394,7 +477,8 @@ export function translatePosition(posInOriginal: Position, mappings: DetailedLin
 	}
 
 	if (mapping.original.endLineNumberExclusive <= posInOriginal.lineNumber) {
-		const newLineNumber = posInOriginal.lineNumber - mapping.original.endLineNumberExclusive + mapping.modified.endLineNumberExclusive;
+		const newLineNumber =
+			posInOriginal.lineNumber - mapping.original.endLineNumberExclusive + mapping.modified.endLineNumberExclusive;
 		return Range.fromPositions(new Position(newLineNumber, posInOriginal.column));
 	}
 
@@ -403,9 +487,12 @@ export function translatePosition(posInOriginal: Position, mappings: DetailedLin
 		return Range.fromPositions(new Position(mapping.modified.startLineNumber, 1));
 	}
 
-	const innerMapping = findLast(mapping.innerChanges, m => m.originalRange.getStartPosition().isBeforeOrEqual(posInOriginal));
+	const innerMapping = findLast(mapping.innerChanges, m =>
+		m.originalRange.getStartPosition().isBeforeOrEqual(posInOriginal)
+	);
 	if (!innerMapping) {
-		const newLineNumber = posInOriginal.lineNumber - mapping.original.startLineNumber + mapping.modified.startLineNumber;
+		const newLineNumber =
+			posInOriginal.lineNumber - mapping.original.startLineNumber + mapping.modified.startLineNumber;
 		return Range.fromPositions(new Position(newLineNumber, posInOriginal.column));
 	}
 
@@ -443,14 +530,22 @@ export abstract class RefCounted<T> implements IDisposable, IReference<T> {
 		return new BaseRefCounted(value, value, debugOwner);
 	}
 
-	public static createWithDisposable<T extends IDisposable>(value: T, disposable: IDisposable, debugOwner: object | undefined = undefined): RefCounted<T> {
+	public static createWithDisposable<T extends IDisposable>(
+		value: T,
+		disposable: IDisposable,
+		debugOwner: object | undefined = undefined
+	): RefCounted<T> {
 		const store = new DisposableStore();
 		store.add(disposable);
 		store.add(value);
 		return new BaseRefCounted(value, store, debugOwner);
 	}
 
-	public static createOfNonDisposable<T>(value: T, disposable: IDisposable, debugOwner: object | undefined = undefined): RefCounted<T> {
+	public static createOfNonDisposable<T>(
+		value: T,
+		disposable: IDisposable,
+		debugOwner: object | undefined = undefined
+	): RefCounted<T> {
 		return new BaseRefCounted(value, disposable, debugOwner);
 	}
 
@@ -469,7 +564,7 @@ class BaseRefCounted<T> extends RefCounted<T> {
 	constructor(
 		public override readonly object: T,
 		private readonly _disposable: IDisposable,
-		private readonly _debugOwner: object | undefined,
+		private readonly _debugOwner: object | undefined
 	) {
 		super();
 
@@ -493,7 +588,9 @@ class BaseRefCounted<T> extends RefCounted<T> {
 	}
 
 	public dispose(): void {
-		if (this._isDisposed) { return; }
+		if (this._isDisposed) {
+			return;
+		}
 		this._isDisposed = true;
 		this._decreaseRefCount(this._debugOwner);
 	}
@@ -517,19 +614,23 @@ class ClonedRefCounted<T> extends RefCounted<T> {
 	private _isDisposed = false;
 	constructor(
 		private readonly _base: BaseRefCounted<T>,
-		private readonly _debugOwner: object | undefined,
+		private readonly _debugOwner: object | undefined
 	) {
 		super();
 	}
 
-	public get object(): T { return this._base.object; }
+	public get object(): T {
+		return this._base.object;
+	}
 
 	public createNewRef(debugOwner?: object | undefined): RefCounted<T> {
 		return this._base.createNewRef(debugOwner);
 	}
 
 	public dispose(): void {
-		if (this._isDisposed) { return; }
+		if (this._isDisposed) {
+			return;
+		}
 		this._isDisposed = true;
 		this._base._decreaseRefCount(this._debugOwner);
 	}

@@ -9,7 +9,6 @@ import { es5ClassCompat } from './es5ClassCompat.js';
 
 @es5ClassCompat
 export class Position {
-
 	static Min(...positions: Position[]): Position {
 		if (positions.length === 0) {
 			throw new TypeError();
@@ -135,8 +134,10 @@ export class Position {
 
 	translate(change: { lineDelta?: number; characterDelta?: number }): Position;
 	translate(lineDelta?: number, characterDelta?: number): Position;
-	translate(lineDeltaOrChange: number | undefined | { lineDelta?: number; characterDelta?: number }, characterDelta: number = 0): Position {
-
+	translate(
+		lineDeltaOrChange: number | undefined | { lineDelta?: number; characterDelta?: number },
+		characterDelta: number = 0
+	): Position {
 		if (lineDeltaOrChange === null || characterDelta === null) {
 			throw illegalArgument();
 		}
@@ -159,8 +160,10 @@ export class Position {
 
 	with(change: { line?: number; character?: number }): Position;
 	with(line?: number, character?: number): Position;
-	with(lineOrChange: number | undefined | { line?: number; character?: number }, character: number = this.character): Position {
-
+	with(
+		lineOrChange: number | undefined | { line?: number; character?: number },
+		character: number = this.character
+	): Position {
 		if (lineOrChange === null || character === null) {
 			throw illegalArgument();
 		}
@@ -168,10 +171,8 @@ export class Position {
 		let line: number;
 		if (typeof lineOrChange === 'undefined') {
 			line = this.line;
-
 		} else if (typeof lineOrChange === 'number') {
 			line = lineOrChange;
-
 		} else {
 			line = typeof lineOrChange.line === 'number' ? lineOrChange.line : this.line;
 			character = typeof lineOrChange.character === 'number' ? lineOrChange.character : this.character;

@@ -11,7 +11,6 @@ import { Range } from './range.js';
 
 @es5ClassCompat
 export class Location {
-
 	static isLocation(thing: unknown): thing is vscode.Location {
 		if (thing instanceof Location) {
 			return true;
@@ -19,8 +18,7 @@ export class Location {
 		if (!thing) {
 			return false;
 		}
-		return Range.isRange((<Location>thing).range)
-			&& URI.isUri((<Location>thing).uri);
+		return Range.isRange((<Location>thing).range) && URI.isUri((<Location>thing).uri);
 	}
 
 	uri: URI;

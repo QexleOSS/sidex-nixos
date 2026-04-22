@@ -23,7 +23,6 @@ import { SimpleScreenReaderContent } from './screenReaderContentSimple.js';
 import { IScreenReaderContent } from './screenReaderUtils.js';
 
 export class ScreenReaderSupport extends Disposable {
-
 	// Configuration values
 	private _contentLeft: number = 1;
 	private _contentWidth: number = 1;
@@ -82,9 +81,19 @@ export class ScreenReaderSupport extends Disposable {
 
 	private _createScreenReaderContent(renderRichContent: boolean): IScreenReaderContent {
 		if (renderRichContent) {
-			return new RichScreenReaderContent(this._domNode, this._context, this._viewController, this._accessibilityService);
+			return new RichScreenReaderContent(
+				this._domNode,
+				this._context,
+				this._viewController,
+				this._accessibilityService
+			);
 		} else {
-			return new SimpleScreenReaderContent(this._domNode, this._context, this._viewController, this._accessibilityService);
+			return new SimpleScreenReaderContent(
+				this._domNode,
+				this._context,
+				this._viewController,
+				this._accessibilityService
+			);
 		}
 	}
 
@@ -106,14 +115,15 @@ export class ScreenReaderSupport extends Disposable {
 		this._domNode.domNode.setAttribute('aria-required', options.get(EditorOption.ariaRequired) ? 'true' : 'false');
 		this._domNode.domNode.setAttribute('aria-multiline', 'true');
 		this._domNode.domNode.setAttribute('aria-autocomplete', options.get(EditorOption.readOnly) ? 'none' : 'both');
-		this._domNode.domNode.setAttribute('aria-roledescription', localize('editor', "editor"));
+		this._domNode.domNode.setAttribute('aria-roledescription', localize('editor', 'editor'));
 		this._domNode.domNode.setAttribute('aria-label', ariaLabelForScreenReaderContent(options, this._keybindingService));
 		const tabSize = this._context.viewModel.model.getOptions().tabSize;
 		const spaceWidth = options.get(EditorOption.fontInfo).spaceWidth;
 		this._domNode.domNode.style.tabSize = `${tabSize * spaceWidth}px`;
 		const wordWrapOverride2 = options.get(EditorOption.wordWrapOverride2);
-		const wordWrapOverride1 = (wordWrapOverride2 === 'inherit' ? options.get(EditorOption.wordWrapOverride1) : wordWrapOverride2);
-		const wordWrap = (wordWrapOverride1 === 'inherit' ? options.get(EditorOption.wordWrap) : wordWrapOverride1);
+		const wordWrapOverride1 =
+			wordWrapOverride2 === 'inherit' ? options.get(EditorOption.wordWrapOverride1) : wordWrapOverride2;
+		const wordWrap = wordWrapOverride1 === 'inherit' ? options.get(EditorOption.wordWrap) : wordWrapOverride1;
 		this._domNode.domNode.style.textWrap = wordWrap === 'off' ? 'nowrap' : 'wrap';
 	}
 

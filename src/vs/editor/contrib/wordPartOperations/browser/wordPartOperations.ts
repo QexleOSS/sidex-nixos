@@ -5,7 +5,11 @@
 
 import { KeyCode, KeyMod } from '../../../../base/common/keyCodes.js';
 import { registerEditorCommand } from '../../../browser/editorExtensions.js';
-import { DeleteWordContext, WordNavigationType, WordPartOperations } from '../../../common/cursor/cursorWordOperations.js';
+import {
+	DeleteWordContext,
+	WordNavigationType,
+	WordPartOperations
+} from '../../../common/cursor/cursorWordOperations.js';
 import { WordCharacterClassifier } from '../../../common/core/wordCharacterClassifier.js';
 import { Position } from '../../../common/core/position.js';
 import { Range } from '../../../common/core/range.js';
@@ -68,7 +72,13 @@ export class DeleteWordPartRight extends DeleteWordCommand {
 }
 
 export class WordPartLeftCommand extends MoveWordCommand {
-	protected _move(wordSeparators: WordCharacterClassifier, model: ITextModel, position: Position, wordNavigationType: WordNavigationType, hasMulticursor: boolean): Position {
+	protected _move(
+		wordSeparators: WordCharacterClassifier,
+		model: ITextModel,
+		position: Position,
+		wordNavigationType: WordNavigationType,
+		hasMulticursor: boolean
+	): Position {
 		return WordPartOperations.moveWordPartLeft(wordSeparators, model, position, hasMulticursor);
 	}
 }
@@ -111,7 +121,13 @@ export class CursorWordPartLeftSelect extends WordPartLeftCommand {
 CommandsRegistry.registerCommandAlias('cursorWordPartStartLeftSelect', 'cursorWordPartLeftSelect');
 
 export class WordPartRightCommand extends MoveWordCommand {
-	protected _move(wordSeparators: WordCharacterClassifier, model: ITextModel, position: Position, wordNavigationType: WordNavigationType, hasMulticursor: boolean): Position {
+	protected _move(
+		wordSeparators: WordCharacterClassifier,
+		model: ITextModel,
+		position: Position,
+		wordNavigationType: WordNavigationType,
+		hasMulticursor: boolean
+	): Position {
 		return WordPartOperations.moveWordPartRight(wordSeparators, model, position);
 	}
 }
@@ -147,7 +163,6 @@ export class CursorWordPartRightSelect extends WordPartRightCommand {
 		});
 	}
 }
-
 
 registerEditorCommand(new DeleteWordPartLeft());
 registerEditorCommand(new DeleteWordPartRight());

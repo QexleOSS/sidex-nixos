@@ -16,7 +16,6 @@ import { EditorOption, IRulerOption } from '../../../common/config/editorOptions
  * at a time.
  */
 export class Rulers extends ViewPart {
-
 	public domNode: FastDomNode<HTMLElement>;
 	private readonly _renderedRulers: FastDomNode<HTMLElement>[];
 	private _rulers: IRulerOption[];
@@ -87,7 +86,6 @@ export class Rulers extends ViewPart {
 	}
 
 	public render(ctx: RestrictedRenderingContext): void {
-
 		this._ensureRulersCount();
 
 		for (let i = 0, len = this._rulers.length; i < len; i++) {

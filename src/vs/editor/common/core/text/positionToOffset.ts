@@ -15,7 +15,7 @@ _setPositionOffsetTransformerDependencies({
 	StringReplacement: StringReplacement,
 	TextReplacement: TextReplacement,
 	TextEdit: TextEdit,
-	TextLength: TextLength,
+	TextLength: TextLength
 });
 
 // TODO@hediet this is dept and needs to go. See https://github.com/microsoft/vscode/issues/251126.

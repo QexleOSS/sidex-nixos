@@ -69,7 +69,6 @@ export abstract class RestrictedRenderingContext {
 	public getDecorationsInViewport(): ViewModelDecoration[] {
 		return this.viewportData.getDecorationsInViewport();
 	}
-
 }
 
 export class RenderingContext extends RestrictedRenderingContext {
@@ -100,7 +99,9 @@ export class RenderingContext extends RestrictedRenderingContext {
 	}
 
 	public visibleRangeForPosition(position: Position): HorizontalPosition | null {
-		return this._viewLines.visibleRangeForPosition(position) ?? this._viewLinesGpu?.visibleRangeForPosition(position) ?? null;
+		return (
+			this._viewLines.visibleRangeForPosition(position) ?? this._viewLinesGpu?.visibleRangeForPosition(position) ?? null
+		);
 	}
 }
 
@@ -144,8 +145,8 @@ export class LineVisibleRanges {
 		/**
 		 * Indicates if the requested range does not end in this line, but continues on the next line.
 		 */
-		public readonly continuesOnNextLine: boolean,
-	) { }
+		public readonly continuesOnNextLine: boolean
+	) {}
 }
 
 export class HorizontalRange {
@@ -212,6 +213,5 @@ export class VisibleRanges {
 	constructor(
 		public readonly outsideRenderedLine: boolean,
 		public readonly ranges: FloatHorizontalRange[]
-	) {
-	}
+	) {}
 }

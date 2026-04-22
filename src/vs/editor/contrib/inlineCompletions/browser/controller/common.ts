@@ -12,6 +12,8 @@ export function getInlineCompletionsController(editor: ICodeEditor): InlineCompl
 	return _getInlineCompletionsController?.(editor) ?? null;
 }
 
-export function setInlineCompletionsControllerGetter(getter: (editor: ICodeEditor) => InlineCompletionsController | null): void {
+export function setInlineCompletionsControllerGetter(
+	getter: (editor: ICodeEditor) => InlineCompletionsController | null
+): void {
 	_getInlineCompletionsController = getter;
 }

@@ -10,27 +10,36 @@ import { IExtensionTerminalProfile, ITerminalProfile, TerminalIcon } from './ter
 import { ThemeIcon } from '../../../base/common/themables.js';
 import { isObject, isString, type SingleOrMany } from '../../../base/common/types.js';
 
-export function createProfileSchemaEnums(detectedProfiles: ITerminalProfile[], extensionProfiles?: readonly IExtensionTerminalProfile[]): {
+export function createProfileSchemaEnums(
+	detectedProfiles: ITerminalProfile[],
+	extensionProfiles?: readonly IExtensionTerminalProfile[]
+): {
 	values: (string | null)[] | undefined;
 	markdownDescriptions: string[] | undefined;
 } {
-	const result: { name: string | null; description: string }[] = [{
-		name: null,
-		description: localize('terminalAutomaticProfile', 'Automatically detect the default')
-	}];
-	result.push(...detectedProfiles.map(e => {
-		return {
-			name: e.profileName,
-			description: createProfileDescription(e)
-		};
-	}));
-	if (extensionProfiles) {
-		result.push(...extensionProfiles.map(extensionProfile => {
+	const result: { name: string | null; description: string }[] = [
+		{
+			name: null,
+			description: localize('terminalAutomaticProfile', 'Automatically detect the default')
+		}
+	];
+	result.push(
+		...detectedProfiles.map(e => {
 			return {
-				name: extensionProfile.title,
-				description: createExtensionProfileDescription(extensionProfile)
+				name: e.profileName,
+				description: createProfileDescription(e)
 			};
-		}));
+		})
+	);
+	if (extensionProfiles) {
+		result.push(
+			...extensionProfiles.map(extensionProfile => {
+				return {
+					name: extensionProfile.title,
+					description: createExtensionProfileDescription(extensionProfile)
+				};
+			})
+		);
 	}
 	return {
 		values: result.map(e => e.name),
@@ -64,8 +73,10 @@ function createExtensionProfileDescription(profile: IExtensionTerminalProfile): 
 	return description;
 }
 
-
-export function terminalProfileArgsMatch(args1: SingleOrMany<string> | undefined, args2: SingleOrMany<string> | undefined): boolean {
+export function terminalProfileArgsMatch(
+	args1: SingleOrMany<string> | undefined,
+	args2: SingleOrMany<string> | undefined
+): boolean {
 	if (!args1 && !args2) {
 		return true;
 	} else if (isString(args1) && isString(args2)) {
@@ -95,19 +106,27 @@ export function terminalIconsEqual(a?: TerminalIcon, b?: TerminalIcon): boolean 
 		return a.id === b.id && a.color === b.color;
 	}
 	if (
-		isObject(a) && !URI.isUri(a) && !ThemeIcon.isThemeIcon(a) &&
-		isObject(b) && !URI.isUri(b) && !ThemeIcon.isThemeIcon(b)
+		isObject(a) &&
+		!URI.isUri(a) &&
+		!ThemeIcon.isThemeIcon(a) &&
+		isObject(b) &&
+		!URI.isUri(b) &&
+		!ThemeIcon.isThemeIcon(b)
 	) {
-		const castedA = (a as { light: unknown; dark: unknown });
-		const castedB = (b as { light: unknown; dark: unknown });
-		if ((URI.isUri(castedA.light) || isUriComponents(castedA.light)) && (URI.isUri(castedA.dark) || isUriComponents(castedA.dark))
-			&& (URI.isUri(castedB.light) || isUriComponents(castedB.light)) && (URI.isUri(castedB.dark) || isUriComponents(castedB.dark))) {
+		const castedA = a as { light: unknown; dark: unknown };
+		const castedB = b as { light: unknown; dark: unknown };
+		if (
+			(URI.isUri(castedA.light) || isUriComponents(castedA.light)) &&
+			(URI.isUri(castedA.dark) || isUriComponents(castedA.dark)) &&
+			(URI.isUri(castedB.light) || isUriComponents(castedB.light)) &&
+			(URI.isUri(castedB.dark) || isUriComponents(castedB.dark))
+		) {
 			return castedA.light.path === castedB.light.path && castedA.dark.path === castedB.dark.path;
 		}
 	}
-	if ((URI.isUri(a) && URI.isUri(b)) || (isUriComponents(a) || isUriComponents(b))) {
-		const castedA = (a as { scheme: unknown; path: unknown });
-		const castedB = (b as { scheme: unknown; path: unknown });
+	if ((URI.isUri(a) && URI.isUri(b)) || isUriComponents(a) || isUriComponents(b)) {
+		const castedA = a as { scheme: unknown; path: unknown };
+		const castedB = b as { scheme: unknown; path: unknown };
 		return castedA.path === castedB.path && castedA.scheme === castedB.scheme;
 	}
 

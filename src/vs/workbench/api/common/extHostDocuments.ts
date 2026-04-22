@@ -17,19 +17,22 @@ import { TextDocumentChangeReason } from './extHostTypes.js';
 import { ISerializedModelContentChangedEvent } from '../../../editor/common/textModelEvents.js';
 
 export class ExtHostDocuments implements ExtHostDocumentsShape {
-
 	private readonly _toDispose = new DisposableStore();
 
 	private readonly _onDidAddDocument = this._toDispose.add(new Emitter<vscode.TextDocument>());
 	private readonly _onDidRemoveDocument = this._toDispose.add(new Emitter<vscode.TextDocument>());
-	private readonly _onDidChangeDocument = this._toDispose.add(new Emitter<Omit<vscode.TextDocumentChangeEvent, 'detailedReason'>>());
+	private readonly _onDidChangeDocument = this._toDispose.add(
+		new Emitter<Omit<vscode.TextDocumentChangeEvent, 'detailedReason'>>()
+	);
 	private readonly _onDidChangeDocumentWithReason = this._toDispose.add(new Emitter<vscode.TextDocumentChangeEvent>());
 	private readonly _onDidSaveDocument = this._toDispose.add(new Emitter<vscode.TextDocument>());
 
 	readonly onDidAddDocument: Event<vscode.TextDocument> = this._onDidAddDocument.event;
 	readonly onDidRemoveDocument: Event<vscode.TextDocument> = this._onDidRemoveDocument.event;
-	readonly onDidChangeDocument: Event<vscode.TextDocumentChangeEvent> = this._onDidChangeDocument.event as Event<vscode.TextDocumentChangeEvent>;
-	readonly onDidChangeDocumentWithReason: Event<vscode.TextDocumentChangeEvent> = this._onDidChangeDocumentWithReason.event;
+	readonly onDidChangeDocument: Event<vscode.TextDocumentChangeEvent> = this._onDidChangeDocument
+		.event as Event<vscode.TextDocumentChangeEvent>;
+	readonly onDidChangeDocumentWithReason: Event<vscode.TextDocumentChangeEvent> =
+		this._onDidChangeDocumentWithReason.event;
 	readonly onDidSaveDocument: Event<vscode.TextDocument> = this._onDidSaveDocument.event;
 	private _proxy: MainThreadDocumentsShape;
 	private _documentsAndEditors: ExtHostDocumentsAndEditors;
@@ -39,16 +42,24 @@ export class ExtHostDocuments implements ExtHostDocumentsShape {
 		this._proxy = mainContext.getProxy(MainContext.MainThreadDocuments);
 		this._documentsAndEditors = documentsAndEditors;
 
-		this._documentsAndEditors.onDidRemoveDocuments(documents => {
-			for (const data of documents) {
-				this._onDidRemoveDocument.fire(data.document);
-			}
-		}, undefined, this._toDispose);
-		this._documentsAndEditors.onDidAddDocuments(documents => {
-			for (const data of documents) {
-				this._onDidAddDocument.fire(data.document);
-			}
-		}, undefined, this._toDispose);
+		this._documentsAndEditors.onDidRemoveDocuments(
+			documents => {
+				for (const data of documents) {
+					this._onDidRemoveDocument.fire(data.document);
+				}
+			},
+			undefined,
+			this._toDispose
+		);
+		this._documentsAndEditors.onDidAddDocuments(
+			documents => {
+				for (const data of documents) {
+					this._onDidAddDocument.fire(data.document);
+				}
+			},
+			undefined,
+			this._toDispose
+		);
 	}
 
 	public dispose(): void {
@@ -79,7 +90,6 @@ export class ExtHostDocuments implements ExtHostDocumentsShape {
 	}
 
 	public ensureDocumentData(uri: URI, options?: { encoding?: string }): Promise<ExtHostDocumentData> {
-
 		const cached = this._documentsAndEditors.getDocument(uri);
 		if (cached && (!options?.encoding || cached.document.encoding === options.encoding)) {
 			return Promise.resolve(cached);
@@ -87,14 +97,17 @@ export class ExtHostDocuments implements ExtHostDocumentsShape {
 
 		let promise = this._documentLoader.get(uri.toString());
 		if (!promise) {
-			promise = this._proxy.$tryOpenDocument(uri, options).then(uriData => {
-				this._documentLoader.delete(uri.toString());
-				const canonicalUri = URI.revive(uriData);
-				return assertReturnsDefined(this._documentsAndEditors.getDocument(canonicalUri));
-			}, err => {
-				this._documentLoader.delete(uri.toString());
-				return Promise.reject(err);
-			});
+			promise = this._proxy.$tryOpenDocument(uri, options).then(
+				uriData => {
+					this._documentLoader.delete(uri.toString());
+					const canonicalUri = URI.revive(uriData);
+					return assertReturnsDefined(this._documentsAndEditors.getDocument(canonicalUri));
+				},
+				err => {
+					this._documentLoader.delete(uri.toString());
+					return Promise.reject(err);
+				}
+			);
 			this._documentLoader.set(uri.toString(), promise);
 		} else {
 			if (options?.encoding) {
@@ -147,13 +160,13 @@ export class ExtHostDocuments implements ExtHostDocumentsShape {
 		this._onDidChangeDocument.fire({
 			document: data.document,
 			contentChanges: [],
-			reason: undefined,
+			reason: undefined
 		});
 		this._onDidChangeDocumentWithReason.fire({
 			document: data.document,
 			contentChanges: [],
 			reason: undefined,
-			detailedReason: undefined,
+			detailedReason: undefined
 		});
 	}
 
@@ -167,17 +180,21 @@ export class ExtHostDocuments implements ExtHostDocumentsShape {
 		this._onDidChangeDocument.fire({
 			document: data.document,
 			contentChanges: [],
-			reason: undefined,
+			reason: undefined
 		});
 		this._onDidChangeDocumentWithReason.fire({
 			document: data.document,
 			contentChanges: [],
 			reason: undefined,
-			detailedReason: undefined,
+			detailedReason: undefined
 		});
 	}
 
-	public $acceptModelChanged(uriComponents: UriComponents, events: ISerializedModelContentChangedEvent, isDirty: boolean): void {
+	public $acceptModelChanged(
+		uriComponents: UriComponents,
+		events: ISerializedModelContentChangedEvent,
+		isDirty: boolean
+	): void {
 		const uri = URI.revive(uriComponents);
 		const data = this._documentsAndEditors.getDocument(uri);
 		if (!data) {
@@ -193,34 +210,40 @@ export class ExtHostDocuments implements ExtHostDocumentsShape {
 			reason = TextDocumentChangeReason.Redo;
 		}
 
-		this._onDidChangeDocument.fire(deepFreeze<Omit<vscode.TextDocumentChangeEvent, 'detailedReason'>>({
-			document: data.document,
-			contentChanges: events.changes.map((change) => {
-				return {
-					range: TypeConverters.Range.to(change.range),
-					rangeOffset: change.rangeOffset,
-					rangeLength: change.rangeLength,
-					text: change.text
-				};
-			}),
-			reason,
-		}));
-		this._onDidChangeDocumentWithReason.fire(deepFreeze<vscode.TextDocumentChangeEvent>({
-			document: data.document,
-			contentChanges: events.changes.map((change) => {
-				return {
-					range: TypeConverters.Range.to(change.range),
-					rangeOffset: change.rangeOffset,
-					rangeLength: change.rangeLength,
-					text: change.text
-				};
-			}),
-			reason,
-			detailedReason: events.detailedReason ? {
-				source: events.detailedReason.source as string,
-				metadata: events.detailedReason,
-			} : undefined,
-		}));
+		this._onDidChangeDocument.fire(
+			deepFreeze<Omit<vscode.TextDocumentChangeEvent, 'detailedReason'>>({
+				document: data.document,
+				contentChanges: events.changes.map(change => {
+					return {
+						range: TypeConverters.Range.to(change.range),
+						rangeOffset: change.rangeOffset,
+						rangeLength: change.rangeLength,
+						text: change.text
+					};
+				}),
+				reason
+			})
+		);
+		this._onDidChangeDocumentWithReason.fire(
+			deepFreeze<vscode.TextDocumentChangeEvent>({
+				document: data.document,
+				contentChanges: events.changes.map(change => {
+					return {
+						range: TypeConverters.Range.to(change.range),
+						rangeOffset: change.rangeOffset,
+						rangeLength: change.rangeLength,
+						text: change.text
+					};
+				}),
+				reason,
+				detailedReason: events.detailedReason
+					? {
+							source: events.detailedReason.source as string,
+							metadata: events.detailedReason
+						}
+					: undefined
+			})
+		);
 	}
 
 	public setWordDefinitionFor(languageId: string, wordDefinition: RegExp | undefined): void {

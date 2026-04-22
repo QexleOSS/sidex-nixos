@@ -41,30 +41,32 @@ class MatchCandidate {
 		readonly languageId: string,
 		readonly notebookUri: URI | undefined,
 		readonly notebookType: string | undefined,
-		readonly recursive: boolean,
-	) { }
+		readonly recursive: boolean
+	) {}
 
 	equals(other: MatchCandidate): boolean {
-		return this.notebookType === other.notebookType
-			&& this.languageId === other.languageId
-			&& this.uri.toString() === other.uri.toString()
-			&& this.notebookUri?.toString() === other.notebookUri?.toString()
-			&& this.recursive === other.recursive;
+		return (
+			this.notebookType === other.notebookType &&
+			this.languageId === other.languageId &&
+			this.uri.toString() === other.uri.toString() &&
+			this.notebookUri?.toString() === other.notebookUri?.toString() &&
+			this.recursive === other.recursive
+		);
 	}
 }
 
 export class LanguageFeatureRegistry<T> {
-
 	private _clock: number = 0;
 	private readonly _entries: Entry<T>[] = [];
 
 	private readonly _onDidChange = new Emitter<number>();
-	get onDidChange() { return this._onDidChange.event; }
+	get onDidChange() {
+		return this._onDidChange.event;
+	}
 
-	constructor(private readonly _notebookInfoResolver?: NotebookInfoResolver) { }
+	constructor(private readonly _notebookInfoResolver?: NotebookInfoResolver) {}
 
 	register(selector: LanguageSelector, provider: T): IDisposable {
-
 		let entry: Entry<T> | undefined = {
 			selector,
 			provider,
@@ -148,7 +150,6 @@ export class LanguageFeatureRegistry<T> {
 	}
 
 	private _orderedForEach(model: ITextModel, recursive: boolean, callback: (provider: Entry<T>) => void): void {
-
 		this._updateScores(model, recursive);
 
 		for (const entry of this._entries) {
@@ -161,7 +162,6 @@ export class LanguageFeatureRegistry<T> {
 	private _lastCandidate: MatchCandidate | undefined;
 
 	private _updateScores(model: ITextModel, recursive: boolean): void {
-
 		const notebookInfo = this._notebookInfoResolver?.(model.uri);
 
 		// use the uri (scheme, pattern) of the notebook info iff we have one
@@ -178,7 +178,14 @@ export class LanguageFeatureRegistry<T> {
 		this._lastCandidate = candidate;
 
 		for (const entry of this._entries) {
-			entry._score = score(entry.selector, candidate.uri, candidate.languageId, shouldSynchronizeModel(model), candidate.notebookUri, candidate.notebookType);
+			entry._score = score(
+				entry.selector,
+				candidate.uri,
+				candidate.languageId,
+				shouldSynchronizeModel(model),
+				candidate.notebookUri,
+				candidate.notebookType
+			);
 
 			if (isExclusive(entry.selector) && entry._score > 0) {
 				if (recursive) {

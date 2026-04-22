@@ -7,7 +7,13 @@ import { isUndefined } from '../../../../base/common/types.js';
 import { Event } from '../../../../base/common/event.js';
 import { localize, localize2 } from '../../../../nls.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
-import { IUserDataProfile, IUserDataProfileOptions, IUserDataProfileUpdateOptions, ProfileResourceType, ProfileResourceTypeFlags } from '../../../../platform/userDataProfile/common/userDataProfile.js';
+import {
+	IUserDataProfile,
+	IUserDataProfileOptions,
+	IUserDataProfileUpdateOptions,
+	ProfileResourceType,
+	ProfileResourceTypeFlags
+} from '../../../../platform/userDataProfile/common/userDataProfile.js';
 import { RawContextKey } from '../../../../platform/contextkey/common/contextkey.js';
 import { URI } from '../../../../base/common/uri.js';
 import { registerIcon } from '../../../../platform/theme/common/iconRegistry.js';
@@ -36,7 +42,9 @@ export interface IProfileTemplateInfo {
 	readonly url: string;
 }
 
-export const IUserDataProfileManagementService = createDecorator<IUserDataProfileManagementService>('IUserDataProfileManagementService');
+export const IUserDataProfileManagementService = createDecorator<IUserDataProfileManagementService>(
+	'IUserDataProfileManagementService'
+);
 export interface IUserDataProfileManagementService {
 	readonly _serviceBrand: undefined;
 
@@ -64,10 +72,13 @@ export interface IUserDataProfileTemplate {
 export function isUserDataProfileTemplate(thing: unknown): thing is IUserDataProfileTemplate {
 	const candidate = thing as IUserDataProfileTemplate | undefined;
 
-	return !!(candidate && typeof candidate === 'object'
-		&& (isUndefined(candidate.settings) || typeof candidate.settings === 'string')
-		&& (isUndefined(candidate.globalState) || typeof candidate.globalState === 'string')
-		&& (isUndefined(candidate.extensions) || typeof candidate.extensions === 'string'));
+	return !!(
+		candidate &&
+		typeof candidate === 'object' &&
+		(isUndefined(candidate.settings) || typeof candidate.settings === 'string') &&
+		(isUndefined(candidate.globalState) || typeof candidate.globalState === 'string') &&
+		(isUndefined(candidate.extensions) || typeof candidate.extensions === 'string')
+	);
 }
 
 export const PROFILE_URL_AUTHORITY = 'profile';
@@ -95,7 +106,9 @@ export interface IProfileImportOptions extends IUserDataProfileCreateOptions {
 	readonly mode?: 'apply';
 }
 
-export const IUserDataProfileImportExportService = createDecorator<IUserDataProfileImportExportService>('IUserDataProfileImportExportService');
+export const IUserDataProfileImportExportService = createDecorator<IUserDataProfileImportExportService>(
+	'IUserDataProfileImportExportService'
+);
 export interface IUserDataProfileImportExportService {
 	readonly _serviceBrand: undefined;
 
@@ -104,8 +117,16 @@ export interface IUserDataProfileImportExportService {
 
 	resolveProfileTemplate(uri: URI): Promise<IUserDataProfileTemplate | null>;
 	exportProfile(profile: IUserDataProfile, exportFlags?: ProfileResourceTypeFlags): Promise<void>;
-	createFromProfile(from: IUserDataProfile, options: IUserDataProfileCreateOptions, token: CancellationToken): Promise<IUserDataProfile | undefined>;
-	createProfileFromTemplate(profileTemplate: IUserDataProfileTemplate, options: IUserDataProfileCreateOptions, token: CancellationToken): Promise<IUserDataProfile | undefined>;
+	createFromProfile(
+		from: IUserDataProfile,
+		options: IUserDataProfileCreateOptions,
+		token: CancellationToken
+	): Promise<IUserDataProfile | undefined>;
+	createProfileFromTemplate(
+		profileTemplate: IUserDataProfileTemplate,
+		options: IUserDataProfileCreateOptions,
+		token: CancellationToken
+	): Promise<IUserDataProfile | undefined>;
 	createTroubleshootProfile(): Promise<void>;
 }
 
@@ -143,12 +164,16 @@ export interface IUserDataProfileContentHandler {
 	readProfile(idOrUri: string | URI, token: CancellationToken): Promise<string | null>;
 }
 
-export const defaultUserDataProfileIcon = registerIcon('defaultProfile-icon', Codicon.settings, localize('defaultProfileIcon', 'Icon for Default Profile.'));
+export const defaultUserDataProfileIcon = registerIcon(
+	'defaultProfile-icon',
+	Codicon.settings,
+	localize('defaultProfileIcon', 'Icon for Default Profile.')
+);
 
 export const PROFILES_TITLE = localize2('profiles', 'Profiles');
 export const PROFILES_CATEGORY = { ...PROFILES_TITLE };
 export const PROFILE_EXTENSION = 'code-profile';
-export const PROFILE_FILTER = [{ name: localize('profile', "Profile"), extensions: [PROFILE_EXTENSION] }];
+export const PROFILE_FILTER = [{ name: localize('profile', 'Profile'), extensions: [PROFILE_EXTENSION] }];
 export const CURRENT_PROFILE_CONTEXT = new RawContextKey<string>('currentProfile', '');
 export const IS_CURRENT_PROFILE_TRANSIENT_CONTEXT = new RawContextKey<boolean>('isCurrentProfileTransient', false);
 export const HAS_PROFILES_CONTEXT = new RawContextKey<boolean>('hasProfiles', false);

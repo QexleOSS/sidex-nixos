@@ -12,7 +12,7 @@ const enum Constants {
 	/**
 	 * The _normal_ buffer length threshold at which point resizing starts being debounced.
 	 */
-	StartDebouncingThreshold = 200,
+	StartDebouncingThreshold = 200
 }
 
 export class TerminalResizeDebouncer extends Disposable {
@@ -27,7 +27,7 @@ export class TerminalResizeDebouncer extends Disposable {
 		private readonly _getXterm: () => XtermTerminal | undefined,
 		private readonly _resizeBothCallback: (cols: number, rows: number) => void,
 		private readonly _resizeXCallback: (cols: number) => void,
-		private readonly _resizeYCallback: (rows: number) => void,
+		private readonly _resizeYCallback: (rows: number) => void
 	) {
 		super();
 	}

@@ -30,7 +30,7 @@ export const enum TestExplorerViewMode {
 export const enum TestExplorerViewSorting {
 	ByLocation = 'location',
 	ByStatus = 'status',
-	ByDuration = 'duration',
+	ByDuration = 'duration'
 }
 
 const testStateNames: { [K in TestResultState]: string } = {
@@ -40,18 +40,24 @@ const testStateNames: { [K in TestResultState]: string } = {
 	[TestResultState.Queued]: localize('testState.queued', 'Queued'),
 	[TestResultState.Running]: localize('testState.running', 'Running'),
 	[TestResultState.Skipped]: localize('testState.skipped', 'Skipped'),
-	[TestResultState.Unset]: localize('testState.unset', 'Not yet run'),
+	[TestResultState.Unset]: localize('testState.unset', 'Not yet run')
 };
 
-export const labelForTestInState = (label: string, state: TestResultState) => localize({
-	key: 'testing.treeElementLabel',
-	comment: ['label then the unit tests state, for example "Addition Tests (Running)"'],
-}, '{0} ({1})', stripIcons(label), testStateNames[state]);
+export const labelForTestInState = (label: string, state: TestResultState) =>
+	localize(
+		{
+			key: 'testing.treeElementLabel',
+			comment: ['label then the unit tests state, for example "Addition Tests (Running)"']
+		},
+		'{0} ({1})',
+		stripIcons(label),
+		testStateNames[state]
+	);
 
 export const testConfigurationGroupNames: Partial<Record<TestRunProfileBitset, string | undefined>> = {
 	[TestRunProfileBitset.Debug]: localize('testGroup.debug', 'Debug'),
 	[TestRunProfileBitset.Run]: localize('testGroup.run', 'Run'),
-	[TestRunProfileBitset.Coverage]: localize('testGroup.coverage', 'Coverage'),
+	[TestRunProfileBitset.Coverage]: localize('testGroup.coverage', 'Coverage')
 };
 
 export const enum TestCommandId {
@@ -124,5 +130,5 @@ export const enum TestCommandId {
 	ToggleResultsViewLayoutAction = 'testing.toggleResultsViewLayout',
 	ToggleInlineTestOutput = 'testing.toggleInlineTestOutput',
 	UnhideAllTestsAction = 'testing.unhideAllTests',
-	UnhideTestAction = 'testing.unhideTest',
+	UnhideTestAction = 'testing.unhideTest'
 }

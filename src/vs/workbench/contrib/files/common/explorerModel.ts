@@ -24,7 +24,6 @@ import { IFilesConfigurationService } from '../../../services/filesConfiguration
 import { IMarkdownString } from '../../../../base/common/htmlContent.js';
 
 export class ExplorerModel implements IDisposable {
-
 	private _roots!: ExplorerItem[];
 	private _listener: IDisposable;
 	private readonly _onDidChangeRoots = new Emitter<void>();
@@ -34,10 +33,26 @@ export class ExplorerModel implements IDisposable {
 		private readonly uriIdentityService: IUriIdentityService,
 		fileService: IFileService,
 		configService: IConfigurationService,
-		filesConfigService: IFilesConfigurationService,
+		filesConfigService: IFilesConfigurationService
 	) {
-		const setRoots = () => this._roots = this.contextService.getWorkspace().folders
-			.map(folder => new ExplorerItem(folder.uri, fileService, configService, filesConfigService, undefined, true, false, false, false, folder.name));
+		const setRoots = () =>
+			(this._roots = this.contextService
+				.getWorkspace()
+				.folders.map(
+					folder =>
+						new ExplorerItem(
+							folder.uri,
+							fileService,
+							configService,
+							filesConfigService,
+							undefined,
+							true,
+							false,
+							false,
+							false,
+							folder.name
+						)
+				));
 		setRoots();
 
 		this._listener = this.contextService.onDidChangeWorkspaceFolders(() => {
@@ -135,7 +150,7 @@ export class ExplorerItem {
 	}
 
 	get hasNests() {
-		return !!(this.nestedChildren?.length);
+		return !!this.nestedChildren?.length;
 	}
 
 	get isDirectoryResolved(): boolean {
@@ -151,7 +166,12 @@ export class ExplorerItem {
 	}
 
 	get isReadonly(): boolean | IMarkdownString {
-		return this.filesConfigService.isReadonly(this.resource, { resource: this.resource, name: this.name, readonly: this._readonly, locked: this._locked });
+		return this.filesConfigService.isReadonly(this.resource, {
+			resource: this.resource,
+			name: this.name,
+			readonly: this._readonly,
+			locked: this._locked
+		});
 	}
 
 	get mtime(): number | undefined {
@@ -207,23 +227,52 @@ export class ExplorerItem {
 		return this === this.root;
 	}
 
-	static create(fileService: IFileService, configService: IConfigurationService, filesConfigService: IFilesConfigurationService, raw: IFileStat, parent: ExplorerItem | undefined, resolveTo?: readonly URI[]): ExplorerItem {
-		const stat = new ExplorerItem(raw.resource, fileService, configService, filesConfigService, parent, raw.isDirectory, raw.isSymbolicLink, raw.readonly, raw.locked, raw.name, raw.mtime, !raw.isFile && !raw.isDirectory);
+	static create(
+		fileService: IFileService,
+		configService: IConfigurationService,
+		filesConfigService: IFilesConfigurationService,
+		raw: IFileStat,
+		parent: ExplorerItem | undefined,
+		resolveTo?: readonly URI[]
+	): ExplorerItem {
+		const stat = new ExplorerItem(
+			raw.resource,
+			fileService,
+			configService,
+			filesConfigService,
+			parent,
+			raw.isDirectory,
+			raw.isSymbolicLink,
+			raw.readonly,
+			raw.locked,
+			raw.name,
+			raw.mtime,
+			!raw.isFile && !raw.isDirectory
+		);
 
 		// Recursively add children if present
 		if (stat.isDirectory) {
-
 			// isDirectoryResolved is a very important indicator in the stat model that tells if the folder was fully resolved
 			// the folder is fully resolved if either it has a list of children or the client requested this by using the resolveTo
 			// array of resource path to resolve.
-			stat._isDirectoryResolved = !!raw.children || (!!resolveTo && resolveTo.some((r) => {
-				return isEqualOrParent(r, stat.resource);
-			}));
+			stat._isDirectoryResolved =
+				!!raw.children ||
+				(!!resolveTo &&
+					resolveTo.some(r => {
+						return isEqualOrParent(r, stat.resource);
+					}));
 
 			// Recurse into children
 			if (raw.children) {
 				for (let i = 0, len = raw.children.length; i < len; i++) {
-					const child = ExplorerItem.create(fileService, configService, filesConfigService, raw.children[i], stat, resolveTo);
+					const child = ExplorerItem.create(
+						fileService,
+						configService,
+						filesConfigService,
+						raw.children[i],
+						stat,
+						resolveTo
+					);
 					stat.addChild(child);
 				}
 			}
@@ -261,7 +310,6 @@ export class ExplorerItem {
 
 		// Merge Children if resolved
 		if (mergingDirectories && disk._isDirectoryResolved) {
-
 			// Map resource => stat
 			const oldLocalChildren = new ResourceMap<ExplorerItem>();
 			local.children.forEach(child => {
@@ -310,7 +358,8 @@ export class ExplorerItem {
 	}
 
 	fetchChildren(sortOrder: SortOrder): ExplorerItem[] | Promise<ExplorerItem[]> {
-		const nestingConfig = this.configService.getValue<IFilesConfiguration>({ resource: this.root.resource }).explorer.fileNesting;
+		const nestingConfig = this.configService.getValue<IFilesConfiguration>({ resource: this.root.resource }).explorer
+			.fileNesting;
 
 		// fast path when the children can be resolved sync
 		if (nestingConfig.enabled && this.nestedChildren) {
@@ -324,8 +373,17 @@ export class ExplorerItem {
 				const resolveMetadata = sortOrder === SortOrder.Modified;
 				this.error = undefined;
 				try {
-					const stat = await this.fileService.resolve(this.resource, { resolveSingleChildDescendants: true, resolveMetadata });
-					const resolved = ExplorerItem.create(this.fileService, this.configService, this.filesConfigService, stat, this);
+					const stat = await this.fileService.resolve(this.resource, {
+						resolveSingleChildDescendants: true,
+						resolveMetadata
+					});
+					const resolved = ExplorerItem.create(
+						this.fileService,
+						this.configService,
+						this.filesConfigService,
+						stat,
+						this
+					);
 					ExplorerItem.mergeLocalWithDisk(resolved, this);
 				} catch (e) {
 					this.error = e;
@@ -349,7 +407,8 @@ export class ExplorerItem {
 
 				const nested = this.fileNester.nest(
 					fileChildren.map(([name]) => name),
-					this.getPlatformAwareName(this.name));
+					this.getPlatformAwareName(this.name)
+				);
 
 				for (const [fileEntryName, fileEntryItem] of fileChildren) {
 					const nestedItems = nested.get(fileEntryName);
@@ -381,16 +440,27 @@ export class ExplorerItem {
 	private _fileNester: ExplorerFileNestingTrie | undefined;
 	private get fileNester(): ExplorerFileNestingTrie {
 		if (!this.root._fileNester) {
-			const nestingConfig = this.configService.getValue<IFilesConfiguration>({ resource: this.root.resource }).explorer.fileNesting;
+			const nestingConfig = this.configService.getValue<IFilesConfiguration>({ resource: this.root.resource }).explorer
+				.fileNesting;
 			const patterns = Object.entries(nestingConfig.patterns)
-				.filter(entry =>
-					typeof (entry[0]) === 'string' && typeof (entry[1]) === 'string' && entry[0] && entry[1])
-				.map(([parentPattern, childrenPatterns]) =>
-					[
-						this.getPlatformAwareName(parentPattern.trim()),
-						childrenPatterns.split(',').map(p => this.getPlatformAwareName(p.trim().replace(/\u200b/g, '').trim()))
-							.filter(p => p !== '')
-					] as [string, string[]]);
+				.filter(entry => typeof entry[0] === 'string' && typeof entry[1] === 'string' && entry[0] && entry[1])
+				.map(
+					([parentPattern, childrenPatterns]) =>
+						[
+							this.getPlatformAwareName(parentPattern.trim()),
+							childrenPatterns
+								.split(',')
+								.map(p =>
+									this.getPlatformAwareName(
+										p
+											.trim()
+											.replace(/\u200b/g, '')
+											.trim()
+									)
+								)
+								.filter(p => p !== '')
+						] as [string, string[]]
+				);
 
 			this.root._fileNester = new ExplorerFileNestingTrie(patterns);
 		}
@@ -413,7 +483,9 @@ export class ExplorerItem {
 	}
 
 	private getPlatformAwareName(name: string): string {
-		return this.fileService.hasCapability(this.resource, FileSystemProviderCapabilities.PathCaseSensitive) ? name : name.toLowerCase();
+		return this.fileService.hasCapability(this.resource, FileSystemProviderCapabilities.PathCaseSensitive)
+			? name
+			: name.toLowerCase();
 	}
 
 	/**
@@ -446,7 +518,6 @@ export class ExplorerItem {
 	 * so that the path property can be updated properly.
 	 */
 	rename(renamedStat: { name: string; mtime?: number }): void {
-
 		// Merge a subset of Properties that can change on rename
 		this.updateName(renamedStat.name);
 		this._mtime = renamedStat.mtime;
@@ -463,8 +534,14 @@ export class ExplorerItem {
 		// Return if path found
 		// For performance reasons try to do the comparison as fast as possible
 		const ignoreCase = !this.fileService.hasCapability(resource, FileSystemProviderCapabilities.PathCaseSensitive);
-		if (resource && this.resource.scheme === resource.scheme && equalsIgnoreCase(this.resource.authority, resource.authority) &&
-			(ignoreCase ? startsWithIgnoreCase(resource.path, this.resource.path) : resource.path.startsWith(this.resource.path))) {
+		if (
+			resource &&
+			this.resource.scheme === resource.scheme &&
+			equalsIgnoreCase(this.resource.authority, resource.authority) &&
+			(ignoreCase
+				? startsWithIgnoreCase(resource.path, this.resource.path)
+				: resource.path.startsWith(this.resource.path))
+		) {
 			return this.findByPath(rtrim(resource.path, posix.sep), this.resource.path.length, ignoreCase);
 		}
 
@@ -519,7 +596,13 @@ export class ExplorerItem {
 }
 
 export class NewExplorerItem extends ExplorerItem {
-	constructor(fileService: IFileService, configService: IConfigurationService, filesConfigService: IFilesConfigurationService, parent: ExplorerItem, isDirectory: boolean) {
+	constructor(
+		fileService: IFileService,
+		configService: IConfigurationService,
+		filesConfigService: IFilesConfigurationService,
+		parent: ExplorerItem,
+		isDirectory: boolean
+	) {
 		super(URI.file(''), fileService, configService, filesConfigService, parent, isDirectory);
 		this._isDirectoryResolved = true;
 	}

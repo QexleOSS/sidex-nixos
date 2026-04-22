@@ -6,38 +6,66 @@
 import { memoize } from '../../../../base/common/decorators.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
-import { ICommandDetectionCapability, ITerminalCapabilityImplMap, ITerminalCapabilityStore, TerminalCapability, type AnyTerminalCapabilityChangeEvent, type ICwdDetectionCapability } from './capabilities.js';
+import {
+	ICommandDetectionCapability,
+	ITerminalCapabilityImplMap,
+	ITerminalCapabilityStore,
+	TerminalCapability,
+	type AnyTerminalCapabilityChangeEvent,
+	type ICwdDetectionCapability
+} from './capabilities.js';
 
 export class TerminalCapabilityStore extends Disposable implements ITerminalCapabilityStore {
 	private _map: Map<TerminalCapability, ITerminalCapabilityImplMap[TerminalCapability]> = new Map();
 
 	private readonly _onDidAddCapability = this._register(new Emitter<AnyTerminalCapabilityChangeEvent>());
-	get onDidAddCapability() { return this._onDidAddCapability.event; }
+	get onDidAddCapability() {
+		return this._onDidAddCapability.event;
+	}
 	private readonly _onDidRemoveCapability = this._register(new Emitter<AnyTerminalCapabilityChangeEvent>());
-	get onDidRemoveCapability() { return this._onDidRemoveCapability.event; }
+	get onDidRemoveCapability() {
+		return this._onDidRemoveCapability.event;
+	}
 
 	@memoize
 	get onDidChangeCapabilities() {
-		return Event.map(Event.any(
-			this._onDidAddCapability.event,
-			this._onDidRemoveCapability.event
-		), () => void 0, this._store);
+		return Event.map(
+			Event.any(this._onDidAddCapability.event, this._onDidRemoveCapability.event),
+			() => void 0,
+			this._store
+		);
 	}
 	@memoize
 	get onDidAddCommandDetectionCapability() {
-		return Event.map(Event.filter(this.onDidAddCapability, e => e.id === TerminalCapability.CommandDetection, this._store), e => e.capability as ICommandDetectionCapability, this._store);
+		return Event.map(
+			Event.filter(this.onDidAddCapability, e => e.id === TerminalCapability.CommandDetection, this._store),
+			e => e.capability as ICommandDetectionCapability,
+			this._store
+		);
 	}
 	@memoize
 	get onDidRemoveCommandDetectionCapability() {
-		return Event.map(Event.filter(this.onDidRemoveCapability, e => e.id === TerminalCapability.CommandDetection, this._store), () => void 0, this._store);
+		return Event.map(
+			Event.filter(this.onDidRemoveCapability, e => e.id === TerminalCapability.CommandDetection, this._store),
+			() => void 0,
+			this._store
+		);
 	}
 	@memoize
 	get onDidAddCwdDetectionCapability() {
-		return Event.map(Event.filter(this.onDidAddCapability, e => e.id === TerminalCapability.CwdDetection, this._store), e => e.capability as ICwdDetectionCapability, this._store);
+		return Event.map(
+			Event.filter(this.onDidAddCapability, e => e.id === TerminalCapability.CwdDetection, this._store),
+			e => e.capability as ICwdDetectionCapability,
+			this._store
+		);
 	}
 	@memoize
 	get onDidRemoveCwdDetectionCapability() {
-		return Event.map(Event.filter(this.onDidRemoveCapability, e => e.id === TerminalCapability.CwdDetection, this._store), () => void 0, this._store);
+		return Event.map(
+			Event.filter(this.onDidRemoveCapability, e => e.id === TerminalCapability.CwdDetection, this._store),
+			() => void 0,
+			this._store
+		);
 	}
 
 	get items(): IterableIterator<TerminalCapability> {
@@ -45,10 +73,16 @@ export class TerminalCapabilityStore extends Disposable implements ITerminalCapa
 	}
 
 	createOnDidRemoveCapabilityOfTypeEvent<T extends TerminalCapability>(type: T): Event<ITerminalCapabilityImplMap[T]> {
-		return Event.map(Event.filter(this.onDidRemoveCapability, e => e.id === type), e => e.capability as ITerminalCapabilityImplMap[T]);
+		return Event.map(
+			Event.filter(this.onDidRemoveCapability, e => e.id === type),
+			e => e.capability as ITerminalCapabilityImplMap[T]
+		);
 	}
 	createOnDidAddCapabilityOfTypeEvent<T extends TerminalCapability>(type: T): Event<ITerminalCapabilityImplMap[T]> {
-		return Event.map(Event.filter(this.onDidAddCapability, e => e.id === type), e => e.capability as ITerminalCapabilityImplMap[T]);
+		return Event.map(
+			Event.filter(this.onDidAddCapability, e => e.id === type),
+			e => e.capability as ITerminalCapabilityImplMap[T]
+		);
 	}
 
 	add<T extends TerminalCapability>(capability: T, impl: ITerminalCapabilityImplMap[T]) {
@@ -79,32 +113,53 @@ export class TerminalCapabilityStoreMultiplexer extends Disposable implements IT
 	readonly _stores: ITerminalCapabilityStore[] = [];
 
 	private readonly _onDidAddCapability = this._register(new Emitter<AnyTerminalCapabilityChangeEvent>());
-	get onDidAddCapability() { return this._onDidAddCapability.event; }
+	get onDidAddCapability() {
+		return this._onDidAddCapability.event;
+	}
 	private readonly _onDidRemoveCapability = this._register(new Emitter<AnyTerminalCapabilityChangeEvent>());
-	get onDidRemoveCapability() { return this._onDidRemoveCapability.event; }
+	get onDidRemoveCapability() {
+		return this._onDidRemoveCapability.event;
+	}
 
 	@memoize
 	get onDidChangeCapabilities() {
-		return Event.map(Event.any(
-			this._onDidAddCapability.event,
-			this._onDidRemoveCapability.event
-		), () => void 0, this._store);
+		return Event.map(
+			Event.any(this._onDidAddCapability.event, this._onDidRemoveCapability.event),
+			() => void 0,
+			this._store
+		);
 	}
 	@memoize
 	get onDidAddCommandDetectionCapability() {
-		return Event.map(Event.filter(this.onDidAddCapability, e => e.id === TerminalCapability.CommandDetection, this._store), e => e.capability as ICommandDetectionCapability, this._store);
+		return Event.map(
+			Event.filter(this.onDidAddCapability, e => e.id === TerminalCapability.CommandDetection, this._store),
+			e => e.capability as ICommandDetectionCapability,
+			this._store
+		);
 	}
 	@memoize
 	get onDidRemoveCommandDetectionCapability() {
-		return Event.map(Event.filter(this.onDidRemoveCapability, e => e.id === TerminalCapability.CommandDetection, this._store), () => void 0, this._store);
+		return Event.map(
+			Event.filter(this.onDidRemoveCapability, e => e.id === TerminalCapability.CommandDetection, this._store),
+			() => void 0,
+			this._store
+		);
 	}
 	@memoize
 	get onDidAddCwdDetectionCapability() {
-		return Event.map(Event.filter(this.onDidAddCapability, e => e.id === TerminalCapability.CwdDetection, this._store), e => e.capability as ICwdDetectionCapability, this._store);
+		return Event.map(
+			Event.filter(this.onDidAddCapability, e => e.id === TerminalCapability.CwdDetection, this._store),
+			e => e.capability as ICwdDetectionCapability,
+			this._store
+		);
 	}
 	@memoize
 	get onDidRemoveCwdDetectionCapability() {
-		return Event.map(Event.filter(this.onDidRemoveCapability, e => e.id === TerminalCapability.CwdDetection, this._store), () => void 0, this._store);
+		return Event.map(
+			Event.filter(this.onDidRemoveCapability, e => e.id === TerminalCapability.CwdDetection, this._store),
+			() => void 0,
+			this._store
+		);
 	}
 
 	get items(): IterableIterator<TerminalCapability> {
@@ -112,10 +167,16 @@ export class TerminalCapabilityStoreMultiplexer extends Disposable implements IT
 	}
 
 	createOnDidRemoveCapabilityOfTypeEvent<T extends TerminalCapability>(type: T): Event<ITerminalCapabilityImplMap[T]> {
-		return Event.map(Event.filter(this.onDidRemoveCapability, e => e.id === type), e => e.capability as ITerminalCapabilityImplMap[T]);
+		return Event.map(
+			Event.filter(this.onDidRemoveCapability, e => e.id === type),
+			e => e.capability as ITerminalCapabilityImplMap[T]
+		);
 	}
 	createOnDidAddCapabilityOfTypeEvent<T extends TerminalCapability>(type: T): Event<ITerminalCapabilityImplMap[T]> {
-		return Event.map(Event.filter(this.onDidAddCapability, e => e.id === type), e => e.capability as ITerminalCapabilityImplMap[T]);
+		return Event.map(
+			Event.filter(this.onDidAddCapability, e => e.id === type),
+			e => e.capability as ITerminalCapabilityImplMap[T]
+		);
 	}
 
 	private *_items(): IterableIterator<TerminalCapability> {
@@ -157,7 +218,10 @@ export class TerminalCapabilityStoreMultiplexer extends Disposable implements IT
 	}
 }
 
-function createCapabilityEvent<T extends TerminalCapability>(capability: T, impl: ITerminalCapabilityImplMap[T]): AnyTerminalCapabilityChangeEvent {
+function createCapabilityEvent<T extends TerminalCapability>(
+	capability: T,
+	impl: ITerminalCapabilityImplMap[T]
+): AnyTerminalCapabilityChangeEvent {
 	// HACK: This cast is required to convert a generic type to a discriminated union, this is
 	// necessary in order to enable type narrowing on the event consumer side.
 	// eslint-disable-next-line local/code-no-dangerous-type-assertions

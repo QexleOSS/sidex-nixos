@@ -34,7 +34,6 @@ export interface IWorkspaceSymbolProvider {
 }
 
 export namespace WorkspaceSymbolProviderRegistry {
-
 	const _supports: IWorkspaceSymbolProvider[] = [];
 
 	export function register(provider: IWorkspaceSymbolProvider): IDisposable {
@@ -62,11 +61,16 @@ export namespace WorkspaceSymbolProviderRegistry {
 }
 
 export class WorkspaceSymbolItem {
-	constructor(readonly symbol: IWorkspaceSymbol, readonly provider: IWorkspaceSymbolProvider) { }
+	constructor(
+		readonly symbol: IWorkspaceSymbol,
+		readonly provider: IWorkspaceSymbolProvider
+	) {}
 }
 
-export async function getWorkspaceSymbols(query: string, token: CancellationToken = CancellationToken.None): Promise<WorkspaceSymbolItem[]> {
-
+export async function getWorkspaceSymbols(
+	query: string,
+	token: CancellationToken = CancellationToken.None
+): Promise<WorkspaceSymbolItem[]> {
 	const all: WorkspaceSymbolItem[] = [];
 
 	const promises = WorkspaceSymbolProviderRegistry.all().map(async provider => {
@@ -116,7 +120,9 @@ export async function getWorkspaceSymbols(query: string, token: CancellationToke
 		return res;
 	}
 
-	return groupBy(all, compareItems).map(group => group[0]).flat();
+	return groupBy(all, compareItems)
+		.map(group => group[0])
+		.flat();
 }
 
 export interface IWorkbenchSearchConfigurationProperties extends ISearchConfigurationProperties {
@@ -158,10 +164,15 @@ export interface IFilterAndRange {
 
 export function extractRangeFromFilter(filter: string, unless?: string[]): IFilterAndRange | undefined {
 	// Ignore when the unless character not the first character or is before the line colon pattern
-	if (!filter || unless?.some(value => {
-		const unlessCharPos = filter.indexOf(value);
-		return unlessCharPos === 0 || unlessCharPos > 0 && !LINE_COLON_PATTERN.test(filter.substring(unlessCharPos + 1));
-	})) {
+	if (
+		!filter ||
+		unless?.some(value => {
+			const unlessCharPos = filter.indexOf(value);
+			return (
+				unlessCharPos === 0 || (unlessCharPos > 0 && !LINE_COLON_PATTERN.test(filter.substring(unlessCharPos + 1)))
+			);
+		})
+	) {
 		return undefined;
 	}
 

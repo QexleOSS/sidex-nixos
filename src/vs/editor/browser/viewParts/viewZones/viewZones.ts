@@ -11,7 +11,11 @@ import { Position } from '../../../common/core/position.js';
 import { RenderingContext, RestrictedRenderingContext } from '../../view/renderingContext.js';
 import { ViewContext } from '../../../common/viewModel/viewContext.js';
 import * as viewEvents from '../../../common/viewEvents.js';
-import { IEditorWhitespace, IViewWhitespaceViewportData, IWhitespaceChangeAccessor } from '../../../common/viewModel.js';
+import {
+	IEditorWhitespace,
+	IViewWhitespaceViewportData,
+	IWhitespaceChangeAccessor
+} from '../../../common/viewModel.js';
 import { EditorOption } from '../../../common/config/editorOptions.js';
 
 interface IMyViewZone {
@@ -30,7 +34,9 @@ interface IComputedViewZoneProps {
 	minWidthInPx: number;
 }
 
-const invalidFunc = () => { throw new Error(`Invalid change accessor`); };
+const invalidFunc = () => {
+	throw new Error(`Invalid change accessor`);
+};
 
 /**
  * A view zone is a rectangle that is a section that is inserted into the editor
@@ -38,7 +44,6 @@ const invalidFunc = () => { throw new Error(`Invalid change accessor`); };
  * an implementation, etc.
  */
 export class ViewZones extends ViewPart {
-
 	private _zones: { [id: string]: IMyViewZone };
 	private _lineHeight: number;
 	private _contentWidth: number;
@@ -94,7 +99,10 @@ export class ViewZones extends ViewPart {
 				const props = this._computeWhitespaceProps(zone.delegate);
 				zone.isInHiddenArea = props.isInHiddenArea;
 				const oldWhitespace = oldWhitespaces.get(id);
-				if (oldWhitespace && (oldWhitespace.afterLineNumber !== props.afterViewLineNumber || oldWhitespace.height !== props.heightInPx)) {
+				if (
+					oldWhitespace &&
+					(oldWhitespace.afterLineNumber !== props.afterViewLineNumber || oldWhitespace.height !== props.heightInPx)
+				) {
 					whitespaceAccessor.changeOneWhitespace(id, props.afterViewLineNumber, props.heightInPx);
 					this._safeCallOnComputedHeight(zone.delegate, props.heightInPx);
 					hadAChange = true;
@@ -174,7 +182,10 @@ export class ViewZones extends ViewPart {
 		}
 
 		let zoneBeforeModelPosition: Position;
-		if (zoneAfterModelPosition.column === this._context.viewModel.model.getLineMaxColumn(zoneAfterModelPosition.lineNumber)) {
+		if (
+			zoneAfterModelPosition.column ===
+			this._context.viewModel.model.getLineMaxColumn(zoneAfterModelPosition.lineNumber)
+		) {
 			zoneBeforeModelPosition = this._context.viewModel.model.validatePosition({
 				lineNumber: zoneAfterModelPosition.lineNumber + 1,
 				column: 1
@@ -186,12 +197,18 @@ export class ViewZones extends ViewPart {
 			});
 		}
 
-		const viewPosition = this._context.viewModel.coordinatesConverter.convertModelPositionToViewPosition(zoneAfterModelPosition, zone.afterColumnAffinity, true);
-		const isVisible = zone.showInHiddenAreas || this._context.viewModel.coordinatesConverter.modelPositionIsVisible(zoneBeforeModelPosition);
+		const viewPosition = this._context.viewModel.coordinatesConverter.convertModelPositionToViewPosition(
+			zoneAfterModelPosition,
+			zone.afterColumnAffinity,
+			true
+		);
+		const isVisible =
+			zone.showInHiddenAreas ||
+			this._context.viewModel.coordinatesConverter.modelPositionIsVisible(zoneBeforeModelPosition);
 		return {
 			isInHiddenArea: !isVisible,
 			afterViewLineNumber: viewPosition.lineNumber,
-			heightInPx: (isVisible ? this._heightInPixels(zone) : 0),
+			heightInPx: isVisible ? this._heightInPixels(zone) : 0,
 			minWidthInPx: this._minWidthInPixels(zone)
 		};
 	}
@@ -200,7 +217,6 @@ export class ViewZones extends ViewPart {
 		let zonesHaveChanged = false;
 
 		this._context.viewModel.changeWhitespace((whitespaceAccessor: IWhitespaceChangeAccessor) => {
-
 			const changeAccessor: IViewZoneChangeAccessor = {
 				addZone: (zone: IViewZone): string => {
 					zonesHaveChanged = true;
@@ -233,7 +249,12 @@ export class ViewZones extends ViewPart {
 
 	private _addZone(whitespaceAccessor: IWhitespaceChangeAccessor, zone: IViewZone): string {
 		const props = this._computeWhitespaceProps(zone);
-		const whitespaceId = whitespaceAccessor.insertWhitespace(props.afterViewLineNumber, this._getZoneOrdinal(zone), props.heightInPx, props.minWidthInPx);
+		const whitespaceId = whitespaceAccessor.insertWhitespace(
+			props.afterViewLineNumber,
+			this._getZoneOrdinal(zone),
+			props.heightInPx,
+			props.minWidthInPx
+		);
 
 		const myZone: IMyViewZone = {
 			whitespaceId: whitespaceId,
@@ -261,7 +282,6 @@ export class ViewZones extends ViewPart {
 		}
 
 		this._zones[myZone.whitespaceId] = myZone;
-
 
 		this.setShouldRender();
 

@@ -57,7 +57,7 @@ export class TauriExecutableDebugAdapter extends AbstractDebugAdapter {
 
 	constructor(
 		private readonly adapterExecutable: IDebugAdapterExecutable,
-		private readonly debugType: string,
+		private readonly debugType: string
 	) {
 		super();
 	}
@@ -68,30 +68,30 @@ export class TauriExecutableDebugAdapter extends AbstractDebugAdapter {
 
 		const { command, args, options } = this.adapterExecutable;
 
-		const adapterId = await invoke('debug_spawn_adapter', {
+		const adapterId = (await invoke('debug_spawn_adapter', {
 			executable: command,
 			args: args ?? [],
 			cwd: options?.cwd ?? null,
-			env: options?.env ?? null,
-		}) as number;
+			env: options?.env ?? null
+		})) as number;
 
 		this.adapterId = adapterId;
 
-		this.unlistenOutput = await listen('debug-output', (event) => {
+		this.unlistenOutput = await listen('debug-output', event => {
 			const payload = event.payload as { adapter_id: number; data: string };
 			if (payload.adapter_id === adapterId) {
 				this.handleData(payload.data);
 			}
 		});
 
-		this.unlistenError = await listen('debug-error', (event) => {
+		this.unlistenError = await listen('debug-error', event => {
 			const payload = event.payload as { adapter_id: number; data: string };
 			if (payload.adapter_id === adapterId) {
 				this._onError.fire(new Error(payload.data));
 			}
 		});
 
-		this.unlistenExit = await listen('debug-exit', (event) => {
+		this.unlistenExit = await listen('debug-exit', event => {
 			const payload = event.payload as { adapter_id: number; exit_code: number | null };
 			if (payload.adapter_id === adapterId) {
 				this._onExit.fire(payload.exit_code);
@@ -111,7 +111,7 @@ export class TauriExecutableDebugAdapter extends AbstractDebugAdapter {
 		const invoke = getTauriInvoke();
 		invoke('debug_send', {
 			adapterId: this.adapterId,
-			data: wire,
+			data: wire
 		}).catch((err: unknown) => {
 			this._onError.fire(new Error(String(err)));
 		});
@@ -147,7 +147,6 @@ export class TauriExecutableDebugAdapter extends AbstractDebugAdapter {
 	private handleData(data: string): void {
 		this.rawData += data;
 
-		// eslint-disable-next-line no-constant-condition
 		while (true) {
 			if (this.contentLength >= 0) {
 				if (this.rawData.length >= this.contentLength) {
@@ -183,7 +182,9 @@ export class TauriExecutableDebugAdapter extends AbstractDebugAdapter {
 	}
 
 	override dispose(): void {
-		this.stopSession().catch(() => { /* ignore */ });
+		this.stopSession().catch(() => {
+			/* ignore */
+		});
 		super.dispose();
 	}
 }
@@ -198,7 +199,10 @@ export class TauriSocketDebugAdapter extends AbstractDebugAdapter {
 	private rawData = '';
 	private contentLength = -1;
 
-	constructor(private readonly port: number, private readonly host: string = '127.0.0.1') {
+	constructor(
+		private readonly port: number,
+		private readonly host: string = '127.0.0.1'
+	) {
 		super();
 	}
 
@@ -211,13 +215,13 @@ export class TauriSocketDebugAdapter extends AbstractDebugAdapter {
 				resolve();
 			};
 
-			this.ws.onmessage = (event) => {
+			this.ws.onmessage = event => {
 				if (typeof event.data === 'string') {
 					this.handleData(event.data);
 				}
 			};
 
-			this.ws.onerror = (event) => {
+			this.ws.onerror = event => {
 				const err = new Error(`WebSocket error connecting to debug adapter at ${url}`);
 				this._onError.fire(err);
 				reject(err);
@@ -249,7 +253,6 @@ export class TauriSocketDebugAdapter extends AbstractDebugAdapter {
 	private handleData(data: string): void {
 		this.rawData += data;
 
-		// eslint-disable-next-line no-constant-condition
 		while (true) {
 			if (this.contentLength >= 0) {
 				if (this.rawData.length >= this.contentLength) {

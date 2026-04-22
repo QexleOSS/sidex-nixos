@@ -10,6 +10,4 @@ events = ["*"]
 
 [contributes]
 languages = []
-commands = [
-  { id = "hello.sayHello", title = "Say Hello" },
-]
+commands = [{ id = "hello.sayHello", title = "Say Hello" }]

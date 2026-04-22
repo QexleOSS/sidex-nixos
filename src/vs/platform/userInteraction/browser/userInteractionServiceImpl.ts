@@ -19,16 +19,12 @@ export class UserInteractionService implements IUserInteractionService {
 		let obs = this._modifierObservables.get(win);
 		if (!obs) {
 			const emitter = ModifierKeyEmitter.getInstance();
-			obs = observableFromEvent<IModifierKeyStatus>(
-				this,
-				emitter.event,
-				() => ({
-					ctrlKey: emitter.keyStatus.ctrlKey,
-					shiftKey: emitter.keyStatus.shiftKey,
-					altKey: emitter.keyStatus.altKey,
-					metaKey: emitter.keyStatus.metaKey,
-				})
-			);
+			obs = observableFromEvent<IModifierKeyStatus>(this, emitter.event, () => ({
+				ctrlKey: emitter.keyStatus.ctrlKey,
+				shiftKey: emitter.keyStatus.shiftKey,
+				altKey: emitter.keyStatus.altKey,
+				metaKey: emitter.keyStatus.metaKey
+			}));
 			this._modifierObservables.set(win, obs);
 		}
 		return obs.read(reader);
@@ -40,7 +36,7 @@ export class UserInteractionService implements IUserInteractionService {
 			if (el instanceof Window) {
 				return el.document.hasFocus();
 			}
-			const shadowRoot = el.getRootNode() instanceof ShadowRoot ? el.getRootNode() as ShadowRoot : null;
+			const shadowRoot = el.getRootNode() instanceof ShadowRoot ? (el.getRootNode() as ShadowRoot) : null;
 			const activeElement = shadowRoot ? shadowRoot.activeElement : el.ownerDocument.activeElement;
 			return el.contains(activeElement);
 		};

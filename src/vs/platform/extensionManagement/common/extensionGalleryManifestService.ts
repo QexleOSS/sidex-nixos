@@ -6,7 +6,13 @@
 import { Event } from '../../../base/common/event.js';
 import { Disposable } from '../../../base/common/lifecycle.js';
 import { IProductService } from '../../product/common/productService.js';
-import { ExtensionGalleryResourceType, Flag, IExtensionGalleryManifest, IExtensionGalleryManifestService, ExtensionGalleryManifestStatus } from './extensionGalleryManifest.js';
+import {
+	ExtensionGalleryResourceType,
+	Flag,
+	IExtensionGalleryManifest,
+	IExtensionGalleryManifestService,
+	ExtensionGalleryManifestStatus
+} from './extensionGalleryManifest.js';
 import { FilterType, SortBy } from './extensionManagement.js';
 
 type ExtensionGalleryConfig = {
@@ -20,18 +26,17 @@ type ExtensionGalleryConfig = {
 };
 
 export class ExtensionGalleryManifestService extends Disposable implements IExtensionGalleryManifestService {
-
 	readonly _serviceBrand: undefined;
 	readonly onDidChangeExtensionGalleryManifest = Event.None;
 	readonly onDidChangeExtensionGalleryManifestStatus = Event.None;
 
 	get extensionGalleryManifestStatus(): ExtensionGalleryManifestStatus {
-		return !!this.productService.extensionsGallery?.serviceUrl ? ExtensionGalleryManifestStatus.Available : ExtensionGalleryManifestStatus.Unavailable;
+		return !!this.productService.extensionsGallery?.serviceUrl
+			? ExtensionGalleryManifestStatus.Available
+			: ExtensionGalleryManifestStatus.Unavailable;
 	}
 
-	constructor(
-		@IProductService protected readonly productService: IProductService,
-	) {
+	constructor(@IProductService protected readonly productService: IProductService) {
 		super();
 	}
 
@@ -53,7 +58,7 @@ export class ExtensionGalleryManifestService extends Disposable implements IExte
 			{
 				id: `${extensionsGallery.serviceUrl}/publishers/{publisher}/extensions/{name}/{version}/stats?statType={statTypeName}`,
 				type: ExtensionGalleryResourceType.ExtensionStatisticsUri
-			},
+			}
 		];
 
 		if (extensionsGallery.publisherUrl) {
@@ -84,130 +89,130 @@ export class ExtensionGalleryManifestService extends Disposable implements IExte
 		const filtering = [
 			{
 				name: FilterType.Tag,
-				value: 1,
+				value: 1
 			},
 			{
 				name: FilterType.ExtensionId,
-				value: 4,
+				value: 4
 			},
 			{
 				name: FilterType.Category,
-				value: 5,
+				value: 5
 			},
 			{
 				name: FilterType.ExtensionName,
-				value: 7,
+				value: 7
 			},
 			{
 				name: FilterType.Target,
-				value: 8,
+				value: 8
 			},
 			{
 				name: FilterType.Featured,
-				value: 9,
+				value: 9
 			},
 			{
 				name: FilterType.SearchText,
-				value: 10,
+				value: 10
 			},
 			{
 				name: FilterType.ExcludeWithFlags,
-				value: 12,
-			},
+				value: 12
+			}
 		];
 
 		const sorting = [
 			{
 				name: SortBy.NoneOrRelevance,
-				value: 0,
+				value: 0
 			},
 			{
 				name: SortBy.LastUpdatedDate,
-				value: 1,
+				value: 1
 			},
 			{
 				name: SortBy.Title,
-				value: 2,
+				value: 2
 			},
 			{
 				name: SortBy.PublisherName,
-				value: 3,
+				value: 3
 			},
 			{
 				name: SortBy.InstallCount,
-				value: 4,
+				value: 4
 			},
 			{
 				name: SortBy.AverageRating,
-				value: 6,
+				value: 6
 			},
 			{
 				name: SortBy.PublishedDate,
-				value: 10,
+				value: 10
 			},
 			{
 				name: SortBy.WeightedRating,
-				value: 12,
-			},
+				value: 12
+			}
 		];
 
 		const flags = [
 			{
 				name: Flag.None,
-				value: 0x0,
+				value: 0x0
 			},
 			{
 				name: Flag.IncludeVersions,
-				value: 0x1,
+				value: 0x1
 			},
 			{
 				name: Flag.IncludeFiles,
-				value: 0x2,
+				value: 0x2
 			},
 			{
 				name: Flag.IncludeCategoryAndTags,
-				value: 0x4,
+				value: 0x4
 			},
 			{
 				name: Flag.IncludeSharedAccounts,
-				value: 0x8,
+				value: 0x8
 			},
 			{
 				name: Flag.IncludeVersionProperties,
-				value: 0x10,
+				value: 0x10
 			},
 			{
 				name: Flag.ExcludeNonValidated,
-				value: 0x20,
+				value: 0x20
 			},
 			{
 				name: Flag.IncludeInstallationTargets,
-				value: 0x40,
+				value: 0x40
 			},
 			{
 				name: Flag.IncludeAssetUri,
-				value: 0x80,
+				value: 0x80
 			},
 			{
 				name: Flag.IncludeStatistics,
-				value: 0x100,
+				value: 0x100
 			},
 			{
 				name: Flag.IncludeLatestVersionOnly,
-				value: 0x200,
+				value: 0x200
 			},
 			{
 				name: Flag.Unpublished,
-				value: 0x1000,
+				value: 0x1000
 			},
 			{
 				name: Flag.IncludeNameConflictInfo,
-				value: 0x8000,
+				value: 0x8000
 			},
 			{
 				name: Flag.IncludeLatestPrereleaseAndStableVersionOnly,
-				value: 0x10000,
-			},
+				value: 0x10000
+			}
 		];
 
 		return {
@@ -217,10 +222,14 @@ export class ExtensionGalleryManifestService extends Disposable implements IExte
 				extensionQuery: {
 					filtering,
 					sorting,
-					flags,
+					flags
 				},
 				signing: {
-					allPublicRepositorySigned: true,
+					// We serve extensions from both Microsoft Marketplace and
+					// Open VSX. Open VSX extensions are not MS-signed, so we
+					// disable the "all public extensions must be signed" check
+					// to prevent the blocking "not signed" warning.
+					allPublicRepositorySigned: false
 				}
 			}
 		};

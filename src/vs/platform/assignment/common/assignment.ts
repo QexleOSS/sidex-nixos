@@ -99,7 +99,7 @@ export enum Filters {
 	/**
 	 * The release/build date of VS Code (UTC) in the format yyyymmddHH.
 	 */
-	ReleaseDate = 'X-VSCode-ReleaseDate',
+	ReleaseDate = 'X-VSCode-ReleaseDate'
 }
 
 export class AssignmentFilterProvider implements IExperimentationFilterProvider {
@@ -110,7 +110,7 @@ export class AssignmentFilterProvider implements IExperimentationFilterProvider 
 		private devDeviceId: string,
 		private targetPopulation: TargetPopulation,
 		private releaseDate: string
-	) { }
+	) {}
 
 	/**
 	 * Returns a version string that can be parsed by the TAS client.
@@ -118,7 +118,7 @@ export class AssignmentFilterProvider implements IExperimentationFilterProvider 
 	 * Ref: https://github.com/microsoft/tas-client/blob/30340d5e1da37c2789049fcf45928b954680606f/vscode-tas-client/src/vscode-tas-client/VSCodeFilterProvider.ts#L35
 	 *
 	 * @param version Version string to be trimmed.
-	*/
+	 */
 	private static trimVersionSuffix(version: string): string {
 		const regex = /\-[a-zA-Z0-9]+$/;
 		const result = version.split(regex);
@@ -181,6 +181,9 @@ export class AssignmentFilterProvider implements IExperimentationFilterProvider 
 export function getInternalOrg(organisations: string[] | undefined): 'vscode' | 'github' | 'microsoft' | undefined {
 	const isVSCodeInternal = organisations?.includes('Visual-Studio-Code');
 	const isGitHubInternal = organisations?.includes('github');
-	const isMicrosoftInternal = organisations?.includes('microsoft') || organisations?.includes('ms-copilot') || organisations?.includes('MicrosoftCopilot');
+	const isMicrosoftInternal =
+		organisations?.includes('microsoft') ||
+		organisations?.includes('ms-copilot') ||
+		organisations?.includes('MicrosoftCopilot');
 	return isVSCodeInternal ? 'vscode' : isGitHubInternal ? 'github' : isMicrosoftInternal ? 'microsoft' : undefined;
 }

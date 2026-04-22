@@ -14,11 +14,15 @@ import { CompleteEnterAction, IndentAction } from '../../../common/languages/lan
 import { ILanguageConfigurationService } from '../../../common/languages/languageConfigurationRegistry.js';
 import { IndentConsts } from '../../../common/languages/supports/indentRules.js';
 import * as indentUtils from '../../indentation/common/indentUtils.js';
-import { getGoodIndentForLine, getIndentMetadata, IIndentConverter, IVirtualModel } from '../../../common/languages/autoIndent.js';
+import {
+	getGoodIndentForLine,
+	getIndentMetadata,
+	IIndentConverter,
+	IVirtualModel
+} from '../../../common/languages/autoIndent.js';
 import { getEnterAction } from '../../../common/languages/enterAction.js';
 
 export class MoveLinesCommand implements ICommand {
-
 	private readonly _selection: Selection;
 	private readonly _isMovingDown: boolean;
 	private readonly _autoIndent: EditorAutoIndentStrategy;
@@ -47,11 +51,11 @@ export class MoveLinesCommand implements ICommand {
 	): IVirtualModel {
 		return {
 			tokenization: {
-				getLineTokens: (lineNumber) => model.tokenization.getLineTokens(lineNumberMapper(lineNumber)),
+				getLineTokens: lineNumber => model.tokenization.getLineTokens(lineNumberMapper(lineNumber)),
 				getLanguageId: () => model.getLanguageId(),
 				getLanguageIdAtPosition: (lineNumber, column) => model.getLanguageIdAtPosition(lineNumber, column)
 			},
-			getLineContent: (lineNumber) => {
+			getLineContent: lineNumber => {
 				const customContent = contentOverride?.(lineNumber);
 				if (customContent !== undefined) {
 					return customContent;
@@ -62,7 +66,6 @@ export class MoveLinesCommand implements ICommand {
 	}
 
 	public getEditOperations(model: ITextModel, builder: IEditOperationBuilder): void {
-
 		const modelLineCount = model.getLineCount();
 
 		if (this._isMovingDown && this._selection.endLineNumber === modelLineCount) {
@@ -88,7 +91,7 @@ export class MoveLinesCommand implements ICommand {
 		if (s.startLineNumber === s.endLineNumber && model.getLineMaxColumn(s.startLineNumber) === 1) {
 			// Current line is empty
 			const lineNumber = s.startLineNumber;
-			const otherLineNumber = (this._isMovingDown ? lineNumber + 1 : lineNumber - 1);
+			const otherLineNumber = this._isMovingDown ? lineNumber + 1 : lineNumber - 1;
 
 			if (model.getLineMaxColumn(otherLineNumber) === 1) {
 				// Other line number is empty too, so no editing is needed
@@ -99,13 +102,14 @@ export class MoveLinesCommand implements ICommand {
 				builder.addEditOperation(new Range(lineNumber, 1, lineNumber, 1), model.getLineContent(otherLineNumber));
 
 				// Remove content from other line number
-				builder.addEditOperation(new Range(otherLineNumber, 1, otherLineNumber, model.getLineMaxColumn(otherLineNumber)), null);
+				builder.addEditOperation(
+					new Range(otherLineNumber, 1, otherLineNumber, model.getLineMaxColumn(otherLineNumber)),
+					null
+				);
 			}
 			// Track selection at the other line number
 			s = new Selection(otherLineNumber, 1, otherLineNumber, 1);
-
 		} else {
-
 			let movingLineNumber: number;
 			let movingLineText: string;
 
@@ -113,12 +117,26 @@ export class MoveLinesCommand implements ICommand {
 				movingLineNumber = s.endLineNumber + 1;
 				movingLineText = model.getLineContent(movingLineNumber);
 				// Delete line that needs to be moved
-				builder.addEditOperation(new Range(movingLineNumber - 1, model.getLineMaxColumn(movingLineNumber - 1), movingLineNumber, model.getLineMaxColumn(movingLineNumber)), null);
+				builder.addEditOperation(
+					new Range(
+						movingLineNumber - 1,
+						model.getLineMaxColumn(movingLineNumber - 1),
+						movingLineNumber,
+						model.getLineMaxColumn(movingLineNumber)
+					),
+					null
+				);
 
 				let insertingText = movingLineText;
 
 				if (this.shouldAutoIndent(model, s)) {
-					const movingLineMatchResult = this.matchEnterRule(model, indentConverter, tabSize, movingLineNumber, s.startLineNumber - 1);
+					const movingLineMatchResult = this.matchEnterRule(
+						model,
+						indentConverter,
+						tabSize,
+						movingLineNumber,
+						s.startLineNumber - 1
+					);
 					// if s.startLineNumber - 1 matches onEnter rule, we still honor that.
 					if (movingLineMatchResult !== null) {
 						const oldIndentation = strings.getLeadingWhitespace(model.getLineContent(movingLineNumber));
@@ -127,9 +145,8 @@ export class MoveLinesCommand implements ICommand {
 						insertingText = newIndentation + this.trimStart(movingLineText);
 					} else {
 						// no enter rule matches, let's check indentatin rules then.
-						const virtualModel = this.createVirtualModel(
-							model,
-							(lineNumber) => lineNumber === s.startLineNumber ? movingLineNumber : lineNumber
+						const virtualModel = this.createVirtualModel(model, lineNumber =>
+							lineNumber === s.startLineNumber ? movingLineNumber : lineNumber
 						);
 						const indentOfMovingLine = getGoodIndentForLine(
 							this._autoIndent,
@@ -154,7 +171,14 @@ export class MoveLinesCommand implements ICommand {
 					// to s.startLineNumber
 					builder.addEditOperation(new Range(s.startLineNumber, 1, s.startLineNumber, 1), insertingText + '\n');
 
-					const ret = this.matchEnterRuleMovingDown(model, indentConverter, tabSize, s.startLineNumber, movingLineNumber, insertingText);
+					const ret = this.matchEnterRuleMovingDown(
+						model,
+						indentConverter,
+						tabSize,
+						s.startLineNumber,
+						movingLineNumber,
+						insertingText
+					);
 
 					// check if the line being moved before matches onEnter rules, if so let's adjust the indentation by onEnter rules.
 					if (ret !== null) {
@@ -165,7 +189,7 @@ export class MoveLinesCommand implements ICommand {
 						// it doesn't match onEnter rules, let's check indentation rules then.
 						const virtualModel = this.createVirtualModel(
 							model,
-							(lineNumber) => {
+							lineNumber => {
 								if (lineNumber === s.startLineNumber) {
 									// TODO@aiday-mar: the tokens here don't correspond exactly to the corresponding content (after indentation adjustment), have to fix this.
 									return movingLineNumber;
@@ -175,7 +199,7 @@ export class MoveLinesCommand implements ICommand {
 									return lineNumber;
 								}
 							},
-							(lineNumber) => lineNumber === s.startLineNumber ? insertingText : undefined
+							lineNumber => (lineNumber === s.startLineNumber ? insertingText : undefined)
 						);
 
 						const newIndentatOfMovingBlock = getGoodIndentForLine(
@@ -210,12 +234,19 @@ export class MoveLinesCommand implements ICommand {
 				builder.addEditOperation(new Range(movingLineNumber, 1, movingLineNumber + 1, 1), null);
 
 				// Insert line that needs to be moved after
-				builder.addEditOperation(new Range(s.endLineNumber, model.getLineMaxColumn(s.endLineNumber), s.endLineNumber, model.getLineMaxColumn(s.endLineNumber)), '\n' + movingLineText);
+				builder.addEditOperation(
+					new Range(
+						s.endLineNumber,
+						model.getLineMaxColumn(s.endLineNumber),
+						s.endLineNumber,
+						model.getLineMaxColumn(s.endLineNumber)
+					),
+					'\n' + movingLineText
+				);
 
 				if (this.shouldAutoIndent(model, s)) {
-					const virtualModel = this.createVirtualModel(
-						model,
-						(lineNumber) => lineNumber === movingLineNumber ? s.startLineNumber : lineNumber
+					const virtualModel = this.createVirtualModel(model, lineNumber =>
+						lineNumber === movingLineNumber ? s.startLineNumber : lineNumber
 					);
 
 					const ret = this.matchEnterRule(model, indentConverter, tabSize, s.startLineNumber, s.startLineNumber - 2);
@@ -255,16 +286,22 @@ export class MoveLinesCommand implements ICommand {
 
 	private buildIndentConverter(tabSize: number, indentSize: number, insertSpaces: boolean): IIndentConverter {
 		return {
-			shiftIndent: (indentation) => {
+			shiftIndent: indentation => {
 				return ShiftCommand.shiftIndent(indentation, indentation.length + 1, tabSize, indentSize, insertSpaces);
 			},
-			unshiftIndent: (indentation) => {
+			unshiftIndent: indentation => {
 				return ShiftCommand.unshiftIndent(indentation, indentation.length + 1, tabSize, indentSize, insertSpaces);
 			}
 		};
 	}
 
-	private parseEnterResult(model: ITextModel, indentConverter: IIndentConverter, tabSize: number, line: number, enter: CompleteEnterAction | null) {
+	private parseEnterResult(
+		model: ITextModel,
+		indentConverter: IIndentConverter,
+		tabSize: number,
+		line: number,
+		enter: CompleteEnterAction | null
+	) {
 		if (enter) {
 			let enterPrefix = enter.indentation;
 
@@ -303,11 +340,23 @@ export class MoveLinesCommand implements ICommand {
 	 * @param futureAboveLineNumber the line which will be at the `line` position
 	 * @param futureAboveLineText
 	 */
-	private matchEnterRuleMovingDown(model: ITextModel, indentConverter: IIndentConverter, tabSize: number, line: number, futureAboveLineNumber: number, futureAboveLineText: string) {
+	private matchEnterRuleMovingDown(
+		model: ITextModel,
+		indentConverter: IIndentConverter,
+		tabSize: number,
+		line: number,
+		futureAboveLineNumber: number,
+		futureAboveLineText: string
+	) {
 		if (strings.lastNonWhitespaceIndex(futureAboveLineText) >= 0) {
 			// break
 			const maxColumn = model.getLineMaxColumn(futureAboveLineNumber);
-			const enter = getEnterAction(this._autoIndent, model, new Range(futureAboveLineNumber, maxColumn, futureAboveLineNumber, maxColumn), this._languageConfigurationService);
+			const enter = getEnterAction(
+				this._autoIndent,
+				model,
+				new Range(futureAboveLineNumber, maxColumn, futureAboveLineNumber, maxColumn),
+				this._languageConfigurationService
+			);
 			return this.parseEnterResult(model, indentConverter, tabSize, line, enter);
 		} else {
 			// go upwards, starting from `line - 1`
@@ -328,12 +377,24 @@ export class MoveLinesCommand implements ICommand {
 			}
 
 			const maxColumn = model.getLineMaxColumn(validPrecedingLine);
-			const enter = getEnterAction(this._autoIndent, model, new Range(validPrecedingLine, maxColumn, validPrecedingLine, maxColumn), this._languageConfigurationService);
+			const enter = getEnterAction(
+				this._autoIndent,
+				model,
+				new Range(validPrecedingLine, maxColumn, validPrecedingLine, maxColumn),
+				this._languageConfigurationService
+			);
 			return this.parseEnterResult(model, indentConverter, tabSize, line, enter);
 		}
 	}
 
-	private matchEnterRule(model: ITextModel, indentConverter: IIndentConverter, tabSize: number, line: number, oneLineAbove: number, previousLineText?: string) {
+	private matchEnterRule(
+		model: ITextModel,
+		indentConverter: IIndentConverter,
+		tabSize: number,
+		line: number,
+		oneLineAbove: number,
+		previousLineText?: string
+	) {
 		let validPrecedingLine = oneLineAbove;
 		while (validPrecedingLine >= 1) {
 			// ship empty lines as empty lines just inherit indentation
@@ -356,7 +417,12 @@ export class MoveLinesCommand implements ICommand {
 		}
 
 		const maxColumn = model.getLineMaxColumn(validPrecedingLine);
-		const enter = getEnterAction(this._autoIndent, model, new Range(validPrecedingLine, maxColumn, validPrecedingLine, maxColumn), this._languageConfigurationService);
+		const enter = getEnterAction(
+			this._autoIndent,
+			model,
+			new Range(validPrecedingLine, maxColumn, validPrecedingLine, maxColumn),
+			this._languageConfigurationService
+		);
 		return this.parseEnterResult(model, indentConverter, tabSize, line, enter);
 	}
 
@@ -379,14 +445,23 @@ export class MoveLinesCommand implements ICommand {
 			return false;
 		}
 
-		if (this._languageConfigurationService.getLanguageConfiguration(languageAtSelectionStart).indentRulesSupport === null) {
+		if (
+			this._languageConfigurationService.getLanguageConfiguration(languageAtSelectionStart).indentRulesSupport === null
+		) {
 			return false;
 		}
 
 		return true;
 	}
 
-	private getIndentEditsOfMovingBlock(model: ITextModel, builder: IEditOperationBuilder, s: Selection, tabSize: number, insertSpaces: boolean, offset: number) {
+	private getIndentEditsOfMovingBlock(
+		model: ITextModel,
+		builder: IEditOperationBuilder,
+		s: Selection,
+		tabSize: number,
+		insertSpaces: boolean,
+		offset: number
+	) {
 		for (let i = s.startLineNumber; i <= s.endLineNumber; i++) {
 			const lineContent = model.getLineContent(i);
 			const originalIndent = strings.getLeadingWhitespace(lineContent);
@@ -403,7 +478,6 @@ export class MoveLinesCommand implements ICommand {
 					this._moveEndLineSelectionShrink = true;
 				}
 			}
-
 		}
 	}
 

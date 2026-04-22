@@ -7,7 +7,6 @@ import { ServiceIdentifier } from './instantiation.js';
 import { SyncDescriptor } from './descriptors.js';
 
 export class ServiceCollection {
-
 	private _entries = new Map<ServiceIdentifier<any>, any>();
 
 	constructor(...entries: [ServiceIdentifier<any>, any][]) {

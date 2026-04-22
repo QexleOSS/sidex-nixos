@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 function createDecorator(mapFn: (fn: Function, key: string) => Function): MethodDecorator {
-	return (_target: Object, key: string | symbol, descriptor: TypedPropertyDescriptor<any>) => {
+	return (_target: object, key: string | symbol, descriptor: TypedPropertyDescriptor<any>) => {
 		let fnKey: 'value' | 'get' | null = null;
 		let fn: Function | null = null;
 
@@ -24,7 +24,7 @@ function createDecorator(mapFn: (fn: Function, key: string) => Function): Method
 	};
 }
 
-export function memoize(_target: Object, key: string, descriptor: PropertyDescriptor) {
+export function memoize(_target: object, key: string, descriptor: PropertyDescriptor) {
 	let fnKey: 'value' | 'get' | null = null;
 	let fn: Function | null = null;
 

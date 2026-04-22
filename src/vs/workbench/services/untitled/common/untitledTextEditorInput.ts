@@ -4,7 +4,14 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { URI } from '../../../../base/common/uri.js';
-import { DEFAULT_EDITOR_ASSOCIATION, findViewStateForEditor, isUntitledResourceEditorInput, IUntitledTextResourceEditorInput, IUntypedEditorInput, Verbosity } from '../../../common/editor.js';
+import {
+	DEFAULT_EDITOR_ASSOCIATION,
+	findViewStateForEditor,
+	isUntitledResourceEditorInput,
+	IUntitledTextResourceEditorInput,
+	IUntypedEditorInput,
+	Verbosity
+} from '../../../common/editor.js';
 import { EditorInput, IUntypedEditorOptions } from '../../../common/editor/editorInput.js';
 import { AbstractTextResourceEditorInput } from '../../../common/editor/textResourceEditorInput.js';
 import { IUntitledTextEditorModel } from './untitledTextEditorModel.js';
@@ -25,8 +32,10 @@ import { ICustomEditorLabelService } from '../../editor/common/customEditorLabel
 /**
  * An editor input to be used for untitled text buffers.
  */
-export class UntitledTextEditorInput extends AbstractTextResourceEditorInput implements IEncodingSupport, ILanguageSupport {
-
+export class UntitledTextEditorInput
+	extends AbstractTextResourceEditorInput
+	implements IEncodingSupport, ILanguageSupport
+{
 	static readonly ID: string = 'workbench.editors.untitledEditorInput';
 
 	override get typeId(): string {
@@ -54,7 +63,17 @@ export class UntitledTextEditorInput extends AbstractTextResourceEditorInput imp
 		@ITextResourceConfigurationService textResourceConfigurationService: ITextResourceConfigurationService,
 		@ICustomEditorLabelService customEditorLabelService: ICustomEditorLabelService
 	) {
-		super(model.resource, undefined, editorService, textFileService, labelService, fileService, filesConfigurationService, textResourceConfigurationService, customEditorLabelService);
+		super(
+			model.resource,
+			undefined,
+			editorService,
+			textFileService,
+			labelService,
+			fileService,
+			filesConfigurationService,
+			textResourceConfigurationService,
+			customEditorLabelService
+		);
 
 		this.registerModelListeners(model);
 
@@ -74,7 +93,6 @@ export class UntitledTextEditorInput extends AbstractTextResourceEditorInput imp
 
 	private onDidCreateUntitledModel(model: IUntitledTextEditorModel): void {
 		if (isEqual(model.resource, this.model.resource) && model !== this.model) {
-
 			// Ensure that we keep our model up to date with
 			// the actual model from the service so that we
 			// never get out of sync with the truth.
@@ -89,7 +107,6 @@ export class UntitledTextEditorInput extends AbstractTextResourceEditorInput imp
 	}
 
 	override getDescription(verbosity = Verbosity.MEDIUM): string | undefined {
-
 		// Without associated path: only use if name and description differ
 		if (!this.model.hasAssociatedFilePath) {
 			const descriptionCandidate = this.resource.path;
@@ -105,7 +122,6 @@ export class UntitledTextEditorInput extends AbstractTextResourceEditorInput imp
 	}
 
 	override getTitle(verbosity: Verbosity): string {
-
 		// Without associated path: check if name and description differ to decide
 		// if description should appear besides the name to distinguish better
 		if (!this.model.hasAssociatedFilePath) {
@@ -134,9 +150,13 @@ export class UntitledTextEditorInput extends AbstractTextResourceEditorInput imp
 		return this.model.setEncoding(encoding);
 	}
 
-	get hasLanguageSetExplicitly() { return this.model.hasLanguageSetExplicitly; }
+	get hasLanguageSetExplicitly() {
+		return this.model.hasLanguageSetExplicitly;
+	}
 
-	get hasAssociatedFilePath() { return this.model.hasAssociatedFilePath; }
+	get hasAssociatedFilePath() {
+		return this.model.hasAssociatedFilePath;
+	}
 
 	setLanguageId(languageId: string, source?: string): void {
 		this.model.setLanguageId(languageId, source);
@@ -149,9 +169,10 @@ export class UntitledTextEditorInput extends AbstractTextResourceEditorInput imp
 	override async resolve(): Promise<IUntitledTextEditorModel> {
 		if (!this.modelResolve) {
 			this.modelResolve = (async () => {
-
 				// Acquire a model reference
-				this.cachedUntitledTextEditorModelReference = await this.textModelService.createModelReference(this.resource) as IReference<IUntitledTextEditorModel>;
+				this.cachedUntitledTextEditorModelReference = (await this.textModelService.createModelReference(
+					this.resource
+				)) as IReference<IUntitledTextEditorModel>;
 			})();
 		}
 
@@ -168,13 +189,20 @@ export class UntitledTextEditorInput extends AbstractTextResourceEditorInput imp
 	}
 
 	override toUntyped(options?: IUntypedEditorOptions): IUntitledTextResourceEditorInput {
-		const untypedInput: IUntitledTextResourceEditorInput & { resource: URI | undefined; options: ITextEditorOptions } = {
-			resource: this.model.hasAssociatedFilePath ? toLocalResource(this.model.resource, this.environmentService.remoteAuthority, this.pathService.defaultUriScheme) : this.resource,
-			forceUntitled: true,
-			options: {
-				override: this.editorId
-			}
-		};
+		const untypedInput: IUntitledTextResourceEditorInput & { resource: URI | undefined; options: ITextEditorOptions } =
+			{
+				resource: this.model.hasAssociatedFilePath
+					? toLocalResource(
+							this.model.resource,
+							this.environmentService.remoteAuthority,
+							this.pathService.defaultUriScheme
+						)
+					: this.resource,
+				forceUntitled: true,
+				options: {
+					override: this.editorId
+				}
+			};
 
 		if (typeof options?.preserveViewState === 'number') {
 			untypedInput.encoding = this.getEncoding();
@@ -215,7 +243,6 @@ export class UntitledTextEditorInput extends AbstractTextResourceEditorInput imp
 	}
 
 	override dispose(): void {
-
 		// Model
 		this.modelResolve = undefined;
 

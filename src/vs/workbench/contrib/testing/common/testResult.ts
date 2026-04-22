@@ -17,8 +17,28 @@ import { IUriIdentityService } from '../../../../platform/uriIdentity/common/uri
 import { IComputedStateAccessor, refreshComputedState } from './getComputedState.js';
 import { TestCoverage } from './testCoverage.js';
 import { TestId } from './testId.js';
-import { makeEmptyCounts, maxPriority, statesInOrder, terminalStatePriorities, TestStateCount } from './testingStates.js';
-import { getMarkId, IRichLocation, ISerializedTestResults, ITestItem, ITestMessage, ITestOutputMessage, ITestRunTask, ITestTaskState, ResolvedTestRunRequest, TestItemExpandState, TestMessageType, TestResultItem, TestResultState } from './testTypes.js';
+import {
+	makeEmptyCounts,
+	maxPriority,
+	statesInOrder,
+	terminalStatePriorities,
+	TestStateCount
+} from './testingStates.js';
+import {
+	getMarkId,
+	IRichLocation,
+	ISerializedTestResults,
+	ITestItem,
+	ITestMessage,
+	ITestOutputMessage,
+	ITestRunTask,
+	ITestTaskState,
+	ResolvedTestRunRequest,
+	TestItemExpandState,
+	TestMessageType,
+	TestResultItem,
+	TestResultState
+} from './testTypes.js';
 
 export interface ITestRunTaskResults extends ITestRunTask {
 	/**
@@ -112,7 +132,7 @@ const emptyRawOutput: ITaskRawOutput = {
 	onDidWriteData: Event.None,
 	endPromise: Promise.resolve(),
 	getRange: () => VSBuffer.alloc(0),
-	getRangeIter: () => [],
+	getRangeIter: () => []
 };
 
 export class TaskRawOutput implements ITaskRawOutput {
@@ -187,7 +207,7 @@ export class TaskRawOutput implements ITaskRawOutput {
 		// so we place the marker before all trailing trimbytes.
 		const enum TrimBytes {
 			CR = 13,
-			LF = 10,
+			LF = 10
 		}
 
 		const start = VSBuffer.fromString(getMarkCode(marker, true));
@@ -206,7 +226,6 @@ export class TaskRawOutput implements ITaskRawOutput {
 		this.push(data.slice(0, trimLen));
 		this.push(end);
 		this.push(data.slice(trimLen));
-
 
 		return { offset, length };
 	}
@@ -257,18 +276,22 @@ const itemToNode = (controllerId: string, item: ITestItem, parent: string | null
 	children: [],
 	tasks: [],
 	ownComputedState: TestResultState.Unset,
-	computedState: TestResultState.Unset,
+	computedState: TestResultState.Unset
 });
 
 export const enum TestResultItemChangeReason {
 	ComputedStateChange,
 	OwnStateChange,
-	NewMessage,
+	NewMessage
 }
 
 export type TestResultItemChange = { item: TestResultItem; result: ITestResult } & (
 	| { reason: TestResultItemChangeReason.ComputedStateChange }
-	| { reason: TestResultItemChangeReason.OwnStateChange; previousState: TestResultState; previousOwnDuration: number | undefined }
+	| {
+			reason: TestResultItemChangeReason.OwnStateChange;
+			previousState: TestResultState;
+			previousOwnDuration: number | undefined;
+	  }
 	| { reason: TestResultItemChangeReason.NewMessage; message: ITestMessage }
 );
 
@@ -321,7 +344,7 @@ export class LiveTestResult extends Disposable implements ITestResult {
 	private readonly computedStateAccessor: IComputedStateAccessor<TestResultItemWithChildren> = {
 		getOwnState: i => i.ownComputedState,
 		getCurrentComputedState: i => i.computedState,
-		setComputedState: (i, s) => i.computedState = s,
+		setComputedState: (i, s) => (i.computedState = s),
 		getChildren: i => i.children,
 		getParents: i => {
 			const { testById: testByExtId } = this;
@@ -333,7 +356,7 @@ export class LiveTestResult extends Disposable implements ITestResult {
 					}
 				}
 			})();
-		},
+		}
 	};
 
 	constructor(
@@ -341,7 +364,7 @@ export class LiveTestResult extends Disposable implements ITestResult {
 		public readonly persist: boolean,
 		public readonly request: ResolvedTestRunRequest,
 		public readonly insertOrder: number,
-		@ITelemetryService private readonly telemetry: ITelemetryService,
+		@ITelemetryService private readonly telemetry: ITelemetryService
 	) {
 		super();
 	}
@@ -376,7 +399,7 @@ export class LiveTestResult extends Disposable implements ITestResult {
 			offset,
 			length,
 			marker,
-			type: TestMessageType.Output,
+			type: TestMessageType.Output
 		};
 
 		const test = testId && this.testById.get(testId);
@@ -392,7 +415,12 @@ export class LiveTestResult extends Disposable implements ITestResult {
 	 * Adds a new run task to the results.
 	 */
 	public addTask(task: ITestRunTask) {
-		this.tasks.push({ ...task, coverage: observableValue(this, undefined), otherMessages: [], output: new TaskRawOutput() });
+		this.tasks.push({
+			...task,
+			coverage: observableValue(this, undefined),
+			otherMessages: [],
+			output: new TaskRawOutput()
+		});
 
 		for (const test of this.tests) {
 			test.tasks.push({ duration: undefined, messages: [], state: TestResultState.Unset });
@@ -407,7 +435,8 @@ export class LiveTestResult extends Disposable implements ITestResult {
 	 */
 	public addTestChainToRun(controllerId: string, chain: ReadonlyArray<ITestItem>) {
 		let parent = this.testById.get(chain[0].extId);
-		if (!parent) { // must be a test root
+		if (!parent) {
+			// must be a test root
 			parent = this.addTestToRun(controllerId, chain[0], null);
 		}
 
@@ -434,8 +463,10 @@ export class LiveTestResult extends Disposable implements ITestResult {
 
 		// Ignore requests to set the state from one terminal state back to a
 		// "lower" one, e.g. from failed back to passed:
-		if (oldTerminalStatePrio !== undefined &&
-			(newTerminalStatePrio === undefined || newTerminalStatePrio < oldTerminalStatePrio)) {
+		if (
+			oldTerminalStatePrio !== undefined &&
+			(newTerminalStatePrio === undefined || newTerminalStatePrio < oldTerminalStatePrio)
+		) {
 			return;
 		}
 
@@ -467,7 +498,7 @@ export class LiveTestResult extends Disposable implements ITestResult {
 		this.setAllToState(
 			TestResultState.Skipped,
 			taskId,
-			t => t.state === TestResultState.Queued || t.state === TestResultState.Running,
+			t => t.state === TestResultState.Queued || t.state === TestResultState.Running
 		);
 
 		this.endTaskEmitter.fire(index);
@@ -497,7 +528,11 @@ export class LiveTestResult extends Disposable implements ITestResult {
 				comment: 'Test outcome metrics. This helps us understand magnitude of feature use and how to build fix suggestions.';
 				failures: { comment: 'Number of test failures'; classification: 'SystemMetaData'; purpose: 'FeatureInsight' };
 				passes: { comment: 'Number of test failures'; classification: 'SystemMetaData'; purpose: 'FeatureInsight' };
-				controller: { comment: 'The test controller being used'; classification: 'SystemMetaData'; purpose: 'FeatureInsight' };
+				controller: {
+					comment: 'The test controller being used';
+					classification: 'SystemMetaData';
+					purpose: 'FeatureInsight';
+				};
 			}
 		>('test.outcomes', {
 			failures: this.counts[TestResultState.Errored] + this.counts[TestResultState.Failed],
@@ -532,7 +567,11 @@ export class LiveTestResult extends Disposable implements ITestResult {
 	/**
 	 * Updates all tests in the collection to the given state.
 	 */
-	protected setAllToState(state: TestResultState, taskId: string, when: (task: ITestTaskState, item: TestResultItem) => boolean) {
+	protected setAllToState(
+		state: TestResultState,
+		taskId: string,
+		when: (task: ITestTaskState, item: TestResultItem) => boolean
+	) {
 		const index = this.mustGetTaskIndex(taskId);
 		for (const test of this.testById.values()) {
 			if (when(test.tasks[index], test)) {
@@ -541,7 +580,12 @@ export class LiveTestResult extends Disposable implements ITestResult {
 		}
 	}
 
-	private fireUpdateAndRefresh(entry: TestResultItem, taskIndex: number, newState: TestResultState, newOwnDuration?: number) {
+	private fireUpdateAndRefresh(
+		entry: TestResultItem,
+		taskIndex: number,
+		newState: TestResultState,
+		newOwnDuration?: number
+	) {
 		const previousOwnComputed = entry.ownComputedState;
 		const previousOwnDuration = entry.ownDuration;
 		const changeEvent: TestResultItemChange = {
@@ -549,7 +593,7 @@ export class LiveTestResult extends Disposable implements ITestResult {
 			result: this,
 			reason: TestResultItemChangeReason.OwnStateChange,
 			previousState: previousOwnComputed,
-			previousOwnDuration: previousOwnDuration,
+			previousOwnDuration: previousOwnDuration
 		};
 
 		entry.tasks[taskIndex].state = newState;
@@ -570,11 +614,15 @@ export class LiveTestResult extends Disposable implements ITestResult {
 		this.counts[previousOwnComputed]--;
 		this.counts[newOwnComputed]++;
 		refreshComputedState(this.computedStateAccessor, entry).forEach(t =>
-			this.changeEmitter.fire(t === entry ? changeEvent : {
-				item: t,
-				result: this,
-				reason: TestResultItemChangeReason.ComputedStateChange,
-			}),
+			this.changeEmitter.fire(
+				t === entry
+					? changeEvent
+					: {
+							item: t,
+							result: this,
+							reason: TestResultItemChangeReason.ComputedStateChange
+						}
+			)
 		);
 	}
 
@@ -605,23 +653,27 @@ export class LiveTestResult extends Disposable implements ITestResult {
 		return index;
 	}
 
-	private readonly doSerialize = new Lazy((): ISerializedTestResults => ({
-		id: this.id,
-		completedAt: this.completedAt!,
-		tasks: this.tasks.map(t => ({ id: t.id, name: t.name, ctrlId: t.ctrlId, hasCoverage: !!t.coverage.get() })),
-		name: this.name,
-		request: this.request,
-		items: [...this.testById.values()].map(TestResultItem.serializeWithoutMessages),
-	}));
+	private readonly doSerialize = new Lazy(
+		(): ISerializedTestResults => ({
+			id: this.id,
+			completedAt: this.completedAt!,
+			tasks: this.tasks.map(t => ({ id: t.id, name: t.name, ctrlId: t.ctrlId, hasCoverage: !!t.coverage.get() })),
+			name: this.name,
+			request: this.request,
+			items: [...this.testById.values()].map(TestResultItem.serializeWithoutMessages)
+		})
+	);
 
-	private readonly doSerializeWithMessages = new Lazy((): ISerializedTestResults => ({
-		id: this.id,
-		completedAt: this.completedAt!,
-		tasks: this.tasks.map(t => ({ id: t.id, name: t.name, ctrlId: t.ctrlId, hasCoverage: !!t.coverage.get() })),
-		name: this.name,
-		request: this.request,
-		items: [...this.testById.values()].map(TestResultItem.serialize),
-	}));
+	private readonly doSerializeWithMessages = new Lazy(
+		(): ISerializedTestResults => ({
+			id: this.id,
+			completedAt: this.completedAt!,
+			tasks: this.tasks.map(t => ({ id: t.id, name: t.name, ctrlId: t.ctrlId, hasCoverage: !!t.coverage.get() })),
+			name: this.name,
+			request: this.request,
+			items: [...this.testById.values()].map(TestResultItem.serialize)
+		})
+	);
 }
 
 /**
@@ -670,7 +722,7 @@ export class HydratedTestResult implements ITestResult {
 	constructor(
 		identity: IUriIdentityService,
 		private readonly serialized: ISerializedTestResults,
-		private readonly persist = true,
+		private readonly persist = true
 	) {
 		this.id = serialized.id;
 		this.completedAt = serialized.completedAt;

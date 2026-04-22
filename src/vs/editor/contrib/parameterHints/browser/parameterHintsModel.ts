@@ -24,7 +24,7 @@ namespace ParameterHintState {
 	export const enum Type {
 		Default,
 		Active,
-		Pending,
+		Pending
 	}
 
 	export const Default = { type: Type.Default } as const;
@@ -33,22 +33,19 @@ namespace ParameterHintState {
 		readonly type = Type.Pending;
 		constructor(
 			readonly request: CancelablePromise<languages.SignatureHelpResult | undefined | null>,
-			readonly previouslyActiveHints: languages.SignatureHelp | undefined,
-		) { }
+			readonly previouslyActiveHints: languages.SignatureHelp | undefined
+		) {}
 	}
 
 	export class Active {
 		readonly type = Type.Active;
-		constructor(
-			readonly hints: languages.SignatureHelp
-		) { }
+		constructor(readonly hints: languages.SignatureHelp) {}
 	}
 
 	export type State = typeof Default | Pending | Active;
 }
 
 export class ParameterHintsModel extends Disposable {
-
 	private static readonly DEFAULT_DELAY = 120; // ms
 
 	private readonly _onChangedHints = this._register(new Emitter<languages.SignatureHelp | undefined>());
@@ -93,7 +90,9 @@ export class ParameterHintsModel extends Disposable {
 		this.onModelChanged();
 	}
 
-	private get state() { return this._state; }
+	private get state() {
+		return this._state;
+	}
 	private set state(value: ParameterHintState.State) {
 		if (this._state.type === ParameterHintState.Type.Pending) {
 			this._state.request.cancel();
@@ -120,9 +119,10 @@ export class ParameterHintsModel extends Disposable {
 		const triggerId = ++this.triggerId;
 
 		this._pendingTriggers.push(context);
-		this.throttledDelayer.trigger(() => {
-			return this.doTrigger(triggerId);
-		}, delay)
+		this.throttledDelayer
+			.trigger(() => {
+				return this.doTrigger(triggerId);
+			}, delay)
 			.catch(onUnexpectedError);
 	}
 
@@ -133,7 +133,7 @@ export class ParameterHintsModel extends Disposable {
 
 		const length = this.state.hints.signatures.length;
 		const activeSignature = this.state.hints.activeSignature;
-		const last = (activeSignature % length) === (length - 1);
+		const last = activeSignature % length === length - 1;
 		const cycle = this.editor.getOption(EditorOption.parameterHints).cycle;
 
 		// If there is only one signature, or we're on last signature of list
@@ -174,7 +174,8 @@ export class ParameterHintsModel extends Disposable {
 	}
 
 	private async doTrigger(triggerId: number): Promise<boolean> {
-		const isRetrigger = this.state.type === ParameterHintState.Type.Active || this.state.type === ParameterHintState.Type.Pending;
+		const isRetrigger =
+			this.state.type === ParameterHintState.Type.Active || this.state.type === ParameterHintState.Type.Pending;
 		const activeSignatureHelp = this.getLastActiveHints();
 		this.cancel(true);
 
@@ -201,7 +202,8 @@ export class ParameterHintsModel extends Disposable {
 
 		this.state = new ParameterHintState.Pending(
 			createCancelablePromise(token => provideSignatureHelp(this.providers, model, position, triggerContext, token)),
-			activeSignatureHelp);
+			activeSignatureHelp
+		);
 
 		try {
 			const result = await this.state.request;
@@ -235,16 +237,21 @@ export class ParameterHintsModel extends Disposable {
 
 	private getLastActiveHints(): languages.SignatureHelp | undefined {
 		switch (this.state.type) {
-			case ParameterHintState.Type.Active: return this.state.hints;
-			case ParameterHintState.Type.Pending: return this.state.previouslyActiveHints;
-			default: return undefined;
+			case ParameterHintState.Type.Active:
+				return this.state.hints;
+			case ParameterHintState.Type.Pending:
+				return this.state.previouslyActiveHints;
+			default:
+				return undefined;
 		}
 	}
 
 	private get isTriggered(): boolean {
-		return this.state.type === ParameterHintState.Type.Active
-			|| this.state.type === ParameterHintState.Type.Pending
-			|| this.throttledDelayer.isTriggered();
+		return (
+			this.state.type === ParameterHintState.Type.Active ||
+			this.state.type === ParameterHintState.Type.Pending ||
+			this.throttledDelayer.isTriggered()
+		);
 	}
 
 	private onModelChanged(): void {
@@ -285,10 +292,10 @@ export class ParameterHintsModel extends Disposable {
 		const lastCharIndex = text.length - 1;
 		const triggerCharCode = text.charCodeAt(lastCharIndex);
 
-		if (this.triggerChars.has(triggerCharCode) || this.isTriggered && this.retriggerChars.has(triggerCharCode)) {
+		if (this.triggerChars.has(triggerCharCode) || (this.isTriggered && this.retriggerChars.has(triggerCharCode))) {
 			this.trigger({
 				triggerKind: languages.SignatureHelpTriggerKind.TriggerCharacter,
-				triggerCharacter: text.charAt(lastCharIndex),
+				triggerCharacter: text.charAt(lastCharIndex)
 			});
 		}
 	}

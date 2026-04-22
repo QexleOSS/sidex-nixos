@@ -36,7 +36,5 @@ export function gitBashToWindowsPath(path: string, driveLetter?: string): string
  */
 export function windowsToGitBashPath(path: string): string {
 	// Convert Windows path (e.g. C:\Users\foo) to Git Bash path (e.g. /c/Users/foo)
-	return path
-		.replace(/^[a-zA-Z]:\\/, match => `/${match[0].toLowerCase()}/`)
-		.replace(/\\/g, '/');
+	return path.replace(/^[a-zA-Z]:\\/, match => `/${match[0].toLowerCase()}/`).replace(/\\/g, '/');
 }

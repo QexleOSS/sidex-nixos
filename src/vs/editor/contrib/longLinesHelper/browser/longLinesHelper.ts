@@ -16,19 +16,23 @@ class LongLinesHelper extends Disposable implements IEditorContribution {
 		return editor.getContribution<LongLinesHelper>(LongLinesHelper.ID);
 	}
 
-	constructor(
-		private readonly _editor: ICodeEditor,
-	) {
+	constructor(private readonly _editor: ICodeEditor) {
 		super();
 
-		this._register(this._editor.onMouseDown((e) => {
-			const stopRenderingLineAfter = this._editor.getOption(EditorOption.stopRenderingLineAfter);
-			if (stopRenderingLineAfter >= 0 && e.target.type === MouseTargetType.CONTENT_TEXT && e.target.position.column >= stopRenderingLineAfter) {
-				this._editor.updateOptions({
-					stopRenderingLineAfter: -1
-				});
-			}
-		}));
+		this._register(
+			this._editor.onMouseDown(e => {
+				const stopRenderingLineAfter = this._editor.getOption(EditorOption.stopRenderingLineAfter);
+				if (
+					stopRenderingLineAfter >= 0 &&
+					e.target.type === MouseTargetType.CONTENT_TEXT &&
+					e.target.position.column >= stopRenderingLineAfter
+				) {
+					this._editor.updateOptions({
+						stopRenderingLineAfter: -1
+					});
+				}
+			})
+		);
 	}
 }
 

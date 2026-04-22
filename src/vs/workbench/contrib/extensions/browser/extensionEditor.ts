@@ -210,6 +210,16 @@ class VersionWidget extends ExtensionWithDifferentGalleryVersionWidget {
 		}
 	}
 }
+function formatExtensionDate(ts: number): string {
+	if (!ts || Number.isNaN(ts)) {
+		return '';
+	}
+	const d = new Date(ts);
+	const pad = (n: number) => String(n).padStart(2, '0');
+	const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+	const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+	return `${date}, ${time}`;
+}
 
 export class ExtensionEditor extends EditorPane {
 
@@ -559,7 +569,12 @@ export class ExtensionEditor extends EditorPane {
 			this.transientDisposables.add(onClick(template.name, () => this.openerService.open(URI.parse(extension.url!))));
 		}
 
-		const manifest = await this.extensionManifest.get().promise;
+		const manifest = await this.extensionManifest.get().promise.catch((err: Error) => {
+			if (err?.message?.includes('404') || err?.message?.includes('not found')) {
+				return null;
+			}
+			throw err;
+		});
 		if (token.isCancellationRequested) {
 			return;
 		}
@@ -1138,8 +1153,8 @@ class AdditionalDetailsWidget extends Disposable {
 			const resourcesElement = append(extensionResourcesContainer, $('.resources'));
 			for (const [label, icon, uri] of resources) {
 				const resourceElement = append(resourcesElement, $('.resource'));
-				append(resourceElement, $(ThemeIcon.asCSSSelector(icon)));
-				append(resourceElement, $('a', { tabindex: '0' }, label));
+				const anchor = append(resourceElement, $('a', { tabindex: '0' }, label));
+				anchor.setAttribute('title', uri.toString());
 				this.disposables.add(onClick(resourceElement, () => this.openerService.open(uri)));
 				this.disposables.add(this.hoverService.setupManagedHover(getDefaultHoverDelegate('mouse'), resourceElement, uri.toString()));
 			}
@@ -1169,7 +1184,7 @@ class AdditionalDetailsWidget extends Disposable {
 					$('div.more-info-entry-name', undefined, localize('last updated', "Last Updated")),
 					$('div', {
 						'title': new Date(extension.installedTimestamp).toString()
-					}, fromNow(extension.installedTimestamp, true, true, true))
+					}, formatExtensionDate(extension.installedTimestamp))
 				)
 			);
 		}
@@ -1266,13 +1281,13 @@ class AdditionalDetailsWidget extends Disposable {
 					$('div.more-info-entry-name', undefined, localize('published', "Published")),
 					$('div', {
 						'title': new Date(gallery.releaseDate).toString()
-					}, fromNow(gallery.releaseDate, true, true, true))
+					}, formatExtensionDate(gallery.releaseDate))
 				),
 				$('.more-info-entry', undefined,
 					$('div.more-info-entry-name', undefined, localize('last released', "Last Released")),
 					$('div', {
 						'title': new Date(gallery.lastUpdated).toString()
-					}, fromNow(gallery.lastUpdated, true, true, true))
+					}, formatExtensionDate(gallery.lastUpdated))
 				)
 			);
 		}

@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 export namespace inputLatency {
-
 	// Measurements are recorded as totals, the average is calculated when the final measurements
 	// are created.
 	interface ICumulativeMeasurement {
@@ -18,8 +17,6 @@ export namespace inputLatency {
 	const totalInputLatencyTime: ICumulativeMeasurement = { ...totalKeydownTime };
 	let measurementsCount = 0;
 
-
-
 	// The state of each event, this helps ensure the integrity of the measurement and that
 	// something unexpected didn't happen that could skew the measurement.
 	const enum EventPhase {
@@ -30,7 +27,7 @@ export namespace inputLatency {
 	const state = {
 		keydown: EventPhase.Before,
 		input: EventPhase.Before,
-		render: EventPhase.Before,
+		render: EventPhase.Before
 	};
 
 	/**
@@ -104,7 +101,11 @@ export namespace inputLatency {
 	 */
 	export function onRenderStart() {
 		// Render may be triggered during input, but we only measure the following animation frame
-		if (state.keydown === EventPhase.Finished && state.input === EventPhase.Finished && state.render === EventPhase.Before) {
+		if (
+			state.keydown === EventPhase.Finished &&
+			state.input === EventPhase.Finished &&
+			state.render === EventPhase.Before
+		) {
 			// Only measure the first render after keyboard input
 			performance.mark('render/start');
 			state.render = EventPhase.InProgress;
@@ -156,7 +157,11 @@ export namespace inputLatency {
 	 *    - the browser oftentimes emits a `selectionchange` event after an `input`, so we do a direct check there (D).
 	 */
 	function recordIfFinished() {
-		if (state.keydown === EventPhase.Finished && state.input === EventPhase.Finished && state.render === EventPhase.Finished) {
+		if (
+			state.keydown === EventPhase.Finished &&
+			state.input === EventPhase.Finished &&
+			state.render === EventPhase.Finished
+		) {
 			performance.mark('inputlatency/end');
 
 			performance.measure('keydown', 'keydown/start', 'keydown/end');
@@ -259,7 +264,7 @@ export namespace inputLatency {
 		return {
 			average: cumulative.total / measurementsCount,
 			max: cumulative.max,
-			min: cumulative.min,
+			min: cumulative.min
 		};
 	}
 
@@ -268,5 +273,4 @@ export namespace inputLatency {
 		cumulative.min = Number.MAX_VALUE;
 		cumulative.max = 0;
 	}
-
 }

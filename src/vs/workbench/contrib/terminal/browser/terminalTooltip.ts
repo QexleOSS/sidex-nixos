@@ -13,15 +13,22 @@ import type { ITerminalStatusHoverAction } from '../common/terminal.js';
 import { TerminalStorageKeys } from '../common/terminalStorageKeys.js';
 import { ITerminalInstance } from './terminal.js';
 
-export function getInstanceHoverInfo(instance: ITerminalInstance, storageService: IStorageService): { content: MarkdownString; actions: IHoverAction[] } {
-	const showDetailed = parseInt(storageService.get(TerminalStorageKeys.TabsShowDetailed, StorageScope.APPLICATION) ?? '0');
+export function getInstanceHoverInfo(
+	instance: ITerminalInstance,
+	storageService: IStorageService
+): { content: MarkdownString; actions: IHoverAction[] } {
+	const showDetailed = parseInt(
+		storageService.get(TerminalStorageKeys.TabsShowDetailed, StorageScope.APPLICATION) ?? '0'
+	);
 	let statusString = '';
 	const statuses = instance.statusList.statuses;
 	const actions: ITerminalStatusHoverAction[] = [];
 	for (const status of statuses) {
 		if (showDetailed) {
 			if (status.detailedTooltip ?? status.tooltip) {
-				statusString += `\n\n---\n\n${status.icon ? `$(${status.icon?.id}) ` : ''}` + (status.detailedTooltip ?? status.tooltip ?? '');
+				statusString +=
+					`\n\n---\n\n${status.icon ? `$(${status.icon?.id}) ` : ''}` +
+					(status.detailedTooltip ?? status.tooltip ?? '');
 			}
 		} else {
 			if (status.tooltip) {
@@ -36,8 +43,13 @@ export function getInstanceHoverInfo(instance: ITerminalInstance, storageService
 		commandId: 'toggleDetailedInfo',
 		label: showDetailed ? localize('hideDetails', 'Hide Details') : localize('showDetails', 'Show Details'),
 		run() {
-			storageService.store(TerminalStorageKeys.TabsShowDetailed, (showDetailed + 1) % 2, StorageScope.APPLICATION, StorageTarget.USER);
-		},
+			storageService.store(
+				TerminalStorageKeys.TabsShowDetailed,
+				(showDetailed + 1) % 2,
+				StorageScope.APPLICATION,
+				StorageTarget.USER
+			);
+		}
 	});
 
 	const shellProcessString = getShellProcessTooltip(instance, !!showDetailed);
@@ -50,7 +62,14 @@ export function getShellProcessTooltip(instance: ITerminalInstance, showDetailed
 	const lines: string[] = [];
 
 	if (instance.processId && instance.processId > 0) {
-		lines.push(localize({ key: 'shellProcessTooltip.processId', comment: ['The first arg is "PID" which shouldn\'t be translated'] }, "Process ID ({0}): {1}", 'PID', instance.processId) + '\n');
+		lines.push(
+			localize(
+				{ key: 'shellProcessTooltip.processId', comment: ['The first arg is "PID" which shouldn\'t be translated'] },
+				'Process ID ({0}): {1}',
+				'PID',
+				instance.processId
+			) + '\n'
+		);
 	}
 
 	if (instance.shellLaunchConfig.executable) {
@@ -63,7 +82,9 @@ export function getShellProcessTooltip(instance: ITerminalInstance, showDetailed
 		} else {
 			commandLine += instance.shellLaunchConfig.executable;
 		}
-		const args = asArray(instance.injectedArgs || instance.shellLaunchConfig.args || []).map(x => x.match(/\s/) ? `'${x}'` : x).join(' ');
+		const args = asArray(instance.injectedArgs || instance.shellLaunchConfig.args || [])
+			.map(x => (x.match(/\s/) ? `'${x}'` : x))
+			.join(' ');
 		if (args) {
 			commandLine += ` ${args}`;
 		}
@@ -73,4 +94,3 @@ export function getShellProcessTooltip(instance: ITerminalInstance, showDetailed
 
 	return lines.length ? `\n\n---\n\n${lines.join('\n')}` : '';
 }
-

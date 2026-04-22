@@ -8,7 +8,15 @@ import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { Event } from '../../../../base/common/event.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { FocusMode } from '../../../../platform/native/common/native.js';
-import { IWindowOpenable, IOpenWindowOptions, IOpenEmptyWindowOptions, IPoint, IRectangle, IOpenedMainWindow, IOpenedAuxiliaryWindow } from '../../../../platform/window/common/window.js';
+import {
+	IWindowOpenable,
+	IOpenWindowOptions,
+	IOpenEmptyWindowOptions,
+	IPoint,
+	IRectangle,
+	IOpenedMainWindow,
+	IOpenedAuxiliaryWindow
+} from '../../../../platform/window/common/window.js';
 
 export const IHostService = createDecorator<IHostService>('hostService');
 
@@ -35,7 +43,6 @@ export interface IToastResult {
  * environments.
  */
 export interface IHostService {
-
 	readonly _serviceBrand: undefined;
 
 	//#region Focus

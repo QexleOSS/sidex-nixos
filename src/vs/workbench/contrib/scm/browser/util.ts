@@ -3,13 +3,30 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ISCMHistoryItem, SCMHistoryItemChangeViewModelTreeElement, SCMHistoryItemLoadMoreTreeElement, SCMHistoryItemViewModelTreeElement } from '../common/history.js';
-import { ISCMResource, ISCMRepository, ISCMResourceGroup, ISCMInput, ISCMActionButton, ISCMViewService, ISCMProvider } from '../common/scm.js';
+import {
+	ISCMHistoryItem,
+	SCMHistoryItemChangeViewModelTreeElement,
+	SCMHistoryItemLoadMoreTreeElement,
+	SCMHistoryItemViewModelTreeElement
+} from '../common/history.js';
+import {
+	ISCMResource,
+	ISCMRepository,
+	ISCMResourceGroup,
+	ISCMInput,
+	ISCMActionButton,
+	ISCMViewService,
+	ISCMProvider
+} from '../common/scm.js';
 import { IMenu, MenuItemAction } from '../../../../platform/actions/common/actions.js';
 import { IActionViewItemProvider } from '../../../../base/browser/ui/actionbar/actionbar.js';
 import { IDisposable } from '../../../../base/common/lifecycle.js';
 import { Action, IAction } from '../../../../base/common/actions.js';
-import { createActionViewItem, getActionBarActions, getContextMenuActions } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
+import {
+	createActionViewItem,
+	getActionBarActions,
+	getContextMenuActions
+} from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
 import { equals } from '../../../../base/common/arrays.js';
 import { ActionViewItem, IBaseActionViewItemOptions } from '../../../../base/browser/ui/actionbar/actionViewItems.js';
 import { renderLabelWithIcons } from '../../../../base/browser/ui/iconLabel/iconLabels.js';
@@ -23,7 +40,10 @@ import { Codicon } from '../../../../base/common/codicons.js';
 import { SCMArtifactGroupTreeElement, SCMArtifactTreeElement } from '../common/artifact.js';
 
 export function isSCMViewService(element: unknown): element is ISCMViewService {
-	return Array.isArray((element as ISCMViewService).repositories) && Array.isArray((element as ISCMViewService).visibleRepositories);
+	return (
+		Array.isArray((element as ISCMViewService).repositories) &&
+		Array.isArray((element as ISCMViewService).visibleRepositories)
+	);
 }
 
 export function isSCMRepository(element: unknown): element is ISCMRepository {
@@ -58,11 +78,15 @@ export function isSCMHistoryItemLoadMoreTreeElement(element: unknown): element i
 	return (element as SCMHistoryItemLoadMoreTreeElement).type === 'historyItemLoadMore';
 }
 
-export function isSCMHistoryItemChangeViewModelTreeElement(element: unknown): element is SCMHistoryItemChangeViewModelTreeElement {
+export function isSCMHistoryItemChangeViewModelTreeElement(
+	element: unknown
+): element is SCMHistoryItemChangeViewModelTreeElement {
 	return (element as SCMHistoryItemChangeViewModelTreeElement).type === 'historyItemChangeViewModel';
 }
 
-export function isSCMHistoryItemChangeNode(element: unknown): element is IResourceNode<ISCMHistoryItem, SCMHistoryItemChangeViewModelTreeElement> {
+export function isSCMHistoryItemChangeNode(
+	element: unknown
+): element is IResourceNode<ISCMHistoryItem, SCMHistoryItemChangeViewModelTreeElement> {
 	return ResourceTree.isResourceNode(element) && isSCMHistoryItemViewModelTreeElement(element.context);
 }
 
@@ -70,7 +94,9 @@ export function isSCMArtifactGroupTreeElement(element: unknown): element is SCMA
 	return (element as SCMArtifactGroupTreeElement).type === 'artifactGroup';
 }
 
-export function isSCMArtifactNode(element: unknown): element is IResourceNode<SCMArtifactTreeElement, SCMArtifactGroupTreeElement> {
+export function isSCMArtifactNode(
+	element: unknown
+): element is IResourceNode<SCMArtifactTreeElement, SCMArtifactGroupTreeElement> {
 	return ResourceTree.isResourceNode(element) && isSCMArtifactGroupTreeElement(element.context);
 }
 
@@ -86,7 +112,12 @@ const compareActions = (a: IAction, b: IAction) => {
 	return a.id === b.id && a.enabled === b.enabled;
 };
 
-export function connectPrimaryMenu(menu: IMenu, callback: (primary: IAction[], secondary: IAction[]) => void, primaryGroup?: string, arg?: unknown): IDisposable {
+export function connectPrimaryMenu(
+	menu: IMenu,
+	callback: (primary: IAction[], secondary: IAction[]) => void,
+	primaryGroup?: string,
+	arg?: unknown
+): IDisposable {
 	let cachedPrimary: IAction[] = [];
 	let cachedSecondary: IAction[] = [];
 
@@ -147,15 +178,14 @@ class StatusBarActionViewItem extends ActionViewItem {
 		if (this.options.label && this.label) {
 			// Convert text nodes to span elements to enable
 			// text overflow on the left hand side of the label
-			const elements = renderLabelWithIcons(this._commandTitle ?? this.action.label)
-				.map(element => {
-					if (typeof element === 'string') {
-						const span = document.createElement('span');
-						span.textContent = element;
-						return span;
-					}
-					return element;
-				});
+			const elements = renderLabelWithIcons(this._commandTitle ?? this.action.label).map(element => {
+				if (typeof element === 'string') {
+					const span = document.createElement('span');
+					span.textContent = element;
+					return span;
+				}
+				return element;
+			});
 
 			reset(this.label, ...elements);
 		}
@@ -211,13 +241,9 @@ export function getStatusBarCommandGenericName(command: Command): string | undef
 	if (typeof command.arguments?.[0] === 'string') {
 		const lastIndex = command.arguments[0].lastIndexOf('/');
 
-		genericName = lastIndex !== -1
-			? command.arguments[0].substring(0, lastIndex)
-			: command.arguments[0];
+		genericName = lastIndex !== -1 ? command.arguments[0].substring(0, lastIndex) : command.arguments[0];
 
-		genericName = genericName
-			.replace(/^(?:git\.|remoteHub\.)/, '')
-			.trim();
+		genericName = genericName.replace(/^(?:git\.|remoteHub\.)/, '').trim();
 
 		if (genericName.length === 0) {
 			return undefined;

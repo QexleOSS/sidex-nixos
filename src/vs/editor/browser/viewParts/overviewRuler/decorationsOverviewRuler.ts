@@ -10,7 +10,13 @@ import { ViewPart } from '../../view/viewPart.js';
 import { Position } from '../../../common/core/position.js';
 import { IEditorConfiguration } from '../../../common/config/editorConfiguration.js';
 import { TokenizationRegistry } from '../../../common/languages.js';
-import { editorCursorForeground, editorOverviewRulerBorder, editorOverviewRulerBackground, editorMultiCursorSecondaryForeground, editorMultiCursorPrimaryForeground } from '../../../common/core/editorColorRegistry.js';
+import {
+	editorCursorForeground,
+	editorOverviewRulerBorder,
+	editorOverviewRulerBackground,
+	editorMultiCursorSecondaryForeground,
+	editorMultiCursorPrimaryForeground
+} from '../../../common/core/editorColorRegistry.js';
 import { RenderingContext, RestrictedRenderingContext } from '../../view/renderingContext.js';
 import { ViewContext } from '../../../common/viewModel/viewContext.js';
 import { EditorTheme } from '../../../common/editorTheme.js';
@@ -20,7 +26,6 @@ import { OverviewRulerDecorationsGroup } from '../../../common/viewModel.js';
 import { equals } from '../../../../base/common/arrays.js';
 
 class Settings {
-
 	public readonly lineHeight: number;
 	public readonly pixelRatio: number;
 	public readonly overviewRulerLanes: number;
@@ -120,8 +125,9 @@ class Settings {
 					rightOffset, // Right
 					leftOffset, // Left | Right
 					centerOffset, // Center | Right
-					leftOffset, // Left | Center | Right
-				], [
+					leftOffset // Left | Center | Right
+				],
+				[
 					0,
 					leftWidth, // Left
 					centerWidth, // Center
@@ -129,7 +135,7 @@ class Settings {
 					rightWidth, // Right
 					leftWidth + centerWidth + rightWidth, // Left | Right
 					centerWidth + rightWidth, // Center | Right
-					leftWidth + centerWidth + rightWidth, // Left | Center | Right
+					leftWidth + centerWidth + rightWidth // Left | Center | Right
 				]
 			];
 		} else if (laneCount === 2) {
@@ -147,8 +153,9 @@ class Settings {
 					rightOffset, // Right
 					leftOffset, // Left | Right
 					leftOffset, // Center | Right
-					leftOffset, // Left | Center | Right
-				], [
+					leftOffset // Left | Center | Right
+				],
+				[
 					0,
 					leftWidth, // Left
 					leftWidth, // Center
@@ -156,7 +163,7 @@ class Settings {
 					rightWidth, // Right
 					leftWidth + rightWidth, // Left | Right
 					leftWidth + rightWidth, // Center | Right
-					leftWidth + rightWidth, // Left | Center | Right
+					leftWidth + rightWidth // Left | Center | Right
 				]
 			];
 		} else {
@@ -172,8 +179,9 @@ class Settings {
 					offset, // Right
 					offset, // Left | Right
 					offset, // Center | Right
-					offset, // Left | Center | Right
-				], [
+					offset // Left | Center | Right
+				],
+				[
 					0,
 					width, // Left
 					width, // Center
@@ -181,7 +189,7 @@ class Settings {
 					width, // Right
 					width, // Left | Right
 					width, // Center | Right
-					width, // Left | Center | Right
+					width // Left | Center | Right
 				]
 			];
 		}
@@ -189,23 +197,23 @@ class Settings {
 
 	public equals(other: Settings): boolean {
 		return (
-			this.lineHeight === other.lineHeight
-			&& this.pixelRatio === other.pixelRatio
-			&& this.overviewRulerLanes === other.overviewRulerLanes
-			&& this.renderBorder === other.renderBorder
-			&& this.borderColor === other.borderColor
-			&& this.hideCursor === other.hideCursor
-			&& this.cursorColorSingle === other.cursorColorSingle
-			&& this.cursorColorPrimary === other.cursorColorPrimary
-			&& this.cursorColorSecondary === other.cursorColorSecondary
-			&& this.themeType === other.themeType
-			&& Color.equals(this.backgroundColor, other.backgroundColor)
-			&& this.top === other.top
-			&& this.right === other.right
-			&& this.domWidth === other.domWidth
-			&& this.domHeight === other.domHeight
-			&& this.canvasWidth === other.canvasWidth
-			&& this.canvasHeight === other.canvasHeight
+			this.lineHeight === other.lineHeight &&
+			this.pixelRatio === other.pixelRatio &&
+			this.overviewRulerLanes === other.overviewRulerLanes &&
+			this.renderBorder === other.renderBorder &&
+			this.borderColor === other.borderColor &&
+			this.hideCursor === other.hideCursor &&
+			this.cursorColorSingle === other.cursorColorSingle &&
+			this.cursorColorPrimary === other.cursorColorPrimary &&
+			this.cursorColorSecondary === other.cursorColorSecondary &&
+			this.themeType === other.themeType &&
+			Color.equals(this.backgroundColor, other.backgroundColor) &&
+			this.top === other.top &&
+			this.right === other.right &&
+			this.domWidth === other.domWidth &&
+			this.domHeight === other.domHeight &&
+			this.canvasWidth === other.canvasWidth &&
+			this.canvasHeight === other.canvasHeight
 		);
 	}
 }
@@ -233,7 +241,6 @@ const enum ShouldRenderValue {
 }
 
 export class DecorationsOverviewRuler extends ViewPart {
-
 	private _actualShouldRender: ShouldRenderValue = ShouldRenderValue.NotNeeded;
 
 	private readonly _tokensColorTrackerListener: IDisposable;
@@ -256,7 +263,7 @@ export class DecorationsOverviewRuler extends ViewPart {
 
 		this._updateSettings(false);
 
-		this._tokensColorTrackerListener = TokenizationRegistry.onDidChange((e) => {
+		this._tokensColorTrackerListener = TokenizationRegistry.onDidChange(e => {
 			if (e.changedColorMap) {
 				this._updateSettings(true);
 			}
@@ -366,10 +373,20 @@ export class DecorationsOverviewRuler extends ViewPart {
 		const decorations = this._context.viewModel.getAllOverviewRulerDecorations(this._context.theme);
 		decorations.sort(OverviewRulerDecorationsGroup.compareByRenderingProps);
 
-		if (this._actualShouldRender === ShouldRenderValue.Maybe && !OverviewRulerDecorationsGroup.equalsArr(this._renderedDecorations, decorations)) {
+		if (
+			this._actualShouldRender === ShouldRenderValue.Maybe &&
+			!OverviewRulerDecorationsGroup.equalsArr(this._renderedDecorations, decorations)
+		) {
 			this._actualShouldRender = ShouldRenderValue.Needed;
 		}
-		if (this._actualShouldRender === ShouldRenderValue.Maybe && !equals(this._renderedCursorPositions, this._cursorPositions, (a, b) => a.position.lineNumber === b.position.lineNumber && a.color === b.color)) {
+		if (
+			this._actualShouldRender === ShouldRenderValue.Maybe &&
+			!equals(
+				this._renderedCursorPositions,
+				this._cursorPositions,
+				(a, b) => a.position.lineNumber === b.position.lineNumber && a.color === b.color
+			)
+		) {
 			this._actualShouldRender = ShouldRenderValue.Needed;
 		}
 		if (this._actualShouldRender === ShouldRenderValue.Maybe) {
@@ -410,8 +427,6 @@ export class DecorationsOverviewRuler extends ViewPart {
 
 		const x = this._settings.x;
 		const w = this._settings.w;
-
-
 
 		for (const decorationGroup of decorations) {
 			const color = decorationGroup.color;

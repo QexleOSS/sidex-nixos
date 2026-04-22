@@ -15,7 +15,6 @@ import { InstantiationType, registerSingleton } from '../../../../platform/insta
 import { IWorkingCopyHistoryService } from '../common/workingCopyHistory.js';
 
 export class BrowserWorkingCopyHistoryService extends WorkingCopyHistoryService {
-
 	constructor(
 		@IFileService fileService: IFileService,
 		@IRemoteAgentService remoteAgentService: IRemoteAgentService,
@@ -25,7 +24,15 @@ export class BrowserWorkingCopyHistoryService extends WorkingCopyHistoryService 
 		@ILogService logService: ILogService,
 		@IConfigurationService configurationService: IConfigurationService
 	) {
-		super(fileService, remoteAgentService, environmentService, uriIdentityService, labelService, logService, configurationService);
+		super(
+			fileService,
+			remoteAgentService,
+			environmentService,
+			uriIdentityService,
+			labelService,
+			logService,
+			configurationService
+		);
 	}
 
 	protected getModelOptions(): IWorkingCopyHistoryModelOptions {

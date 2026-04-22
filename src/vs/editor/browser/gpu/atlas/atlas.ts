@@ -103,12 +103,10 @@ export const enum UsagePreviewColors {
 	Unused = '#808080',
 	Used = '#4040FF',
 	Wasted = '#FF0000',
-	Restricted = '#FF000088',
+	Restricted = '#FF000088'
 }
 
-export type GlyphMap<T> = NKeyMap<T, [
-	chars: string,
-	tokenMetadata: number,
-	decorationStyleSetId: number,
-	rasterizerCacheKey: string,
-]>;
+export type GlyphMap<T> = NKeyMap<
+	T,
+	[chars: string, tokenMetadata: number, decorationStyleSetId: number, rasterizerCacheKey: string]
+>;

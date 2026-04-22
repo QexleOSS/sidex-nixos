@@ -12,16 +12,18 @@ import { InstantiationType, registerSingleton } from '../../instantiation/common
 import { createDecorator, IInstantiationService } from '../../instantiation/common/instantiation.js';
 import { MenuId } from '../common/actions.js';
 
-
 export const IActionViewItemService = createDecorator<IActionViewItemService>('IActionViewItemService');
 
-
 export interface IActionViewItemFactory {
-	(action: IAction, options: IActionViewItemOptions, instantiationService: IInstantiationService, windowId: number): IActionViewItem | undefined;
+	(
+		action: IAction,
+		options: IActionViewItemOptions,
+		instantiationService: IInstantiationService,
+		windowId: number
+	): IActionViewItem | undefined;
 }
 
 export interface IActionViewItemService {
-
 	_serviceBrand: undefined;
 
 	readonly onDidChange: Event<MenuId>;
@@ -38,7 +40,12 @@ export class NullActionViewItemService implements IActionViewItemService {
 
 	readonly onDidChange: Event<MenuId> = Event.None;
 
-	register(menu: MenuId, commandId: string | MenuId, provider: IActionViewItemFactory, event?: Event<unknown>): IDisposable {
+	register(
+		menu: MenuId,
+		commandId: string | MenuId,
+		provider: IActionViewItemFactory,
+		event?: Event<unknown>
+	): IDisposable {
 		return Disposable.None;
 	}
 
@@ -48,7 +55,6 @@ export class NullActionViewItemService implements IActionViewItemService {
 }
 
 class ActionViewItemService implements IActionViewItemService {
-
 	declare _serviceBrand: undefined;
 
 	private readonly _providers = new Map<string, IActionViewItemFactory>();
@@ -60,7 +66,12 @@ class ActionViewItemService implements IActionViewItemService {
 		this._onDidChange.dispose();
 	}
 
-	register(menu: MenuId, commandOrSubmenuId: string | MenuId, provider: IActionViewItemFactory, event?: Event<unknown>): IDisposable {
+	register(
+		menu: MenuId,
+		commandOrSubmenuId: string | MenuId,
+		provider: IActionViewItemFactory,
+		event?: Event<unknown>
+	): IDisposable {
 		const id = this._makeKey(menu, commandOrSubmenuId);
 		if (this._providers.has(id)) {
 			throw new Error(`A provider for the command ${commandOrSubmenuId} and menu ${menu} is already registered.`);
@@ -82,7 +93,7 @@ class ActionViewItemService implements IActionViewItemService {
 	}
 
 	private _makeKey(menu: MenuId, commandOrMenuId: string | MenuId) {
-		return `${menu.id}/${(commandOrMenuId instanceof MenuId ? commandOrMenuId.id : commandOrMenuId)}`;
+		return `${menu.id}/${commandOrMenuId instanceof MenuId ? commandOrMenuId.id : commandOrMenuId}`;
 	}
 }
 

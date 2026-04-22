@@ -34,13 +34,22 @@ import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
 import { ILabelService } from '../../../../platform/label/common/label.js';
-import { asCssVariable, badgeBackground, badgeForeground, contrastBorder } from '../../../../platform/theme/common/colorRegistry.js';
-import { isWorkspaceFolder, IWorkspaceContextService, IWorkspaceFolder, WorkbenchState } from '../../../../platform/workspace/common/workspace.js';
+import {
+	asCssVariable,
+	badgeBackground,
+	badgeForeground,
+	contrastBorder
+} from '../../../../platform/theme/common/colorRegistry.js';
+import {
+	isWorkspaceFolder,
+	IWorkspaceContextService,
+	IWorkspaceFolder,
+	WorkbenchState
+} from '../../../../platform/workspace/common/workspace.js';
 import { IWorkbenchEnvironmentService } from '../../../services/environment/common/environmentService.js';
 import { settingsEditIcon, settingsScopeDropDownIcon } from './preferencesIcons.js';
 
 export class FolderSettingsActionViewItem extends BaseActionViewItem {
-
 	private _folder: IWorkspaceFolder | null;
 	private _folderSettingCounts = new Map<string, number>();
 
@@ -55,7 +64,7 @@ export class FolderSettingsActionViewItem extends BaseActionViewItem {
 		action: IAction,
 		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
 		@IContextMenuService private readonly contextMenuService: IContextMenuService,
-		@IHoverService private readonly hoverService: IHoverService,
+		@IHoverService private readonly hoverService: IHoverService
 	) {
 		super(null, action);
 		const workspace = this.contextService.getWorkspace();
@@ -89,13 +98,23 @@ export class FolderSettingsActionViewItem extends BaseActionViewItem {
 		this.labelElement = DOM.$('.action-title');
 		this.detailsElement = DOM.$('.action-details');
 		this.dropDownElement = DOM.$('.dropdown-icon.hide' + ThemeIcon.asCSSSelector(settingsScopeDropDownIcon));
-		this.anchorElement = DOM.$('a.action-label.folder-settings', {
-			role: 'button',
-			'aria-haspopup': 'true',
-			'tabindex': '0'
-		}, this.labelElement, this.detailsElement, this.dropDownElement);
-		this.anchorElementHover = this._register(this.hoverService.setupManagedHover(getDefaultHoverDelegate('mouse'), this.anchorElement, ''));
-		this._register(DOM.addDisposableListener(this.anchorElement, DOM.EventType.MOUSE_DOWN, e => DOM.EventHelper.stop(e)));
+		this.anchorElement = DOM.$(
+			'a.action-label.folder-settings',
+			{
+				role: 'button',
+				'aria-haspopup': 'true',
+				tabindex: '0'
+			},
+			this.labelElement,
+			this.detailsElement,
+			this.dropDownElement
+		);
+		this.anchorElementHover = this._register(
+			this.hoverService.setupManagedHover(getDefaultHoverDelegate('mouse'), this.anchorElement, '')
+		);
+		this._register(
+			DOM.addDisposableListener(this.anchorElement, DOM.EventType.MOUSE_DOWN, e => DOM.EventHelper.stop(e))
+		);
 		this._register(DOM.addDisposableListener(this.anchorElement, DOM.EventType.CLICK, e => this.onClick(e)));
 		this._register(DOM.addDisposableListener(this.container, DOM.EventType.KEY_UP, e => this.onKeyUp(e)));
 
@@ -148,7 +167,7 @@ export class FolderSettingsActionViewItem extends BaseActionViewItem {
 
 	private update(): void {
 		let total = 0;
-		this._folderSettingCounts.forEach(n => total += n);
+		this._folderSettingCounts.forEach(n => (total += n));
 
 		const workspace = this.contextService.getWorkspace();
 		if (this._folder) {
@@ -184,18 +203,20 @@ export class FolderSettingsActionViewItem extends BaseActionViewItem {
 		const actions: IAction[] = [];
 		const workspaceFolders = this.contextService.getWorkspace().folders;
 		if (this.contextService.getWorkbenchState() === WorkbenchState.WORKSPACE && workspaceFolders.length > 0) {
-			actions.push(...workspaceFolders.map((folder, index) => {
-				const folderCount = this._folderSettingCounts.get(folder.uri.toString());
-				return {
-					id: 'folderSettingsTarget' + index,
-					label: this.labelWithCount(folder.name, folderCount),
-					tooltip: this.labelWithCount(folder.name, folderCount),
-					checked: !!this.folder && isEqual(this.folder.uri, folder.uri),
-					enabled: true,
-					class: undefined,
-					run: () => this._action.run(folder)
-				};
-			}));
+			actions.push(
+				...workspaceFolders.map((folder, index) => {
+					const folderCount = this._folderSettingCounts.get(folder.uri.toString());
+					return {
+						id: 'folderSettingsTarget' + index,
+						label: this.labelWithCount(folder.name, folderCount),
+						tooltip: this.labelWithCount(folder.name, folderCount),
+						checked: !!this.folder && isEqual(this.folder.uri, folder.uri),
+						enabled: true,
+						class: undefined,
+						run: () => this._action.run(folder)
+					};
+				})
+			);
 		}
 		return actions;
 	}
@@ -210,14 +231,18 @@ export class FolderSettingsActionViewItem extends BaseActionViewItem {
 	}
 }
 
-export type SettingsTarget = ConfigurationTarget.APPLICATION | ConfigurationTarget.USER_LOCAL | ConfigurationTarget.USER_REMOTE | ConfigurationTarget.WORKSPACE | URI;
+export type SettingsTarget =
+	| ConfigurationTarget.APPLICATION
+	| ConfigurationTarget.USER_LOCAL
+	| ConfigurationTarget.USER_REMOTE
+	| ConfigurationTarget.WORKSPACE
+	| URI;
 
 export interface ISettingsTargetsWidgetOptions {
 	enableRemoteSettings?: boolean;
 }
 
 export class SettingsTargetsWidget extends Widget {
-
 	private settingsSwitcherBar!: ActionBar;
 	private userLocalSettings!: Action;
 	private userRemoteSettings!: Action;
@@ -250,41 +275,63 @@ export class SettingsTargetsWidget extends Widget {
 	private resetLabels() {
 		const remoteAuthority = this.environmentService.remoteAuthority;
 		const hostLabel = remoteAuthority && this.labelService.getHostLabel(Schemas.vscodeRemote, remoteAuthority);
-		this.userLocalSettings.label = localize('userSettings', "User");
-		this.userRemoteSettings.label = localize('userSettingsRemote', "Remote") + (hostLabel ? ` [${hostLabel}]` : '');
-		this.workspaceSettings.label = localize('workspaceSettings', "Workspace");
-		this.folderSettingsAction.label = localize('folderSettings', "Folder");
+		this.userLocalSettings.label = localize('userSettings', 'User');
+		this.userRemoteSettings.label = localize('userSettingsRemote', 'Remote') + (hostLabel ? ` [${hostLabel}]` : '');
+		this.workspaceSettings.label = localize('workspaceSettings', 'Workspace');
+		this.folderSettingsAction.label = localize('folderSettings', 'Folder');
 	}
 
 	private create(parent: HTMLElement): void {
 		const settingsTabsWidget = DOM.append(parent, DOM.$('.settings-tabs-widget'));
-		this.settingsSwitcherBar = this._register(new ActionBar(settingsTabsWidget, {
-			orientation: ActionsOrientation.HORIZONTAL,
-			focusOnlyEnabledItems: true,
-			ariaLabel: localize('settingsSwitcherBarAriaLabel', "Settings Switcher"),
-			ariaRole: 'tablist',
-			actionViewItemProvider: (action: IAction, options: IActionViewItemOptions) => action.id === 'folderSettings' ? this.folderSettings : undefined
-		}));
+		this.settingsSwitcherBar = this._register(
+			new ActionBar(settingsTabsWidget, {
+				orientation: ActionsOrientation.HORIZONTAL,
+				focusOnlyEnabledItems: true,
+				ariaLabel: localize('settingsSwitcherBarAriaLabel', 'Settings Switcher'),
+				ariaRole: 'tablist',
+				actionViewItemProvider: (action: IAction, options: IActionViewItemOptions) =>
+					action.id === 'folderSettings' ? this.folderSettings : undefined
+			})
+		);
 
-		this.userLocalSettings = this._register(new Action('userSettings', '', '.settings-tab', true, () => this.updateTarget(ConfigurationTarget.USER_LOCAL)));
-		this.userLocalSettings.tooltip = localize('userSettings', "User");
+		this.userLocalSettings = this._register(
+			new Action('userSettings', '', '.settings-tab', true, () => this.updateTarget(ConfigurationTarget.USER_LOCAL))
+		);
+		this.userLocalSettings.tooltip = localize('userSettings', 'User');
 
-		this.userRemoteSettings = this._register(new Action('userSettingsRemote', '', '.settings-tab', true, () => this.updateTarget(ConfigurationTarget.USER_REMOTE)));
+		this.userRemoteSettings = this._register(
+			new Action('userSettingsRemote', '', '.settings-tab', true, () =>
+				this.updateTarget(ConfigurationTarget.USER_REMOTE)
+			)
+		);
 		const remoteAuthority = this.environmentService.remoteAuthority;
 		const hostLabel = remoteAuthority && this.labelService.getHostLabel(Schemas.vscodeRemote, remoteAuthority);
-		this.userRemoteSettings.tooltip = localize('userSettingsRemote', "Remote") + (hostLabel ? ` [${hostLabel}]` : '');
+		this.userRemoteSettings.tooltip = localize('userSettingsRemote', 'Remote') + (hostLabel ? ` [${hostLabel}]` : '');
 
-		this.workspaceSettings = this._register(new Action('workspaceSettings', '', '.settings-tab', false, () => this.updateTarget(ConfigurationTarget.WORKSPACE)));
+		this.workspaceSettings = this._register(
+			new Action('workspaceSettings', '', '.settings-tab', false, () =>
+				this.updateTarget(ConfigurationTarget.WORKSPACE)
+			)
+		);
 
-		this.folderSettingsAction = this._register(new Action('folderSettings', '', '.settings-tab', false, async folder => {
-			this.updateTarget(isWorkspaceFolder(folder) ? folder.uri : ConfigurationTarget.USER_LOCAL);
-		}));
-		this.folderSettings = this._register(this.instantiationService.createInstance(FolderSettingsActionViewItem, this.folderSettingsAction));
+		this.folderSettingsAction = this._register(
+			new Action('folderSettings', '', '.settings-tab', false, async folder => {
+				this.updateTarget(isWorkspaceFolder(folder) ? folder.uri : ConfigurationTarget.USER_LOCAL);
+			})
+		);
+		this.folderSettings = this._register(
+			this.instantiationService.createInstance(FolderSettingsActionViewItem, this.folderSettingsAction)
+		);
 
 		this.resetLabels();
 		this.update();
 
-		this.settingsSwitcherBar.push([this.userLocalSettings, this.userRemoteSettings, this.workspaceSettings, this.folderSettingsAction]);
+		this.settingsSwitcherBar.push([
+			this.userLocalSettings,
+			this.userRemoteSettings,
+			this.workspaceSettings,
+			this.folderSettingsAction
+		]);
 	}
 
 	get settingsTarget(): SettingsTarget | null {
@@ -306,14 +353,14 @@ export class SettingsTargetsWidget extends Widget {
 
 	setResultCount(settingsTarget: SettingsTarget, count: number): void {
 		if (settingsTarget === ConfigurationTarget.WORKSPACE) {
-			let label = localize('workspaceSettings', "Workspace");
+			let label = localize('workspaceSettings', 'Workspace');
 			if (count) {
 				label += ` (${count})`;
 			}
 
 			this.workspaceSettings.label = label;
 		} else if (settingsTarget === ConfigurationTarget.USER_LOCAL) {
-			let label = localize('userSettings', "User");
+			let label = localize('userSettings', 'User');
 			if (count) {
 				label += ` (${count})`;
 			}
@@ -341,16 +388,20 @@ export class SettingsTargetsWidget extends Widget {
 	private onWorkbenchStateChanged(): void {
 		this.folderSettings.folder = null;
 		this.update();
-		if (this.settingsTarget === ConfigurationTarget.WORKSPACE && this.contextService.getWorkbenchState() === WorkbenchState.WORKSPACE) {
+		if (
+			this.settingsTarget === ConfigurationTarget.WORKSPACE &&
+			this.contextService.getWorkbenchState() === WorkbenchState.WORKSPACE
+		) {
 			this.updateTarget(ConfigurationTarget.USER_LOCAL);
 		}
 	}
 
 	updateTarget(settingsTarget: SettingsTarget): Promise<void> {
-		const isSameTarget = this.settingsTarget === settingsTarget ||
-			settingsTarget instanceof URI &&
-			this.settingsTarget instanceof URI &&
-			isEqual(this.settingsTarget, settingsTarget);
+		const isSameTarget =
+			this.settingsTarget === settingsTarget ||
+			(settingsTarget instanceof URI &&
+				this.settingsTarget instanceof URI &&
+				isEqual(this.settingsTarget, settingsTarget));
 
 		if (!isSameTarget) {
 			this.settingsTarget = settingsTarget;
@@ -361,12 +412,18 @@ export class SettingsTargetsWidget extends Widget {
 	}
 
 	private async update(): Promise<void> {
-		this.settingsSwitcherBar.domNode.classList.toggle('empty-workbench', this.contextService.getWorkbenchState() === WorkbenchState.EMPTY);
+		this.settingsSwitcherBar.domNode.classList.toggle(
+			'empty-workbench',
+			this.contextService.getWorkbenchState() === WorkbenchState.EMPTY
+		);
 		this.userRemoteSettings.enabled = !!(this.options.enableRemoteSettings && this.environmentService.remoteAuthority);
-		this.workspaceSettings.enabled = this.contextService.getWorkbenchState() !== WorkbenchState.EMPTY && !this.environmentService.isSessionsWindow;
-		this.folderSettings.action.enabled = this.contextService.getWorkbenchState() === WorkbenchState.WORKSPACE && this.contextService.getWorkspace().folders.length > 0;
+		this.workspaceSettings.enabled =
+			this.contextService.getWorkbenchState() !== WorkbenchState.EMPTY && !this.environmentService.isSessionsWindow;
+		this.folderSettings.action.enabled =
+			this.contextService.getWorkbenchState() === WorkbenchState.WORKSPACE &&
+			this.contextService.getWorkspace().folders.length > 0;
 
-		this.workspaceSettings.tooltip = localize('workspaceSettings', "Workspace");
+		this.workspaceSettings.tooltip = localize('workspaceSettings', 'Workspace');
 	}
 }
 
@@ -378,7 +435,6 @@ export interface SearchOptions extends IHistoryInputOptions {
 }
 
 export class SearchWidget extends Widget {
-
 	domNode!: HTMLElement;
 
 	private countElement!: HTMLElement;
@@ -387,12 +443,18 @@ export class SearchWidget extends Widget {
 	private controlsDiv!: HTMLElement;
 
 	private readonly _onDidChange: Emitter<string> = this._register(new Emitter<string>());
-	public get onDidChange(): Event<string> { return this._onDidChange.event; }
+	public get onDidChange(): Event<string> {
+		return this._onDidChange.event;
+	}
 
 	private readonly _onFocus: Emitter<void> = this._register(new Emitter<void>());
-	public get onFocus(): Event<void> { return this._onFocus.event; }
+	public get onFocus(): Event<void> {
+		return this._onFocus.event;
+	}
 
-	constructor(parent: HTMLElement, protected options: SearchOptions,
+	constructor(
+		parent: HTMLElement,
+		protected options: SearchOptions,
 		@IContextViewService private readonly contextViewService: IContextViewService,
 		@IInstantiationService protected instantiationService: IInstantiationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
@@ -438,7 +500,12 @@ export class SearchWidget extends Widget {
 
 	protected createInputBox(parent: HTMLElement): HistoryInputBox {
 		const showHistoryHint = () => showHistoryKeybindingHint(this.keybindingService);
-		return new ContextScopedHistoryInputBox(parent, this.contextViewService, { ...this.options, showHistoryHint }, this.contextKeyService);
+		return new ContextScopedHistoryInputBox(
+			parent,
+			this.contextViewService,
+			{ ...this.options, showHistoryHint },
+			this.contextKeyService
+		);
 	}
 
 	showMessage(message: string): void {
@@ -487,7 +554,7 @@ export class SearchWidget extends Widget {
 	}
 
 	setValue(value: string): string {
-		return this.inputBox.value = value;
+		return (this.inputBox.value = value);
 	}
 
 	override dispose(): void {
@@ -497,7 +564,6 @@ export class SearchWidget extends Widget {
 }
 
 export class EditPreferenceWidget<T> extends Disposable {
-
 	private _line: number = -1;
 	private _preferences: T[] = [];
 
@@ -509,12 +575,18 @@ export class EditPreferenceWidget<T> extends Disposable {
 	constructor(private editor: ICodeEditor) {
 		super();
 		this._editPreferenceDecoration = this.editor.createDecorationsCollection();
-		this._register(this.editor.onMouseDown((e: IEditorMouseEvent) => {
-			if (e.target.type !== MouseTargetType.GUTTER_GLYPH_MARGIN || e.target.detail.isAfterLines || !this.isVisible()) {
-				return;
-			}
-			this._onClick.fire(e);
-		}));
+		this._register(
+			this.editor.onMouseDown((e: IEditorMouseEvent) => {
+				if (
+					e.target.type !== MouseTargetType.GUTTER_GLYPH_MARGIN ||
+					e.target.detail.isAfterLines ||
+					!this.isVisible()
+				) {
+					return;
+				}
+				this._onClick.fire(e);
+			})
+		);
 	}
 
 	get preferences(): T[] {
@@ -534,7 +606,7 @@ export class EditPreferenceWidget<T> extends Disposable {
 				description: 'edit-preference-widget-decoration',
 				glyphMarginClassName: ThemeIcon.asClassName(settingsEditIcon),
 				glyphMarginHoverMessage: new MarkdownString().appendText(hoverMessage),
-				stickiness: TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+				stickiness: TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
 			},
 			range: {
 				startLineNumber: line,

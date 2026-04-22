@@ -7,14 +7,18 @@ import { CancellationToken } from '../../../base/common/cancellation.js';
 import { Emitter } from '../../../base/common/event.js';
 import { Disposable } from '../../../base/common/lifecycle.js';
 import { IExtensionDescription } from '../../../platform/extensions/common/extensions.js';
-import { ExtHostWebview, ExtHostWebviews, toExtensionData, shouldSerializeBuffersForPostMessage } from './extHostWebview.js';
+import {
+	ExtHostWebview,
+	ExtHostWebviews,
+	toExtensionData,
+	shouldSerializeBuffersForPostMessage
+} from './extHostWebview.js';
 import { ViewBadge } from './extHostTypeConverters.js';
 import type * as vscode from 'vscode';
 import * as extHostProtocol from './extHost.protocol.js';
 import * as extHostTypes from './extHostTypes.js';
 
 class ExtHostWebviewView extends Disposable implements vscode.WebviewView {
-
 	readonly #handle: extHostProtocol.WebviewHandle;
 	readonly #proxy: extHostProtocol.MainThreadWebviewViewsShape;
 
@@ -33,7 +37,7 @@ class ExtHostWebviewView extends Disposable implements vscode.WebviewView {
 		viewType: string,
 		title: string | undefined,
 		webview: ExtHostWebview,
-		isVisible: boolean,
+		isVisible: boolean
 	) {
 		super();
 
@@ -90,11 +94,17 @@ class ExtHostWebviewView extends Disposable implements vscode.WebviewView {
 		}
 	}
 
-	public get visible(): boolean { return this.#isVisible; }
+	public get visible(): boolean {
+		return this.#isVisible;
+	}
 
-	public get webview(): vscode.Webview { return this.#webview; }
+	public get webview(): vscode.Webview {
+		return this.#webview;
+	}
 
-	public get viewType(): string { return this.#viewType; }
+	public get viewType(): string {
+		return this.#viewType;
+	}
 
 	/* internal */ _setVisible(visible: boolean) {
 		if (visible === this.#isVisible || this.#isDisposed) {
@@ -113,8 +123,7 @@ class ExtHostWebviewView extends Disposable implements vscode.WebviewView {
 	public set badge(badge: vscode.ViewBadge | undefined) {
 		this.assertNotDisposed();
 
-		if (badge?.value === this.#badge?.value &&
-			badge?.tooltip === this.#badge?.tooltip) {
+		if (badge?.value === this.#badge?.value && badge?.tooltip === this.#badge?.tooltip) {
 			return;
 		}
 
@@ -135,19 +144,21 @@ class ExtHostWebviewView extends Disposable implements vscode.WebviewView {
 }
 
 export class ExtHostWebviewViews implements extHostProtocol.ExtHostWebviewViewsShape {
-
 	private readonly _proxy: extHostProtocol.MainThreadWebviewViewsShape;
 
-	private readonly _viewProviders = new Map<string, {
-		readonly provider: vscode.WebviewViewProvider;
-		readonly extension: IExtensionDescription;
-	}>();
+	private readonly _viewProviders = new Map<
+		string,
+		{
+			readonly provider: vscode.WebviewViewProvider;
+			readonly extension: IExtensionDescription;
+		}
+	>();
 
 	private readonly _webviewViews = new Map<extHostProtocol.WebviewHandle, ExtHostWebviewView>();
 
 	constructor(
 		mainContext: extHostProtocol.IMainContext,
-		private readonly _extHostWebview: ExtHostWebviews,
+		private readonly _extHostWebview: ExtHostWebviews
 	) {
 		this._proxy = mainContext.getProxy(extHostProtocol.MainContext.MainThreadWebviewViews);
 	}
@@ -158,7 +169,7 @@ export class ExtHostWebviewViews implements extHostProtocol.ExtHostWebviewViewsS
 		provider: vscode.WebviewViewProvider,
 		webviewOptions?: {
 			retainContextWhenHidden?: boolean;
-		},
+		}
 	): vscode.Disposable {
 		if (this._viewProviders.has(viewType)) {
 			throw new Error(`View provider for '${viewType}' already registered`);
@@ -167,7 +178,7 @@ export class ExtHostWebviewViews implements extHostProtocol.ExtHostWebviewViewsS
 		this._viewProviders.set(viewType, { provider, extension });
 		this._proxy.$registerWebviewViewProvider(toExtensionData(extension), viewType, {
 			retainContextWhenHidden: webviewOptions?.retainContextWhenHidden,
-			serializeBuffersForPostMessage: shouldSerializeBuffersForPostMessage(extension),
+			serializeBuffersForPostMessage: shouldSerializeBuffersForPostMessage(extension)
 		});
 
 		return new extHostTypes.Disposable(() => {
@@ -181,7 +192,7 @@ export class ExtHostWebviewViews implements extHostProtocol.ExtHostWebviewViewsS
 		viewType: string,
 		title: string | undefined,
 		state: any,
-		cancellation: CancellationToken,
+		cancellation: CancellationToken
 	): Promise<void> {
 		const entry = this._viewProviders.get(viewType);
 		if (!entry) {
@@ -190,7 +201,13 @@ export class ExtHostWebviewViews implements extHostProtocol.ExtHostWebviewViewsS
 
 		const { provider, extension } = entry;
 
-		const webview = this._extHostWebview.createNewWebview(webviewHandle, { /* todo */ }, extension);
+		const webview = this._extHostWebview.createNewWebview(
+			webviewHandle,
+			{
+				/* todo */
+			},
+			extension
+		);
 		const revivedView = new ExtHostWebviewView(webviewHandle, this._proxy, viewType, title, webview, true);
 
 		this._webviewViews.set(webviewHandle, revivedView);
@@ -198,10 +215,7 @@ export class ExtHostWebviewViews implements extHostProtocol.ExtHostWebviewViewsS
 		await provider.resolveWebviewView(revivedView, { state }, cancellation);
 	}
 
-	async $onDidChangeWebviewViewVisibility(
-		webviewHandle: string,
-		visible: boolean
-	) {
+	async $onDidChangeWebviewViewVisibility(webviewHandle: string, visible: boolean) {
 		const webviewView = this.getWebviewView(webviewHandle);
 		webviewView._setVisible(visible);
 	}

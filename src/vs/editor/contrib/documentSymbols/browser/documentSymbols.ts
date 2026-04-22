@@ -19,7 +19,9 @@ CommandsRegistry.registerCommand('_executeDocumentSymbolProvider', async functio
 
 	const reference = await modelService.createModelReference(resource);
 	try {
-		return (await outlineService.getOrCreate(reference.object.textEditorModel, CancellationToken.None)).getTopLevelSymbols();
+		return (
+			await outlineService.getOrCreate(reference.object.textEditorModel, CancellationToken.None)
+		).getTopLevelSymbols();
 	} finally {
 		reference.dispose();
 	}

@@ -11,6 +11,7 @@
 	z-index: 4;
 	right: initial !important;
 	margin-left: '0px';
+	contain: layout style paint;
 }
 
 .monaco-editor .sticky-widget .sticky-widget-line-numbers {

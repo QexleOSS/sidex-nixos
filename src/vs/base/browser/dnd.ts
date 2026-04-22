@@ -17,22 +17,26 @@ export class DelayedDragHandler extends Disposable {
 	constructor(container: HTMLElement, callback: () => void) {
 		super();
 
-		this._register(addDisposableListener(container, 'dragover', e => {
-			e.preventDefault(); // needed so that the drop event fires (https://stackoverflow.com/questions/21339924/drop-event-not-firing-in-chrome)
+		this._register(
+			addDisposableListener(container, 'dragover', e => {
+				e.preventDefault(); // needed so that the drop event fires (https://stackoverflow.com/questions/21339924/drop-event-not-firing-in-chrome)
 
-			if (!this.timeout) {
-				this.timeout = setTimeout(() => {
-					callback();
+				if (!this.timeout) {
+					this.timeout = setTimeout(() => {
+						callback();
 
-					this.timeout = undefined;
-				}, 800);
-			}
-		}));
+						this.timeout = undefined;
+					}, 800);
+				}
+			})
+		);
 
 		['dragleave', 'drop', 'dragend'].forEach(type => {
-			this._register(addDisposableListener(container, type, () => {
-				this.clearDragTimeout();
-			}));
+			this._register(
+				addDisposableListener(container, type, () => {
+					this.clearDragTimeout();
+				})
+			);
 		});
 	}
 
@@ -52,7 +56,6 @@ export class DelayedDragHandler extends Disposable {
 
 // Common data transfers
 export const DataTransfers = {
-
 	/**
 	 * Application specific resource transfer type
 	 */
@@ -78,7 +81,7 @@ export const DataTransfers = {
 	 *
 	 * This is needed to work around https://bugs.chromium.org/p/chromium/issues/detail?id=239745.
 	 */
-	INTERNAL_URI_LIST: 'application/vnd.code.uri-list',
+	INTERNAL_URI_LIST: 'application/vnd.code.uri-list'
 };
 
 export interface IDragAndDropData {

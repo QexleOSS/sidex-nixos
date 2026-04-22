@@ -31,8 +31,10 @@ import { IBaseActionViewItemOptions } from '../../base/browser/ui/actionbar/acti
  * layout(), focus(), dispose(). During use of the workbench, a composite will often receive a setVisible,
  * layout and focus call, but only one create and dispose call.
  */
-export abstract class Composite<MementoType extends object = object> extends Component<MementoType> implements IComposite {
-
+export abstract class Composite<MementoType extends object = object>
+	extends Component<MementoType>
+	implements IComposite
+{
 	private readonly _onTitleAreaUpdate = this._register(new Emitter<void>());
 	readonly onTitleAreaUpdate = this._onTitleAreaUpdate.event;
 
@@ -63,19 +65,23 @@ export abstract class Composite<MementoType extends object = object> extends Com
 		const container = assertReturnsDefined(this.getContainer());
 		const focusTracker = this._register(trackFocus(container));
 
-		const onDidFocus = this._onDidFocus = this._register(new Emitter<void>());
-		this._register(focusTracker.onDidFocus(() => {
-			this._hasFocus = true;
+		const onDidFocus = (this._onDidFocus = this._register(new Emitter<void>()));
+		this._register(
+			focusTracker.onDidFocus(() => {
+				this._hasFocus = true;
 
-			onDidFocus.fire();
-		}));
+				onDidFocus.fire();
+			})
+		);
 
-		const onDidBlur = this._onDidBlur = this._register(new Emitter<void>());
-		this._register(focusTracker.onDidBlur(() => {
-			this._hasFocus = false;
+		const onDidBlur = (this._onDidBlur = this._register(new Emitter<void>()));
+		this._register(
+			focusTracker.onDidBlur(() => {
+				this._hasFocus = false;
 
-			onDidBlur.fire();
-		}));
+				onDidBlur.fire();
+			})
+		);
 
 		return { onDidFocus, onDidBlur };
 	}
@@ -241,15 +247,14 @@ export abstract class Composite<MementoType extends object = object> extends Com
  * A composite descriptor is a lightweight descriptor of a composite in the workbench.
  */
 export abstract class CompositeDescriptor<T extends Composite> {
-
 	constructor(
 		private readonly ctor: IConstructorSignature<T>,
 		readonly id: string,
 		readonly name: string,
 		readonly cssClass?: string,
 		readonly order?: number,
-		readonly requestedIndex?: number,
-	) { }
+		readonly requestedIndex?: number
+	) {}
 
 	instantiate(instantiationService: IInstantiationService): T {
 		return instantiationService.createInstance(this.ctor);
@@ -257,7 +262,6 @@ export abstract class CompositeDescriptor<T extends Composite> {
 }
 
 export abstract class CompositeRegistry<T extends Composite> extends Disposable {
-
 	private readonly _onDidRegister = this._register(new Emitter<CompositeDescriptor<T>>());
 	readonly onDidRegister = this._onDidRegister.event;
 

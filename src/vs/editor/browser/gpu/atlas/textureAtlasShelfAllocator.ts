@@ -13,7 +13,6 @@ import { UsagePreviewColors, type ITextureAtlasAllocator, type ITextureAtlasPage
  * current row is full. Due to its simplicity, it can waste space but it is very fast.
  */
 export class TextureAtlasShelfAllocator implements ITextureAtlasAllocator {
-
 	private readonly _ctx: OffscreenCanvasRenderingContext2D;
 
 	private _currentRow: ITextureAtlasShelf = {
@@ -29,11 +28,13 @@ export class TextureAtlasShelfAllocator implements ITextureAtlasAllocator {
 
 	constructor(
 		private readonly _canvas: OffscreenCanvas,
-		private readonly _textureIndex: number,
+		private readonly _textureIndex: number
 	) {
-		this._ctx = ensureNonNullable(this._canvas.getContext('2d', {
-			willReadFrequently: true
-		}));
+		this._ctx = ensureNonNullable(
+			this._canvas.getContext('2d', {
+				willReadFrequently: true
+			})
+		);
 	}
 
 	public allocate(rasterizedGlyph: IRasterizedGlyph): ITextureAtlasPageGlyph | undefined {
@@ -45,14 +46,20 @@ export class TextureAtlasShelfAllocator implements ITextureAtlasAllocator {
 		}
 
 		// Finalize and increment row if it doesn't fix horizontally
-		if (rasterizedGlyph.boundingBox.right - rasterizedGlyph.boundingBox.left + 1 > this._canvas.width - this._currentRow.x) {
+		if (
+			rasterizedGlyph.boundingBox.right - rasterizedGlyph.boundingBox.left + 1 >
+			this._canvas.width - this._currentRow.x
+		) {
 			this._currentRow.x = 0;
 			this._currentRow.y += this._currentRow.h;
 			this._currentRow.h = 1;
 		}
 
 		// Return undefined if there isn't any room left
-		if (this._currentRow.y + rasterizedGlyph.boundingBox.bottom - rasterizedGlyph.boundingBox.top + 1 > this._canvas.height) {
+		if (
+			this._currentRow.y + rasterizedGlyph.boundingBox.bottom - rasterizedGlyph.boundingBox.top + 1 >
+			this._canvas.height
+		) {
 			return undefined;
 		}
 
@@ -82,7 +89,7 @@ export class TextureAtlasShelfAllocator implements ITextureAtlasAllocator {
 			originOffsetX: rasterizedGlyph.originOffset.x,
 			originOffsetY: rasterizedGlyph.originOffset.y,
 			fontBoundingBoxAscent: rasterizedGlyph.fontBoundingBoxAscent,
-			fontBoundingBoxDescent: rasterizedGlyph.fontBoundingBoxDescent,
+			fontBoundingBoxDescent: rasterizedGlyph.fontBoundingBoxDescent
 		};
 
 		// Shift current row
@@ -152,7 +159,7 @@ export class TextureAtlasShelfAllocator implements ITextureAtlasAllocator {
 			`     Total: ${totalPixels} (${w}x${h})`,
 			`      Used: ${usedPixels} (${((usedPixels / totalPixels) * 100).toPrecision(2)}%)`,
 			`    Wasted: ${wastedPixels} (${((wastedPixels / totalPixels) * 100).toPrecision(2)}%)`,
-			`Efficiency: ${((usedPixels / (usedPixels + wastedPixels)) * 100).toPrecision(2)}%`,
+			`Efficiency: ${((usedPixels / (usedPixels + wastedPixels)) * 100).toPrecision(2)}%`
 		].join('\n');
 	}
 }

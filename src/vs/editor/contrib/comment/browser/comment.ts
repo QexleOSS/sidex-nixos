@@ -8,7 +8,12 @@ import * as nls from '../../../../nls.js';
 import { MenuId } from '../../../../platform/actions/common/actions.js';
 import { KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { ICodeEditor } from '../../../browser/editorBrowser.js';
-import { EditorAction, IActionOptions, registerEditorAction, ServicesAccessor } from '../../../browser/editorExtensions.js';
+import {
+	EditorAction,
+	IActionOptions,
+	registerEditorAction,
+	ServicesAccessor
+} from '../../../browser/editorExtensions.js';
 import { EditorOption } from '../../../common/config/editorOptions.js';
 import { Range } from '../../../common/core/range.js';
 import { ICommand } from '../../../common/editorCommon.js';
@@ -18,7 +23,6 @@ import { BlockCommentCommand } from './blockCommentCommand.js';
 import { LineCommentCommand, Type } from './lineCommentCommand.js';
 
 abstract class CommentLineAction extends EditorAction {
-
 	private readonly _type: Type;
 
 	constructor(type: Type, opts: IActionOptions) {
@@ -58,31 +62,31 @@ abstract class CommentLineAction extends EditorAction {
 			}
 		}
 
-
 		for (const selection of selections) {
-			commands.push(new LineCommentCommand(
-				languageConfigurationService,
-				selection.selection,
-				modelOptions.indentSize,
-				this._type,
-				commentsOptions.insertSpace,
-				commentsOptions.ignoreEmptyLines,
-				selection.ignoreFirstLine
-			));
+			commands.push(
+				new LineCommentCommand(
+					languageConfigurationService,
+					selection.selection,
+					modelOptions.indentSize,
+					this._type,
+					commentsOptions.insertSpace,
+					commentsOptions.ignoreEmptyLines,
+					selection.ignoreFirstLine
+				)
+			);
 		}
 
 		editor.pushUndoStop();
 		editor.executeCommands(this.id, commands);
 		editor.pushUndoStop();
 	}
-
 }
 
 class ToggleCommentLineAction extends CommentLineAction {
 	constructor() {
 		super(Type.Toggle, {
 			id: 'editor.action.commentLine',
-			label: nls.localize2('comment.line', "Toggle Line Comment"),
+			label: nls.localize2('comment.line', 'Toggle Line Comment'),
 			precondition: EditorContextKeys.writable,
 			kbOpts: {
 				kbExpr: EditorContextKeys.editorTextFocus,
@@ -92,10 +96,13 @@ class ToggleCommentLineAction extends CommentLineAction {
 			menuOpts: {
 				menuId: MenuId.MenubarEditMenu,
 				group: '5_insert',
-				title: nls.localize({ key: 'miToggleLineComment', comment: ['&& denotes a mnemonic'] }, "&&Toggle Line Comment"),
+				title: nls.localize(
+					{ key: 'miToggleLineComment', comment: ['&& denotes a mnemonic'] },
+					'&&Toggle Line Comment'
+				),
 				order: 1
 			},
-			canTriggerInlineEdits: true,
+			canTriggerInlineEdits: true
 		});
 	}
 }
@@ -104,14 +111,14 @@ class AddLineCommentAction extends CommentLineAction {
 	constructor() {
 		super(Type.ForceAdd, {
 			id: 'editor.action.addCommentLine',
-			label: nls.localize2('comment.line.add', "Add Line Comment"),
+			label: nls.localize2('comment.line.add', 'Add Line Comment'),
 			precondition: EditorContextKeys.writable,
 			kbOpts: {
 				kbExpr: EditorContextKeys.editorTextFocus,
 				primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.KeyC),
 				weight: KeybindingWeight.EditorContrib
 			},
-			canTriggerInlineEdits: true,
+			canTriggerInlineEdits: true
 		});
 	}
 }
@@ -120,24 +127,23 @@ class RemoveLineCommentAction extends CommentLineAction {
 	constructor() {
 		super(Type.ForceRemove, {
 			id: 'editor.action.removeCommentLine',
-			label: nls.localize2('comment.line.remove', "Remove Line Comment"),
+			label: nls.localize2('comment.line.remove', 'Remove Line Comment'),
 			precondition: EditorContextKeys.writable,
 			kbOpts: {
 				kbExpr: EditorContextKeys.editorTextFocus,
 				primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.KeyU),
 				weight: KeybindingWeight.EditorContrib
 			},
-			canTriggerInlineEdits: true,
+			canTriggerInlineEdits: true
 		});
 	}
 }
 
 class BlockCommentAction extends EditorAction {
-
 	constructor() {
 		super({
 			id: 'editor.action.blockComment',
-			label: nls.localize2('comment.block', "Toggle Block Comment"),
+			label: nls.localize2('comment.block', 'Toggle Block Comment'),
 			precondition: EditorContextKeys.writable,
 			kbOpts: {
 				kbExpr: EditorContextKeys.editorTextFocus,
@@ -148,10 +154,13 @@ class BlockCommentAction extends EditorAction {
 			menuOpts: {
 				menuId: MenuId.MenubarEditMenu,
 				group: '5_insert',
-				title: nls.localize({ key: 'miToggleBlockComment', comment: ['&& denotes a mnemonic'] }, "Toggle &&Block Comment"),
+				title: nls.localize(
+					{ key: 'miToggleBlockComment', comment: ['&& denotes a mnemonic'] },
+					'Toggle &&Block Comment'
+				),
 				order: 2
 			},
-			canTriggerInlineEdits: true,
+			canTriggerInlineEdits: true
 		});
 	}
 

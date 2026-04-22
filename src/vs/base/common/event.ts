@@ -8,31 +8,31 @@ import { CancellationToken } from './cancellation.js';
 import { diffSets } from './collections.js';
 import { onUnexpectedError } from './errors.js';
 import { createSingleCallFunction } from './functional.js';
-import { combinedDisposable, Disposable, DisposableMap, DisposableStore, IDisposable, toDisposable } from './lifecycle.js';
+import {
+	combinedDisposable,
+	Disposable,
+	DisposableMap,
+	DisposableStore,
+	IDisposable,
+	toDisposable
+} from './lifecycle.js';
 import { LinkedList } from './linkedList.js';
 import { IObservable, IObservableWithChange, IObserver } from './observable.js';
 import { env } from './process.js';
 import { StopWatch } from './stopwatch.js';
 import { MicrotaskDelay } from './symbols.js';
 
-
 // -----------------------------------------------------------------------------------------------------------------------
 // Uncomment the next line to print warnings whenever an emitter with listeners is disposed. That is a sign of code smell.
 // -----------------------------------------------------------------------------------------------------------------------
-const _enableDisposeWithListenerWarning = false
-	// || Boolean("TRUE") // causes a linter warning so that it cannot be pushed
-	;
-
-
+const _enableDisposeWithListenerWarning = false;
+// || Boolean("TRUE") // causes a linter warning so that it cannot be pushed
 // -----------------------------------------------------------------------------------------------------------------------
 // Uncomment the next line to print warnings whenever a snapshotted event is used repeatedly without cleanup.
 // See https://github.com/microsoft/vscode/issues/142851
 // -----------------------------------------------------------------------------------------------------------------------
-const _enableSnapshotPotentialLeakWarning = false
-	// || Boolean("TRUE") // causes a linter warning so that it cannot be pushed
-	;
-
-
+const _enableSnapshotPotentialLeakWarning = false;
+// || Boolean("TRUE") // causes a linter warning so that it cannot be pushed
 const _bufferLeakWarnCountThreshold = 100;
 const _bufferLeakWarnTimeThreshold = 60_000; // 1 minute
 
@@ -57,7 +57,9 @@ export namespace Event {
 			let count = 0;
 			options.onDidAddListener = () => {
 				if (++count === 2) {
-					console.warn('snapshotted emitter LIKELY used public and SHOULD HAVE BEEN created with DisposableStore. snapshotted here');
+					console.warn(
+						'snapshotted emitter LIKELY used public and SHOULD HAVE BEEN created with DisposableStore. snapshotted here'
+					);
 					stack.print();
 				}
 				origListenerDidAdd?.();
@@ -84,8 +86,20 @@ export namespace Event {
 	 * listener gets disposed before the debounced event fires.
 	 * @param disposable A disposable store to add the new EventEmitter to.
 	 */
-	export function defer(event: Event<unknown>, flushOnListenerRemove?: boolean, disposable?: DisposableStore): Event<void> {
-		return debounce<unknown, void>(event, () => void 0, 0, undefined, flushOnListenerRemove ?? true, undefined, disposable);
+	export function defer(
+		event: Event<unknown>,
+		flushOnListenerRemove?: boolean,
+		disposable?: DisposableStore
+	): Event<void> {
+		return debounce<unknown, void>(
+			event,
+			() => void 0,
+			0,
+			undefined,
+			flushOnListenerRemove ?? true,
+			undefined,
+			disposable
+		);
 	}
 
 	/**
@@ -98,17 +112,21 @@ export namespace Event {
 			// we need this, in case the event fires during the listener call
 			let didFire = false;
 			let result: IDisposable | undefined = undefined;
-			result = event(e => {
-				if (didFire) {
-					return;
-				} else if (result) {
-					result.dispose();
-				} else {
-					didFire = true;
-				}
+			result = event(
+				e => {
+					if (didFire) {
+						return;
+					} else if (result) {
+						result.dispose();
+					} else {
+						didFire = true;
+					}
 
-				return listener.call(thisArgs, e);
-			}, null, disposables);
+					return listener.call(thisArgs, e);
+				},
+				null,
+				disposables
+			);
 
 			if (didFire) {
 				result.dispose();
@@ -140,7 +158,10 @@ export namespace Event {
 	 * @param disposable A disposable store to add the new EventEmitter to.
 	 */
 	export function map<I, O>(event: Event<I>, map: (i: I) => O, disposable?: DisposableStore): Event<O> {
-		return snapshot((listener, thisArgs = null, disposables?) => event(i => listener.call(thisArgs, map(i)), null, disposables), disposable);
+		return snapshot(
+			(listener, thisArgs = null, disposables?) => event(i => listener.call(thisArgs, map(i)), null, disposables),
+			disposable
+		);
 	}
 
 	/**
@@ -155,7 +176,18 @@ export namespace Event {
 	 * @param disposable A disposable store to add the new EventEmitter to.
 	 */
 	export function forEach<I>(event: Event<I>, each: (i: I) => void, disposable?: DisposableStore): Event<I> {
-		return snapshot((listener, thisArgs = null, disposables?) => event(i => { each(i); listener.call(thisArgs, i); }, null, disposables), disposable);
+		return snapshot(
+			(listener, thisArgs = null, disposables?) =>
+				event(
+					i => {
+						each(i);
+						listener.call(thisArgs, i);
+					},
+					null,
+					disposables
+				),
+			disposable
+		);
 	}
 
 	/**
@@ -170,11 +202,23 @@ export namespace Event {
 	 * returns true.
 	 * @param disposable A disposable store to add the new EventEmitter to.
 	 */
-	export function filter<T, U>(event: Event<T | U>, filter: (e: T | U) => e is T, disposable?: DisposableStore): Event<T>;
+	export function filter<T, U>(
+		event: Event<T | U>,
+		filter: (e: T | U) => e is T,
+		disposable?: DisposableStore
+	): Event<T>;
 	export function filter<T>(event: Event<T>, filter: (e: T) => boolean, disposable?: DisposableStore): Event<T>;
-	export function filter<T, R>(event: Event<T | R>, filter: (e: T | R) => e is R, disposable?: DisposableStore): Event<R>;
+	export function filter<T, R>(
+		event: Event<T | R>,
+		filter: (e: T | R) => e is R,
+		disposable?: DisposableStore
+	): Event<R>;
 	export function filter<T>(event: Event<T>, filter: (e: T) => boolean, disposable?: DisposableStore): Event<T> {
-		return snapshot((listener, thisArgs = null, disposables?) => event(e => filter(e) && listener.call(thisArgs, e), null, disposables), disposable);
+		return snapshot(
+			(listener, thisArgs = null, disposables?) =>
+				event(e => filter(e) && listener.call(thisArgs, e), null, disposables),
+			disposable
+		);
 	}
 
 	/**
@@ -201,13 +245,22 @@ export namespace Event {
 	 * event is accessible to "third parties", e.g the event is a public property. Otherwise a leaked listener on the
 	 * returned event causes this utility to leak a listener on the original event.
 	 */
-	export function reduce<I, O>(event: Event<I>, merge: (last: O | undefined, event: I) => O, initial?: O, disposable?: DisposableStore): Event<O> {
+	export function reduce<I, O>(
+		event: Event<I>,
+		merge: (last: O | undefined, event: I) => O,
+		initial?: O,
+		disposable?: DisposableStore
+	): Event<O> {
 		let output: O | undefined = initial;
 
-		return map<I, O>(event, e => {
-			output = merge(output, e);
-			return output;
-		}, disposable);
+		return map<I, O>(
+			event,
+			e => {
+				output = merge(output, e);
+				return output;
+			},
+			disposable
+		);
 	}
 
 	function snapshot<T>(event: Event<T>, disposable: DisposableStore | undefined): Event<T> {
@@ -264,9 +317,33 @@ export namespace Event {
 	 * @param leakWarningThreshold See {@link EmitterOptions.leakWarningThreshold}.
 	 * @param disposable A disposable store to register the debounce emitter to.
 	 */
-	export function debounce<T>(event: Event<T>, merge: (last: T | undefined, event: T) => T, delay?: number | typeof MicrotaskDelay, leading?: boolean, flushOnListenerRemove?: boolean, leakWarningThreshold?: number, disposable?: DisposableStore): Event<T>;
-	export function debounce<I, O>(event: Event<I>, merge: (last: O | undefined, event: I) => O, delay?: number | typeof MicrotaskDelay, leading?: boolean, flushOnListenerRemove?: boolean, leakWarningThreshold?: number, disposable?: DisposableStore): Event<O>;
-	export function debounce<I, O>(event: Event<I>, merge: (last: O | undefined, event: I) => O, delay: number | typeof MicrotaskDelay = 100, leading = false, flushOnListenerRemove = false, leakWarningThreshold?: number, disposable?: DisposableStore): Event<O> {
+	export function debounce<T>(
+		event: Event<T>,
+		merge: (last: T | undefined, event: T) => T,
+		delay?: number | typeof MicrotaskDelay,
+		leading?: boolean,
+		flushOnListenerRemove?: boolean,
+		leakWarningThreshold?: number,
+		disposable?: DisposableStore
+	): Event<T>;
+	export function debounce<I, O>(
+		event: Event<I>,
+		merge: (last: O | undefined, event: I) => O,
+		delay?: number | typeof MicrotaskDelay,
+		leading?: boolean,
+		flushOnListenerRemove?: boolean,
+		leakWarningThreshold?: number,
+		disposable?: DisposableStore
+	): Event<O>;
+	export function debounce<I, O>(
+		event: Event<I>,
+		merge: (last: O | undefined, event: I) => O,
+		delay: number | typeof MicrotaskDelay = 100,
+		leading = false,
+		flushOnListenerRemove = false,
+		leakWarningThreshold?: number,
+		disposable?: DisposableStore
+	): Event<O> {
 		let subscription: IDisposable;
 		let output: O | undefined = undefined;
 		let handle: Timeout | undefined | null = undefined;
@@ -344,14 +421,27 @@ export namespace Event {
 	 * listener gets disposed before the debounced event fires.
 	 * @param disposable A disposable store to add the new EventEmitter to.
 	 */
-	export function accumulate<T>(event: Event<T>, delay: number | typeof MicrotaskDelay = 0, flushOnListenerRemove?: boolean, disposable?: DisposableStore): Event<T[]> {
-		return Event.debounce<T, T[]>(event, (last, e) => {
-			if (!last) {
-				return [e];
-			}
-			last.push(e);
-			return last;
-		}, delay, undefined, flushOnListenerRemove ?? true, undefined, disposable);
+	export function accumulate<T>(
+		event: Event<T>,
+		delay: number | typeof MicrotaskDelay = 0,
+		flushOnListenerRemove?: boolean,
+		disposable?: DisposableStore
+	): Event<T[]> {
+		return Event.debounce<T, T[]>(
+			event,
+			(last, e) => {
+				if (!last) {
+					return [e];
+				}
+				last.push(e);
+				return last;
+			},
+			delay,
+			undefined,
+			flushOnListenerRemove ?? true,
+			undefined,
+			disposable
+		);
 	}
 
 	/**
@@ -370,9 +460,33 @@ export namespace Event {
 	 * @param leakWarningThreshold See {@link EmitterOptions.leakWarningThreshold}.
 	 * @param disposable A disposable store to register the throttle emitter to.
 	 */
-	export function throttle<T>(event: Event<T>, merge: (last: T | undefined, event: T) => T, delay?: number | typeof MicrotaskDelay, leading?: boolean, trailing?: boolean, leakWarningThreshold?: number, disposable?: DisposableStore): Event<T>;
-	export function throttle<I, O>(event: Event<I>, merge: (last: O | undefined, event: I) => O, delay?: number | typeof MicrotaskDelay, leading?: boolean, trailing?: boolean, leakWarningThreshold?: number, disposable?: DisposableStore): Event<O>;
-	export function throttle<I, O>(event: Event<I>, merge: (last: O | undefined, event: I) => O, delay: number | typeof MicrotaskDelay = 100, leading = true, trailing = true, leakWarningThreshold?: number, disposable?: DisposableStore): Event<O> {
+	export function throttle<T>(
+		event: Event<T>,
+		merge: (last: T | undefined, event: T) => T,
+		delay?: number | typeof MicrotaskDelay,
+		leading?: boolean,
+		trailing?: boolean,
+		leakWarningThreshold?: number,
+		disposable?: DisposableStore
+	): Event<T>;
+	export function throttle<I, O>(
+		event: Event<I>,
+		merge: (last: O | undefined, event: I) => O,
+		delay?: number | typeof MicrotaskDelay,
+		leading?: boolean,
+		trailing?: boolean,
+		leakWarningThreshold?: number,
+		disposable?: DisposableStore
+	): Event<O>;
+	export function throttle<I, O>(
+		event: Event<I>,
+		merge: (last: O | undefined, event: I) => O,
+		delay: number | typeof MicrotaskDelay = 100,
+		leading = true,
+		trailing = true,
+		leakWarningThreshold?: number,
+		disposable?: DisposableStore
+	): Event<O> {
 		let subscription: IDisposable;
 		let output: O | undefined = undefined;
 		let handle: Timeout | undefined = undefined;
@@ -455,16 +569,24 @@ export namespace Event {
 	 * Event.latch(Event.any(onDidOpenWindow, onDidFocusWindow))
 	 * ```
 	 */
-	export function latch<T>(event: Event<T>, equals: (a: T, b: T) => boolean = (a, b) => a === b, disposable?: DisposableStore): Event<T> {
+	export function latch<T>(
+		event: Event<T>,
+		equals: (a: T, b: T) => boolean = (a, b) => a === b,
+		disposable?: DisposableStore
+	): Event<T> {
 		let firstCall = true;
 		let cache: T;
 
-		return filter(event, value => {
-			const shouldEmit = firstCall || !equals(value, cache);
-			firstCall = false;
-			cache = value;
-			return shouldEmit;
-		}, disposable);
+		return filter(
+			event,
+			value => {
+				const shouldEmit = firstCall || !equals(value, cache);
+				firstCall = false;
+				cache = value;
+				return shouldEmit;
+			},
+			disposable
+		);
 	}
 
 	/**
@@ -484,11 +606,12 @@ export namespace Event {
 	 * @param isT A function that determines what event is of the first type.
 	 * @param disposable A disposable store to add the new EventEmitter to.
 	 */
-	export function split<T, U>(event: Event<T | U>, isT: (e: T | U) => e is T, disposable?: DisposableStore): [Event<T>, Event<U>] {
-		return [
-			Event.filter(event, isT, disposable),
-			Event.filter(event, e => !isT(e), disposable) as Event<U>,
-		];
+	export function split<T, U>(
+		event: Event<T | U>,
+		isT: (e: T | U) => e is T,
+		disposable?: DisposableStore
+	): [Event<T>, Event<U>] {
+		return [Event.filter(event, isT, disposable), Event.filter(event, e => !isT(e), disposable) as Event<U>];
 	}
 
 	/**
@@ -512,19 +635,29 @@ export namespace Event {
 	 * this.onInstallExtension = Event.buffer(service.onInstallExtension, 'onInstallExtension', true);
 	 * ```
 	 */
-	export function buffer<T>(event: Event<T>, debugName: string, flushAfterTimeout = false, _buffer: T[] = [], disposable?: DisposableStore): Event<T> {
+	export function buffer<T>(
+		event: Event<T>,
+		debugName: string,
+		flushAfterTimeout = false,
+		_buffer: T[] = [],
+		disposable?: DisposableStore
+	): Event<T> {
 		let buffer: T[] | null = _buffer.slice();
 
 		// Dev-only leak detection: track when buffer was created and warn
 		// if events accumulate without ever being consumed.
-		let bufferLeakWarningData: { stack: Stacktrace; timerId: ReturnType<typeof setTimeout>; warned: boolean } | undefined;
+		let bufferLeakWarningData:
+			| { stack: Stacktrace; timerId: ReturnType<typeof setTimeout>; warned: boolean }
+			| undefined;
 		if (_isBufferLeakWarningEnabled()) {
 			bufferLeakWarningData = {
 				stack: Stacktrace.create(),
 				timerId: setTimeout(() => {
 					if (buffer && buffer.length > 0 && bufferLeakWarningData && !bufferLeakWarningData.warned) {
 						bufferLeakWarningData.warned = true;
-						console.warn(`[Event.buffer][${debugName}] potential LEAK detected: ${buffer.length} events buffered for ${_bufferLeakWarnTimeThreshold / 1000}s without being consumed. Buffered here:`);
+						console.warn(
+							`[Event.buffer][${debugName}] potential LEAK detected: ${buffer.length} events buffered for ${_bufferLeakWarnTimeThreshold / 1000}s without being consumed. Buffered here:`
+						);
 						bufferLeakWarningData.stack.print();
 					}
 				}, _bufferLeakWarnTimeThreshold),
@@ -544,9 +677,16 @@ export namespace Event {
 		let listener: IDisposable | null = event(e => {
 			if (buffer) {
 				buffer.push(e);
-				if (_isBufferLeakWarningEnabled() && bufferLeakWarningData && !bufferLeakWarningData.warned && buffer.length >= _bufferLeakWarnCountThreshold) {
+				if (
+					_isBufferLeakWarningEnabled() &&
+					bufferLeakWarningData &&
+					!bufferLeakWarningData.warned &&
+					buffer.length >= _bufferLeakWarnCountThreshold
+				) {
 					bufferLeakWarningData.warned = true;
-					console.warn(`[Event.buffer][${debugName}] potential LEAK detected: ${buffer.length} events buffered without being consumed. Buffered here:`);
+					console.warn(
+						`[Event.buffer][${debugName}] potential LEAK detected: ${buffer.length} events buffered without being consumed. Buffered here:`
+					);
 					bufferLeakWarningData.stack.print();
 				}
 			} else {
@@ -617,15 +757,22 @@ export namespace Event {
 	 * );
 	 * ```
 	 */
-	export function chain<T, R>(event: Event<T>, sythensize: ($: IChainableSythensis<T>) => IChainableSythensis<R>): Event<R> {
+	export function chain<T, R>(
+		event: Event<T>,
+		sythensize: ($: IChainableSythensis<T>) => IChainableSythensis<R>
+	): Event<R> {
 		const fn: Event<R> = (listener, thisArgs, disposables) => {
 			const cs = sythensize(new ChainableSynthesis()) as ChainableSynthesis;
-			return event(function (value) {
-				const result = cs.evaluate(value);
-				if (result !== HaltChainable) {
-					listener.call(thisArgs, result);
-				}
-			}, undefined, disposables);
+			return event(
+				function (value) {
+					const result = cs.evaluate(value);
+					if (result !== HaltChainable) {
+						listener.call(thisArgs, result);
+					}
+				},
+				undefined,
+				disposables
+			);
 		};
 
 		return fn;
@@ -650,7 +797,7 @@ export namespace Event {
 		}
 
 		filter(fn: (e: any) => boolean): this {
-			this.steps.push(v => fn(v) ? v : HaltChainable);
+			this.steps.push(v => (fn(v) ? v : HaltChainable));
 			return this;
 		}
 
@@ -706,11 +853,18 @@ export namespace Event {
 	/**
 	 * Creates an {@link Event} from a node event emitter.
 	 */
-	export function fromNodeEventEmitter<T>(emitter: NodeEventEmitter, eventName: string, map: (...args: any[]) => T = id => id): Event<T> {
+	export function fromNodeEventEmitter<T>(
+		emitter: NodeEventEmitter,
+		eventName: string,
+		map: (...args: any[]) => T = id => id
+	): Event<T> {
 		const fn = (...args: unknown[]) => result.fire(map(...args));
 		const onFirstListenerAdd = () => emitter.on(eventName, fn);
 		const onLastListenerRemove = () => emitter.removeListener(eventName, fn);
-		const result = new Emitter<T>({ onWillAddFirstListener: onFirstListenerAdd, onDidRemoveLastListener: onLastListenerRemove });
+		const result = new Emitter<T>({
+			onWillAddFirstListener: onFirstListenerAdd,
+			onDidRemoveLastListener: onLastListenerRemove
+		});
 
 		return result.event;
 	}
@@ -723,11 +877,18 @@ export namespace Event {
 	/**
 	 * Creates an {@link Event} from a DOM event emitter.
 	 */
-	export function fromDOMEventEmitter<T>(emitter: DOMEventEmitter, eventName: string, map: (...args: any[]) => T = id => id): Event<T> {
+	export function fromDOMEventEmitter<T>(
+		emitter: DOMEventEmitter,
+		eventName: string,
+		map: (...args: any[]) => T = id => id
+	): Event<T> {
 		const fn = (...args: unknown[]) => result.fire(map(...args));
 		const onFirstListenerAdd = () => emitter.addEventListener(eventName, fn);
 		const onLastListenerRemove = () => emitter.removeEventListener(eventName, fn);
-		const result = new Emitter<T>({ onWillAddFirstListener: onFirstListenerAdd, onDidRemoveLastListener: onLastListenerRemove });
+		const result = new Emitter<T>({
+			onWillAddFirstListener: onFirstListenerAdd,
+			onDidRemoveLastListener: onLastListenerRemove
+		});
 
 		return result.event;
 	}
@@ -738,7 +899,7 @@ export namespace Event {
 	export function toPromise<T>(event: Event<T>, disposables?: IDisposable[] | DisposableStore): CancelablePromise<T> {
 		let cancelRef: () => void;
 		let listener: IDisposable;
-		const promise = new Promise((resolve) => {
+		const promise = new Promise(resolve => {
 			listener = once(event)(resolve);
 			addToDisposables(listener, disposables);
 
@@ -786,19 +947,25 @@ export namespace Event {
 	 */
 	export function runAndSubscribe<T>(event: Event<T>, handler: (e: T) => unknown, initial: T): IDisposable;
 	export function runAndSubscribe<T>(event: Event<T>, handler: (e: T | undefined) => unknown): IDisposable;
-	export function runAndSubscribe<T>(event: Event<T>, handler: (e: T | undefined) => unknown, initial?: T): IDisposable {
+	export function runAndSubscribe<T>(
+		event: Event<T>,
+		handler: (e: T | undefined) => unknown,
+		initial?: T
+	): IDisposable {
 		handler(initial);
 		return event(e => handler(e));
 	}
 
 	class EmitterObserver<T> implements IObserver {
-
 		readonly emitter: Emitter<T>;
 
 		private _counter = 0;
 		private _hasChanged = false;
 
-		constructor(readonly _observable: IObservable<T>, store: DisposableStore | undefined) {
+		constructor(
+			readonly _observable: IObservable<T>,
+			store: DisposableStore | undefined
+		) {
 			const options: EmitterOptions = {
 				onWillAddFirstListener: () => {
 					_observable.addObserver(this);
@@ -941,9 +1108,7 @@ export interface EmitterOptions {
 	_profName?: string;
 }
 
-
 export class EventProfiling {
-
 	static readonly all = new Set<EventProfiling>();
 
 	private static _idPool = 0;
@@ -989,7 +1154,6 @@ export function setGlobalLeakWarningThreshold(n: number): IDisposable {
 }
 
 class LeakageMonitor {
-
 	private static _idPool = 1;
 
 	private _stacks: Map<string, number> | undefined;
@@ -999,14 +1163,13 @@ class LeakageMonitor {
 		private readonly _errorHandler: (err: Error) => void,
 		readonly threshold: number,
 		readonly name: string = (LeakageMonitor._idPool++).toString(16).padStart(3, '0')
-	) { }
+	) {}
 
 	dispose(): void {
 		this._stacks?.clear();
 	}
 
 	check(stack: Stacktrace, listenerCount: number): undefined | (() => void) {
-
 		const threshold = this.threshold;
 		if (threshold <= 0 || listenerCount < threshold) {
 			return undefined;
@@ -1015,7 +1178,7 @@ class LeakageMonitor {
 		if (!this._stacks) {
 			this._stacks = new Map();
 		}
-		const count = (this._stacks.get(stack.value) || 0);
+		const count = this._stacks.get(stack.value) || 0;
 		this._stacks.set(stack.value, count + 1);
 		this._warnCountdown -= 1;
 
@@ -1035,7 +1198,7 @@ class LeakageMonitor {
 		}
 
 		return () => {
-			const count = (this._stacks!.get(stack.value) || 0);
+			const count = this._stacks!.get(stack.value) || 0;
 			this._stacks!.set(stack.value, count - 1);
 		};
 	}
@@ -1057,13 +1220,12 @@ class LeakageMonitor {
 }
 
 class Stacktrace {
-
 	static create() {
 		const err = new Error();
 		return new Stacktrace(err.stack ?? '');
 	}
 
-	private constructor(readonly value: string) { }
+	private constructor(readonly value: string) {}
 
 	print() {
 		console.warn(this.value.split('\n').slice(2).join('\n'));
@@ -1107,7 +1269,7 @@ let id = 0;
 class UniqueContainer<T> {
 	stack?: Stacktrace;
 	public id = id++;
-	constructor(public readonly value: T) { }
+	constructor(public readonly value: T) {}
 }
 const compactionThreshold = 2;
 
@@ -1149,7 +1311,6 @@ const forEachListener = <T>(listeners: ListenerOrListeners<T>, fn: (c: ListenerC
 	}
  */
 export class Emitter<T> {
-
 	private readonly _options?: EmitterOptions;
 	private readonly _leakageMon?: LeakageMonitor;
 	private readonly _perfMon?: EventProfiling;
@@ -1185,9 +1346,13 @@ export class Emitter<T> {
 
 	constructor(options?: EmitterOptions) {
 		this._options = options;
-		this._leakageMon = (_globalLeakWarningThreshold > 0 || this._options?.leakWarningThreshold)
-			? new LeakageMonitor(options?.onListenerError ?? onUnexpectedError, this._options?.leakWarningThreshold ?? _globalLeakWarningThreshold) :
-			undefined;
+		this._leakageMon =
+			_globalLeakWarningThreshold > 0 || this._options?.leakWarningThreshold
+				? new LeakageMonitor(
+						options?.onListenerError ?? onUnexpectedError,
+						this._options?.leakWarningThreshold ?? _globalLeakWarningThreshold
+					)
+				: undefined;
 		this._perfMon = this._options?._profName ? new EventProfiling(this._options._profName) : undefined;
 		this._deliveryQueue = this._options?.deliveryQueue as EventDeliveryQueuePrivate | undefined;
 	}
@@ -1237,7 +1402,11 @@ export class Emitter<T> {
 
 				const tuple = this._leakageMon.getMostFrequentStack() ?? ['UNKNOWN stack', -1];
 				const kind = tuple[1] / this._size > 0.3 ? 'dominated' : 'popular';
-				const error = new ListenerRefusalError(kind, `${message}. HINT: Stack shows most frequent listener (${tuple[1]}-times)`, tuple[0]);
+				const error = new ListenerRefusalError(
+					kind,
+					`${message}. HINT: Stack shows most frequent listener (${tuple[1]}-times)`,
+					tuple[0]
+				);
 				const errorHandler = this._options?.onListenerError || onUnexpectedError;
 				errorHandler(error);
 
@@ -1280,7 +1449,6 @@ export class Emitter<T> {
 			this._options?.onDidAddListener?.(this);
 
 			this._size++;
-
 
 			const result = toDisposable(() => {
 				removeMonitor?.();
@@ -1447,10 +1615,13 @@ export interface IWaitUntil {
 export type IWaitUntilData<T> = Omit<Omit<T, 'waitUntil'>, 'token'>;
 
 export class AsyncEmitter<T extends IWaitUntil> extends Emitter<T> {
-
 	private _asyncDeliveryQueue?: LinkedList<[(ev: T) => void, IWaitUntilData<T>]>;
 
-	async fireAsync(data: IWaitUntilData<T>, token: CancellationToken, promiseJoin?: (p: Promise<unknown>, listener: Function) => Promise<unknown>): Promise<void> {
+	async fireAsync(
+		data: IWaitUntilData<T>,
+		token: CancellationToken,
+		promiseJoin?: (p: Promise<unknown>, listener: Function) => Promise<unknown>
+	): Promise<void> {
 		if (!this._listeners) {
 			return;
 		}
@@ -1462,7 +1633,6 @@ export class AsyncEmitter<T extends IWaitUntil> extends Emitter<T> {
 		forEachListener(this._listeners, listener => this._asyncDeliveryQueue!.push([listener.value, data]));
 
 		while (this._asyncDeliveryQueue.size > 0 && !token.isCancellationRequested) {
-
 			const [listener, data] = this._asyncDeliveryQueue.shift()!;
 			const thenables: Promise<unknown>[] = [];
 
@@ -1503,9 +1673,7 @@ export class AsyncEmitter<T extends IWaitUntil> extends Emitter<T> {
 	}
 }
 
-
 export class PauseableEmitter<T> extends Emitter<T> {
-
 	private _isPaused = 0;
 	protected _eventQueue = new LinkedList<T>();
 	private _mergeFn?: (input: T[]) => T;
@@ -1533,7 +1701,6 @@ export class PauseableEmitter<T> extends Emitter<T> {
 					this._eventQueue.clear();
 					super.fire(this._mergeFn(events));
 				}
-
 			} else {
 				// no merging, fire each event individually and test
 				// that this emitter isn't paused halfway through
@@ -1556,7 +1723,6 @@ export class PauseableEmitter<T> extends Emitter<T> {
 }
 
 export class DebounceEmitter<T> extends PauseableEmitter<T> {
-
 	private readonly _delay: number;
 	private _handle: Timeout | undefined;
 
@@ -1590,7 +1756,6 @@ export class MicrotaskEmitter<T> extends Emitter<T> {
 		this._mergeFn = options?.merge;
 	}
 	override fire(event: T): void {
-
 		if (!this.hasListeners()) {
 			return;
 		}
@@ -1633,7 +1798,6 @@ export class MicrotaskEmitter<T> extends Emitter<T> {
  * ```
  */
 export class EventMultiplexer<T> implements IDisposable {
-
 	private readonly emitter: Emitter<T>;
 	private hasListeners = false;
 	private events: { event: Event<T>; listener: IDisposable | null }[] = [];
@@ -1725,14 +1889,18 @@ export class DynamicListEventMultiplexer<TItem, TEventType> implements IDynamicL
 		}
 
 		// Added items
-		this._store.add(onAddItem(instance => {
-			addItem(instance);
-		}));
+		this._store.add(
+			onAddItem(instance => {
+				addItem(instance);
+			})
+		);
 
 		// Removed items
-		this._store.add(onRemoveItem(instance => {
-			itemListeners.deleteAndDispose(instance);
-		}));
+		this._store.add(
+			onRemoveItem(instance => {
+				itemListeners.deleteAndDispose(instance);
+			})
+		);
 
 		this.event = multiplexer.event;
 	}
@@ -1763,7 +1931,6 @@ export class DynamicListEventMultiplexer<TItem, TEventType> implements IDynamicL
  * ```
  */
 export class EventBufferer {
-
 	private data: { buffers: Function[] }[] = [];
 
 	wrapEvent<T>(event: Event<T>): Event<T>;
@@ -1771,54 +1938,58 @@ export class EventBufferer {
 	wrapEvent<T, O>(event: Event<T>, reduce: (last: O | undefined, event: T) => O, initial: O): Event<O>;
 	wrapEvent<T, O>(event: Event<T>, reduce?: (last: T | O | undefined, event: T) => T | O, initial?: O): Event<O | T> {
 		return (listener, thisArgs?, disposables?) => {
-			return event(i => {
-				const data = this.data[this.data.length - 1];
+			return event(
+				i => {
+					const data = this.data[this.data.length - 1];
 
-				// Non-reduce scenario
-				if (!reduce) {
-					// Buffering case
-					if (data) {
-						data.buffers.push(() => listener.call(thisArgs, i));
-					} else {
-						// Not buffering case
-						listener.call(thisArgs, i);
+					// Non-reduce scenario
+					if (!reduce) {
+						// Buffering case
+						if (data) {
+							data.buffers.push(() => listener.call(thisArgs, i));
+						} else {
+							// Not buffering case
+							listener.call(thisArgs, i);
+						}
+						return;
 					}
-					return;
-				}
 
-				// Reduce scenario
-				const reduceData = data as typeof data & {
-					/**
-					 * The accumulated items that will be reduced.
-					 */
-					items?: T[];
-					/**
-					 * The reduced result cached to be shared with other listeners.
-					 */
-					reducedResult?: T | O;
-				};
+					// Reduce scenario
+					const reduceData = data as typeof data & {
+						/**
+						 * The accumulated items that will be reduced.
+						 */
+						items?: T[];
+						/**
+						 * The reduced result cached to be shared with other listeners.
+						 */
+						reducedResult?: T | O;
+					};
 
-				// Not buffering case
-				if (!reduceData) {
-					// TODO: Is there a way to cache this reduce call for all listeners?
-					listener.call(thisArgs, reduce(initial, i));
-					return;
-				}
+					// Not buffering case
+					if (!reduceData) {
+						// TODO: Is there a way to cache this reduce call for all listeners?
+						listener.call(thisArgs, reduce(initial, i));
+						return;
+					}
 
-				// Buffering case
-				reduceData.items ??= [];
-				reduceData.items.push(i);
-				if (reduceData.buffers.length === 0) {
-					// Include a single buffered function that will reduce all events when we're done buffering events
-					data.buffers.push(() => {
-						// cache the reduced result so that the value can be shared across all listeners
-						reduceData.reducedResult ??= initial
-							? reduceData.items!.reduce(reduce as (last: O | undefined, event: T) => O, initial)
-							: reduceData.items!.reduce(reduce as (last: T | undefined, event: T) => T);
-						listener.call(thisArgs, reduceData.reducedResult);
-					});
-				}
-			}, undefined, disposables);
+					// Buffering case
+					reduceData.items ??= [];
+					reduceData.items.push(i);
+					if (reduceData.buffers.length === 0) {
+						// Include a single buffered function that will reduce all events when we're done buffering events
+						data.buffers.push(() => {
+							// cache the reduced result so that the value can be shared across all listeners
+							reduceData.reducedResult ??= initial
+								? reduceData.items!.reduce(reduce as (last: O | undefined, event: T) => O, initial)
+								: reduceData.items!.reduce(reduce as (last: T | undefined, event: T) => T);
+							listener.call(thisArgs, reduceData.reducedResult);
+						});
+					}
+				},
+				undefined,
+				disposables
+			);
 		};
 	}
 
@@ -1839,7 +2010,6 @@ export class EventBufferer {
  * can be changed at any point in time.
  */
 export class Relay<T> implements IDisposable {
-
 	private listening = false;
 	private inputEvent: Event<T> = Event.None;
 	private inputEventListener: IDisposable = Disposable.None;
@@ -1885,7 +2055,7 @@ export class ValueWithChangeEvent<T> implements IValueWithChangeEvent<T> {
 	private readonly _onDidChange = new Emitter<void>();
 	readonly onDidChange: Event<void> = this._onDidChange.event;
 
-	constructor(private _value: T) { }
+	constructor(private _value: T) {}
 
 	get value(): T {
 		return this._value;
@@ -1902,14 +2072,18 @@ export class ValueWithChangeEvent<T> implements IValueWithChangeEvent<T> {
 class ConstValueWithChangeEvent<T> implements IValueWithChangeEvent<T> {
 	public readonly onDidChange: Event<void> = Event.None;
 
-	constructor(readonly value: T) { }
+	constructor(readonly value: T) {}
 }
 
 /**
  * @param handleItem Is called for each item in the set (but only the first time the item is seen in the set).
  * 	The returned disposable is disposed if the item is no longer in the set.
  */
-export function trackSetChanges<T>(getData: () => ReadonlySet<T>, onDidChangeData: Event<unknown>, handleItem: (d: T) => IDisposable): IDisposable {
+export function trackSetChanges<T>(
+	getData: () => ReadonlySet<T>,
+	onDidChangeData: Event<unknown>,
+	handleItem: (d: T) => IDisposable
+): IDisposable {
 	const map = new DisposableMap<T, IDisposable>();
 	let oldData = new Set(getData());
 	for (const d of oldData) {
@@ -1917,21 +2091,22 @@ export function trackSetChanges<T>(getData: () => ReadonlySet<T>, onDidChangeDat
 	}
 
 	const store = new DisposableStore();
-	store.add(onDidChangeData(() => {
-		const newData = getData();
-		const diff = diffSets(oldData, newData);
-		for (const r of diff.removed) {
-			map.deleteAndDispose(r);
-		}
-		for (const a of diff.added) {
-			map.set(a, handleItem(a));
-		}
-		oldData = new Set(newData);
-	}));
+	store.add(
+		onDidChangeData(() => {
+			const newData = getData();
+			const diff = diffSets(oldData, newData);
+			for (const r of diff.removed) {
+				map.deleteAndDispose(r);
+			}
+			for (const a of diff.added) {
+				map.set(a, handleItem(a));
+			}
+			oldData = new Set(newData);
+		})
+	);
 	store.add(map);
 	return store;
 }
-
 
 function addToDisposables(result: IDisposable, disposables: DisposableStore | IDisposable[] | undefined) {
 	if (disposables instanceof DisposableStore) {

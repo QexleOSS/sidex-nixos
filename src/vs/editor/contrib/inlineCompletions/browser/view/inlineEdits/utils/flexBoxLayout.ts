@@ -14,7 +14,6 @@ export interface IFlexBoxPartExtensionRule {
 	share?: number;
 }
 
-
 /**
  * Distributes a total size into parts that each have a list of growth rules.
  * Returns `null` if the layout is not possible.
@@ -23,7 +22,7 @@ export interface IFlexBoxPartExtensionRule {
  * First, each part gets its minimum size.
  * Then, remaining space is distributed to the rules with the highest priority, as long as the max constraint allows it (considering share).
  * This continues with next lower priority rules until no space is left.
-*/
+ */
 export function distributeFlexBoxLayout<T extends Record<string, IFlexBoxPartGrowthRule | IFlexBoxPartGrowthRule[]>>(
 	totalSize: number,
 	parts: T & Record<string, IFlexBoxPartGrowthRule | IFlexBoxPartGrowthRule[]>

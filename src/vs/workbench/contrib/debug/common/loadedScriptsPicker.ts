@@ -5,7 +5,11 @@
 import * as nls from '../../../../nls.js';
 import { matchesFuzzy } from '../../../../base/common/filters.js';
 import { Source } from './debugSource.js';
-import { IQuickInputService, IQuickPickItem, IQuickPickSeparator } from '../../../../platform/quickinput/common/quickInput.js';
+import {
+	IQuickInputService,
+	IQuickPickItem,
+	IQuickPickSeparator
+} from '../../../../platform/quickinput/common/quickInput.js';
 import { IDebugService, IDebugSession } from './debug.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { getIconClasses } from '../../../../editor/common/services/getIconClasses.js';
@@ -38,22 +42,47 @@ export async function showLoadedScriptMenu(accessor: ServicesAccessor) {
 	const quickPick = quickInputService.createQuickPick<IPickerDebugItem>({ useSeparators: true });
 	localDisposableStore.add(quickPick);
 	quickPick.matchOnLabel = quickPick.matchOnDescription = quickPick.matchOnDetail = quickPick.sortByLabel = false;
-	quickPick.placeholder = nls.localize('moveFocusedView.selectView', "Search loaded scripts by name");
-	quickPick.items = await _getPicks(quickPick.value, sessions, editorService, modelService, languageService, labelService);
+	quickPick.placeholder = nls.localize('moveFocusedView.selectView', 'Search loaded scripts by name');
+	quickPick.items = await _getPicks(
+		quickPick.value,
+		sessions,
+		editorService,
+		modelService,
+		languageService,
+		labelService
+	);
 
-	localDisposableStore.add(quickPick.onDidChangeValue(async () => {
-		quickPick.items = await _getPicks(quickPick.value, sessions, editorService, modelService, languageService, labelService);
-	}));
-	localDisposableStore.add(quickPick.onDidAccept(() => {
-		const selectedItem = quickPick.selectedItems[0];
-		selectedItem.accept();
-		quickPick.hide();
-	}));
+	localDisposableStore.add(
+		quickPick.onDidChangeValue(async () => {
+			quickPick.items = await _getPicks(
+				quickPick.value,
+				sessions,
+				editorService,
+				modelService,
+				languageService,
+				labelService
+			);
+		})
+	);
+	localDisposableStore.add(
+		quickPick.onDidAccept(() => {
+			const selectedItem = quickPick.selectedItems[0];
+			selectedItem.accept();
+			quickPick.hide();
+		})
+	);
 	localDisposableStore.add(quickPick.onDidHide(() => localDisposableStore.dispose()));
 	quickPick.show();
 }
 
-async function _getPicksFromSession(session: IDebugSession, filter: string, editorService: IEditorService, modelService: IModelService, languageService: ILanguageService, labelService: ILabelService): Promise<Array<IPickerDebugItem | IQuickPickSeparator>> {
+async function _getPicksFromSession(
+	session: IDebugSession,
+	filter: string,
+	editorService: IEditorService,
+	modelService: IModelService,
+	languageService: ILanguageService,
+	labelService: ILabelService
+): Promise<Array<IPickerDebugItem | IQuickPickSeparator>> {
 	const items: Array<IPickerDebugItem | IQuickPickSeparator> = [];
 	items.push({ type: 'separator', label: session.name });
 	const sources = await session.getLoadedSources();
@@ -63,16 +92,23 @@ async function _getPicksFromSession(session: IDebugSession, filter: string, edit
 		if (pick) {
 			items.push(pick);
 		}
-
 	});
 	return items;
 }
-async function _getPicks(filter: string, sessions: IDebugSession[], editorService: IEditorService, modelService: IModelService, languageService: ILanguageService, labelService: ILabelService): Promise<Array<IPickerDebugItem | IQuickPickSeparator>> {
+async function _getPicks(
+	filter: string,
+	sessions: IDebugSession[],
+	editorService: IEditorService,
+	modelService: IModelService,
+	languageService: ILanguageService,
+	labelService: ILabelService
+): Promise<Array<IPickerDebugItem | IQuickPickSeparator>> {
 	const loadedScriptPicks: Array<IPickerDebugItem | IQuickPickSeparator> = [];
 
-
 	const picks = await Promise.all(
-		sessions.map((session) => _getPicksFromSession(session, filter, editorService, modelService, languageService, labelService))
+		sessions.map(session =>
+			_getPicksFromSession(session, filter, editorService, modelService, languageService, labelService)
+		)
 	);
 
 	for (const row of picks) {
@@ -83,8 +119,14 @@ async function _getPicks(filter: string, sessions: IDebugSession[], editorServic
 	return loadedScriptPicks;
 }
 
-function _createPick(source: Source, filter: string, editorService: IEditorService, modelService: IModelService, languageService: ILanguageService, labelService: ILabelService): IPickerDebugItem | undefined {
-
+function _createPick(
+	source: Source,
+	filter: string,
+	editorService: IEditorService,
+	modelService: IModelService,
+	languageService: ILanguageService,
+	labelService: ILabelService
+): IPickerDebugItem | undefined {
 	const label = labelService.getUriBasenameLabel(source.uri);
 	const desc = labelService.getUriLabel(dirname(source.uri));
 

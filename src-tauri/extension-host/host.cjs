@@ -12,6 +12,93 @@ process.on('uncaughtException', (err) => {
   } catch {}
 });
 
+const _isWin = process.platform === 'win32';
+
+function uriPathToFsPath(uriPath) {
+  if (!uriPath) return uriPath;
+  if (_isWin && /^\/[A-Za-z]:/.test(uriPath)) {
+    return uriPath.slice(1).replace(/\//g, '\\');
+  }
+  return uriPath;
+}
+
+const VSCODE_RESOURCE_RE = /https:\/\/file\+[^.]*\.vscode-resource\.vscode-cdn\.net(\/[^"')\s]*)/g;
+
+function extractResourcePath(url) {
+  const m = /https:\/\/file\+[^.]*\.vscode-resource\.vscode-cdn\.net(\/[^"')\s]*)/.exec(url);
+  return m ? uriPathToFsPath(decodeURIComponent(m[1])) : null;
+}
+
+function inlineWebviewResources(html) {
+  if (!html || typeof html !== 'string') return html;
+  let result = html;
+
+  result = result.replace(
+    /<link[^>]+href=["'](https:\/\/file\+[^.]*\.vscode-resource\.vscode-cdn\.net\/[^"']+\.css)["'][^>]*\/?>/gi,
+    (_match, url) => {
+      const p = extractResourcePath(url);
+      if (!p) return _match;
+      try {
+        let css = fs.readFileSync(p, 'utf8');
+        css = inlineCssUrls(css);
+        return `<style>${css}</style>`;
+      } catch { return _match; }
+    }
+  );
+
+  result = result.replace(
+    /<script[^>]+src=["'](https:\/\/file\+[^.]*\.vscode-resource\.vscode-cdn\.net\/[^"']+\.js)["'][^>]*><\/script>/gi,
+    (_match, url) => {
+      const p = extractResourcePath(url);
+      if (!p) return _match;
+      try {
+        const content = fs.readFileSync(p, 'utf8').replace(/<\/script/gi, '<\\/script');
+        return `<script>${content}<\/script>`;
+      } catch { return _match; }
+    }
+  );
+
+  const binaryMimes = {
+    '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp',
+    '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf',
+    '.otf': 'font/otf', '.eot': 'application/vnd.ms-fontobject',
+  };
+  result = result.replace(VSCODE_RESOURCE_RE, (_match, rawPath) => {
+    const p = decodeURIComponent(rawPath);
+    const ext = path.extname(p).toLowerCase();
+    const mime = binaryMimes[ext];
+    if (mime) {
+      try { return `data:${mime};base64,${fs.readFileSync(p).toString('base64')}`; } catch { return _match; }
+    }
+    try {
+      const content = fs.readFileSync(p, 'utf8');
+      const guessedMime = ext === '.css' ? 'text/css' : ext === '.js' ? 'text/javascript' : 'text/plain';
+      return `data:${guessedMime};base64,${Buffer.from(content).toString('base64')}`;
+    } catch { return _match; }
+  });
+
+  result = result.replace(/<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]*>/gi, '');
+
+  return result;
+}
+
+function inlineCssUrls(css) {
+  const binaryMimes = {
+    '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp',
+    '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf',
+    '.otf': 'font/otf', '.eot': 'application/vnd.ms-fontobject',
+  };
+  return css.replace(/url\(["']?(https:\/\/file\+[^.]*\.vscode-resource\.vscode-cdn\.net\/[^"')\s]+)["']?\)/gi, (_match, url) => {
+    const p = extractResourcePath(url);
+    if (!p) return _match;
+    const mime = binaryMimes[path.extname(p).toLowerCase()];
+    if (!mime) return _match;
+    try { return `url(data:${mime};base64,${fs.readFileSync(p).toString('base64')})`; } catch { return _match; }
+  });
+}
+
 process.on('unhandledRejection', (reason) => {
   try {
     process.stderr.write(`[ext-host] unhandled rejection: ${reason?.stack || reason?.message || String(reason)}\n`);
@@ -63,11 +150,13 @@ class ExtensionHost extends EventEmitter {
     this._extensionPaths = [];
     this._outputChannels = new Map();
     this._textDocuments = new Map();
+    this._editors = new Map();
+    this._activeEditorId = null;
+    this._editorValues = new Map();
+    this._nextDecorationTypeId = 0;
+    this._decorationTypes = new Map();
     this._workspaceFolders = [];
     this._configuration = new Map();
-    this._activeEditorUri = null;
-    this._activeEditorLanguageId = null;
-    this._activeEditorSelections = [];
     this._languageConfigurations = new Map();
     this._fileWatchers = new Map();
     this._nextWatcherId = 1;
@@ -97,7 +186,6 @@ class ExtensionHost extends EventEmitter {
     log('host shut down');
   }
 
-  // ── Message router (called by server.js) ──────────────────────────
 
   handleMessage(msg) {
     const { id, type, method, params } = msg;
@@ -173,6 +261,10 @@ class ExtensionHost extends EventEmitter {
         return this._handleDocumentSaved(id, params);
       case 'activeEditorChanged':
         return this._handleActiveEditorChanged(id, params);
+      case 'editorsDelta':
+        return this._handleEditorsDelta(id, params);
+      case 'editorPropertiesChanged':
+        return this._handleEditorPropertiesChanged(id, params);
       case 'messageResponse':
         return this._handleMessageResponse(id, params);
       case 'setLanguageConfiguration':
@@ -187,12 +279,55 @@ class ExtensionHost extends EventEmitter {
         return this._handleSetConfiguration(id, params);
       case 'getProviderCapabilities':
         return this._handleGetProviderCapabilities(id);
+      case 'getExtensionState':
+        return this._handleGetExtensionState(id);
+      case 'resetPanels':
+        return this._handleResetPanels(id);
+      case 'activateByEvent':
+        this._checkActivationEvents(params?.event || '');
+        return { id, result: true };
+      case 'viewOpened':
+        this._checkActivationEvents(`onView:${params?.viewId || ''}`);
+        return { id, result: true };
+      case 'handleUri':
+        this._checkActivationEvents('onUri');
+        if (this._uriHandler && typeof this._uriHandler.handleUri === 'function') {
+          try { this._uriHandler.handleUri(params?.uri); } catch {}
+        }
+        return { id, result: true };
+      case 'debugStarted':
+        this._checkActivationEvents('onDebug');
+        if (params?.type) this._checkActivationEvents(`onDebugResolve:${params.type}`);
+        return { id, result: true };
+      case 'resolveWebviewView':
+        return this._handleResolveWebviewView(id, params);
+      case 'webviewViewMessage':
+        return this._handleWebviewViewMessage(id, params);
+      case 'webviewViewVisible':
+        return this._handleWebviewViewVisible(id, params);
+      case 'webviewViewDispose':
+        return this._handleWebviewViewDispose(id, params);
+      case 'webviewMessage':
+        return this._handleWebviewMessage(id, params);
+      case 'webviewPanelClosed':
+        return this._handleWebviewPanelClosed(id, params);
+      case 'workbenchCommandResult':
+        if (params?.editorState && this._activeEditorId) {
+          const ed = this._editors.get(this._activeEditorId);
+          if (ed && params.editorState.selections) {
+            ed.selections = params.editorState.selections;
+            ed._vscSelections = params.editorState.selections.map(
+              s => new VscSelection(s.anchor?.line ?? 0, s.anchor?.character ?? 0, s.active?.line ?? 0, s.active?.character ?? 0)
+            );
+          }
+        }
+        this.emit('inbound', { type: 'workbenchCommandResult', reqId: params?.reqId, result: params?.result, error: params?.error });
+        return { id, result: true };
       default:
         return { id, error: `unknown method: ${type || method}` };
     }
   }
 
-  // ── Protocol handlers ─────────────────────────────────────────────
 
   _handleInitialize(id, params) {
     if (params && params.extensionPaths) {
@@ -262,6 +397,10 @@ class ExtensionHost extends EventEmitter {
     try {
       const { extensionPath } = params;
       const manifest = this._readManifest(extensionPath);
+      const existing = this._extensions.get(manifest.id);
+      if (existing && existing.activated) {
+        return { id, result: { extensionId: manifest.id, name: manifest.name, alreadyActive: true } };
+      }
       this._extensions.set(manifest.id, {
         manifest,
         extensionPath,
@@ -279,6 +418,19 @@ class ExtensionHost extends EventEmitter {
   _handleActivateExtension(id, params) {
     try {
       const { extensionId } = params;
+      const ext = this._extensions.get(extensionId);
+      if (ext && !ext.activated) {
+        const events = ext.manifest?.activationEvents || [];
+        const hasStar = events.includes('*') || events.length === 0;
+        const hasStartupFinished = events.includes('onStartupFinished');
+        if (!hasStar && hasStartupFinished && !this._initialEditorsReceived) {
+          if (!this._deferredStartupActivations) {
+            this._deferredStartupActivations = new Set();
+          }
+          this._deferredStartupActivations.add(extensionId);
+          return { id, result: { activated: false, deferred: true } };
+        }
+      }
       this._activateExtension(extensionId).catch((e) => {
         log(`activation error (${extensionId}): ${e.message}`);
       });
@@ -303,9 +455,14 @@ class ExtensionHost extends EventEmitter {
     }
   }
 
-  _handleExecuteCommand(id, params) {
+  async _handleExecuteCommand(id, params) {
     const { command, args } = params;
-    const handler = this._commands.get(command);
+    let handler = this._commands.get(command);
+    if (!handler) {
+      this._checkActivationEvents(`onCommand:${command}`);
+      await new Promise((r) => setTimeout(r, 100));
+      handler = this._commands.get(command);
+    }
     if (!handler) return { id, error: `unknown command: ${command}` };
     try {
       const result = handler(...(args || []));
@@ -373,11 +530,121 @@ class ExtensionHost extends EventEmitter {
   }
 
   _handleActiveEditorChanged(id, params) {
-    const { uri, languageId, selections } = params;
-    this._activeEditorUri = uri || null;
-    this._activeEditorLanguageId = languageId || null;
-    this._activeEditorSelections = selections || [];
-    this._onActiveEditorChangeEvent?.fire(uri ? this._makeTextEditorProxy(uri) : undefined);
+    const { uri, languageId } = params;
+    let editorId = null;
+    for (const [eid, ed] of this._editors) {
+      if (ed.uri === uri) { editorId = eid; break; }
+    }
+    if (uri && !editorId) {
+      editorId = `legacy-${uri}`;
+      this._editors.set(editorId, {
+        id: editorId, uri, selections: [], options: { tabSize: 4, insertSpaces: true, cursorStyle: 1, lineNumbers: 1 }, visibleRanges: [], viewColumn: 1,
+        _vscSelections: [new VscSelection(0, 0, 0, 0)]
+      });
+      this._editorValues.set(editorId, this._createEditorValue(editorId));
+    }
+    const oldActiveId = this._activeEditorId;
+    this._activeEditorId = editorId;
+    if (oldActiveId !== editorId) {
+      this._onActiveEditorChangeEvent?.fire(editorId ? this._editorValues.get(editorId) : undefined);
+    }
+    return { id, result: true };
+  }
+
+  _handleEditorsDelta(id, params) {
+    const { removedEditors, addedEditors, newActiveEditor } = params || {};
+    const wasInitialized = this._initialEditorsReceived;
+    this._initialEditorsReceived = true;
+    if (this._pendingStartupFinished) {
+      this._pendingStartupFinished = false;
+      queueMicrotask(() => this._checkActivationEvents('onStartupFinished'));
+    }
+
+    if (removedEditors && Array.isArray(removedEditors)) {
+      for (const edId of removedEditors) {
+        this._editors.delete(edId);
+        this._editorValues.delete(edId);
+      }
+    }
+
+    if (addedEditors && Array.isArray(addedEditors)) {
+      for (const added of addedEditors) {
+        const sels = (added.selections || []).map(
+          s => new VscSelection(s.anchor?.line ?? 0, s.anchor?.character ?? 0, s.active?.line ?? 0, s.active?.character ?? 0)
+        );
+        if (!sels.length) sels.push(new VscSelection(0, 0, 0, 0));
+        this._editors.set(added.id, {
+          id: added.id,
+          uri: added.documentUri,
+          selections: added.selections || [],
+          options: added.options || { tabSize: 4, insertSpaces: true, cursorStyle: 1, lineNumbers: 1 },
+          visibleRanges: added.visibleRanges || [],
+          viewColumn: added.viewColumn || 1,
+          _vscSelections: sels
+        });
+        this._editorValues.set(added.id, this._createEditorValue(added.id));
+      }
+    }
+
+    if (removedEditors?.length || addedEditors?.length) {
+      this._onVisibleEditorsChangeEvent?.fire([...this._editorValues.values()]);
+    }
+
+    if (newActiveEditor !== undefined) {
+      const oldActiveId = this._activeEditorId;
+      this._activeEditorId = newActiveEditor;
+      if (oldActiveId !== newActiveEditor) {
+        this._onActiveEditorChangeEvent?.fire(newActiveEditor ? this._editorValues.get(newActiveEditor) : undefined);
+      }
+    }
+
+    if (!wasInitialized && this._deferredStartupActivations && this._deferredStartupActivations.size) {
+      const pending = [...this._deferredStartupActivations];
+      this._deferredStartupActivations.clear();
+      for (const extId of pending) {
+        this._activateExtension(extId).catch((e) =>
+          log(`deferred activation error (${extId}): ${e.message}`)
+        );
+      }
+    }
+
+    return { id, result: true };
+  }
+
+  _handleEditorPropertiesChanged(id, params) {
+    const { editorId, selections, options, visibleRanges } = params || {};
+    const ed = this._editors.get(editorId);
+    if (!ed) return { id, result: true };
+
+    if (selections) {
+      ed.selections = selections.selections || [];
+      ed._vscSelections = (selections.selections || []).map(
+        s => new VscSelection(s.anchor?.line ?? 0, s.anchor?.character ?? 0, s.active?.line ?? 0, s.active?.character ?? 0)
+      );
+      if (!ed._vscSelections.length) ed._vscSelections.push(new VscSelection(0, 0, 0, 0));
+      this._onSelectionChangeEvent?.fire({
+        textEditor: this._editorValues.get(editorId),
+        selections: ed._vscSelections,
+        kind: selections.source === 'keyboard' ? 1 : selections.source === 'mouse' ? 2 : selections.source === 'api' ? 3 : undefined
+      });
+    }
+
+    if (options) {
+      Object.assign(ed.options, options);
+      this._onOptionsChangeEvent?.fire({
+        textEditor: this._editorValues.get(editorId),
+        options: ed.options
+      });
+    }
+
+    if (visibleRanges) {
+      ed.visibleRanges = visibleRanges;
+      this._onVisibleRangesChangeEvent?.fire({
+        textEditor: this._editorValues.get(editorId),
+        visibleRanges: visibleRanges.map(r => new VscRange(r.start.line, r.start.character, r.end.line, r.end.character))
+      });
+    }
+
     return { id, result: true };
   }
 
@@ -433,7 +700,11 @@ class ExtensionHost extends EventEmitter {
 
   _makeTextEditorProxy(uri) {
     const doc = this._makeDocumentProxy(uri);
-    const selections = (this._activeEditorSelections || []).map(
+    let rawSelections = [];
+    for (const [, ed] of this._editors) {
+      if (ed.uri === uri) { rawSelections = ed.selections || []; break; }
+    }
+    const selections = rawSelections.map(
       (s) =>
         new VscSelection(s.anchor?.line ?? 0, s.anchor?.character ?? 0, s.active?.line ?? 0, s.active?.character ?? 0),
     );
@@ -493,6 +764,111 @@ class ExtensionHost extends EventEmitter {
       show: () => {},
       hide: () => {},
     };
+  }
+
+  _createEditorValue(editorId) {
+    const host = this;
+    const value = Object.freeze({
+      get document() {
+        const ed = host._editors.get(editorId);
+        return ed ? host._makeDocumentProxy(ed.uri) : undefined;
+      },
+      get selection() {
+        const ed = host._editors.get(editorId);
+        return ed?._vscSelections?.[0] || new VscSelection(0, 0, 0, 0);
+      },
+      set selection(sel) {
+        const ed = host._editors.get(editorId);
+        if (ed) {
+          ed._vscSelections = [sel];
+          host.emit('event', { type: 'trySetSelections', editorId, selections: [{ anchor: { line: sel.anchor.line, character: sel.anchor.character }, active: { line: sel.active.line, character: sel.active.character } }] });
+        }
+      },
+      get selections() {
+        const ed = host._editors.get(editorId);
+        return ed?._vscSelections || [new VscSelection(0, 0, 0, 0)];
+      },
+      set selections(sels) {
+        const ed = host._editors.get(editorId);
+        if (ed) {
+          ed._vscSelections = sels;
+          host.emit('event', { type: 'trySetSelections', editorId, selections: sels.map(s => ({ anchor: { line: s.anchor.line, character: s.anchor.character }, active: { line: s.active.line, character: s.active.character } })) });
+        }
+      },
+      get options() {
+        const ed = host._editors.get(editorId);
+        return ed?.options || { tabSize: 4, insertSpaces: true, cursorStyle: 1, lineNumbers: 1 };
+      },
+      set options(opts) {
+        const ed = host._editors.get(editorId);
+        if (ed && opts && typeof opts === 'object') {
+          Object.assign(ed.options, opts);
+          host.emit('event', { type: 'trySetOptions', editorId, options: ed.options });
+        }
+      },
+      get visibleRanges() {
+        const ed = host._editors.get(editorId);
+        return (ed?.visibleRanges || []).map(r => new VscRange(r.start?.line ?? 0, r.start?.character ?? 0, r.end?.line ?? 0, r.end?.character ?? 0));
+      },
+      get viewColumn() {
+        const ed = host._editors.get(editorId);
+        return ed?.viewColumn || 1;
+      },
+      edit(callback) {
+        const ed = host._editors.get(editorId);
+        if (!ed) return Promise.resolve(false);
+        const doc = host._makeDocumentProxy(ed.uri);
+        const edits = [];
+        const toRange = (loc) =>
+          loc instanceof VscRange
+            ? loc
+            : loc?.start && loc?.end
+              ? new VscRange(loc.start.line, loc.start.character, loc.end.line, loc.end.character)
+              : new VscRange(loc, loc);
+        const builder = {
+          replace(loc, val) { edits.push({ range: toRange(loc), newText: val }); },
+          insert(pos, val) { edits.push({ range: new VscRange(pos, pos), newText: val }); },
+          delete(range) { edits.push({ range, newText: '' }); },
+          setEndOfLine() {},
+        };
+        callback(builder);
+        if (edits.length) {
+          const serializedEdits = edits.map(e => ({ uri: doc.uri.toString(), range: e.range, newText: e.newText }));
+          host.emit('event', { type: 'applyEdit', edits: serializedEdits });
+          const stored = host._textDocuments.get(doc.uri.toString());
+          if (stored) {
+            const lines = stored.text.split('\n');
+            const toOffset = (line, char) => {
+              let off = 0;
+              for (let i = 0; i < line && i < lines.length; i++) off += lines[i].length + 1;
+              return off + Math.min(char, (lines[line] || '').length);
+            };
+            for (const e of edits) {
+              const start = toOffset(e.range.start.line, e.range.start.character);
+              const end = toOffset(e.range.end.line, e.range.end.character);
+              stored.text = stored.text.substring(0, start) + e.newText + stored.text.substring(end);
+              stored.version += 1;
+            }
+          }
+        }
+        return Promise.resolve(true);
+      },
+      insertSnippet: () => Promise.resolve(true),
+      setDecorations(decorationType, ranges) {
+        const key = decorationType?.key || decorationType;
+        const serialized = (ranges || []).map(r => {
+          if (r.range) return { range: r.range, renderOptions: r.renderOptions, hoverMessage: r.hoverMessage };
+          return { range: r };
+        });
+        host.emit('event', { type: 'trySetDecorations', editorId, key, ranges: serialized });
+      },
+      revealRange(range, revealType) {
+        host.emit('event', { type: 'tryRevealRange', editorId, range: { start: { line: range.start.line, character: range.start.character }, end: { line: range.end.line, character: range.end.character } }, revealType: revealType || 0 });
+      },
+      show() {},
+      hide() {},
+    });
+    return value;
   }
 
   _handleSetConfiguration(id, params) {
@@ -609,10 +985,178 @@ class ExtensionHost extends EventEmitter {
     const capabilities = {};
     for (const [kind, providers] of Object.entries(this._providers)) {
       if (providers.length > 0) {
-        capabilities[kind] = providers.map((p) => p.selector);
+        capabilities[kind] = providers.map((p) => ({
+          selector: p.selector,
+          extensionId: p.extensionId,
+          displayName: p.displayName,
+        }));
       }
     }
     return { id, result: capabilities };
+  }
+
+  _handleGetExtensionState(id) {
+    const commands = [...this._commands.keys()];
+    const webviewViewProviders = this._webviewViewProviders ? [...this._webviewViewProviders.keys()] : [];
+    const customEditorProviders = this._customEditorProviders ? [...this._customEditorProviders.keys()] : [];
+    return {
+      id,
+      result: { commands, webviewViewProviders, customEditorProviders },
+    };
+  }
+
+  _handleResetPanels(id) {
+    if (this._webviewPanels) {
+      for (const [panelId, panel] of this._webviewPanels) {
+        if (panel && panel._disposeEmitter) {
+          panel._disposeEmitter.fire();
+          panel._disposeEmitter.dispose();
+        }
+        if (panel && panel._messageEmitter) panel._messageEmitter.dispose();
+        if (panel && panel._viewStateEmitter) panel._viewStateEmitter.dispose();
+      }
+      this._webviewPanels.clear();
+    }
+    if (this._webviewViews) {
+      for (const [handle, entry] of this._webviewViews) {
+        entry.disposeEmitter.emit('dispose');
+      }
+      this._webviewViews.clear();
+    }
+    return { id, result: true };
+  }
+
+  _handleResolveWebviewView(id, params) {
+    const { viewId, webviewHandle } = params;
+    const provider = this._webviewViewProviders?.get(viewId);
+    if (!provider) return { id, error: `no provider for ${viewId}` };
+
+    const messageEmitter = new (require('events').EventEmitter)();
+    const disposeEmitter = new (require('events').EventEmitter)();
+    const visibilityEmitter = new (require('events').EventEmitter)();
+    let _html = '';
+    let _visible = true;
+    let _options = { enableScripts: true, enableForms: false, localResourceRoots: [] };
+    const host = this;
+    const RESOURCE_AUTHORITY = 'vscode-resource.vscode-cdn.net';
+
+    const webviewView = {
+      get viewType() { return viewId; },
+      _handle: webviewHandle,
+      title: params.title || '',
+      description: '',
+      badge: undefined,
+      webview: {
+        get options() { return _options; },
+        set options(v) { _options = { ..._options, ...v }; },
+        get html() { return _html; },
+        set html(v) {
+          _html = v;
+          host.emit('event', { type: 'webviewViewHtmlUpdate', webviewHandle, html: inlineWebviewResources(v) });
+        },
+        onDidReceiveMessage: (listener) => {
+          messageEmitter.on('message', listener);
+          return { dispose() { messageEmitter.removeListener('message', listener); } };
+        },
+        postMessage(msg) {
+          host.emit('event', { type: 'webviewViewPostMessage', webviewHandle, message: msg });
+          return Promise.resolve(true);
+        },
+        asWebviewUri(localUri) {
+          if (!localUri) return localUri;
+          const u = typeof localUri === 'string' ? localUri : (localUri.toString ? localUri.toString() : String(localUri));
+          const scheme = localUri.scheme || 'file';
+          const authority = localUri.authority || '';
+          const uriPath = localUri.path || '';
+          const nativePath = localUri.fsPath || uriPathToFsPath(uriPath) || '';
+          if (scheme === 'http' || scheme === 'https') return localUri;
+          const imgMimes = { '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.ico': 'image/x-icon' };
+          const ext = path.extname(nativePath).toLowerCase();
+          if (imgMimes[ext]) {
+            try {
+              const dataUri = `data:${imgMimes[ext]};base64,${fs.readFileSync(nativePath).toString('base64')}`;
+              return { scheme: 'data', authority: '', path: dataUri.slice(5), query: '', fragment: '', fsPath: nativePath, toString() { return dataUri; }, with(change) { return { ...this, ...change }; }, toJSON() { return { $mid: 1, scheme: 'data', path: this.path }; } };
+            } catch {}
+          }
+          return {
+            scheme: 'https',
+            authority: `${scheme}+${authority}.${RESOURCE_AUTHORITY}`,
+            path: uriPath,
+            query: localUri.query || '',
+            fragment: localUri.fragment || '',
+            fsPath: nativePath,
+            toString() { return `https://${this.authority}${this.path}`; },
+            with(change) { return { ...this, ...change }; },
+            toJSON() { return { scheme: this.scheme, authority: this.authority, path: this.path }; },
+          };
+        },
+        cspSource: `https://*.${RESOURCE_AUTHORITY} 'self' http://localhost:* *`,
+      },
+      get visible() { return _visible; },
+      onDidChangeVisibility: (listener) => {
+        visibilityEmitter.on('change', listener);
+        return { dispose() { visibilityEmitter.removeListener('change', listener); } };
+      },
+      onDispose: (listener) => {
+        disposeEmitter.on('dispose', listener);
+        return { dispose() { disposeEmitter.removeListener('dispose', listener); } };
+      },
+      dispose() { disposeEmitter.emit('dispose'); },
+      show(preserveFocus) {
+        host.emit('event', { type: 'webviewViewShow', webviewHandle, preserveFocus });
+      },
+    };
+
+    if (!this._webviewViews) this._webviewViews = new Map();
+    this._webviewViews.set(webviewHandle, { view: webviewView, messageEmitter, disposeEmitter, visibilityEmitter });
+
+    try {
+      provider.resolveWebviewView(webviewView, { state: params.state }, { isCancellationRequested: false, onCancellationRequested: () => ({ dispose() {} }) });
+    } catch (e) {
+      log(`resolveWebviewView error (${viewId}): ${e.message}`);
+    }
+    return { id, result: { resolved: true } };
+  }
+
+  _handleWebviewViewMessage(id, params) {
+    const entry = this._webviewViews?.get(params.webviewHandle);
+    if (entry) entry.messageEmitter.emit('message', params.message);
+    return { id, result: true };
+  }
+
+  _handleWebviewViewVisible(id, params) {
+    const entry = this._webviewViews?.get(params.webviewHandle);
+    if (entry) entry.visibilityEmitter.emit('change', params.visible);
+    return { id, result: true };
+  }
+
+  _handleWebviewViewDispose(id, params) {
+    const entry = this._webviewViews?.get(params.webviewHandle);
+    if (entry) {
+      entry.disposeEmitter.emit('dispose');
+      this._webviewViews.delete(params.webviewHandle);
+    }
+    return { id, result: true };
+  }
+
+  _handleWebviewMessage(id, params) {
+    const panel = [...(this._webviewPanels?.values?.() || [])].find(p => p?._panelId === params.panelId);
+    if (panel && panel._messageEmitter) panel._messageEmitter.fire(params.message);
+    return { id, result: true };
+  }
+
+  _handleWebviewPanelClosed(id, params) {
+    const panel = [...(this._webviewPanels?.values?.() || [])].find(p => p?._panelId === params.panelId);
+    if (panel) {
+      if (panel._disposeEmitter) {
+        panel._disposeEmitter.fire();
+        panel._disposeEmitter.dispose();
+      }
+      if (panel._messageEmitter) panel._messageEmitter.dispose();
+      if (panel._viewStateEmitter) panel._viewStateEmitter.dispose();
+      this._webviewPanels.delete(params.panelId);
+    }
+    return { id, result: true };
   }
 
   _invokeProviders(kind, id, params) {
@@ -628,8 +1172,24 @@ class ExtensionHost extends EventEmitter {
           : [];
       return { id, result: kind === 'completion' ? { items: [] } : empty };
     }
+    const uri = params.uri || params.textDocument?.uri;
+    if (uri && !this._textDocuments.has(uri)) {
+      const langId = params.languageId || params.textDocument?.languageId || 'plaintext';
+      const ver = params.version || params.textDocument?.version || 1;
+      this._textDocuments.set(uri, { uri, languageId: langId, version: ver, text: '' });
+      if (uri.startsWith('file://')) {
+        try {
+          const filePath = uri.startsWith('file:///') ? uri.slice(7) : uri.slice(5);
+          if (fs.existsSync(filePath)) {
+            this._textDocuments.get(uri).text = fs.readFileSync(filePath, 'utf-8');
+          }
+        } catch {}
+      }
+      this._onDocumentEvent.fire(this._makeDocumentProxy(uri));
+      log(`[providers] auto-synced document for ${kind}: ${uri} (${this._textDocuments.get(uri).text.length} chars)`);
+    }
     const doc = this._makeDocumentProxy(
-      params.uri || params.textDocument?.uri,
+      uri,
       params.languageId || params.textDocument?.languageId,
       params.version || params.textDocument?.version,
     );
@@ -728,7 +1288,7 @@ class ExtensionHost extends EventEmitter {
 
     const promises = providers
       .filter((p) => this._matchSelector(p.selector, doc))
-      .map((p) => {
+      .map((p, idx) => {
         try {
           return Promise.resolve(callFn(p.provider));
         } catch (e) {
@@ -854,12 +1414,13 @@ class ExtensionHost extends EventEmitter {
     if (!selector) return true;
     const sel =
       typeof selector === 'string' ? [{ language: selector }] : Array.isArray(selector) ? selector : [selector];
+    const docScheme = doc.uri?.scheme || 'file';
     return sel.some((s) => {
       if (typeof s === 'string') return s === doc.languageId || s === '*';
-      return (
-        (!s.language || s.language === doc.languageId || s.language === '*') &&
-        (!s.scheme || s.scheme === 'file' || s.scheme === '*')
-      );
+      if (s.notebookType) return false;
+      const langMatch = !s.language || s.language === doc.languageId || s.language === '*';
+      const schemeMatch = !s.scheme || s.scheme === docScheme || s.scheme === '*';
+      return langMatch && schemeMatch;
     });
   }
 
@@ -960,7 +1521,7 @@ class ExtensionHost extends EventEmitter {
 
   async _activateExtension(extensionId) {
     const ext = this._extensions.get(extensionId);
-    if (!ext) throw new Error(`extension not found: ${extensionId}`);
+    if (!ext) return null;
     if (ext.activated) return ext.exports;
     if (this._activationPromises.has(extensionId)) return this._activationPromises.get(extensionId);
     if (this._failedExtensions.has(extensionId)) return null;
@@ -983,8 +1544,13 @@ class ExtensionHost extends EventEmitter {
         ext.module = mod;
         ext.context = context;
         if (typeof mod.activate === 'function') {
-          const result = await Promise.resolve(mod.activate(context));
-          ext.exports = result || mod;
+          this._currentActivatingExtension = { id: extensionId, displayName: ext.manifest?.displayName || ext.manifest?.name || extensionId };
+          try {
+            const result = await Promise.resolve(mod.activate(context));
+            ext.exports = result || mod;
+          } finally {
+            this._currentActivatingExtension = null;
+          }
         } else {
           ext.exports = mod;
         }
@@ -1033,7 +1599,6 @@ class ExtensionHost extends EventEmitter {
     const secrets = new Map();
     const workspaceState = createMemento();
     const globalState = createMemento();
-    // Common persistent state keys expected by Python-family extensions.
     globalState.update('PYTHON_GLOBAL_STORAGE_KEYS', []);
     globalState.update('PYTHON_EXTENSION_GLOBAL_STORAGE_KEYS', []);
     workspaceState.update('PYTHON_WORKSPACE_STORAGE_KEYS', []);
@@ -1075,13 +1640,27 @@ class ExtensionHost extends EventEmitter {
         delete: () => {},
         clear: () => {},
         [Symbol.iterator]: function* () {},
+        getScoped(scope) {
+          return {
+            persistent: true,
+            description: '',
+            replace: () => {},
+            append: () => {},
+            prepend: () => {},
+            get: () => undefined,
+            forEach: () => {},
+            delete: () => {},
+            clear: () => {},
+            [Symbol.iterator]: function* () {},
+          };
+        },
       },
       extension: {
         id: extensionId,
         extensionUri: VscUri.file(extensionPath),
         extensionPath,
         isActive: true,
-        packageJSON: ext.manifest.packageJSON || {},
+        packageJSON: ext.manifest.packageJSON || ext.manifest,
         extensionKind: 1,
         exports: undefined,
       },
@@ -1100,7 +1679,6 @@ class ExtensionHost extends EventEmitter {
   }
 }
 
-// ── Helpers used by both the host class and the shim ────────────────────
 
 function log(msg) {
   process.stderr.write(`[ext-host] ${msg}\n`);
@@ -1113,7 +1691,11 @@ function createMemento() {
   const store = new Map();
   return {
     keys: () => [...store.keys()],
-    get: (key, defaultValue) => (store.has(key) ? store.get(key) : defaultValue),
+    get: (key, defaultValue) => {
+      if (!store.has(key)) return defaultValue;
+      const v = store.get(key);
+      return v === undefined || v === null ? defaultValue : v;
+    },
     update: (key, value) => {
       store.set(key, value);
       return Promise.resolve();
@@ -1157,7 +1739,6 @@ function serializeSelectionRange(sr) {
   return { range: sr.range, parent: sr.parent ? serializeSelectionRange(sr.parent) : undefined };
 }
 
-// ── VSCode API types (used globally so host class can reference them) ───
 
 class VscPosition {
   constructor(line, character) {
@@ -1263,17 +1844,30 @@ class VscUri {
     this.path = p || '';
     this.query = query || '';
     this.fragment = fragment || '';
-    this.fsPath = this.scheme === 'file' ? this.path : '';
+    if (this.scheme === 'file') {
+      this.fsPath = _isWin && /^\/[A-Za-z]:/.test(this.path)
+        ? this.path.slice(1).replace(/\//g, '\\')
+        : this.path;
+    } else {
+      this.fsPath = '';
+    }
   }
   static file(p) {
-    return new VscUri('file', '', p);
+    let uriPath = p;
+    if (_isWin && p) {
+      uriPath = p.replace(/\\/g, '/');
+      if (/^[A-Za-z]:/.test(uriPath)) {
+        uriPath = '/' + uriPath;
+      }
+    }
+    return new VscUri('file', '', uriPath);
   }
   static parse(s) {
     try {
       const u = new URL(s);
       return new VscUri(u.protocol.replace(':', ''), u.host, u.pathname, u.search.slice(1), u.hash.slice(1));
     } catch {
-      return new VscUri('file', '', s);
+      return VscUri.file(s);
     }
   }
   static from(components) {
@@ -1286,7 +1880,10 @@ class VscUri {
     return thing instanceof VscUri || (thing && typeof thing.scheme === 'string' && typeof thing.path === 'string');
   }
   toString() {
-    return `${this.scheme}://${this.authority}${this.path}`;
+    let result = `${this.scheme}://${this.authority}${this.path}`;
+    if (this.query) { result += `?${this.query}`; }
+    if (this.fragment) { result += `#${this.fragment}`; }
+    return result;
   }
   toJSON() {
     return {
@@ -1309,7 +1906,6 @@ class VscUri {
   }
 }
 
-// ── Fake `vscode` module ────────────────────────────────────────────────
 
 let hostInstance = null;
 
@@ -1844,6 +2440,10 @@ function createVscodeShim() {
   host._onConfigChangeEvent = new VscEventEmitter();
   host._onDiagnosticsChangeEvent = new VscEventEmitter();
   host._onActiveEditorChangeEvent = new VscEventEmitter();
+  host._onVisibleEditorsChangeEvent = new VscEventEmitter();
+  host._onSelectionChangeEvent = new VscEventEmitter();
+  host._onOptionsChangeEvent = new VscEventEmitter();
+  host._onVisibleRangesChangeEvent = new VscEventEmitter();
 
   const diagnosticCollections = new Map();
 
@@ -1909,7 +2509,13 @@ function createVscodeShim() {
   }
 
   function registerProvider(kind, selector, provider) {
-    const entry = { selector, provider };
+    const activating = host._currentActivatingExtension;
+    const entry = {
+      selector,
+      provider,
+      extensionId: activating?.id,
+      displayName: activating?.displayName || activating?.id,
+    };
     host._providers[kind].push(entry);
     return {
       dispose() {
@@ -2075,11 +2681,16 @@ function createVscodeShim() {
       const sels =
         typeof selector === 'string' ? [{ language: selector }] : Array.isArray(selector) ? selector : [selector];
       let best = 0;
+      const docScheme = document.uri?.scheme || 'file';
       for (const s of sels) {
         const sl = typeof s === 'string' ? { language: s } : s;
+        if (sl.notebookType) continue;
         let score = 0;
         if (sl.language && (sl.language === document.languageId || sl.language === '*')) score += 10;
-        if (sl.scheme && (sl.scheme === document.uri?.scheme || sl.scheme === '*')) score += 10;
+        if (sl.scheme) {
+          if (sl.scheme === docScheme || sl.scheme === '*') score += 10;
+          else continue;
+        }
         if (sl.pattern) score += 5;
         if (score > best) best = score;
       }
@@ -2107,6 +2718,7 @@ function createVscodeShim() {
   const commands = {
     registerCommand(id, handler, thisArg) {
       host._commands.set(id, thisArg ? handler.bind(thisArg) : handler);
+      host.emit('event', { type: 'commandRegistered', commandId: id });
       return {
         dispose() {
           host._commands.delete(id);
@@ -2121,10 +2733,28 @@ function createVscodeShim() {
         },
       };
     },
-    executeCommand(id, ...args) {
-      const fn = host._commands.get(id);
-      if (fn) return Promise.resolve(fn(...args));
-      return Promise.reject(new Error(`command not found: ${id}`));
+    async executeCommand(id, ...args) {
+      let fn = host._commands.get(id);
+      if (!fn) {
+        host._checkActivationEvents(`onCommand:${id}`);
+        await new Promise((r) => setTimeout(r, 100));
+        fn = host._commands.get(id);
+      }
+      if (fn) return fn(...args);
+      return new Promise((resolve, reject) => {
+        const reqId = ++host._reqId;
+        host.emit('event', { type: 'executeWorkbenchCommand', reqId, command: id, args });
+        const timeout = setTimeout(() => reject(new Error(`command timed out: ${id}`)), 10000);
+        const handler = (event) => {
+          if (event && event.type === 'workbenchCommandResult' && event.reqId === reqId) {
+            clearTimeout(timeout);
+            host.removeListener('inbound', handler);
+            if (event.error) reject(new Error(event.error));
+            else resolve(event.result);
+          }
+        };
+        host.on('inbound', handler);
+      });
     },
     getCommands(filterInternal) {
       return Promise.resolve([...host._commands.keys()]);
@@ -2222,20 +2852,19 @@ function createVscodeShim() {
             const sectionValue = getVal(undefined);
             return {
               key: section || '',
-              defaultValue: {},
-              globalValue: sectionValue ?? {},
-              workspaceValue: sectionValue ?? {},
+              defaultValue: undefined,
+              globalValue: sectionValue,
+              workspaceValue: sectionValue,
               workspaceFolderValue: undefined,
             };
           }
           const full = section ? `${section}.${key}` : key;
           const v = host._configuration.get(full);
-          const safe = v === undefined || v === null ? {} : v;
           return {
             key: full,
-            defaultValue: {},
-            globalValue: safe,
-            workspaceValue: safe,
+            defaultValue: undefined,
+            globalValue: v,
+            workspaceValue: v,
             workspaceFolderValue: undefined,
           };
         },
@@ -2398,6 +3027,16 @@ function createVscodeShim() {
               const end = toOffset(e.range.end.line, e.range.end.character);
               doc.text = doc.text.substring(0, start) + e.newText + doc.text.substring(end);
               doc.version++;
+              host._onDocumentChangeEvent.fire({
+                document: host._makeDocumentProxy(e.uri),
+                contentChanges: [{
+                  range: e.range,
+                  rangeOffset: start,
+                  rangeLength: end - start,
+                  text: e.newText,
+                }],
+                reason: undefined,
+              });
             }
           }
         }
@@ -2406,11 +3045,23 @@ function createVscodeShim() {
     },
     saveAll: () => Promise.resolve(true),
     updateWorkspaceFolders: () => false,
-    registerTextDocumentContentProvider: () => noopDisposable,
-    registerTaskProvider: () => noopDisposable,
-    registerFileSystemProvider: () => noopDisposable,
+    registerTextDocumentContentProvider: (scheme, provider) => {
+      if (!host._textContentProviders) host._textContentProviders = new Map();
+      host._textContentProviders.set(scheme, provider);
+      return { dispose() { host._textContentProviders?.delete(scheme); } };
+    },
+    registerTaskProvider: (type, provider) => {
+      return tasks.registerTaskProvider(type, provider);
+    },
+    registerFileSystemProvider: (scheme, provider, options) => {
+      if (!host._fsProviders) host._fsProviders = new Map();
+      host._fsProviders.set(scheme, provider);
+      return { dispose() { host._fsProviders?.delete(scheme); } };
+    },
     isTrusted: true,
     onDidGrantWorkspaceTrust: noopEvent,
+    registerRemoteAuthorityResolver: (authorityPrefix, resolver) => noopDisposable,
+    registerTunnelProvider: (tunnelProvider, features) => noopDisposable,
   };
 
   const window = {
@@ -2523,21 +3174,86 @@ function createVscodeShim() {
       return ch;
     },
     createStatusBarItem(alignmentOrId, priorityOrAlignment, priorityArg) {
-      return {
-        id: '',
-        text: '',
-        tooltip: '',
-        command: '',
-        alignment: 1,
-        priority: 0,
-        name: '',
-        backgroundColor: undefined,
-        color: undefined,
-        accessibilityInformation: undefined,
-        show() {},
-        hide() {},
-        dispose() {},
+      let itemId, alignment, priority;
+      if (typeof alignmentOrId === 'string') {
+        itemId = alignmentOrId;
+        alignment = typeof priorityOrAlignment === 'number' ? priorityOrAlignment : 1;
+        priority = typeof priorityArg === 'number' ? priorityArg : 0;
+      } else {
+        itemId = `sidex-statusbar-${++host._reqId}`;
+        alignment = typeof alignmentOrId === 'number' ? alignmentOrId : 1;
+        priority = typeof priorityOrAlignment === 'number' ? priorityOrAlignment : 0;
+      }
+
+      let _text = '';
+      let _tooltip = '';
+      let _command = '';
+      let _color = undefined;
+      let _backgroundColor = undefined;
+      let _name = '';
+      let _accessibilityInformation = undefined;
+      let _visible = false;
+
+      const emitUpdate = () => {
+        if (!_visible) return;
+        host.emit('event', {
+          type: 'statusBarItemUpdate',
+          id: itemId,
+          text: _text,
+          tooltip: typeof _tooltip === 'string' ? _tooltip : (_tooltip?.value ?? ''),
+          command: typeof _command === 'string' ? _command : _command?.command ?? '',
+          color: _color,
+          backgroundColor: _backgroundColor,
+          name: _name || itemId,
+          alignment,
+          priority,
+        });
       };
+
+      const item = {
+        get id() { return itemId; },
+        get alignment() { return alignment; },
+        get priority() { return priority; },
+        get text() { return _text; },
+        set text(v) { _text = v || ''; emitUpdate(); },
+        get tooltip() { return _tooltip; },
+        set tooltip(v) { _tooltip = v; emitUpdate(); },
+        get command() { return _command; },
+        set command(v) { _command = v; emitUpdate(); },
+        get color() { return _color; },
+        set color(v) { _color = v; emitUpdate(); },
+        get backgroundColor() { return _backgroundColor; },
+        set backgroundColor(v) { _backgroundColor = v; emitUpdate(); },
+        get name() { return _name; },
+        set name(v) { _name = v; emitUpdate(); },
+        get accessibilityInformation() { return _accessibilityInformation; },
+        set accessibilityInformation(v) { _accessibilityInformation = v; },
+        show() {
+          _visible = true;
+          host.emit('event', {
+            type: 'statusBarItemShow',
+            id: itemId,
+            text: _text,
+            tooltip: typeof _tooltip === 'string' ? _tooltip : (_tooltip?.value ?? ''),
+            command: typeof _command === 'string' ? _command : _command?.command ?? '',
+            color: _color,
+            backgroundColor: _backgroundColor,
+            name: _name || itemId,
+            alignment,
+            priority,
+          });
+        },
+        hide() {
+          if (!_visible) return;
+          _visible = false;
+          host.emit('event', { type: 'statusBarItemHide', id: itemId });
+        },
+        dispose() {
+          _visible = false;
+          host.emit('event', { type: 'statusBarItemRemove', id: itemId });
+        },
+      };
+      return item;
     },
     showQuickPick(items, options) {
       return new Promise((resolve) => {
@@ -2566,26 +3282,65 @@ function createVscodeShim() {
         }, 60000);
       });
     },
-    showOpenDialog: () => Promise.resolve(undefined),
-    showSaveDialog: () => Promise.resolve(undefined),
+    showOpenDialog: (options) => {
+      return new Promise((resolve) => {
+        const reqId = ++host._reqId;
+        host._pendingRequests.set(reqId, resolve);
+        host.emit('event', { type: 'showOpenDialog', id: reqId, options: options || {} });
+        setTimeout(() => {
+          if (host._pendingRequests.has(reqId)) {
+            host._pendingRequests.delete(reqId);
+            resolve(undefined);
+          }
+        }, 120000);
+      });
+    },
+    showSaveDialog: (options) => {
+      return new Promise((resolve) => {
+        const reqId = ++host._reqId;
+        host._pendingRequests.set(reqId, resolve);
+        host.emit('event', { type: 'showSaveDialog', id: reqId, options: options || {} });
+        setTimeout(() => {
+          if (host._pendingRequests.has(reqId)) {
+            host._pendingRequests.delete(reqId);
+            resolve(undefined);
+          }
+        }, 120000);
+      });
+    },
     get activeTextEditor() {
-      return host._activeEditorUri ? host._makeTextEditorProxy(host._activeEditorUri) : undefined;
+      return host._activeEditorId ? host._editorValues.get(host._activeEditorId) : undefined;
     },
     get visibleTextEditors() {
-      return host._activeEditorUri ? [host._makeTextEditorProxy(host._activeEditorUri)] : [];
+      return [...host._editorValues.values()];
     },
     onDidChangeActiveTextEditor: (listener, thisArg, disposables) =>
       host._onActiveEditorChangeEvent.event(listener, thisArg, disposables),
-    onDidChangeVisibleTextEditors: noopEvent,
-    onDidChangeTextEditorSelection: noopEvent,
-    onDidChangeTextEditorOptions: noopEvent,
-    onDidChangeTextEditorVisibleRanges: noopEvent,
+    onDidChangeVisibleTextEditors: (listener, thisArg, disposables) =>
+      host._onVisibleEditorsChangeEvent.event(listener, thisArg, disposables),
+    onDidChangeTextEditorSelection: (listener, thisArg, disposables) =>
+      host._onSelectionChangeEvent.event(listener, thisArg, disposables),
+    onDidChangeTextEditorOptions: (listener, thisArg, disposables) =>
+      host._onOptionsChangeEvent.event(listener, thisArg, disposables),
+    onDidChangeTextEditorVisibleRanges: (listener, thisArg, disposables) =>
+      host._onVisibleRangesChangeEvent.event(listener, thisArg, disposables),
     onDidChangeTextEditorViewColumn: noopEvent,
     onDidChangeWindowState: noopEvent,
     onDidChangeVisibleNotebookEditors: noopEvent,
     onDidChangeActiveNotebookEditor: noopEvent,
     onDidWriteTerminalData: noopEvent,
-    createTextEditorDecorationType: () => ({ key: '', dispose() {} }),
+    createTextEditorDecorationType(options) {
+      const key = `deco-${++host._nextDecorationTypeId}`;
+      host._decorationTypes.set(key, options);
+      host.emit('event', { type: 'registerDecorationType', key, options });
+      return {
+        key,
+        dispose() {
+          host._decorationTypes.delete(key);
+          host.emit('event', { type: 'removeDecorationType', key });
+        }
+      };
+    },
     showTextDocument: (docOrUri, columnOrOptions, preserveFocus) => {
       const uri = docOrUri && docOrUri.uri ? docOrUri.uri : docOrUri;
       const uriStr = uri?.toString?.() || '';
@@ -2594,94 +3349,434 @@ function createVscodeShim() {
         uri: uriStr,
         options: typeof columnOrOptions === 'object' ? columnOrOptions : {},
       });
+      for (const [edId, ed] of host._editors) {
+        if (ed.uri === uriStr) return Promise.resolve(host._editorValues.get(edId));
+      }
       return Promise.resolve(undefined);
     },
-    withProgress(_opts, task) {
-      return task({ report() {} }, { isCancellationRequested: false, onCancellationRequested: noopEvent });
+    withProgress(opts, task) {
+      const cts = { isCancellationRequested: false, onCancellationRequested: noopEvent };
+      const progress = {
+        report(value) {
+          host.emit('event', {
+            type: 'progress',
+            location: opts.location,
+            title: opts.title,
+            message: value.message,
+            increment: value.increment,
+          });
+        },
+      };
+      host.emit('event', { type: 'progressStart', location: opts.location, title: opts.title });
+      const result = task(progress, cts);
+      if (result && typeof result.then === 'function') {
+        return result.finally(() => {
+          host.emit('event', { type: 'progressEnd', location: opts.location, title: opts.title });
+        });
+      }
+      host.emit('event', { type: 'progressEnd', location: opts.location, title: opts.title });
+      return result;
     },
-    createTerminal: () => ({
-      name: '',
-      processId: Promise.resolve(0),
-      sendText() {},
-      show() {},
-      hide() {},
-      dispose() {},
-    }),
+    createTerminal(nameOrOptions, shellPath, shellArgs) {
+      const termId = `sidex-term-${++host._reqId}`;
+      let opts = {};
+      if (typeof nameOrOptions === 'object' && nameOrOptions !== null) {
+        opts = nameOrOptions;
+      } else {
+        opts = { name: nameOrOptions || '', shellPath, shellArgs };
+      }
+      host.emit('event', {
+        type: 'createTerminal',
+        terminalId: termId,
+        name: opts.name || '',
+        shellPath: opts.shellPath,
+        shellArgs: opts.shellArgs,
+        cwd: opts.cwd ? (typeof opts.cwd === 'string' ? opts.cwd : opts.cwd.fsPath) : undefined,
+        env: opts.env,
+        strictEnv: opts.strictEnv,
+        hideFromUser: opts.hideFromUser,
+        isTransient: opts.isTransient,
+        location: opts.location,
+        message: opts.message,
+      });
+      const onDidCloseEmitter = new VscEventEmitter();
+      const terminal = {
+        name: opts.name || '',
+        processId: Promise.resolve(undefined),
+        creationOptions: opts,
+        exitStatus: undefined,
+        state: { isInteractedWith: false },
+        shellIntegration: undefined,
+        sendText(text, addNewLine) {
+          host.emit('event', {
+            type: 'terminalSendText',
+            terminalId: termId,
+            text,
+            addNewLine: addNewLine !== false,
+          });
+        },
+        show(preserveFocus) {
+          host.emit('event', { type: 'terminalShow', terminalId: termId, preserveFocus });
+        },
+        hide() {
+          host.emit('event', { type: 'terminalHide', id: termId });
+        },
+        dispose() {
+          host.emit('event', { type: 'terminalDispose', terminalId: termId });
+          onDidCloseEmitter.fire(undefined);
+          onDidCloseEmitter.dispose();
+        },
+      };
+      if (!host._terminals) host._terminals = new Map();
+      host._terminals.set(termId, terminal);
+      return terminal;
+    },
     get terminals() {
-      return [];
+      if (!host._terminals) return [];
+      return [...host._terminals.values()];
     },
     onDidOpenTerminal: noopEvent,
     onDidCloseTerminal: noopEvent,
     onDidChangeActiveTerminal: noopEvent,
     onDidChangeTerminalState: noopEvent,
-    registerTreeDataProvider: () => noopDisposable,
-    createTreeView: () => ({
-      onDidExpandElement: noopEvent,
-      onDidCollapseElement: noopEvent,
-      selection: [],
-      onDidChangeSelection: noopEvent,
-      visible: true,
-      onDidChangeVisibility: noopEvent,
-      message: '',
-      title: '',
-      description: '',
-      reveal() {
-        return Promise.resolve();
-      },
-      dispose() {},
-    }),
-    registerWebviewPanelSerializer: () => noopDisposable,
-    registerWebviewViewProvider: () => noopDisposable,
-    registerCustomEditorProvider: () => noopDisposable,
-    registerUriHandler: () => noopDisposable,
-    registerFileDecorationProvider: () => noopDisposable,
-    registerTerminalLinkProvider: () => noopDisposable,
-    registerTerminalProfileProvider: () => noopDisposable,
+    registerTreeDataProvider: (viewId, provider) => {
+      host.emit('event', { type: 'registerTreeDataProvider', viewId });
+      if (!host._treeProviders) host._treeProviders = new Map();
+      host._treeProviders.set(viewId, provider);
+      return { dispose() { host._treeProviders?.delete(viewId); } };
+    },
+    createTreeView: (viewId, options) => {
+      const provider = options.treeDataProvider;
+      if (!host._treeProviders) host._treeProviders = new Map();
+      host._treeProviders.set(viewId, provider);
+      const selectionEmitter = new VscEventEmitter();
+      const visibilityEmitter = new VscEventEmitter();
+      const expandEmitter = new VscEventEmitter();
+      const collapseEmitter = new VscEventEmitter();
+      const checkboxEmitter = new VscEventEmitter();
+      let _visible = true;
+      let _selection = [];
+      let _message = '';
+      let _title = viewId;
+      let _description = '';
+      let _badge = undefined;
+      host.emit('event', { type: 'createTreeView', viewId, canSelectMany: options.canSelectMany });
+      return {
+        onDidExpandElement: expandEmitter.event,
+        onDidCollapseElement: collapseEmitter.event,
+        get selection() { return _selection; },
+        onDidChangeSelection: selectionEmitter.event,
+        get visible() { return _visible; },
+        onDidChangeVisibility: visibilityEmitter.event,
+        onDidChangeCheckboxState: checkboxEmitter.event,
+        get message() { return _message; },
+        set message(v) { _message = v; host.emit('event', { type: 'treeViewUpdate', viewId, message: v }); },
+        get title() { return _title; },
+        set title(v) { _title = v; host.emit('event', { type: 'treeViewUpdate', viewId, title: v }); },
+        get description() { return _description; },
+        set description(v) { _description = v; host.emit('event', { type: 'treeViewUpdate', viewId, description: v }); },
+        get badge() { return _badge; },
+        set badge(v) { _badge = v; },
+        reveal(element, opts) {
+          host.emit('event', { type: 'treeViewReveal', viewId, options: opts });
+          return Promise.resolve();
+        },
+        dispose() {
+          host._treeProviders?.delete(viewId);
+          selectionEmitter.dispose();
+          visibilityEmitter.dispose();
+          expandEmitter.dispose();
+          collapseEmitter.dispose();
+          checkboxEmitter.dispose();
+        },
+      };
+    },
+    registerWebviewPanelSerializer: (viewType, serializer) => {
+      if (!host._webviewSerializers) host._webviewSerializers = new Map();
+      host._webviewSerializers.set(viewType, serializer);
+      return { dispose() { host._webviewSerializers?.delete(viewType); } };
+    },
+    registerWebviewViewProvider: (viewId, provider) => {
+      if (!host._webviewViewProviders) host._webviewViewProviders = new Map();
+      host._webviewViewProviders.set(viewId, provider);
+      host.emit('event', { type: 'registerWebviewViewProvider', viewId });
+      return { dispose() { host._webviewViewProviders?.delete(viewId); } };
+    },
+    registerCustomEditorProvider: (viewType, provider) => {
+      if (!host._customEditorProviders) host._customEditorProviders = new Map();
+      host._customEditorProviders.set(viewType, provider);
+      host.emit('event', { type: 'registerCustomEditorProvider', viewType });
+      return { dispose() { host._customEditorProviders?.delete(viewType); } };
+    },
+    registerUriHandler: (handler) => {
+      host._uriHandler = handler;
+      host.emit('event', { type: 'registerUriHandler' });
+      return { dispose() { host._uriHandler = null; } };
+    },
+    registerFileDecorationProvider: (provider) => {
+      if (!host._fileDecorationProviders) host._fileDecorationProviders = [];
+      host._fileDecorationProviders.push(provider);
+      return { dispose() {
+        const idx = host._fileDecorationProviders?.indexOf(provider);
+        if (idx >= 0) host._fileDecorationProviders.splice(idx, 1);
+      }};
+    },
+    registerTerminalLinkProvider: (provider) => {
+      if (!host._terminalLinkProviders) host._terminalLinkProviders = [];
+      host._terminalLinkProviders.push(provider);
+      return { dispose() {
+        const idx = host._terminalLinkProviders?.indexOf(provider);
+        if (idx >= 0) host._terminalLinkProviders.splice(idx, 1);
+      }};
+    },
+    registerTerminalProfileProvider: (id, provider) => {
+      if (!host._terminalProfileProviders) host._terminalProfileProviders = new Map();
+      host._terminalProfileProviders.set(id, provider);
+      return { dispose() { host._terminalProfileProviders?.delete(id); } };
+    },
     onDidChangeTerminalShellIntegration: noopEvent,
     onDidStartTerminalShellExecution: noopEvent,
     onDidEndTerminalShellExecution: noopEvent,
     createQuickPick() {
+      const acceptEmitter = new VscEventEmitter();
+      const changeActiveEmitter = new VscEventEmitter();
+      const changeSelectionEmitter = new VscEventEmitter();
+      const changeValueEmitter = new VscEventEmitter();
+      const hideEmitter = new VscEventEmitter();
+      const triggerButtonEmitter = new VscEventEmitter();
+      const triggerItemButtonEmitter = new VscEventEmitter();
+      let _items = [];
+      let _value = '';
+      let _placeholder = '';
+      let _title = '';
+      let _step = undefined;
+      let _totalSteps = undefined;
+      let _busy = false;
+      let _enabled = true;
+      let _canSelectMany = false;
+      let _matchOnDescription = false;
+      let _matchOnDetail = false;
+      let _activeItems = [];
+      let _selectedItems = [];
+      let _buttons = [];
+      const qpId = `sidex-qp-${++host._reqId}`;
       return {
-        items: [],
-        onDidAccept: noopEvent,
-        onDidChangeActive: noopEvent,
-        onDidChangeSelection: noopEvent,
-        onDidChangeValue: noopEvent,
-        onDidHide: noopEvent,
-        onDidTriggerButton: noopEvent,
-        show() {},
-        hide() {},
-        dispose() {},
+        get items() { return _items; },
+        set items(v) { _items = v; },
+        get value() { return _value; },
+        set value(v) { _value = v; changeValueEmitter.fire(v); },
+        get placeholder() { return _placeholder; },
+        set placeholder(v) { _placeholder = v; },
+        get title() { return _title; },
+        set title(v) { _title = v; },
+        get step() { return _step; },
+        set step(v) { _step = v; },
+        get totalSteps() { return _totalSteps; },
+        set totalSteps(v) { _totalSteps = v; },
+        get busy() { return _busy; },
+        set busy(v) { _busy = v; },
+        get enabled() { return _enabled; },
+        set enabled(v) { _enabled = v; },
+        get canSelectMany() { return _canSelectMany; },
+        set canSelectMany(v) { _canSelectMany = v; },
+        get matchOnDescription() { return _matchOnDescription; },
+        set matchOnDescription(v) { _matchOnDescription = v; },
+        get matchOnDetail() { return _matchOnDetail; },
+        set matchOnDetail(v) { _matchOnDetail = v; },
+        get activeItems() { return _activeItems; },
+        set activeItems(v) { _activeItems = v; changeActiveEmitter.fire(v); },
+        get selectedItems() { return _selectedItems; },
+        set selectedItems(v) { _selectedItems = v; changeSelectionEmitter.fire(v); },
+        get buttons() { return _buttons; },
+        set buttons(v) { _buttons = v; },
+        keepScrollPosition: false,
+        onDidAccept: acceptEmitter.event,
+        onDidChangeActive: changeActiveEmitter.event,
+        onDidChangeSelection: changeSelectionEmitter.event,
+        onDidChangeValue: changeValueEmitter.event,
+        onDidHide: hideEmitter.event,
+        onDidTriggerButton: triggerButtonEmitter.event,
+        onDidTriggerItemButton: triggerItemButtonEmitter.event,
+        show() {
+          host.emit('event', {
+            type: 'showQuickPick',
+            id: qpId,
+            items: _items.map((i) => (typeof i === 'string' ? i : i.label)),
+            options: { title: _title, placeholder: _placeholder, canPickMany: _canSelectMany },
+          });
+        },
+        hide() { hideEmitter.fire(); },
+        dispose() {
+          acceptEmitter.dispose();
+          changeActiveEmitter.dispose();
+          changeSelectionEmitter.dispose();
+          changeValueEmitter.dispose();
+          hideEmitter.dispose();
+          triggerButtonEmitter.dispose();
+          triggerItemButtonEmitter.dispose();
+        },
       };
     },
     createInputBox() {
+      const acceptEmitter = new VscEventEmitter();
+      const changeValueEmitter = new VscEventEmitter();
+      const hideEmitter = new VscEventEmitter();
+      const triggerButtonEmitter = new VscEventEmitter();
+      let _value = '';
+      let _placeholder = '';
+      let _password = false;
+      let _title = '';
+      let _step = undefined;
+      let _totalSteps = undefined;
+      let _prompt = '';
+      let _validationMessage = '';
+      let _busy = false;
+      let _enabled = true;
+      let _buttons = [];
+      let _valueSelection = undefined;
+      const ibId = `sidex-ib-${++host._reqId}`;
       return {
-        value: '',
-        onDidAccept: noopEvent,
-        onDidChangeValue: noopEvent,
-        onDidHide: noopEvent,
-        show() {},
-        hide() {},
-        dispose() {},
+        get value() { return _value; },
+        set value(v) { _value = v; },
+        get valueSelection() { return _valueSelection; },
+        set valueSelection(v) { _valueSelection = v; },
+        get placeholder() { return _placeholder; },
+        set placeholder(v) { _placeholder = v; },
+        get password() { return _password; },
+        set password(v) { _password = v; },
+        get title() { return _title; },
+        set title(v) { _title = v; },
+        get step() { return _step; },
+        set step(v) { _step = v; },
+        get totalSteps() { return _totalSteps; },
+        set totalSteps(v) { _totalSteps = v; },
+        get prompt() { return _prompt; },
+        set prompt(v) { _prompt = v; },
+        get validationMessage() { return _validationMessage; },
+        set validationMessage(v) { _validationMessage = v; },
+        get busy() { return _busy; },
+        set busy(v) { _busy = v; },
+        get enabled() { return _enabled; },
+        set enabled(v) { _enabled = v; },
+        get buttons() { return _buttons; },
+        set buttons(v) { _buttons = v; },
+        onDidAccept: acceptEmitter.event,
+        onDidChangeValue: changeValueEmitter.event,
+        onDidHide: hideEmitter.event,
+        onDidTriggerButton: triggerButtonEmitter.event,
+        show() {
+          host.emit('event', {
+            type: 'showInputBox',
+            id: ibId,
+            options: { title: _title, prompt: _prompt, placeholder: _placeholder, password: _password, value: _value },
+          });
+        },
+        hide() { hideEmitter.fire(); },
+        dispose() {
+          acceptEmitter.dispose();
+          changeValueEmitter.dispose();
+          hideEmitter.dispose();
+          triggerButtonEmitter.dispose();
+        },
       };
     },
-    createWebviewPanel: () => ({
-      webview: {
-        html: '',
-        onDidReceiveMessage: noopEvent,
-        postMessage() {
-          return Promise.resolve(true);
+    createWebviewPanel: (viewType, title, showOptions, options) => {
+      const panelId = `sidex-webview-${++host._reqId}`;
+      const messageEmitter = new VscEventEmitter();
+      const disposeEmitter = new VscEventEmitter();
+      const viewStateEmitter = new VscEventEmitter();
+      let _html = '';
+      let _title = title;
+      let _iconPath = undefined;
+      let _active = true;
+      let _visible = true;
+      const column = typeof showOptions === 'number' ? showOptions : showOptions?.viewColumn || 1;
+      host.emit('event', { type: 'createWebviewPanel', panelId, viewType, title, column, options });
+      const panel = {
+        viewType,
+        get title() { return _title; },
+        set title(v) { _title = v; host.emit('event', { type: 'webviewPanelUpdate', panelId, title: v }); },
+        get iconPath() { return _iconPath; },
+        set iconPath(v) {
+          _iconPath = v;
+          if (v) {
+            let light, dark;
+            if (v.light || v.dark) {
+              light = v.light ? (v.light.path || v.light.fsPath || String(v.light)) : undefined;
+              dark = v.dark ? (v.dark.path || v.dark.fsPath || String(v.dark)) : undefined;
+            } else {
+              const p = v.path || v.fsPath || String(v);
+              light = p;
+              dark = p;
+            }
+            host.emit('event', { type: 'webviewPanelIcon', panelId, light, dark });
+          }
         },
-        asWebviewUri(uri) {
-          return uri;
+        webview: {
+          get options() { return options || {}; },
+          set options(v) { options = { ...options, ...v }; },
+          get html() { return _html; },
+          set html(v) { _html = v; host.emit('event', { type: 'webviewHtmlUpdate', panelId, html: inlineWebviewResources(v) }); },
+          onDidReceiveMessage: messageEmitter.event,
+          postMessage(msg) {
+            host.emit('event', { type: 'webviewPostMessage', panelId, message: msg });
+            return Promise.resolve(true);
+          },
+          asWebviewUri(localUri) {
+            if (!localUri) return localUri;
+            const scheme = localUri.scheme || 'file';
+            const uriPath = localUri.path || '';
+            const nativePath = localUri.fsPath || uriPathToFsPath(uriPath) || '';
+            if (scheme === 'http' || scheme === 'https') return localUri;
+            const imgMimes = { '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.ico': 'image/x-icon' };
+            const ext = path.extname(nativePath).toLowerCase();
+            if (imgMimes[ext]) {
+              try {
+                const dataUri = `data:${imgMimes[ext]};base64,${fs.readFileSync(nativePath).toString('base64')}`;
+                return { scheme: 'data', authority: '', path: dataUri.slice(5), query: '', fragment: '', fsPath: nativePath, toString() { return dataUri; }, with(change) { return { ...this, ...change }; }, toJSON() { return { $mid: 1, scheme: 'data', path: this.path }; } };
+              } catch {}
+            }
+            const RESOURCE_AUTHORITY = 'vscode-resource.vscode-cdn.net';
+            return {
+              scheme: 'https',
+              authority: `${scheme}+${localUri.authority || ''}.${RESOURCE_AUTHORITY}`,
+              path: uriPath,
+              query: localUri.query || '',
+              fragment: localUri.fragment || '',
+              fsPath: nativePath,
+              toString() { return `https://${this.authority}${this.path}`; },
+              with(change) { return { ...this, ...change }; },
+              toJSON() { return { scheme: this.scheme, authority: this.authority, path: this.path }; },
+            };
+          },
+          cspSource: "https://*.vscode-resource.vscode-cdn.net 'self' http://localhost:* *",
         },
-        cspSource: '',
-      },
-      onDidDispose: noopEvent,
-      onDidChangeViewState: noopEvent,
-      dispose() {},
-      reveal() {},
-    }),
+        get options() { return options || {}; },
+        get viewColumn() { return column; },
+        get active() { return _active; },
+        get visible() { return _visible; },
+        onDidDispose: disposeEmitter.event,
+        onDidChangeViewState: viewStateEmitter.event,
+        reveal(viewColumn, preserveFocus) {
+          host.emit('event', { type: 'webviewPanelReveal', panelId, viewColumn, preserveFocus });
+        },
+        dispose() {
+          host.emit('event', { type: 'webviewPanelDispose', panelId });
+          disposeEmitter.fire();
+          disposeEmitter.dispose();
+          messageEmitter.dispose();
+          viewStateEmitter.dispose();
+        },
+        _panelId: panelId,
+        _disposeEmitter: disposeEmitter,
+        _messageEmitter: messageEmitter,
+        _viewStateEmitter: viewStateEmitter,
+      };
+      if (!host._webviewPanels) host._webviewPanels = new Map();
+      host._webviewPanels.set(panelId, panel);
+      disposeEmitter.event(() => { host._webviewPanels?.delete(panelId); });
+      return panel;
+    },
     get state() {
       return { focused: true };
     },
@@ -2711,7 +3806,7 @@ function createVscodeShim() {
         extensionUri: VscUri.file(ext.extensionPath),
         exports: ext.exports,
         isActive: ext.activated,
-        packageJSON: ext.manifest,
+        packageJSON: ext.manifest.packageJSON || ext.manifest,
         extensionKind: ExtensionKind.Workspace,
         activate: () => Promise.resolve(ext.exports),
       };
@@ -2725,7 +3820,7 @@ function createVscodeShim() {
           extensionUri: VscUri.file(ext.extensionPath),
           exports: ext.exports,
           isActive: ext.activated,
-          packageJSON: ext.manifest,
+          packageJSON: ext.manifest.packageJSON || ext.manifest,
           extensionKind: ExtensionKind.Workspace,
         });
       return arr;
@@ -2733,95 +3828,288 @@ function createVscodeShim() {
     onDidChange: noopEvent,
   };
 
-  const env = {
-    appName: 'SideX',
-    appRoot: process.cwd(),
-    language: 'en',
-    machineId: 'sidex',
-    sessionId: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`,
-    uriScheme: 'sidex',
-    shell: process.env.SHELL || '',
-    clipboard: { readText: () => Promise.resolve(''), writeText: () => Promise.resolve() },
-    openExternal: () => Promise.resolve(true),
-    asExternalUri: (uri) => Promise.resolve(uri),
-    createTelemetryLogger: () => ({
-      logUsage() {},
-      logError() {},
-      isUsageEnabled: false,
-      isErrorsEnabled: false,
-      onDidChangeEnableStates: noopEvent,
-      dispose() {},
-    }),
-    get isTelemetryEnabled() {
-      return false;
-    },
-    onDidChangeTelemetryEnabled: noopEvent,
-    get isNewAppInstall() {
-      return true;
-    },
-    get remoteName() {
-      return undefined;
-    },
-    logLevel: 2,
-    onDidChangeLogLevel: noopEvent,
-    onDidChangeShell: noopEvent,
-    get uiKind() {
-      return 1;
-    },
-  };
-
-  const tasks = {
-    registerTaskProvider: () => noopDisposable,
-    fetchTasks: () => Promise.resolve([]),
-    executeTask: () => Promise.resolve({ terminate() {} }),
-    taskExecutions: [],
-    onDidStartTask: noopEvent,
-    onDidEndTask: noopEvent,
-    onDidStartTaskProcess: noopEvent,
-    onDidEndTaskProcess: noopEvent,
-  };
-
-  const debug = {
-    registerDebugConfigurationProvider: () => noopDisposable,
-    registerDebugAdapterDescriptorFactory: () => noopDisposable,
-    registerDebugAdapterTrackerFactory: () => noopDisposable,
-    registerDebugVisualizationTreeProvider: () => noopDisposable,
-    registerDebugVisualizationProvider: () => noopDisposable,
-    startDebugging: () => Promise.resolve(false),
-    stopDebugging: () => Promise.resolve(),
-    addBreakpoints: () => {},
-    removeBreakpoints: () => {},
-    get activeDebugSession() {
-      return undefined;
-    },
-    get activeDebugConsole() {
-      return { append() {}, appendLine() {} };
-    },
-    get breakpoints() {
-      return [];
-    },
-    onDidChangeActiveDebugSession: noopEvent,
-    onDidStartDebugSession: noopEvent,
-    onDidReceiveDebugSessionCustomEvent: noopEvent,
-    onDidTerminateDebugSession: noopEvent,
-    onDidChangeBreakpoints: noopEvent,
-    asDebugSourceUri: () => VscUri.file(''),
-  };
-
-  const notebooks = {
-    createNotebookController: () => ({
-      id: '',
-      notebookType: '',
-      onDidChangeSelectedNotebooks: noopEvent,
-      dispose() {},
-    }),
-    registerNotebookCellStatusBarItemProvider: () => noopDisposable,
-    createRendererMessaging: () => ({
-      onDidReceiveMessage: noopEvent,
-      postMessage() {
+  const env = (() => {
+    const cp = require('child_process');
+    const logLevelEmitter = new VscEventEmitter();
+    const telemetryEmitter = new VscEventEmitter();
+    const shellEmitter = new VscEventEmitter();
+    let _logLevel = 2;
+    let _clipboardText = '';
+    return {
+      appName: 'SideX',
+      appRoot: process.cwd(),
+      appHost: 'desktop',
+      language: 'en',
+      machineId: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`,
+      sessionId: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`,
+      uriScheme: 'sidex',
+      get shell() { return process.env.SHELL || process.env.COMSPEC || '/bin/sh'; },
+      clipboard: {
+        readText() {
+          try {
+            if (process.platform === 'darwin') {
+              return Promise.resolve(cp.execSync('pbpaste', { encoding: 'utf8' }));
+            }
+            if (process.platform === 'linux') {
+              return Promise.resolve(cp.execSync('xclip -selection clipboard -o', { encoding: 'utf8' }));
+            }
+          } catch {}
+          return Promise.resolve(_clipboardText);
+        },
+        writeText(text) {
+          _clipboardText = text;
+          try {
+            if (process.platform === 'darwin') {
+              cp.execSync('pbcopy', { input: text });
+              return Promise.resolve();
+            }
+            if (process.platform === 'linux') {
+              cp.execSync('xclip -selection clipboard', { input: text });
+              return Promise.resolve();
+            }
+          } catch {}
+          return Promise.resolve();
+        },
+      },
+      openExternal: (uri) => {
+        const url = typeof uri === 'string' ? uri : uri?.toString?.() || '';
+        host.emit('event', { type: 'openExternal', url });
         return Promise.resolve(true);
       },
-    }),
+      asExternalUri: (uri) => Promise.resolve(uri),
+      createTelemetryLogger: (sender, options) => {
+        const enableEmitter = new VscEventEmitter();
+        return {
+          logUsage(eventName, data) {
+            if (sender && typeof sender.sendEventData === 'function') {
+              try { sender.sendEventData(eventName, data); } catch {}
+            }
+          },
+          logError(eventNameOrError, data) {
+            if (sender && typeof sender.sendErrorData === 'function') {
+              try {
+                const err = eventNameOrError instanceof Error ? eventNameOrError : new Error(String(eventNameOrError));
+                sender.sendErrorData(err, data);
+              } catch {}
+            }
+          },
+          get isUsageEnabled() { return false; },
+          get isErrorsEnabled() { return false; },
+          onDidChangeEnableStates: enableEmitter.event,
+          dispose() {
+            if (sender && typeof sender.flush === 'function') {
+              try { sender.flush(); } catch {}
+            }
+            enableEmitter.dispose();
+          },
+        };
+      },
+      get isTelemetryEnabled() { return false; },
+      onDidChangeTelemetryEnabled: telemetryEmitter.event,
+      get isNewAppInstall() { return true; },
+      get remoteName() { return undefined; },
+      get logLevel() { return _logLevel; },
+      onDidChangeLogLevel: logLevelEmitter.event,
+      onDidChangeShell: shellEmitter.event,
+      get uiKind() { return 1; },
+    };
+  })();
+
+  const tasks = (() => {
+    const _taskProviders = new Map();
+    const _executions = [];
+    const startEmitter = new VscEventEmitter();
+    const endEmitter = new VscEventEmitter();
+    const processStartEmitter = new VscEventEmitter();
+    const processEndEmitter = new VscEventEmitter();
+    return {
+      registerTaskProvider: (type, provider) => {
+        _taskProviders.set(type, provider);
+        host.emit('event', { type: 'registerTaskProvider', taskType: type });
+        return { dispose() { _taskProviders.delete(type); } };
+      },
+      fetchTasks: (filter) => {
+        const promises = [];
+        for (const [type, provider] of _taskProviders) {
+          if (!filter || !filter.type || filter.type === type) {
+            try {
+              const result = provider.provideTasks(
+                { isCancellationRequested: false, onCancellationRequested: noopEvent }
+              );
+              if (result && typeof result.then === 'function') {
+                promises.push(result.then((t) => t || []));
+              } else {
+                promises.push(Promise.resolve(result || []));
+              }
+            } catch {
+              promises.push(Promise.resolve([]));
+            }
+          }
+        }
+        return Promise.all(promises).then((arrays) => arrays.flat());
+      },
+      executeTask: (task) => {
+        const execId = `sidex-taskexec-${++host._reqId}`;
+        host.emit('event', {
+          type: 'executeTask',
+          id: execId,
+          name: task.name,
+          source: task.source,
+          definition: task.definition,
+        });
+        const execution = { task, terminate() { host.emit('event', { type: 'terminateTask', id: execId }); } };
+        _executions.push(execution);
+        startEmitter.fire({ execution });
+        return Promise.resolve(execution);
+      },
+      get taskExecutions() { return [..._executions]; },
+      onDidStartTask: startEmitter.event,
+      onDidEndTask: endEmitter.event,
+      onDidStartTaskProcess: processStartEmitter.event,
+      onDidEndTaskProcess: processEndEmitter.event,
+    };
+  })();
+
+  const debug = (() => {
+    const _configProviders = new Map();
+    const _adapterFactories = new Map();
+    const _trackerFactories = new Map();
+    const _breakpoints = [];
+    let _activeSession = undefined;
+    const sessionStartEmitter = new VscEventEmitter();
+    const sessionEndEmitter = new VscEventEmitter();
+    const activeSessionEmitter = new VscEventEmitter();
+    const breakpointsEmitter = new VscEventEmitter();
+    const customEventEmitter = new VscEventEmitter();
+    return {
+      registerDebugConfigurationProvider: (type, provider, trigger) => {
+        const key = `${type}:${trigger || 1}`;
+        if (!_configProviders.has(key)) _configProviders.set(key, []);
+        _configProviders.get(key).push(provider);
+        return { dispose() {
+          const arr = _configProviders.get(key);
+          if (arr) {
+            const idx = arr.indexOf(provider);
+            if (idx >= 0) arr.splice(idx, 1);
+          }
+        }};
+      },
+      registerDebugAdapterDescriptorFactory: (type, factory) => {
+        _adapterFactories.set(type, factory);
+        return { dispose() { _adapterFactories.delete(type); } };
+      },
+      registerDebugAdapterTrackerFactory: (type, factory) => {
+        if (!_trackerFactories.has(type)) _trackerFactories.set(type, []);
+        _trackerFactories.get(type).push(factory);
+        return { dispose() {
+          const arr = _trackerFactories.get(type);
+          if (arr) {
+            const idx = arr.indexOf(factory);
+            if (idx >= 0) arr.splice(idx, 1);
+          }
+        }};
+      },
+      registerDebugVisualizationTreeProvider: () => noopDisposable,
+      registerDebugVisualizationProvider: () => noopDisposable,
+      startDebugging: (folder, config, parentSession) => {
+        host.emit('event', { type: 'startDebugging', folder, config, parentSession });
+        return Promise.resolve(true);
+      },
+      stopDebugging: (session) => {
+        host.emit('event', { type: 'stopDebugging', sessionId: session?.id });
+        return Promise.resolve();
+      },
+      addBreakpoints: (bps) => {
+        _breakpoints.push(...bps);
+        breakpointsEmitter.fire({ added: bps, removed: [], changed: [] });
+      },
+      removeBreakpoints: (bps) => {
+        for (const bp of bps) {
+          const idx = _breakpoints.indexOf(bp);
+          if (idx >= 0) _breakpoints.splice(idx, 1);
+        }
+        breakpointsEmitter.fire({ added: [], removed: bps, changed: [] });
+      },
+      get activeDebugSession() { return _activeSession; },
+      get activeDebugConsole() {
+        return {
+          append(value) { host.emit('event', { type: 'debugConsoleAppend', value }); },
+          appendLine(value) { host.emit('event', { type: 'debugConsoleAppend', value: value + '\n' }); },
+        };
+      },
+      get breakpoints() { return [..._breakpoints]; },
+      onDidChangeActiveDebugSession: activeSessionEmitter.event,
+      onDidStartDebugSession: sessionStartEmitter.event,
+      onDidReceiveDebugSessionCustomEvent: customEventEmitter.event,
+      onDidTerminateDebugSession: sessionEndEmitter.event,
+      onDidChangeBreakpoints: breakpointsEmitter.event,
+      asDebugSourceUri: (source, session) => {
+        if (source.path) return VscUri.file(source.path);
+        return VscUri.file('');
+      },
+    };
+  })();
+
+  const notebooks = {
+    createNotebookController: (id, notebookType, label, handler) => {
+      const selectedEmitter = new VscEventEmitter();
+      let _supportedLanguages = undefined;
+      let _supportsExecutionOrder = false;
+      let _description = '';
+      let _detail = '';
+      let _executeHandler = handler || undefined;
+      let _interruptHandler = undefined;
+      host.emit('event', { type: 'createNotebookController', id, notebookType, label });
+      return {
+        id,
+        notebookType,
+        get label() { return label; },
+        get supportedLanguages() { return _supportedLanguages; },
+        set supportedLanguages(v) { _supportedLanguages = v; },
+        get supportsExecutionOrder() { return _supportsExecutionOrder; },
+        set supportsExecutionOrder(v) { _supportsExecutionOrder = v; },
+        get description() { return _description; },
+        set description(v) { _description = v; },
+        get detail() { return _detail; },
+        set detail(v) { _detail = v; },
+        get executeHandler() { return _executeHandler; },
+        set executeHandler(v) { _executeHandler = v; },
+        get interruptHandler() { return _interruptHandler; },
+        set interruptHandler(v) { _interruptHandler = v; },
+        onDidChangeSelectedNotebooks: selectedEmitter.event,
+        createNotebookCellExecution(cell) {
+          let _order = undefined;
+          const token = { isCancellationRequested: false, onCancellationRequested: noopEvent };
+          return {
+            cell,
+            token,
+            get executionOrder() { return _order; },
+            set executionOrder(v) { _order = v; },
+            start(startTime) {},
+            end(success, endTime) {},
+            clearOutput(cell) { return Promise.resolve(); },
+            replaceOutput(output, cell) { return Promise.resolve(); },
+            appendOutput(output, cell) { return Promise.resolve(); },
+            replaceOutputItems(items, output) { return Promise.resolve(); },
+            appendOutputItems(items, output) { return Promise.resolve(); },
+          };
+        },
+        dispose() { selectedEmitter.dispose(); },
+      };
+    },
+    registerNotebookCellStatusBarItemProvider: (notebookType, provider) => {
+      host.emit('event', { type: 'registerNotebookCellStatusBarItemProvider', notebookType });
+      return noopDisposable;
+    },
+    createRendererMessaging: (rendererId) => {
+      const msgEmitter = new VscEventEmitter();
+      return {
+        onDidReceiveMessage: msgEmitter.event,
+        postMessage(message) {
+          return Promise.resolve(true);
+        },
+      };
+    },
   };
 
   const scm = {
@@ -2862,22 +4150,83 @@ function createVscodeShim() {
       return sc;
     },
     inputBox: { value: '', placeholder: '' },
+    registerGitContextProvider: (provider) => noopDisposable,
   };
 
   const comments = {
-    createCommentController: () => ({
-      createCommentThread() {
-        return { comments: [], dispose() {} };
-      },
-      dispose() {},
-    }),
+    createCommentController: (id, label) => {
+      const threads = [];
+      host.emit('event', { type: 'createCommentController', id, label });
+      return {
+        id,
+        label,
+        options: undefined,
+        commentingRangeProvider: undefined,
+        createCommentThread(uri, range, cmts) {
+          const collapseEmitter = new VscEventEmitter();
+          const thread = {
+            uri,
+            range,
+            comments: cmts || [],
+            collapsibleState: 1,
+            canReply: true,
+            contextValue: '',
+            label: '',
+            state: undefined,
+            dispose() {
+              const idx = threads.indexOf(thread);
+              if (idx >= 0) threads.splice(idx, 1);
+              collapseEmitter.dispose();
+            },
+          };
+          threads.push(thread);
+          return thread;
+        },
+        dispose() { threads.length = 0; },
+      };
+    },
   };
 
-  const authentication = {
-    getSession: () => Promise.resolve(undefined),
-    registerAuthenticationProvider: () => noopDisposable,
-    onDidChangeSessions: noopEvent,
-  };
+  const authentication = (() => {
+    const _providers = new Map();
+    const _sessions = new Map();
+    const sessionsEmitter = new VscEventEmitter();
+    return {
+      getSession: (providerId, scopes, options) => {
+        const key = `${providerId}:${(scopes || []).join(',')}`;
+        const existing = _sessions.get(key);
+        if (existing) return Promise.resolve(existing);
+        const provider = _providers.get(providerId);
+        if (provider) {
+          return provider.getSessions(scopes).then((sessions) => {
+            if (sessions && sessions.length > 0) {
+              _sessions.set(key, sessions[0]);
+              return sessions[0];
+            }
+            if (options && options.createIfNone) {
+              return provider.createSession(scopes).then((session) => {
+                _sessions.set(key, session);
+                return session;
+              });
+            }
+            return undefined;
+          }).catch(() => undefined);
+        }
+        return Promise.resolve(undefined);
+      },
+      registerAuthenticationProvider: (id, label, provider, options) => {
+        _providers.set(id, provider);
+        host.emit('event', { type: 'registerAuthenticationProvider', id, label });
+        if (provider.onDidChangeSessions) {
+          provider.onDidChangeSessions((e) => {
+            sessionsEmitter.fire({ provider: { id, label }, ...e });
+          });
+        }
+        return { dispose() { _providers.delete(id); } };
+      },
+      onDidChangeSessions: sessionsEmitter.event,
+    };
+  })();
 
   const tests = {
     createTestController: (id, label) => {
@@ -3090,6 +4439,449 @@ function createVscodeShim() {
     TaskPanelKind: { Shared: 1, Dedicated: 2, New: 3 },
     TaskRevealKind: { Always: 1, Silent: 2, Never: 3 },
     DebugConfigurationProviderTriggerKind: { Initial: 1, Dynamic: 2 },
+    TerminalLocation: { Panel: 1, Editor: 2 },
+    TerminalExitReason: { Unknown: 0, Shutdown: 1, Process: 2, User: 3, Extension: 4 },
+    TerminalShellExecutionCommandLineConfidence: { Low: 0, Medium: 1, High: 2 },
+    EnvironmentVariableMutatorType: { Replace: 1, Append: 2, Prepend: 3 },
+    FileChangeType: { Changed: 1, Created: 2, Deleted: 3 },
+    FilePermission: { Readonly: 1 },
+    TextDocumentChangeReason: { Undo: 1, Redo: 2 },
+    NotebookCellKind: { Markup: 1, Code: 2 },
+    NotebookControllerAffinity: { Default: 1, Preferred: 2 },
+    NotebookCellStatusBarAlignment: { Left: 1, Right: 2 },
+    NotebookEditorRevealType: { Default: 0, InCenter: 1, InCenterIfOutsideViewport: 2, AtTop: 3 },
+    CommentMode: { Editing: 0, Preview: 1 },
+    CommentThreadCollapsibleState: { Collapsed: 0, Expanded: 1 },
+    CommentThreadState: { Unresolved: 0, Resolved: 1 },
+    LanguageStatusSeverity: { Information: 0, Warning: 1, Error: 2 },
+    ShellQuoting: { Escape: 1, Strong: 2, Weak: 3 },
+    TreeItemCheckboxState: { Unchecked: 0, Checked: 1 },
+    InlineCompletionTriggerKind: { Invoke: 0, Automatic: 1 },
+    DocumentPasteTriggerKind: { Automatic: 0, PasteAs: 1 },
+    DebugConsoleMode: { Separate: 0, MergeWithParent: 1 },
+    ChatResultFeedbackKind: { Unhelpful: 0, Helpful: 1 },
+    LanguageModelChatMessageRole: { User: 1, Assistant: 2 },
+    QuickInputButtonLocation: { Title: 1, Inline: 2, Input: 3 },
+    SyntaxTokenType: { Other: 0, Comment: 1, String: 2, RegEx: 3 },
+    CodeActionTriggerKind: { Invoke: 1, Automatic: 2 },
+    QuickInputButtons: class {
+      static get Back() {
+        return { iconPath: new ThemeIcon('arrow-left'), tooltip: 'Back' };
+      }
+    },
+    LocationLink: class {
+      constructor(targetUri, targetRange, targetSelectionRange, originSelectionRange) {
+        this.targetUri = targetUri;
+        this.targetRange = targetRange;
+        this.targetSelectionRange = targetSelectionRange;
+        this.originSelectionRange = originSelectionRange;
+      }
+    },
+    FileDecoration: class {
+      constructor(badge, tooltip, color) {
+        this.badge = badge;
+        this.tooltip = tooltip;
+        this.color = color;
+      }
+    },
+    DataTransferItem: class {
+      constructor(value) {
+        this.value = value;
+      }
+      asString() {
+        return Promise.resolve(typeof this.value === 'string' ? this.value : JSON.stringify(this.value));
+      }
+      asFile() {
+        return undefined;
+      }
+    },
+    DataTransfer: class {
+      constructor() {
+        this._map = new Map();
+      }
+      get(mimeType) {
+        return this._map.get(mimeType.toLowerCase());
+      }
+      set(mimeType, value) {
+        this._map.set(mimeType.toLowerCase(), value);
+      }
+      forEach(callbackfn, thisArg) {
+        this._map.forEach((item, mimeType) => callbackfn.call(thisArg, item, mimeType, this));
+      }
+      [Symbol.iterator]() {
+        return this._map[Symbol.iterator]();
+      }
+    },
+    EvaluatableExpression: class {
+      constructor(range, expression) {
+        this.range = range;
+        this.expression = expression;
+      }
+    },
+    InlineValueText: class {
+      constructor(range, text) {
+        this.range = range;
+        this.text = text;
+      }
+    },
+    InlineValueVariableLookup: class {
+      constructor(range, variableName, caseSensitiveLookup) {
+        this.range = range;
+        this.variableName = variableName;
+        this.caseSensitiveLookup = caseSensitiveLookup !== undefined ? caseSensitiveLookup : true;
+      }
+    },
+    InlineValueEvaluatableExpression: class {
+      constructor(range, expression) {
+        this.range = range;
+        this.expression = expression;
+      }
+    },
+    LinkedEditingRanges: class {
+      constructor(ranges, wordPattern) {
+        this.ranges = ranges;
+        this.wordPattern = wordPattern;
+      }
+    },
+    InlineCompletionItem: class {
+      constructor(insertText, range, command) {
+        this.insertText = insertText;
+        this.range = range;
+        this.command = command;
+      }
+    },
+    InlineCompletionList: class {
+      constructor(items) {
+        this.items = items;
+      }
+    },
+    NotebookRange: class {
+      constructor(start, end) {
+        if (start > end) {
+          this.start = end;
+          this.end = start;
+        } else {
+          this.start = start;
+          this.end = end;
+        }
+        this.isEmpty = this.start === this.end;
+      }
+      with(change) {
+        const s = change.start !== undefined ? change.start : this.start;
+        const e = change.end !== undefined ? change.end : this.end;
+        if (s === this.start && e === this.end) return this;
+        return new api.NotebookRange(s, e);
+      }
+    },
+    NotebookCellOutputItem: class {
+      constructor(data, mime) {
+        this.data = data;
+        this.mime = mime;
+      }
+      static text(value, mime) {
+        const encoder = new TextEncoder();
+        return new api.NotebookCellOutputItem(encoder.encode(value), mime || 'text/plain');
+      }
+      static json(value, mime) {
+        const encoder = new TextEncoder();
+        return new api.NotebookCellOutputItem(encoder.encode(JSON.stringify(value)), mime || 'application/json');
+      }
+      static stdout(value) {
+        return api.NotebookCellOutputItem.text(value, 'application/vnd.code.notebook.stdout');
+      }
+      static stderr(value) {
+        return api.NotebookCellOutputItem.text(value, 'application/vnd.code.notebook.stderr');
+      }
+      static error(value) {
+        return api.NotebookCellOutputItem.json({ name: value.name, message: value.message, stack: value.stack }, 'application/vnd.code.notebook.error');
+      }
+    },
+    NotebookCellOutput: class {
+      constructor(items, metadata) {
+        this.items = items;
+        this.metadata = metadata;
+      }
+    },
+    NotebookCellData: class {
+      constructor(kind, value, languageId) {
+        this.kind = kind;
+        this.value = value;
+        this.languageId = languageId;
+      }
+    },
+    NotebookData: class {
+      constructor(cells) {
+        this.cells = cells;
+      }
+    },
+    NotebookCellStatusBarItem: class {
+      constructor(text, alignment) {
+        this.text = text;
+        this.alignment = alignment;
+      }
+    },
+    DebugAdapterExecutable: class {
+      constructor(command, args, options) {
+        this.command = command;
+        this.args = args || [];
+        this.options = options;
+      }
+    },
+    DebugAdapterServer: class {
+      constructor(port, host) {
+        this.port = port;
+        this.host = host;
+      }
+    },
+    DebugAdapterNamedPipeServer: class {
+      constructor(path) {
+        this.path = path;
+      }
+    },
+    DebugAdapterInlineImplementation: class {
+      constructor(implementation) {
+        this.implementation = implementation;
+      }
+    },
+    Breakpoint: class {
+      constructor(enabled, condition, hitCondition, logMessage) {
+        this.id = Math.random().toString(36).slice(2);
+        this.enabled = enabled !== undefined ? enabled : true;
+        this.condition = condition;
+        this.hitCondition = hitCondition;
+        this.logMessage = logMessage;
+      }
+    },
+    SourceBreakpoint: class {
+      constructor(location, enabled, condition, hitCondition, logMessage) {
+        this.id = Math.random().toString(36).slice(2);
+        this.location = location;
+        this.enabled = enabled !== undefined ? enabled : true;
+        this.condition = condition;
+        this.hitCondition = hitCondition;
+        this.logMessage = logMessage;
+      }
+    },
+    FunctionBreakpoint: class {
+      constructor(functionName, enabled, condition, hitCondition, logMessage) {
+        this.id = Math.random().toString(36).slice(2);
+        this.functionName = functionName;
+        this.enabled = enabled !== undefined ? enabled : true;
+        this.condition = condition;
+        this.hitCondition = hitCondition;
+        this.logMessage = logMessage;
+      }
+    },
+    TabInputText: class {
+      constructor(uri) {
+        this.uri = uri;
+      }
+    },
+    TabInputTextDiff: class {
+      constructor(original, modified) {
+        this.original = original;
+        this.modified = modified;
+      }
+    },
+    TabInputCustom: class {
+      constructor(uri, viewType) {
+        this.uri = uri;
+        this.viewType = viewType;
+      }
+    },
+    TabInputWebview: class {
+      constructor(viewType) {
+        this.viewType = viewType;
+      }
+    },
+    TabInputNotebook: class {
+      constructor(uri, notebookType) {
+        this.uri = uri;
+        this.notebookType = notebookType;
+      }
+    },
+    TabInputNotebookDiff: class {
+      constructor(original, modified, notebookType) {
+        this.original = original;
+        this.modified = modified;
+        this.notebookType = notebookType;
+      }
+    },
+    TabInputTerminal: class {
+      constructor() {}
+    },
+    TestTag: class {
+      constructor(id) {
+        this.id = id;
+      }
+    },
+    TestRunRequest: class {
+      constructor(include, exclude, profile, continuous, preserveFocus) {
+        this.include = include;
+        this.exclude = exclude;
+        this.profile = profile;
+        this.continuous = continuous;
+        this.preserveFocus = preserveFocus !== undefined ? preserveFocus : false;
+      }
+    },
+    TestMessage: class {
+      constructor(message) {
+        this.message = message;
+      }
+      static diff(message, expected, actual) {
+        const msg = new api.TestMessage(message);
+        msg.expectedOutput = expected;
+        msg.actualOutput = actual;
+        return msg;
+      }
+    },
+    TestCoverageCount: class {
+      constructor(covered, total) {
+        this.covered = covered;
+        this.total = total;
+      }
+    },
+    FileCoverage: class {
+      constructor(uri, statementCoverage, branchCoverage, declarationCoverage, includesTests) {
+        this.uri = uri;
+        this.statementCoverage = statementCoverage;
+        this.branchCoverage = branchCoverage;
+        this.declarationCoverage = declarationCoverage;
+        this.includesTests = includesTests;
+      }
+      static fromDetails(uri, details) {
+        let sCov = 0, sTotal = 0, bCov = 0, bTotal = 0, dCov = 0, dTotal = 0;
+        for (const d of details) {
+          if (d instanceof api.StatementCoverage) {
+            sTotal++;
+            if (d.executed) sCov++;
+            for (const b of d.branches || []) {
+              bTotal++;
+              if (b.executed) bCov++;
+            }
+          } else if (d instanceof api.DeclarationCoverage) {
+            dTotal++;
+            if (d.executed) dCov++;
+          }
+        }
+        return new api.FileCoverage(uri,
+          new api.TestCoverageCount(sCov, sTotal),
+          bTotal > 0 ? new api.TestCoverageCount(bCov, bTotal) : undefined,
+          dTotal > 0 ? new api.TestCoverageCount(dCov, dTotal) : undefined
+        );
+      }
+    },
+    StatementCoverage: class {
+      constructor(executed, location, branches) {
+        this.executed = executed;
+        this.location = location;
+        this.branches = branches || [];
+      }
+    },
+    BranchCoverage: class {
+      constructor(executed, location, label) {
+        this.executed = executed;
+        this.location = location;
+        this.label = label;
+      }
+    },
+    DeclarationCoverage: class {
+      constructor(name, executed, location) {
+        this.name = name;
+        this.executed = executed;
+        this.location = location;
+      }
+    },
+    ChatResponseMarkdownPart: class {
+      constructor(value) {
+        this.value = typeof value === 'string' ? new api.MarkdownString(value) : value;
+      }
+    },
+    ChatResponseFileTreePart: class {
+      constructor(value, baseUri) {
+        this.value = value;
+        this.baseUri = baseUri;
+      }
+    },
+    ChatResponseAnchorPart: class {
+      constructor(value, title) {
+        this.value = value;
+        this.title = title;
+      }
+    },
+    ChatResponseProgressPart: class {
+      constructor(value) {
+        this.value = value;
+      }
+    },
+    ChatResponseReferencePart: class {
+      constructor(value, iconPath) {
+        this.value = value;
+        this.iconPath = iconPath;
+      }
+    },
+    ChatResponseCommandButtonPart: class {
+      constructor(value) {
+        this.value = value;
+      }
+    },
+    LanguageModelChatMessage: class {
+      constructor(role, content, name) {
+        this.role = role;
+        this.content = typeof content === 'string' ? [new api.LanguageModelTextPart(content)] : content;
+        this.name = name;
+      }
+      static User(content, name) {
+        return new api.LanguageModelChatMessage(1, content, name);
+      }
+      static Assistant(content, name) {
+        return new api.LanguageModelChatMessage(2, content, name);
+      }
+    },
+    LanguageModelTextPart: class {
+      constructor(value) {
+        this.value = value;
+      }
+    },
+    LanguageModelToolCallPart: class {
+      constructor(callId, name, input) {
+        this.callId = callId;
+        this.name = name;
+        this.input = input;
+      }
+    },
+    LanguageModelToolResultPart: class {
+      constructor(callId, content) {
+        this.callId = callId;
+        this.content = content;
+      }
+    },
+    LanguageModelError: class extends Error {
+      constructor(message) {
+        super(message);
+        this.code = 'Unknown';
+      }
+      static NoPermissions(message) {
+        const err = new api.LanguageModelError(message);
+        err.code = 'NoPermissions';
+        return err;
+      }
+      static Blocked(message) {
+        const err = new api.LanguageModelError(message);
+        err.code = 'Blocked';
+        return err;
+      }
+      static NotFound(message) {
+        const err = new api.LanguageModelError(message);
+        err.code = 'NotFound';
+        return err;
+      }
+    },
+    LanguageModelPromptTsxPart: class {
+      constructor(value) {
+        this.value = value;
+      }
+    },
     languages,
     commands,
     workspace,
@@ -3103,11 +4895,53 @@ function createVscodeShim() {
     comments,
     authentication,
     tests,
-    version: '1.93.0',
+    version: '1.110.0',
     l10n: {
-      t: (message, ...args) => (typeof message === 'string' ? message : message.message || ''),
+      t: (message, ...args) => {
+        let str = typeof message === 'string' ? message : message.message || '';
+        if (args.length > 0) {
+          if (typeof args[0] === 'object' && !Array.isArray(args[0])) {
+            for (const [key, val] of Object.entries(args[0])) {
+              str = str.replace(new RegExp(`\\{${key}\\}`, 'g'), String(val));
+            }
+          } else {
+            for (let i = 0; i < args.length; i++) {
+              str = str.replace(new RegExp(`\\{${i}\\}`, 'g'), String(args[i]));
+            }
+          }
+        }
+        return str;
+      },
       bundle: undefined,
       uri: undefined,
+    },
+    chat: {
+      createChatParticipant: (id, handler) => {
+        const feedbackEmitter = new VscEventEmitter();
+        const participant = {
+          id,
+          iconPath: undefined,
+          requestHandler: handler,
+          followupProvider: undefined,
+          onDidReceiveFeedback: feedbackEmitter.event,
+          dispose() { feedbackEmitter.dispose(); },
+        };
+        host.emit('event', { type: 'registerChatParticipant', id });
+        return participant;
+      },
+      registerChatOutputRenderer: (mimeType, renderer) => noopDisposable,
+      registerChatSessionItemProvider: (id, provider) => noopDisposable,
+    },
+    lm: {
+      selectChatModels: (selector) => Promise.resolve([]),
+      registerChatModelProvider: () => noopDisposable,
+      get languageModels() { return []; },
+      onDidChangeChatModels: noopEvent,
+      registerTool: (name, tool) => {
+        host.emit('event', { type: 'registerLanguageModelTool', name });
+        return noopDisposable;
+      },
+      get tools() { return []; },
     },
   };
 
@@ -3161,13 +4995,54 @@ function installVscodeShim() {
     loaded: true,
     exports: null,
   };
+  const hostDir = __dirname;
+  const vscDir = path.join(hostDir, 'node_modules', 'vscode');
+  try {
+    fs.mkdirSync(vscDir, { recursive: true });
+    fs.writeFileSync(path.join(vscDir, 'package.json'), JSON.stringify({
+      name: 'vscode',
+      version: '1.110.0',
+      main: 'index.cjs',
+    }));
+    fs.writeFileSync(path.join(vscDir, 'index.cjs'), "module.exports = globalThis.__sidex_vscode_shim__ || require('__sidex_vscode_shim__');");
+  } catch {}
 }
 
 installVscodeShim();
 hostInstance = new ExtensionHost();
-require.cache['__sidex_vscode_shim__'].exports = createVscodeShim();
+const _vscodeShim = createVscodeShim();
+globalThis.__sidex_vscode_shim__ = _vscodeShim;
+require.cache['__sidex_vscode_shim__'].exports = _vscodeShim;
 
-// ── IPC mode: when forked by server.cjs, communicate via process messages ──
+try {
+  const { register } = require('module');
+  if (typeof register === 'function') {
+    const hostCjsPath = path.resolve(__dirname, 'host.cjs');
+    const shimExports = require.cache['__sidex_vscode_shim__']?.exports;
+    const namedKeys = shimExports ? Object.keys(shimExports).filter(k => k !== 'default' && k !== '__esModule') : [];
+    const esmLines = [
+      `import { createRequire } from 'node:module';`,
+      `import { fileURLToPath } from 'node:url';`,
+      `const _require = createRequire(${JSON.stringify(hostCjsPath)});`,
+      `const _shim = globalThis.__sidex_vscode_shim__ || _require('__sidex_vscode_shim__');`,
+      `export default _shim;`,
+      ...namedKeys.map(k => `export const ${k} = _shim.${k};`),
+    ];
+    const esmPath = path.join(__dirname, 'node_modules', 'vscode', 'index.mjs');
+    fs.writeFileSync(esmPath, esmLines.join('\n'));
+    const esmUrl = `file://${esmPath.replace(/\\/g, '/')}`;
+
+    const loaderSrc = [
+      `const ESM_URL = ${JSON.stringify(esmUrl)};`,
+      `export async function resolve(specifier, context, nextResolve) {`,
+      `  if (specifier === 'vscode') return { url: ESM_URL, shortCircuit: true };`,
+      `  return nextResolve(specifier, context);`,
+      `}`,
+    ].join('\n');
+    register(`data:text/javascript,${encodeURIComponent(loaderSrc)}`);
+  }
+} catch {}
+
 
 if (process.env.SIDEX_EXTENSION_HOST === 'true' && process.send) {
   const host = hostInstance;
@@ -3175,7 +5050,11 @@ if (process.env.SIDEX_EXTENSION_HOST === 'true' && process.send) {
 
   let initData = null;
   try {
-    if (process.env.SIDEX_INIT_DATA) {
+    if (process.env.SIDEX_INIT_DATA_FILE) {
+      const raw = require('fs').readFileSync(process.env.SIDEX_INIT_DATA_FILE, 'utf8');
+      initData = JSON.parse(raw);
+      try { require('fs').unlinkSync(process.env.SIDEX_INIT_DATA_FILE); } catch {}
+    } else if (process.env.SIDEX_INIT_DATA) {
       initData = JSON.parse(process.env.SIDEX_INIT_DATA);
     }
   } catch (e) {
@@ -3183,11 +5062,33 @@ if (process.env.SIDEX_EXTENSION_HOST === 'true' && process.send) {
   }
 
   if (initData && initData.extensions) {
+    const skipPrefixes = [
+      'anysphere.cursor',
+      'cursor.',
+      'GitHub.copilot',
+      'sswg.swift-lang',
+      'vscode.github-authentication',
+      'vscode.microsoft-authentication',
+    ];
     for (const ext of initData.extensions) {
-      const extPath = ext.extensionLocation?.path || ext.location?.path;
+      const extPath = uriPathToFsPath(ext.extensionLocation?.path || ext.location?.path);
       if (!extPath) continue;
       try {
         const manifest = host._readManifest(extPath);
+        if (skipPrefixes.some(p => manifest.id.startsWith(p))) continue;
+        const configs = manifest.contributes?.configuration;
+        if (configs) {
+          const sections = Array.isArray(configs) ? configs : [configs];
+          for (const section of sections) {
+            const props = section.properties;
+            if (!props) continue;
+            for (const [key, schema] of Object.entries(props)) {
+              if (schema && 'default' in schema && !host._configuration.has(key)) {
+                host._configuration.set(key, schema.default);
+              }
+            }
+          }
+        }
         host._extensions.set(manifest.id, {
           manifest,
           extensionPath: extPath,
@@ -3199,7 +5100,6 @@ if (process.env.SIDEX_EXTENSION_HOST === 'true' && process.send) {
         const activationEvents = manifest.activationEvents || [];
         if (
           activationEvents.includes('*') ||
-          activationEvents.includes('onStartupFinished') ||
           activationEvents.length === 0
         ) {
           host._activateExtension(manifest.id).catch((e) => {
@@ -3212,6 +5112,44 @@ if (process.env.SIDEX_EXTENSION_HOST === 'true' && process.send) {
     }
   }
 
+  setTimeout(() => {
+    if (!host._initialEditorsReceived) {
+      host._pendingStartupFinished = true;
+      setTimeout(() => {
+        if (host._pendingStartupFinished) {
+          host._pendingStartupFinished = false;
+          host._checkActivationEvents('onStartupFinished');
+        }
+      }, 2000);
+      return;
+    }
+    host._checkActivationEvents('onStartupFinished');
+    for (const [extId, ext] of host._extensions) {
+      if (ext.activated) continue;
+      const events = ext.manifest.activationEvents || [];
+      for (const ev of events) {
+        if (!ev.startsWith('workspaceContains:')) continue;
+        const pattern = ev.substring('workspaceContains:'.length);
+        for (const folder of host._workspaceFolders) {
+          try {
+            const entries = fs.readdirSync(folder);
+            const match = entries.some((e) => {
+              if (pattern.includes('*')) {
+                const re = new RegExp('^' + pattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$');
+                return re.test(e);
+              }
+              return e === pattern;
+            });
+            if (match) {
+              host._activateExtension(extId).catch((e) => log(`workspaceContains activate error (${extId}): ${e.message}`));
+              break;
+            }
+          } catch {}
+        }
+      }
+    }
+  }, 500);
+
   host.on('event', (event) => {
     if (process.send) {
       process.send({ type: 'sidex:host-event', event });
@@ -3220,8 +5158,13 @@ if (process.env.SIDEX_EXTENSION_HOST === 'true' && process.send) {
 
   process.on('message', (msg) => {
     if (!msg || typeof msg !== 'object') return;
+    host.emit('inbound', msg);
     const reply = host.handleMessage(msg);
-    if (reply && process.send) {
+    if (reply && typeof reply.then === 'function') {
+      reply.then((r) => {
+        if (r && process.send) process.send({ type: 'sidex:host-reply', reply: r });
+      }).catch(() => {});
+    } else if (reply && process.send) {
       process.send({ type: 'sidex:host-reply', reply });
     }
   });

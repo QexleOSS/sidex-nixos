@@ -9,7 +9,6 @@ import { MainContext, MainThreadErrorsShape } from '../common/extHost.protocol.j
 
 @extHostNamedCustomer(MainContext.MainThreadErrors)
 export class MainThreadErrors implements MainThreadErrorsShape {
-
 	dispose(): void {
 		//
 	}

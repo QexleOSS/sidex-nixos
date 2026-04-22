@@ -7,18 +7,40 @@ import { CommandsRegistry } from '../../../../platform/commands/common/commands.
 import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
 import { KeybindingsRegistry, KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { KeyChord, KeyCode, KeyMod } from '../../../../base/common/keyCodes.js';
-import { INotificationViewItem, isNotificationViewItem, NotificationsModel, NotificationsPosition, NotificationsSettings } from '../../../common/notifications.js';
+import {
+	INotificationViewItem,
+	isNotificationViewItem,
+	NotificationsModel,
+	NotificationsPosition,
+	NotificationsSettings
+} from '../../../common/notifications.js';
 import { Action2, MenuRegistry, MenuId, registerAction2 } from '../../../../platform/actions/common/actions.js';
 import { localize, localize2 } from '../../../../nls.js';
 import { IListService, WorkbenchList } from '../../../../platform/list/browser/listService.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
-import { NotificationFocusedContext, NotificationsCenterVisibleContext, NotificationsToastsVisibleContext } from '../../../common/contextkeys.js';
-import { INotificationService, INotificationSourceFilter, NotificationsFilter } from '../../../../platform/notification/common/notification.js';
+import {
+	NotificationFocusedContext,
+	NotificationsCenterVisibleContext,
+	NotificationsToastsVisibleContext
+} from '../../../common/contextkeys.js';
+import {
+	INotificationService,
+	INotificationSourceFilter,
+	NotificationsFilter
+} from '../../../../platform/notification/common/notification.js';
 import { IInstantiationService, ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
-import { ActionRunner, IAction, WorkbenchActionExecutedEvent, WorkbenchActionExecutedClassification } from '../../../../base/common/actions.js';
+import {
+	ActionRunner,
+	IAction,
+	WorkbenchActionExecutedEvent,
+	WorkbenchActionExecutedClassification
+} from '../../../../base/common/actions.js';
 import { IQuickInputService, IQuickPickItem } from '../../../../platform/quickinput/common/quickInput.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
-import { AccessibilitySignal, IAccessibilitySignalService } from '../../../../platform/accessibilitySignal/browser/accessibilitySignalService.js';
+import {
+	AccessibilitySignal,
+	IAccessibilitySignalService
+} from '../../../../platform/accessibilitySignal/browser/accessibilitySignalService.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 
@@ -64,7 +86,10 @@ export interface INotificationsToastController {
 	hide(): void;
 }
 
-export function getNotificationFromContext(listService: IListService, context?: unknown): INotificationViewItem | undefined {
+export function getNotificationFromContext(
+	listService: IListService,
+	context?: unknown
+): INotificationViewItem | undefined {
 	if (isNotificationViewItem(context)) {
 		return context;
 	}
@@ -90,8 +115,11 @@ export function getNotificationFromContext(listService: IListService, context?: 
 	return undefined;
 }
 
-export function registerNotificationCommands(center: INotificationsCenterController, toasts: INotificationsToastController, model: NotificationsModel): void {
-
+export function registerNotificationCommands(
+	center: INotificationsCenterController,
+	toasts: INotificationsToastController,
+	model: NotificationsModel
+): void {
 	// Show Notifications Cneter
 	KeybindingsRegistry.registerCommandAndKeybindingRule({
 		id: SHOW_NOTIFICATIONS_CENTER,
@@ -159,7 +187,7 @@ export function registerNotificationCommands(center: INotificationsCenterControl
 		weight: KeybindingWeight.WorkbenchContrib + 1,
 		when: ContextKeyExpr.or(NotificationFocusedContext, NotificationsToastsVisibleContext),
 		primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyA,
-		handler: (accessor) => {
+		handler: accessor => {
 			const actionRunner = accessor.get(IInstantiationService).createInstance(NotificationActionRunner);
 			const notification = getNotificationFromContext(accessor.get(IListService)) || model.notifications.at(0);
 			if (!notification) {
@@ -275,7 +303,11 @@ export function registerNotificationCommands(center: INotificationsCenterControl
 	CommandsRegistry.registerCommand(TOGGLE_DO_NOT_DISTURB_MODE, accessor => {
 		const notificationService = accessor.get(INotificationService);
 
-		notificationService.setFilter(notificationService.getFilter() === NotificationsFilter.ERROR ? NotificationsFilter.OFF : NotificationsFilter.ERROR);
+		notificationService.setFilter(
+			notificationService.getFilter() === NotificationsFilter.ERROR
+				? NotificationsFilter.OFF
+				: NotificationsFilter.ERROR
+		);
 	});
 
 	// Configure Do Not Disturb by Source
@@ -296,42 +328,80 @@ export function registerNotificationCommands(center: INotificationsCenterControl
 		}));
 
 		picker.canSelectMany = true;
-		picker.placeholder = localize('selectSources', "Select sources to enable all notifications from");
+		picker.placeholder = localize('selectSources', 'Select sources to enable all notifications from');
 		picker.selectedItems = picker.items.filter(item => item.filter === NotificationsFilter.OFF);
 
 		picker.show();
 
-		disposables.add(picker.onDidAccept(async () => {
-			for (const item of picker.items) {
-				notificationService.setFilter({
-					id: item.id,
-					label: item.label,
-					filter: picker.selectedItems.includes(item) ? NotificationsFilter.OFF : NotificationsFilter.ERROR
-				});
-			}
+		disposables.add(
+			picker.onDidAccept(async () => {
+				for (const item of picker.items) {
+					notificationService.setFilter({
+						id: item.id,
+						label: item.label,
+						filter: picker.selectedItems.includes(item) ? NotificationsFilter.OFF : NotificationsFilter.ERROR
+					});
+				}
 
-			picker.hide();
-		}));
+				picker.hide();
+			})
+		);
 
 		disposables.add(picker.onDidHide(() => disposables.dispose()));
 	});
 
 	// Commands for Command Palette
 	const category = localize2('notifications', 'Notifications');
-	MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: SHOW_NOTIFICATIONS_CENTER, title: localize2('showNotifications', 'Show Notifications'), category } });
-	MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: HIDE_NOTIFICATIONS_CENTER, title: localize2('hideNotifications', 'Hide Notifications'), category }, when: NotificationsCenterVisibleContext });
-	MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: CLEAR_ALL_NOTIFICATIONS, title: localize2('clearAllNotifications', 'Clear All Notifications'), category } });
-	MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: ACCEPT_PRIMARY_ACTION_NOTIFICATION, title: localize2('acceptNotificationPrimaryAction', 'Accept Notification Primary Action'), category } });
-	MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: TOGGLE_DO_NOT_DISTURB_MODE, title: localize2('toggleDoNotDisturbMode', 'Toggle Do Not Disturb Mode'), category } });
-	MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: TOGGLE_DO_NOT_DISTURB_MODE_BY_SOURCE, title: localize2('toggleDoNotDisturbModeBySource', 'Toggle Do Not Disturb Mode By Source...'), category } });
-	MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command: { id: FOCUS_NOTIFICATION_TOAST, title: localize2('focusNotificationToasts', 'Focus Notification Toast'), category }, when: NotificationsToastsVisibleContext });
+	MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
+		command: { id: SHOW_NOTIFICATIONS_CENTER, title: localize2('showNotifications', 'Show Notifications'), category }
+	});
+	MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
+		command: { id: HIDE_NOTIFICATIONS_CENTER, title: localize2('hideNotifications', 'Hide Notifications'), category },
+		when: NotificationsCenterVisibleContext
+	});
+	MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
+		command: {
+			id: CLEAR_ALL_NOTIFICATIONS,
+			title: localize2('clearAllNotifications', 'Clear All Notifications'),
+			category
+		}
+	});
+	MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
+		command: {
+			id: ACCEPT_PRIMARY_ACTION_NOTIFICATION,
+			title: localize2('acceptNotificationPrimaryAction', 'Accept Notification Primary Action'),
+			category
+		}
+	});
+	MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
+		command: {
+			id: TOGGLE_DO_NOT_DISTURB_MODE,
+			title: localize2('toggleDoNotDisturbMode', 'Toggle Do Not Disturb Mode'),
+			category
+		}
+	});
+	MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
+		command: {
+			id: TOGGLE_DO_NOT_DISTURB_MODE_BY_SOURCE,
+			title: localize2('toggleDoNotDisturbModeBySource', 'Toggle Do Not Disturb Mode By Source...'),
+			category
+		}
+	});
+	MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
+		command: {
+			id: FOCUS_NOTIFICATION_TOAST,
+			title: localize2('focusNotificationToasts', 'Focus Notification Toast'),
+			category
+		},
+		when: NotificationsToastsVisibleContext
+	});
 
 	// Bell icon in the title bar (when notifications are positioned at top-right)
 	MenuRegistry.appendMenuItem(MenuId.TitleBar, {
 		command: {
 			id: TOGGLE_NOTIFICATIONS_CENTER,
-			title: localize('toggleNotifications', "Toggle Notifications"),
-			icon: Codicon.bell,
+			title: localize('toggleNotifications', 'Toggle Notifications'),
+			icon: Codicon.bell
 		},
 		group: 'navigation',
 		order: 10000,
@@ -344,60 +414,79 @@ export function registerNotificationCommands(center: INotificationsCenterControl
 
 // Notification Position Actions
 
-registerAction2(class SetNotificationsPositionBottomRight extends Action2 {
-	constructor() {
-		super({
-			id: 'workbench.action.setNotificationsPosition.bottomRight',
-			title: localize2('positionBottomRight', 'Bottom Right'),
-			toggled: ContextKeyExpr.equals(`config.${NotificationsSettings.NOTIFICATIONS_POSITION}`, NotificationsPosition.BOTTOM_RIGHT),
-			menu: {
-				id: MenuId.NotificationsCenterPositionMenu,
-				order: 1
-			}
-		});
+registerAction2(
+	class SetNotificationsPositionBottomRight extends Action2 {
+		constructor() {
+			super({
+				id: 'workbench.action.setNotificationsPosition.bottomRight',
+				title: localize2('positionBottomRight', 'Bottom Right'),
+				toggled: ContextKeyExpr.equals(
+					`config.${NotificationsSettings.NOTIFICATIONS_POSITION}`,
+					NotificationsPosition.BOTTOM_RIGHT
+				),
+				menu: {
+					id: MenuId.NotificationsCenterPositionMenu,
+					order: 1
+				}
+			});
+		}
+		run(accessor: ServicesAccessor): void {
+			accessor
+				.get(IConfigurationService)
+				.updateValue(NotificationsSettings.NOTIFICATIONS_POSITION, NotificationsPosition.BOTTOM_RIGHT);
+		}
 	}
-	run(accessor: ServicesAccessor): void {
-		accessor.get(IConfigurationService).updateValue(NotificationsSettings.NOTIFICATIONS_POSITION, NotificationsPosition.BOTTOM_RIGHT);
-	}
-});
+);
 
-registerAction2(class SetNotificationsPositionBottomLeft extends Action2 {
-	constructor() {
-		super({
-			id: 'workbench.action.setNotificationsPosition.bottomLeft',
-			title: localize2('positionBottomLeft', 'Bottom Left'),
-			toggled: ContextKeyExpr.equals(`config.${NotificationsSettings.NOTIFICATIONS_POSITION}`, NotificationsPosition.BOTTOM_LEFT),
-			menu: {
-				id: MenuId.NotificationsCenterPositionMenu,
-				order: 2
-			}
-		});
+registerAction2(
+	class SetNotificationsPositionBottomLeft extends Action2 {
+		constructor() {
+			super({
+				id: 'workbench.action.setNotificationsPosition.bottomLeft',
+				title: localize2('positionBottomLeft', 'Bottom Left'),
+				toggled: ContextKeyExpr.equals(
+					`config.${NotificationsSettings.NOTIFICATIONS_POSITION}`,
+					NotificationsPosition.BOTTOM_LEFT
+				),
+				menu: {
+					id: MenuId.NotificationsCenterPositionMenu,
+					order: 2
+				}
+			});
+		}
+		run(accessor: ServicesAccessor): void {
+			accessor
+				.get(IConfigurationService)
+				.updateValue(NotificationsSettings.NOTIFICATIONS_POSITION, NotificationsPosition.BOTTOM_LEFT);
+		}
 	}
-	run(accessor: ServicesAccessor): void {
-		accessor.get(IConfigurationService).updateValue(NotificationsSettings.NOTIFICATIONS_POSITION, NotificationsPosition.BOTTOM_LEFT);
-	}
-});
+);
 
-registerAction2(class SetNotificationsPositionTopRight extends Action2 {
-	constructor() {
-		super({
-			id: 'workbench.action.setNotificationsPosition.topRight',
-			title: localize2('positionTopRight', 'Top Right'),
-			toggled: ContextKeyExpr.equals(`config.${NotificationsSettings.NOTIFICATIONS_POSITION}`, NotificationsPosition.TOP_RIGHT),
-			menu: {
-				id: MenuId.NotificationsCenterPositionMenu,
-				order: 3
-			}
-		});
+registerAction2(
+	class SetNotificationsPositionTopRight extends Action2 {
+		constructor() {
+			super({
+				id: 'workbench.action.setNotificationsPosition.topRight',
+				title: localize2('positionTopRight', 'Top Right'),
+				toggled: ContextKeyExpr.equals(
+					`config.${NotificationsSettings.NOTIFICATIONS_POSITION}`,
+					NotificationsPosition.TOP_RIGHT
+				),
+				menu: {
+					id: MenuId.NotificationsCenterPositionMenu,
+					order: 3
+				}
+			});
+		}
+		run(accessor: ServicesAccessor): void {
+			accessor
+				.get(IConfigurationService)
+				.updateValue(NotificationsSettings.NOTIFICATIONS_POSITION, NotificationsPosition.TOP_RIGHT);
+		}
 	}
-	run(accessor: ServicesAccessor): void {
-		accessor.get(IConfigurationService).updateValue(NotificationsSettings.NOTIFICATIONS_POSITION, NotificationsPosition.TOP_RIGHT);
-	}
-});
-
+);
 
 export class NotificationActionRunner extends ActionRunner {
-
 	constructor(
 		@ITelemetryService private readonly telemetryService: ITelemetryService,
 		@INotificationService private readonly notificationService: INotificationService
@@ -406,7 +495,10 @@ export class NotificationActionRunner extends ActionRunner {
 	}
 
 	protected override async runAction(action: IAction, context: unknown): Promise<void> {
-		this.telemetryService.publicLog2<WorkbenchActionExecutedEvent, WorkbenchActionExecutedClassification>('workbenchActionExecuted', { id: action.id, from: 'message' });
+		this.telemetryService.publicLog2<WorkbenchActionExecutedEvent, WorkbenchActionExecutedClassification>(
+			'workbenchActionExecuted',
+			{ id: action.id, from: 'message' }
+		);
 
 		// Run and make sure to notify on any error again
 		try {

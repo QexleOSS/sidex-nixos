@@ -7,14 +7,14 @@ import * as glob from '../../../../base/common/glob.js';
 import { startsWithIgnoreCase } from '../../../../base/common/strings.js';
 
 export class IgnoreFile {
-
 	private isPathIgnored: (path: string, isDir: boolean, parent?: IgnoreFile) => boolean;
 
 	constructor(
 		contents: string,
 		private readonly location: string,
 		private readonly parent?: IgnoreFile,
-		private readonly ignoreCase = false) {
+		private readonly ignoreCase = false
+	) {
 		if (location[location.length - 1] === '\\') {
 			throw Error('Unexpected path format, do not use trailing backslashes');
 		}
@@ -79,7 +79,11 @@ export class IgnoreFile {
 		return ignored;
 	}
 
-	private gitignoreLinesToExpression(lines: string[], dirPath: string, trimForExclusions: boolean): glob.ParsedExpression {
+	private gitignoreLinesToExpression(
+		lines: string[],
+		dirPath: string,
+		trimForExclusions: boolean
+	): glob.ParsedExpression {
 		const includeLines = lines.map(line => this.gitignoreLineToGlob(line, dirPath));
 
 		const includeExpression: glob.IExpression = Object.create(null);
@@ -90,7 +94,11 @@ export class IgnoreFile {
 		return glob.parse(includeExpression, { trimForExclusions, ignoreCase: this.ignoreCase });
 	}
 
-	private parseIgnoreFile(ignoreContents: string, dirPath: string, parent: IgnoreFile | undefined): (path: string, isDir: boolean) => boolean {
+	private parseIgnoreFile(
+		ignoreContents: string,
+		dirPath: string,
+		parent: IgnoreFile | undefined
+	): (path: string, isDir: boolean) => boolean {
 		const contentLines = ignoreContents
 			.split('\n')
 			.map(line => line.trim())
@@ -115,11 +123,19 @@ export class IgnoreFile {
 		const isDirIncluded = this.gitignoreLinesToExpression(dirIncludeLines, dirPath, false);
 
 		const isPathIgnored = (path: string, isDir: boolean) => {
-			if (!(this.ignoreCase ? startsWithIgnoreCase(path, dirPath) : path.startsWith(dirPath))) { return false; }
-			if (isDir && isDirIgnored(path) && !isDirIncluded(path)) { return true; }
-			if (isFileIgnored(path) && !isFileIncluded(path)) { return true; }
+			if (!(this.ignoreCase ? startsWithIgnoreCase(path, dirPath) : path.startsWith(dirPath))) {
+				return false;
+			}
+			if (isDir && isDirIgnored(path) && !isDirIncluded(path)) {
+				return true;
+			}
+			if (isFileIgnored(path) && !isFileIncluded(path)) {
+				return true;
+			}
 
-			if (parent) { return parent.isPathIgnored(path, isDir); }
+			if (parent) {
+				return parent.isPathIgnored(path, isDir);
+			}
 
 			return false;
 		};

@@ -32,12 +32,7 @@ class DebugLocationImpl implements ILocation {
 		const lines = stack.split('\n');
 		const location = parseLine(lines[parentIdx + 1]);
 		if (location) {
-			return new DebugLocationImpl(
-				location.fileName,
-				location.line,
-				location.column,
-				location.id
-			);
+			return new DebugLocationImpl(location.fileName, location.line, location.column, location.id);
 		} else {
 			return undefined;
 		}
@@ -47,11 +42,9 @@ class DebugLocationImpl implements ILocation {
 		public readonly fileName: string,
 		public readonly line: number,
 		public readonly column: number,
-		public readonly id: string,
-	) {
-	}
+		public readonly id: string
+	) {}
 }
-
 
 export interface ILocation {
 	fileName: string;
@@ -67,7 +60,7 @@ function parseLine(stackLine: string): ILocation | undefined {
 			fileName: match[1],
 			line: parseInt(match[2]),
 			column: parseInt(match[3]),
-			id: stackLine,
+			id: stackLine
 		};
 	}
 
@@ -78,7 +71,7 @@ function parseLine(stackLine: string): ILocation | undefined {
 			fileName: match2[1],
 			line: parseInt(match2[2]),
 			column: parseInt(match2[3]),
-			id: stackLine,
+			id: stackLine
 		};
 	}
 

@@ -13,7 +13,9 @@ export const terminalLspSupportedLanguages = new Set<{ shellType: string; langua
 	}
 ]);
 
-export function getTerminalLspSupportedLanguageObj(shellType: string): { shellType: string; languageId: string; extension: string } | undefined {
+export function getTerminalLspSupportedLanguageObj(
+	shellType: string
+): { shellType: string; languageId: string; extension: string } | undefined {
 	for (const supportedLanguage of terminalLspSupportedLanguages) {
 		if (supportedLanguage.shellType === shellType) {
 			return supportedLanguage;

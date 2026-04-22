@@ -10,7 +10,12 @@ import { IModelService } from '../../../../../editor/common/services/model.js';
 import { ITextModelContentProvider, ITextModelService } from '../../../../../editor/common/services/resolverService.js';
 import { localize, localize2 } from '../../../../../nls.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
-import { EnvironmentVariableMutatorType, EnvironmentVariableScope, IEnvironmentVariableMutator, IMergedEnvironmentVariableCollection } from '../../../../../platform/terminal/common/environmentVariable.js';
+import {
+	EnvironmentVariableMutatorType,
+	EnvironmentVariableScope,
+	IEnvironmentVariableMutator,
+	IMergedEnvironmentVariableCollection
+} from '../../../../../platform/terminal/common/environmentVariable.js';
 import { registerActiveInstanceAction } from '../../../terminal/browser/terminalActions.js';
 import { TerminalCommandId } from '../../../terminal/common/terminal.js';
 import { IEditorService } from '../../../../services/editor/common/editorService.js';
@@ -31,13 +36,14 @@ registerActiveInstanceAction({
 			const editorService = accessor.get(IEditorService);
 			const timestamp = new Date().getTime();
 			const scopeDesc = scope?.workspaceFolder ? ` - ${scope.workspaceFolder.name}` : '';
-			const textContent = await outputProvider.provideTextContent(URI.from(
-				{
+			const textContent = await outputProvider.provideTextContent(
+				URI.from({
 					scheme: EnvironmentCollectionProvider.scheme,
 					path: `Environment changes${scopeDesc}`,
 					fragment: describeEnvironmentChanges(collection, scope),
 					query: `environment-collection-${timestamp}`
-				}));
+				})
+			);
 			if (textContent) {
 				await editorService.openEditor({
 					resource: textContent.uri
@@ -49,7 +55,10 @@ registerActiveInstanceAction({
 
 // #endregion
 
-function describeEnvironmentChanges(collection: IMergedEnvironmentVariableCollection, scope: EnvironmentVariableScope | undefined): string {
+function describeEnvironmentChanges(
+	collection: IMergedEnvironmentVariableCollection,
+	scope: EnvironmentVariableScope | undefined
+): string {
 	let content = `# ${localize('envChanges', 'Terminal Environment Changes')}`;
 	const globalDescriptions = collection.getDescriptionMap(undefined);
 	const workspaceDescriptions = collection.getDescriptionMap(scope);
@@ -63,7 +72,9 @@ function describeEnvironmentChanges(collection: IMergedEnvironmentVariableCollec
 		const workspaceDescription = workspaceDescriptions.get(ext);
 		if (workspaceDescription) {
 			// Only show '(workspace)' suffix if there is already a description for the extension.
-			const workspaceSuffix = globalDescription ? ` (${localize('ScopedEnvironmentContributionInfo', 'workspace')})` : '';
+			const workspaceSuffix = globalDescription
+				? ` (${localize('ScopedEnvironmentContributionInfo', 'workspace')})`
+				: '';
 			content += `\n${workspaceDescription}${workspaceSuffix}\n`;
 		}
 
@@ -77,15 +88,16 @@ function describeEnvironmentChanges(collection: IMergedEnvironmentVariableCollec
 	return content;
 }
 
-function filterScope(
-	mutator: IEnvironmentVariableMutator,
-	scope: EnvironmentVariableScope | undefined
-): boolean {
+function filterScope(mutator: IEnvironmentVariableMutator, scope: EnvironmentVariableScope | undefined): boolean {
 	if (!mutator.scope) {
 		return true;
 	}
 	// Only mutators which are applicable on the relevant workspace should be shown.
-	if (mutator.scope.workspaceFolder && scope?.workspaceFolder && mutator.scope.workspaceFolder.index === scope.workspaceFolder.index) {
+	if (
+		mutator.scope.workspaceFolder &&
+		scope?.workspaceFolder &&
+		mutator.scope.workspaceFolder.index === scope.workspaceFolder.index
+	) {
 		return true;
 	}
 	return false;
@@ -93,9 +105,12 @@ function filterScope(
 
 function mutatorTypeLabel(type: EnvironmentVariableMutatorType, value: string, variable: string): string {
 	switch (type) {
-		case EnvironmentVariableMutatorType.Prepend: return `${variable}=${value}\${env:${variable}}`;
-		case EnvironmentVariableMutatorType.Append: return `${variable}=\${env:${variable}}${value}`;
-		default: return `${variable}=${value}`;
+		case EnvironmentVariableMutatorType.Prepend:
+			return `${variable}=${value}\${env:${variable}}`;
+		case EnvironmentVariableMutatorType.Append:
+			return `${variable}=\${env:${variable}}${value}`;
+		default:
+			return `${variable}=${value}`;
 	}
 }
 
@@ -115,6 +130,11 @@ class EnvironmentCollectionProvider implements ITextModelContentProvider {
 			return existing;
 		}
 
-		return this._modelService.createModel(resource.fragment, { languageId: 'markdown', onDidChange: Event.None }, resource, false);
+		return this._modelService.createModel(
+			resource.fragment,
+			{ languageId: 'markdown', onDidChange: Event.None },
+			resource,
+			false
+		);
 	}
 }

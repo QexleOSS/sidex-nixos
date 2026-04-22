@@ -9,7 +9,12 @@ import { isCodeEditor, isDiffEditor } from '../../../../editor/browser/editorBro
 import { localize, localize2 } from '../../../../nls.js';
 import { ILocalizedString } from '../../../../platform/action/common/action.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
-import { ContextKeyExpr, IContextKey, IContextKeyService, RawContextKey } from '../../../../platform/contextkey/common/contextkey.js';
+import {
+	ContextKeyExpr,
+	IContextKey,
+	IContextKeyService,
+	RawContextKey
+} from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
@@ -29,12 +34,14 @@ import { DEBUG_CONFIGURE_COMMAND_ID, DEBUG_START_COMMAND_ID } from './debugComma
 
 const debugStartLanguageKey = 'debugStartLanguage';
 const CONTEXT_DEBUG_START_LANGUAGE = new RawContextKey<string>(debugStartLanguageKey, undefined);
-const CONTEXT_DEBUGGER_INTERESTED_IN_ACTIVE_EDITOR = new RawContextKey<boolean>('debuggerInterestedInActiveEditor', false);
+const CONTEXT_DEBUGGER_INTERESTED_IN_ACTIVE_EDITOR = new RawContextKey<boolean>(
+	'debuggerInterestedInActiveEditor',
+	false
+);
 
 export class WelcomeView extends ViewPane {
-
 	static readonly ID = 'workbench.debug.welcome';
-	static readonly LABEL: ILocalizedString = localize2('run', "Run");
+	static readonly LABEL: ILocalizedString = localize2('run', 'Run');
 
 	private debugStartLanguageContext: IContextKey<string | undefined>;
 	private debuggerInterestedContext: IContextKey<boolean>;
@@ -52,9 +59,20 @@ export class WelcomeView extends ViewPane {
 		@IViewDescriptorService viewDescriptorService: IViewDescriptorService,
 		@IOpenerService openerService: IOpenerService,
 		@IStorageService storageSevice: IStorageService,
-		@IHoverService hoverService: IHoverService,
+		@IHoverService hoverService: IHoverService
 	) {
-		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService);
+		super(
+			options,
+			keybindingService,
+			contextMenuService,
+			configurationService,
+			contextKeyService,
+			viewDescriptorService,
+			instantiationService,
+			openerService,
+			themeService,
+			hoverService
+		);
 
 		this.debugStartLanguageContext = CONTEXT_DEBUG_START_LANGUAGE.bindTo(contextKeyService);
 		this.debuggerInterestedContext = CONTEXT_DEBUGGER_INTERESTED_IN_ACTIVE_EDITOR.bindTo(contextKeyService);
@@ -83,26 +101,30 @@ export class WelcomeView extends ViewPane {
 		const disposables = new DisposableStore();
 		this._register(disposables);
 
-		this._register(editorService.onDidActiveEditorChange(() => {
-			disposables.clear();
+		this._register(
+			editorService.onDidActiveEditorChange(() => {
+				disposables.clear();
 
-			let editorControl = this.editorService.activeTextEditorControl;
-			if (isDiffEditor(editorControl)) {
-				editorControl = editorControl.getModifiedEditor();
-			}
+				let editorControl = this.editorService.activeTextEditorControl;
+				if (isDiffEditor(editorControl)) {
+					editorControl = editorControl.getModifiedEditor();
+				}
 
-			if (isCodeEditor(editorControl)) {
-				disposables.add(editorControl.onDidChangeModelLanguage(setContextKey));
-			}
+				if (isCodeEditor(editorControl)) {
+					disposables.add(editorControl.onDidChangeModelLanguage(setContextKey));
+				}
 
-			setContextKey();
-		}));
-		this._register(this.debugService.getAdapterManager().onDidRegisterDebugger(setContextKey));
-		this._register(this.onDidChangeBodyVisibility(visible => {
-			if (visible) {
 				setContextKey();
-			}
-		}));
+			})
+		);
+		this._register(this.debugService.getAdapterManager().onDidRegisterDebugger(setContextKey));
+		this._register(
+			this.onDidChangeBodyVisibility(visible => {
+				if (visible) {
+					setContextKey();
+				}
+			})
+		);
 		setContextKey();
 
 		debugKeybindingLabel = this.keybindingService.appendKeybinding('', DEBUG_START_COMMAND_ID);
@@ -123,15 +145,16 @@ viewsRegistry.registerViewWelcomeContent(WelcomeView.ID, {
 				'{Locked="](command:{0})"}'
 			]
 		},
-		"[Open a file](command:{0}) which can be debugged or run.", OpenFileAction.ID
+		'[Open a file](command:{0}) which can be debugged or run.',
+		OpenFileAction.ID
 	),
 	when: ContextKeyExpr.and(CONTEXT_DEBUGGERS_AVAILABLE, CONTEXT_DEBUGGER_INTERESTED_IN_ACTIVE_EDITOR.toNegated()),
-	group: ViewContentGroups.Open,
+	group: ViewContentGroups.Open
 });
 
 let debugKeybindingLabel = '';
 viewsRegistry.registerViewWelcomeContent(WelcomeView.ID, {
-	content: `[${localize('runAndDebugAction', "Run and Debug")}${debugKeybindingLabel}](command:${DEBUG_START_COMMAND_ID})`,
+	content: `[${localize('runAndDebugAction', 'Run and Debug')}${debugKeybindingLabel}](command:${DEBUG_START_COMMAND_ID})`,
 	when: CONTEXT_DEBUGGERS_AVAILABLE,
 	group: ViewContentGroups.Debug,
 	// Allow inserting more buttons directly after this one (by setting order to 1).
@@ -139,8 +162,11 @@ viewsRegistry.registerViewWelcomeContent(WelcomeView.ID, {
 });
 
 viewsRegistry.registerViewWelcomeContent(WelcomeView.ID, {
-	content: localize({ key: 'customizeRunAndDebug2', comment: ['{Locked="launch.json"}', '{Locked="["}', '{Locked="]({0})"}'] },
-		"To customize Run and Debug [create a launch.json file]({0}).", `${createCommandUri(DEBUG_CONFIGURE_COMMAND_ID, { addNew: true }).toString()}`),
+	content: localize(
+		{ key: 'customizeRunAndDebug2', comment: ['{Locked="launch.json"}', '{Locked="["}', '{Locked="]({0})"}'] },
+		'To customize Run and Debug [create a launch.json file]({0}).',
+		`${createCommandUri(DEBUG_CONFIGURE_COMMAND_ID, { addNew: true }).toString()}`
+	),
 	when: ContextKeyExpr.and(CONTEXT_DEBUGGERS_AVAILABLE, WorkbenchStateContext.notEqualsTo('empty')),
 	group: ViewContentGroups.Debug
 });
@@ -149,19 +175,20 @@ viewsRegistry.registerViewWelcomeContent(WelcomeView.ID, {
 	content: localize(
 		{
 			key: 'customizeRunAndDebugOpenFolder2',
-			comment: [
-				'{Locked="launch.json"}',
-				'{Locked="["}',
-				'{Locked="]({0})"}',
-			]
+			comment: ['{Locked="launch.json"}', '{Locked="["}', '{Locked="]({0})"}']
 		},
-		"To customize Run and Debug, [open a folder]({0}) and create a launch.json file.", createCommandUri(OpenFolderAction.ID).toString()),
+		'To customize Run and Debug, [open a folder]({0}) and create a launch.json file.',
+		createCommandUri(OpenFolderAction.ID).toString()
+	),
 	when: ContextKeyExpr.and(CONTEXT_DEBUGGERS_AVAILABLE, WorkbenchStateContext.isEqualTo('empty')),
 	group: ViewContentGroups.Debug
 });
 
 viewsRegistry.registerViewWelcomeContent(WelcomeView.ID, {
-	content: localize('allDebuggersDisabled', "All debug extensions are disabled. Enable a debug extension or install a new one from the Marketplace."),
+	content: localize(
+		'allDebuggersDisabled',
+		'All debug extensions are disabled. Enable a debug extension or install a new one from the Marketplace.'
+	),
 	when: CONTEXT_DEBUG_EXTENSION_AVAILABLE.toNegated(),
 	group: ViewContentGroups.Debug
 });

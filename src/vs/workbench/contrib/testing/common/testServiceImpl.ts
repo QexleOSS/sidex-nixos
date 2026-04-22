@@ -32,16 +32,35 @@ import { TestingContextKeys } from './testingContextKeys.js';
 import { canUseProfileWithTest, ITestProfileService } from './testProfileService.js';
 import { ITestResult } from './testResult.js';
 import { ITestResultService } from './testResultService.js';
-import { AmbiguousRunTestsRequest, IMainThreadTestController, IMainThreadTestHostProxy, ITestFollowups, ITestService } from './testService.js';
-import { InternalTestItem, ITestRunProfile, ResolvedTestRunRequest, TestControllerCapability, TestDiffOpType, TestMessageFollowupRequest, TestsDiff } from './testTypes.js';
+import {
+	AmbiguousRunTestsRequest,
+	IMainThreadTestController,
+	IMainThreadTestHostProxy,
+	ITestFollowups,
+	ITestService
+} from './testService.js';
+import {
+	InternalTestItem,
+	ITestRunProfile,
+	ResolvedTestRunRequest,
+	TestControllerCapability,
+	TestDiffOpType,
+	TestMessageFollowupRequest,
+	TestsDiff
+} from './testTypes.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 
 export class TestService extends Disposable implements ITestService {
 	declare readonly _serviceBrand: undefined;
-	private testControllers = observableValue<ReadonlyMap<string, IMainThreadTestController>>('testControllers', new Map<string, IMainThreadTestController>());
+	private testControllers = observableValue<ReadonlyMap<string, IMainThreadTestController>>(
+		'testControllers',
+		new Map<string, IMainThreadTestController>()
+	);
 	private testExtHosts = new Set<IMainThreadTestHostProxy>();
 
-	private readonly cancelExtensionTestRunEmitter = this._register(new Emitter<{ runId: string | undefined; taskId: string | undefined }>());
+	private readonly cancelExtensionTestRunEmitter = this._register(
+		new Emitter<{ runId: string | undefined; taskId: string | undefined }>()
+	);
 	private readonly willProcessDiffEmitter = this._register(new Emitter<TestsDiff>());
 	private readonly didProcessDiffEmitter = this._register(new Emitter<TestsDiff>());
 	private readonly testRefreshCancellations = new Set<CancellationTokenSource>();
@@ -94,30 +113,45 @@ export class TestService extends Disposable implements ITestService {
 		@INotificationService private readonly notificationService: INotificationService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@ITestResultService private readonly testResults: ITestResultService,
-		@IWorkspaceTrustRequestService private readonly workspaceTrustRequestService: IWorkspaceTrustRequestService,
+		@IWorkspaceTrustRequestService private readonly workspaceTrustRequestService: IWorkspaceTrustRequestService
 	) {
 		super();
 		this.collection = new MainThreadTestCollection(uriIdentityService, this.expandTest.bind(this));
-		this.showInlineOutput = this._register(MutableObservableValue.stored(new StoredValue<boolean>({
-			key: 'inlineTestOutputVisible',
-			scope: StorageScope.WORKSPACE,
-			target: StorageTarget.USER
-		}, storage), true));
+		this.showInlineOutput = this._register(
+			MutableObservableValue.stored(
+				new StoredValue<boolean>(
+					{
+						key: 'inlineTestOutputVisible',
+						scope: StorageScope.WORKSPACE,
+						target: StorageTarget.USER
+					},
+					storage
+				),
+				true
+			)
+		);
 
 		this.excluded = instantiationService.createInstance(TestExclusions);
 		this.isRefreshingTests = TestingContextKeys.isRefreshingTests.bindTo(contextKeyService);
 		this.activeEditorHasTests = TestingContextKeys.activeEditorHasTests.bindTo(contextKeyService);
 
-		this._register(bindContextKey(TestingContextKeys.providerCount, contextKeyService,
-			reader => this.testControllers.read(reader).size));
+		this._register(
+			bindContextKey(
+				TestingContextKeys.providerCount,
+				contextKeyService,
+				reader => this.testControllers.read(reader).size
+			)
+		);
 
 		const bindCapability = (key: RawContextKey<boolean>, capability: TestControllerCapability) =>
-			this._register(bindContextKey(key, contextKeyService, reader =>
-				Iterable.some(
-					this.testControllers.read(reader).values(),
-					ctrl => !!(ctrl.capabilities.read(reader) & capability)
-				),
-			));
+			this._register(
+				bindContextKey(key, contextKeyService, reader =>
+					Iterable.some(
+						this.testControllers.read(reader).values(),
+						ctrl => !!(ctrl.capabilities.read(reader) & capability)
+					)
+				)
+			);
 
 		bindCapability(TestingContextKeys.canRefreshTests, TestControllerCapability.Refresh);
 		bindCapability(TestingContextKeys.canGoToRelatedCode, TestControllerCapability.CodeRelatedToTest);
@@ -174,12 +208,12 @@ export class TestService extends Disposable implements ITestService {
 			targets: byProfile.map(({ profile, tests }) => ({
 				profileId: profile.profileId,
 				controllerId: tests[0].controllerId,
-				testIds: tests.map(t => t.item.extId),
+				testIds: tests.map(t => t.item.extId)
 			})),
 			group: req.group,
 			exclude: req.exclude?.map(t => t.item.extId),
 			continuous: req.continuous,
-			preserveFocus: req.preserveFocus,
+			preserveFocus: req.preserveFocus
 		};
 
 		// If no tests are covered by the defaults, just use whatever the defaults
@@ -187,20 +221,20 @@ export class TestService extends Disposable implements ITestService {
 		// profiles for the run button, but then asked to run a single test from the
 		// explorer or decoration. We shouldn't no-op.
 		if (resolved.targets.length === 0) {
-			for (const byController of groupBy(req.tests, (a, b) => a.controllerId === b.controllerId ? 0 : 1)) {
+			for (const byController of groupBy(req.tests, (a, b) => (a.controllerId === b.controllerId ? 0 : 1))) {
 				const profiles = this.testProfiles.getControllerProfiles(byController[0].controllerId);
 				const withControllers = byController.map(test => ({
 					profile: profiles.find(p => p.group === req.group && canUseProfileWithTest(p, test)),
-					test,
+					test
 				}));
 
-				for (const byProfile of groupBy(withControllers, (a, b) => a.profile === b.profile ? 0 : 1)) {
+				for (const byProfile of groupBy(withControllers, (a, b) => (a.profile === b.profile ? 0 : 1))) {
 					const profile = byProfile[0].profile;
 					if (profile) {
 						resolved.targets.push({
 							testIds: byProfile.map(t => t.test.item.extId),
 							profileId: profile.profileId,
-							controllerId: profile.controllerId,
+							controllerId: profile.controllerId
 						});
 					}
 				}
@@ -217,7 +251,7 @@ export class TestService extends Disposable implements ITestService {
 		}
 
 		const trust = await this.workspaceTrustRequestService.requestWorkspaceTrust({
-			message: localize('testTrust', "Running tests may execute code in your workspace."),
+			message: localize('testTrust', 'Running tests may execute code in your workspace.')
 		});
 
 		if (!trust) {
@@ -225,21 +259,25 @@ export class TestService extends Disposable implements ITestService {
 		}
 
 		const byController = groupBy(req.targets, (a, b) => a.controllerId.localeCompare(b.controllerId));
-		const requests = byController.map(
-			group => this.getTestController(group[0].controllerId)?.startContinuousRun(
-				group.map(controlReq => ({
-					excludeExtIds: req.exclude!.filter(t => !controlReq.testIds.includes(t)),
-					profileId: controlReq.profileId,
-					controllerId: controlReq.controllerId,
-					testIds: controlReq.testIds,
-				})),
-				token,
-			).then(result => {
-				const errs = result.map(r => r.error).filter(isDefined);
-				if (errs.length) {
-					this.notificationService.error(localize('testError', 'An error occurred attempting to run tests: {0}', errs.join(' ')));
-				}
-			})
+		const requests = byController.map(group =>
+			this.getTestController(group[0].controllerId)
+				?.startContinuousRun(
+					group.map(controlReq => ({
+						excludeExtIds: req.exclude!.filter(t => !controlReq.testIds.includes(t)),
+						profileId: controlReq.profileId,
+						controllerId: controlReq.controllerId,
+						testIds: controlReq.testIds
+					})),
+					token
+				)
+				.then(result => {
+					const errs = result.map(r => r.error).filter(isDefined);
+					if (errs.length) {
+						this.notificationService.error(
+							localize('testError', 'An error occurred attempting to run tests: {0}', errs.join(' '))
+						);
+					}
+				})
 		);
 
 		await Promise.all(requests);
@@ -255,7 +293,7 @@ export class TestService extends Disposable implements ITestService {
 
 		const result = this.testResults.createLiveResult(req);
 		const trust = await this.workspaceTrustRequestService.requestWorkspaceTrust({
-			message: localize('testTrust', "Running tests may execute code in your workspace."),
+			message: localize('testTrust', 'Running tests may execute code in your workspace.')
 		});
 
 		if (!trust) {
@@ -268,22 +306,26 @@ export class TestService extends Disposable implements ITestService {
 			this.uiRunningTests.set(result.id, cancelSource);
 
 			const byController = groupBy(req.targets, (a, b) => a.controllerId.localeCompare(b.controllerId));
-			const requests = byController.map(
-				group => this.getTestController(group[0].controllerId)?.runTests(
-					group.map(controlReq => ({
-						runId: result.id,
-						excludeExtIds: req.exclude!.filter(t => !controlReq.testIds.includes(t)),
-						profileId: controlReq.profileId,
-						controllerId: controlReq.controllerId,
-						testIds: controlReq.testIds,
-					})),
-					cancelSource.token,
-				).then(result => {
-					const errs = result.map(r => r.error).filter(isDefined);
-					if (errs.length) {
-						this.notificationService.error(localize('testError', 'An error occurred attempting to run tests: {0}', errs.join(' ')));
-					}
-				})
+			const requests = byController.map(group =>
+				this.getTestController(group[0].controllerId)
+					?.runTests(
+						group.map(controlReq => ({
+							runId: result.id,
+							excludeExtIds: req.exclude!.filter(t => !controlReq.testIds.includes(t)),
+							profileId: controlReq.profileId,
+							controllerId: controlReq.controllerId,
+							testIds: controlReq.testIds
+						})),
+						cancelSource.token
+					)
+					.then(result => {
+						const errs = result.map(r => r.error).filter(isDefined);
+						if (errs.length) {
+							this.notificationService.error(
+								localize('testError', 'An error occurred attempting to run tests: {0}', errs.join(' '))
+							);
+						}
+					})
 			);
 			await this.saveAllBeforeTest(req);
 			await Promise.all(requests);
@@ -297,15 +339,21 @@ export class TestService extends Disposable implements ITestService {
 	/**
 	 * @inheritdoc
 	 */
-	public async provideTestFollowups(req: TestMessageFollowupRequest, token: CancellationToken): Promise<ITestFollowups> {
-		const reqs = await Promise.all([...this.testExtHosts].map(async ctrl =>
-			({ ctrl, followups: await ctrl.provideTestFollowups(req, token) })));
+	public async provideTestFollowups(
+		req: TestMessageFollowupRequest,
+		token: CancellationToken
+	): Promise<ITestFollowups> {
+		const reqs = await Promise.all(
+			[...this.testExtHosts].map(async ctrl => ({ ctrl, followups: await ctrl.provideTestFollowups(req, token) }))
+		);
 
 		const followups: ITestFollowups = {
-			followups: reqs.flatMap(({ ctrl, followups }) => followups.map(f => ({
-				message: f.title,
-				execute: () => ctrl.executeTestFollowup(f.id)
-			}))),
+			followups: reqs.flatMap(({ ctrl, followups }) =>
+				followups.map(f => ({
+					message: f.title,
+					execute: () => ctrl.executeTestFollowup(f.id)
+				}))
+			),
 			dispose: () => {
 				for (const { ctrl, followups } of reqs) {
 					ctrl.disposeTestFollowups(followups.map(f => f.id));
@@ -392,8 +440,14 @@ export class TestService extends Disposable implements ITestService {
 	/**
 	 * @inheritdoc
 	 */
-	public async getTestsRelatedToCode(uri: URI, position: Position, token: CancellationToken = CancellationToken.None): Promise<InternalTestItem[]> {
-		const testIds = await Promise.all([...this.testExtHosts.values()].map(v => v.getTestsRelatedToCode(uri, position, token)));
+	public async getTestsRelatedToCode(
+		uri: URI,
+		position: Position,
+		token: CancellationToken = CancellationToken.None
+	): Promise<InternalTestItem[]> {
+		const testIds = await Promise.all(
+			[...this.testExtHosts.values()].map(v => v.getTestsRelatedToCode(uri, position, token))
+		);
 		// ext host will flush diffs before returning, so we should have everything here:
 		return testIds.flatMap(ids => ids.map(id => this.collection.getNodeById(id))).filter(isDefined);
 	}
@@ -423,7 +477,10 @@ export class TestService extends Disposable implements ITestService {
 	/**
 	 * @inheritdoc
 	 */
-	public async getCodeRelatedToTest(test: InternalTestItem, token: CancellationToken = CancellationToken.None): Promise<Location[]> {
+	public async getCodeRelatedToTest(
+		test: InternalTestItem,
+		token: CancellationToken = CancellationToken.None
+	): Promise<Location[]> {
 		return (await this.testControllers.get().get(test.controllerId)?.getRelatedCode(test.item.extId, token)) || [];
 	}
 
@@ -436,7 +493,11 @@ export class TestService extends Disposable implements ITestService {
 		}
 	}
 
-	private async saveAllBeforeTest(req: ResolvedTestRunRequest, configurationService: IConfigurationService = this.configurationService, editorService: IEditorService = this.editorService): Promise<void> {
+	private async saveAllBeforeTest(
+		req: ResolvedTestRunRequest,
+		configurationService: IConfigurationService = this.configurationService,
+		editorService: IEditorService = this.editorService
+	): Promise<void> {
 		if (req.preserveFocus === true) {
 			return;
 		}
@@ -447,5 +508,3 @@ export class TestService extends Disposable implements ITestService {
 		return;
 	}
 }
-
-

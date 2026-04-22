@@ -5,7 +5,10 @@
 import * as nls from '../../../../nls.js';
 
 import { Registry } from '../../../../platform/registry/common/platform.js';
-import { Extensions as JSONExtensions, IJSONContributionRegistry } from '../../../../platform/jsonschemas/common/jsonContributionRegistry.js';
+import {
+	Extensions as JSONExtensions,
+	IJSONContributionRegistry
+} from '../../../../platform/jsonschemas/common/jsonContributionRegistry.js';
 import { IJSONSchema } from '../../../../base/common/jsonSchema.js';
 
 import { workbenchColorsSchemaId } from '../../../../platform/theme/common/colorRegistry.js';
@@ -144,13 +147,22 @@ const textmateColorSchema: IJSONSchema = {
 				},
 				background: {
 					type: 'string',
-					deprecationMessage: nls.localize('schema.token.background.warning', 'Token background colors are currently not supported.')
+					deprecationMessage: nls.localize(
+						'schema.token.background.warning',
+						'Token background colors are currently not supported.'
+					)
 				},
 				fontStyle: {
 					type: 'string',
-					description: nls.localize('schema.token.fontStyle', 'Font style of the rule: \'italic\', \'bold\', \'underline\', \'strikethrough\' or a combination. The empty string unsets inherited settings.'),
+					description: nls.localize(
+						'schema.token.fontStyle',
+						"Font style of the rule: 'italic', 'bold', 'underline', 'strikethrough' or a combination. The empty string unsets inherited settings."
+					),
 					pattern: '^(\\s*\\b(italic|bold|underline|strikethrough))*\\s*$',
-					patternErrorMessage: nls.localize('schema.fontStyle.error', 'Font style must be \'italic\', \'bold\', \'underline\', \'strikethrough\' or a combination or the empty string.'),
+					patternErrorMessage: nls.localize(
+						'schema.fontStyle.error',
+						"Font style must be 'italic', 'bold', 'underline', 'strikethrough' or a combination or the empty string."
+					),
 					defaultSnippets: [
 						{ label: nls.localize('schema.token.fontStyle.none', 'None (clear inherited style)'), bodyText: '""' },
 						{ body: 'italic' },
@@ -172,15 +184,24 @@ const textmateColorSchema: IJSONSchema = {
 				},
 				fontFamily: {
 					type: 'string',
-					description: nls.localize('schema.token.fontFamily', 'Font family for the token (e.g., "Fira Code", "JetBrains Mono").')
+					description: nls.localize(
+						'schema.token.fontFamily',
+						'Font family for the token (e.g., "Fira Code", "JetBrains Mono").'
+					)
 				},
 				fontSize: {
 					type: 'number',
-					description: nls.localize('schema.token.fontSize', 'Font size multiplier for the token (e.g., 1.2 will use 1.2 times the default font size).')
+					description: nls.localize(
+						'schema.token.fontSize',
+						'Font size multiplier for the token (e.g., 1.2 will use 1.2 times the default font size).'
+					)
 				},
 				lineHeight: {
 					type: 'number',
-					description: nls.localize('schema.token.lineHeight', 'Line height multiplier for the token (e.g., 1.2 will use 1.2 times the default height). If the font size is set and the line height is not explicitly set, the line height will be computed based on the font size.')
+					description: nls.localize(
+						'schema.token.lineHeight',
+						'Line height multiplier for the token (e.g., 1.2 will use 1.2 times the default height). If the font size is set and the line height is not explicitly set, the line height will be computed based on the font size.'
+					)
 				}
 			},
 			additionalProperties: false,
@@ -222,9 +243,7 @@ const textmateColorSchema: IJSONSchema = {
 				$ref: '#/definitions/settings'
 			}
 		},
-		required: [
-			'settings'
-		],
+		required: ['settings'],
 		additionalProperties: false
 	}
 };
@@ -242,19 +261,23 @@ const colorThemeSchema: IJSONSchema = {
 			additionalProperties: false
 		},
 		tokenColors: {
-			anyOf: [{
-				type: 'string',
-				description: nls.localize('schema.tokenColors.path', 'Path to a tmTheme file (relative to the current file).')
-			},
-			{
-				description: nls.localize('schema.colors', 'Colors for syntax highlighting'),
-				$ref: textmateColorsSchemaId
-			}
+			anyOf: [
+				{
+					type: 'string',
+					description: nls.localize('schema.tokenColors.path', 'Path to a tmTheme file (relative to the current file).')
+				},
+				{
+					description: nls.localize('schema.colors', 'Colors for syntax highlighting'),
+					$ref: textmateColorsSchemaId
+				}
 			]
 		},
 		semanticHighlighting: {
 			type: 'boolean',
-			description: nls.localize('schema.supportsSemanticHighlighting', 'Whether semantic highlighting should be enabled for this theme.')
+			description: nls.localize(
+				'schema.supportsSemanticHighlighting',
+				'Whether semantic highlighting should be enabled for this theme.'
+			)
 		},
 		semanticTokenColors: {
 			type: 'object',
@@ -263,8 +286,6 @@ const colorThemeSchema: IJSONSchema = {
 		}
 	}
 };
-
-
 
 export function registerColorThemeSchemas() {
 	const schemaRegistry = Registry.as<IJSONContributionRegistry>(JSONExtensions.JSONContribution);

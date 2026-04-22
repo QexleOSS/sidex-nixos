@@ -6,7 +6,20 @@
 import { Disposable, DisposableMap } from '../../../../base/common/lifecycle.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
-import { ICDPTarget, CDPRequest, CDPResponse, CDPEvent, CDPError, CDPErrorCode, CDPServerError, CDPMethodNotFoundError, CDPInvalidParamsError, ICDPConnection, CDPTargetInfo, ICDPBrowserTarget } from './types.js';
+import {
+	ICDPTarget,
+	CDPRequest,
+	CDPResponse,
+	CDPEvent,
+	CDPError,
+	CDPErrorCode,
+	CDPServerError,
+	CDPMethodNotFoundError,
+	CDPInvalidParamsError,
+	ICDPConnection,
+	CDPTargetInfo,
+	ICDPBrowserTarget
+} from './types.js';
 
 /**
  * CDP protocol handler for browser-level connections.
@@ -37,28 +50,29 @@ export class CDPBrowserProxy extends Disposable implements ICDPConnection {
 		['Browser.close', () => ({})],
 		['Browser.getVersion', () => this.browserTarget.getVersion()],
 		['Browser.resetPermissions', () => ({})],
-		['Browser.getWindowForTarget', (p, s) => this.handleBrowserGetWindowForTarget(p as { targetId?: string; sessionId?: string }, s)],
+		[
+			'Browser.getWindowForTarget',
+			(p, s) => this.handleBrowserGetWindowForTarget(p as { targetId?: string; sessionId?: string }, s)
+		],
 		['Browser.setDownloadBehavior', () => ({})],
 		['Browser.setWindowBounds', () => ({})],
 		// Target.* methods (https://chromedevtools.github.io/devtools-protocol/tot/Target/)
-		['Target.activateTarget', (p) => this.handleTargetActivateTarget(p as { targetId: string })],
-		['Target.attachToTarget', (p) => this.handleTargetAttachToTarget(p as { targetId: string; flatten?: boolean })],
-		['Target.closeTarget', (p) => this.handleTargetCloseTarget(p as { targetId: string })],
+		['Target.activateTarget', p => this.handleTargetActivateTarget(p as { targetId: string })],
+		['Target.attachToTarget', p => this.handleTargetAttachToTarget(p as { targetId: string; flatten?: boolean })],
+		['Target.closeTarget', p => this.handleTargetCloseTarget(p as { targetId: string })],
 		['Target.createBrowserContext', () => this.handleTargetCreateBrowserContext()],
-		['Target.createTarget', (p) => this.handleTargetCreateTarget(p as { url?: string; browserContextId?: string })],
-		['Target.detachFromTarget', (p) => this.handleTargetDetachFromTarget(p as { sessionId: string })],
-		['Target.disposeBrowserContext', (p) => this.handleTargetDisposeBrowserContext(p as { browserContextId: string })],
+		['Target.createTarget', p => this.handleTargetCreateTarget(p as { url?: string; browserContextId?: string })],
+		['Target.detachFromTarget', p => this.handleTargetDetachFromTarget(p as { sessionId: string })],
+		['Target.disposeBrowserContext', p => this.handleTargetDisposeBrowserContext(p as { browserContextId: string })],
 		['Target.getBrowserContexts', () => this.handleTargetGetBrowserContexts()],
 		['Target.getTargets', () => this.handleTargetGetTargets()],
-		['Target.setAutoAttach', (p) => this.handleTargetSetAutoAttach(p as { autoAttach?: boolean; flatten?: boolean })],
-		['Target.setDiscoverTargets', (p) => this.handleTargetSetDiscoverTargets(p as { discover?: boolean })],
+		['Target.setAutoAttach', p => this.handleTargetSetAutoAttach(p as { autoAttach?: boolean; flatten?: boolean })],
+		['Target.setDiscoverTargets', p => this.handleTargetSetDiscoverTargets(p as { discover?: boolean })],
 		['Target.attachToBrowserTarget', () => this.handleTargetAttachToBrowserTarget()],
-		['Target.getTargetInfo', (p) => this.handleTargetGetTargetInfo(p as { targetId?: string } | undefined)],
+		['Target.getTargetInfo', p => this.handleTargetGetTargetInfo(p as { targetId?: string } | undefined)]
 	]);
 
-	constructor(
-		private readonly browserTarget: ICDPBrowserTarget,
-	) {
+	constructor(private readonly browserTarget: ICDPBrowserTarget) {
 		super();
 
 		this._targets.onDidRegisterTarget(async ({ targetInfo }) => {
@@ -97,9 +111,11 @@ export class CDPBrowserProxy extends Disposable implements ICDPConnection {
 		}
 
 		// Mirror typed events to the onMessage channel
-		this._register(this._onEvent.event(event => {
-			this._onMessage.fire(event);
-		}));
+		this._register(
+			this._onEvent.event(event => {
+				this._onMessage.fire(event);
+			})
+		);
 	}
 
 	// #region Public API
@@ -120,12 +136,7 @@ export class CDPBrowserProxy extends Disposable implements ICDPConnection {
 	async sendCommand(method: string, params: unknown = {}, sessionId?: string): Promise<unknown> {
 		try {
 			// Browser-level command handling
-			if (
-				!sessionId ||
-				sessionId === this.sessionId ||
-				method.startsWith('Browser.') ||
-				method.startsWith('Target.')
-			) {
+			if (!sessionId || sessionId === this.sessionId || method.startsWith('Browser.') || method.startsWith('Target.')) {
 				const handler = this._handlers.get(method);
 				if (!handler) {
 					throw new CDPMethodNotFoundError(method);
@@ -207,7 +218,13 @@ export class CDPBrowserProxy extends Disposable implements ICDPConnection {
 		return this.browserTarget.activateTarget(target);
 	}
 
-	private async handleTargetSetAutoAttach({ autoAttach = false, flatten }: { autoAttach?: boolean; flatten?: boolean }) {
+	private async handleTargetSetAutoAttach({
+		autoAttach = false,
+		flatten
+	}: {
+		autoAttach?: boolean;
+		flatten?: boolean;
+	}) {
 		if (!flatten) {
 			throw new CDPInvalidParamsError('This implementation only supports auto-attach with flatten=true');
 		}
@@ -380,10 +397,16 @@ class TargetManager extends Disposable {
 	// targetId -> target object (reverse lookup, populated alongside _targetInfos)
 	private readonly _targetsByID = new Map<string, ICDPTarget>();
 
-	private readonly _onDidRegisterTarget = this._register(new Emitter<{ target: ICDPTarget; targetInfo: CDPTargetInfo }>());
-	readonly onDidRegisterTarget: Event<{ target: ICDPTarget; targetInfo: CDPTargetInfo }> = this._onDidRegisterTarget.event;
-	private readonly _onDidUnregisterTarget = this._register(new Emitter<{ target: ICDPTarget; targetInfo: CDPTargetInfo }>());
-	readonly onDidUnregisterTarget: Event<{ target: ICDPTarget; targetInfo: CDPTargetInfo }> = this._onDidUnregisterTarget.event;
+	private readonly _onDidRegisterTarget = this._register(
+		new Emitter<{ target: ICDPTarget; targetInfo: CDPTargetInfo }>()
+	);
+	readonly onDidRegisterTarget: Event<{ target: ICDPTarget; targetInfo: CDPTargetInfo }> =
+		this._onDidRegisterTarget.event;
+	private readonly _onDidUnregisterTarget = this._register(
+		new Emitter<{ target: ICDPTarget; targetInfo: CDPTargetInfo }>()
+	);
+	readonly onDidUnregisterTarget: Event<{ target: ICDPTarget; targetInfo: CDPTargetInfo }> =
+		this._onDidUnregisterTarget.event;
 
 	getById(targetId: string): ICDPTarget {
 		const target = this._targetsByID.get(targetId);

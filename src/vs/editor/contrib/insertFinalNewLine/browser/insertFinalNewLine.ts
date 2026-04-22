@@ -10,13 +10,12 @@ import { EditorContextKeys } from '../../../common/editorContextKeys.js';
 import * as nls from '../../../../nls.js';
 
 export class InsertFinalNewLineAction extends EditorAction {
-
 	public static readonly ID = 'editor.action.insertFinalNewLine';
 
 	constructor() {
 		super({
 			id: InsertFinalNewLineAction.ID,
-			label: nls.localize2('insertFinalNewLine', "Insert Final New Line"),
+			label: nls.localize2('insertFinalNewLine', 'Insert Final New Line'),
 			precondition: EditorContextKeys.writable
 		});
 	}

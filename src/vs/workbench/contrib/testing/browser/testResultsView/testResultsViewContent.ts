@@ -28,7 +28,12 @@ import { IInstantiationService, ServicesAccessor } from '../../../../../platform
 import { ServiceCollection } from '../../../../../platform/instantiation/common/serviceCollection.js';
 import { IQuickInputService } from '../../../../../platform/quickinput/common/quickInput.js';
 import { IUriIdentityService } from '../../../../../platform/uriIdentity/common/uriIdentity.js';
-import { AnyStackFrame, CallStackFrame, CallStackWidget, CustomStackFrame } from '../../../debug/browser/callStackWidget.js';
+import {
+	AnyStackFrame,
+	CallStackFrame,
+	CallStackWidget,
+	CustomStackFrame
+} from '../../../debug/browser/callStackWidget.js';
 import { TestCommandId } from '../../common/constants.js';
 import { getTestingConfiguration, TestingConfigKeys, TestingResultsViewLayout } from '../../common/configuration.js';
 import { IObservableValue } from '../../common/observableValue.js';
@@ -38,8 +43,21 @@ import { ITestFollowup, ITestService } from '../../common/testService.js';
 import { ITestMessageStackFrame, TestRunProfileBitset } from '../../common/testTypes.js';
 import { TestingContextKeys } from '../../common/testingContextKeys.js';
 import * as icons from '../icons.js';
-import { DiffContentProvider, IPeekOutputRenderer, MarkdownTestMessagePeek, PlainTextMessagePeek, TerminalMessagePeek } from './testResultsOutput.js';
-import { equalsSubject, getSubjectTestItem, InspectSubject, MessageSubject, TaskSubject, TestOutputSubject } from './testResultsSubject.js';
+import {
+	DiffContentProvider,
+	IPeekOutputRenderer,
+	MarkdownTestMessagePeek,
+	PlainTextMessagePeek,
+	TerminalMessagePeek
+} from './testResultsOutput.js';
+import {
+	equalsSubject,
+	getSubjectTestItem,
+	InspectSubject,
+	MessageSubject,
+	TaskSubject,
+	TestOutputSubject
+} from './testResultsSubject.js';
 import { OutputPeekTree } from './testResultsTree.js';
 import './testResultsViewContent.css';
 
@@ -59,15 +77,16 @@ class MessageStackFrame extends CustomStackFrame {
 		private readonly subject: InspectSubject,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@ITestProfileService private readonly profileService: ITestProfileService,
+		@ITestProfileService private readonly profileService: ITestProfileService
 	) {
 		super();
 
-		this.label = subject instanceof MessageSubject
-			? subject.test.label
-			: subject instanceof TestOutputSubject
-				? subject.test.item.label
-				: subject.result.name;
+		this.label =
+			subject instanceof MessageSubject
+				? subject.test.label
+				: subject instanceof TestOutputSubject
+					? subject.test.item.label
+					: subject.result.name;
 	}
 
 	public override render(container: HTMLElement): IDisposable {
@@ -91,16 +110,20 @@ class MessageStackFrame extends CustomStackFrame {
 			const profiles = this.profileService.getControllerProfiles(this.subject.controllerId);
 			contextKeyService = this.contextKeyService.createOverlay([
 				[TestingContextKeys.hasRunnableTests.key, profiles.some(p => p.group & TestRunProfileBitset.Run)],
-				[TestingContextKeys.hasDebuggableTests.key, profiles.some(p => p.group & TestRunProfileBitset.Debug)],
+				[TestingContextKeys.hasDebuggableTests.key, profiles.some(p => p.group & TestRunProfileBitset.Debug)]
 			]);
 		}
 
-		const instaService = store.add(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, contextKeyService])));
+		const instaService = store.add(
+			this.instantiationService.createChild(new ServiceCollection([IContextKeyService, contextKeyService]))
+		);
 
-		const toolbar = store.add(instaService.createInstance(MenuWorkbenchToolBar, container, MenuId.TestCallStack, {
-			menuOptions: { shouldForwardArgs: true },
-			actionViewItemProvider: (action, options) => createActionViewItem(this.instantiationService, action, options),
-		}));
+		const toolbar = store.add(
+			instaService.createInstance(MenuWorkbenchToolBar, container, MenuId.TestCallStack, {
+				menuOptions: { shouldForwardArgs: true },
+				actionViewItemProvider: (action, options) => createActionViewItem(this.instantiationService, action, options)
+			})
+		);
 		toolbar.context = this.subject;
 		store.add(toolbar);
 
@@ -111,10 +134,12 @@ class MessageStackFrame extends CustomStackFrame {
 function runInLast(accessor: ServicesAccessor, bitset: TestRunProfileBitset, subject: InspectSubject) {
 	// Let the full command do its thing if we want to run the whole set of tests
 	if (subject instanceof TaskSubject) {
-		return accessor.get(ICommandService).executeCommand(
-			bitset === TestRunProfileBitset.Debug ? TestCommandId.DebugLastRun : TestCommandId.ReRunLastRun,
-			subject.result.id,
-		);
+		return accessor
+			.get(ICommandService)
+			.executeCommand(
+				bitset === TestRunProfileBitset.Debug ? TestCommandId.DebugLastRun : TestCommandId.ReRunLastRun,
+				subject.result.id
+			);
 	}
 
 	const testService = accessor.get(ITestService);
@@ -126,47 +151,51 @@ function runInLast(accessor: ServicesAccessor, bitset: TestRunProfileBitset, sub
 
 	return testService.runTests({
 		group: bitset,
-		tests: [currentTest],
+		tests: [currentTest]
 	});
 }
 
-registerAction2(class extends Action2 {
-	constructor() {
-		super({
-			id: 'testing.callStack.run',
-			title: localize('testing.callStack.run', "Rerun Test"),
-			icon: icons.testingRunIcon,
-			menu: {
-				id: MenuId.TestCallStack,
-				when: TestingContextKeys.hasRunnableTests,
-				group: 'navigation',
-			},
-		});
-	}
+registerAction2(
+	class extends Action2 {
+		constructor() {
+			super({
+				id: 'testing.callStack.run',
+				title: localize('testing.callStack.run', 'Rerun Test'),
+				icon: icons.testingRunIcon,
+				menu: {
+					id: MenuId.TestCallStack,
+					when: TestingContextKeys.hasRunnableTests,
+					group: 'navigation'
+				}
+			});
+		}
 
-	override run(accessor: ServicesAccessor, subject: InspectSubject): void {
-		runInLast(accessor, TestRunProfileBitset.Run, subject);
+		override run(accessor: ServicesAccessor, subject: InspectSubject): void {
+			runInLast(accessor, TestRunProfileBitset.Run, subject);
+		}
 	}
-});
+);
 
-registerAction2(class extends Action2 {
-	constructor() {
-		super({
-			id: 'testing.callStack.debug',
-			title: localize('testing.callStack.debug', "Debug Test"),
-			icon: icons.testingDebugIcon,
-			menu: {
-				id: MenuId.TestCallStack,
-				when: TestingContextKeys.hasDebuggableTests,
-				group: 'navigation',
-			},
-		});
-	}
+registerAction2(
+	class extends Action2 {
+		constructor() {
+			super({
+				id: 'testing.callStack.debug',
+				title: localize('testing.callStack.debug', 'Debug Test'),
+				icon: icons.testingDebugIcon,
+				menu: {
+					id: MenuId.TestCallStack,
+					when: TestingContextKeys.hasDebuggableTests,
+					group: 'navigation'
+				}
+			});
+		}
 
-	override run(accessor: ServicesAccessor, subject: InspectSubject): void {
-		runInLast(accessor, TestRunProfileBitset.Debug, subject);
+		override run(accessor: ServicesAccessor, subject: InspectSubject): void {
+			runInLast(accessor, TestRunProfileBitset.Debug, subject);
+		}
 	}
-});
+);
 
 export class TestResultsViewContent extends Disposable {
 	private static lastSplitWidth?: number;
@@ -199,10 +228,7 @@ export class TestResultsViewContent extends Disposable {
 
 	public get uiState(): ITestResultsViewContentUiState {
 		return {
-			splitViewWidths: Array.from(
-				{ length: this.splitView.length },
-				(_, i) => this.splitView.getViewSize(i)
-			),
+			splitViewWidths: Array.from({ length: this.splitView.length }, (_, i) => this.splitView.getViewSize(i))
 		};
 	}
 
@@ -233,7 +259,7 @@ export class TestResultsViewContent extends Disposable {
 		@ITextModelService protected readonly modelService: ITextModelService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IUriIdentityService private readonly uriIdentityService: IUriIdentityService,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
+		@IConfigurationService private readonly configurationService: IConfigurationService
 	) {
 		super();
 	}
@@ -256,20 +282,24 @@ export class TestResultsViewContent extends Disposable {
 		const isInPeekView = this.editor !== undefined;
 		const layout = getTestingConfiguration(this.configurationService, TestingConfigKeys.ResultsViewLayout);
 		this.isTreeLeft = layout === TestingResultsViewLayout.TreeLeft;
-		this._register(this.configurationService.onDidChangeConfiguration(e => {
-			if (e.affectsConfiguration(TestingConfigKeys.ResultsViewLayout)) {
-				const newLayout = getTestingConfiguration(this.configurationService, TestingConfigKeys.ResultsViewLayout);
-				const newIsTreeLeft = newLayout === TestingResultsViewLayout.TreeLeft;
-				if (newIsTreeLeft !== this.isTreeLeft) {
-					this.isTreeLeft = newIsTreeLeft;
-					this.swapViews();
+		this._register(
+			this.configurationService.onDidChangeConfiguration(e => {
+				if (e.affectsConfiguration(TestingConfigKeys.ResultsViewLayout)) {
+					const newLayout = getTestingConfiguration(this.configurationService, TestingConfigKeys.ResultsViewLayout);
+					const newIsTreeLeft = newLayout === TestingResultsViewLayout.TreeLeft;
+					if (newIsTreeLeft !== this.isTreeLeft) {
+						this.isTreeLeft = newIsTreeLeft;
+						this.swapViews();
+					}
 				}
-			}
-		}));
+			})
+		);
 
-		const messageContainer = this.messageContainer = dom.$('.test-output-peek-message-container');
+		const messageContainer = (this.messageContainer = dom.$('.test-output-peek-message-container'));
 		this.stackContainer = dom.append(containerElement, dom.$('.test-output-call-stack-container'));
-		this.callStackWidget = this._register(this.instantiationService.createInstance(CallStackWidget, this.stackContainer, this.editor));
+		this.callStackWidget = this._register(
+			this.instantiationService.createInstance(CallStackWidget, this.stackContainer, this.editor)
+		);
 		this.followupWidget = this._register(this.instantiationService.createInstance(FollowupActionWidget, this.editor));
 		this.onCloseEmitter.input = this.followupWidget.onClose;
 
@@ -277,7 +307,7 @@ export class TestResultsViewContent extends Disposable {
 			this._register(this.instantiationService.createInstance(DiffContentProvider, this.editor, messageContainer)),
 			this._register(this.instantiationService.createInstance(MarkdownTestMessagePeek, messageContainer)),
 			this._register(this.instantiationService.createInstance(TerminalMessagePeek, messageContainer, isInPeekView)),
-			this._register(this.instantiationService.createInstance(PlainTextMessagePeek, this.editor, messageContainer)),
+			this._register(this.instantiationService.createInstance(PlainTextMessagePeek, this.editor, messageContainer))
 		];
 
 		this.messageContextKeyService = this._register(this.contextKeyService.createScoped(containerElement));
@@ -285,12 +315,12 @@ export class TestResultsViewContent extends Disposable {
 		this.contextKeyResultOutdated = TestingContextKeys.testResultOutdated.bindTo(this.messageContextKeyService);
 
 		const treeContainer = dom.append(containerElement, dom.$('.test-output-peek-tree.testing-stdtree'));
-		const tree = this._register(this.instantiationService.createInstance(
-			OutputPeekTree,
-			treeContainer,
-			this.didReveal.event,
-			{ showRevealLocationOnMessages, locationForProgress: this.options.locationForProgress },
-		));
+		const tree = this._register(
+			this.instantiationService.createInstance(OutputPeekTree, treeContainer, this.didReveal.event, {
+				showRevealLocationOnMessages,
+				locationForProgress: this.options.locationForProgress
+			})
+		);
 
 		this.onDidRequestReveal = tree.onDidRequestReview;
 
@@ -307,7 +337,7 @@ export class TestResultsViewContent extends Disposable {
 					this.callStackWidget?.layout(this.dimension.height, width);
 					this.layoutContentWidgets(this.dimension, width);
 				}
-			},
+			}
 		};
 
 		const treeView = {
@@ -319,7 +349,7 @@ export class TestResultsViewContent extends Disposable {
 				if (this.dimension) {
 					tree.layout(this.dimension.height, width);
 				}
-			},
+			}
 		};
 
 		this.splitView.addView(stackView, Sizing.Distribute);
@@ -330,9 +360,11 @@ export class TestResultsViewContent extends Disposable {
 
 		// Configure visibility for the tree view
 		this.splitView.setViewVisible(this.historyViewIndex, historyVisible.value);
-		this._register(historyVisible.onDidChange(visible => {
-			this.splitView.setViewVisible(this.historyViewIndex, visible);
-		}));
+		this._register(
+			historyVisible.onDidChange(visible => {
+				this.splitView.setViewVisible(this.historyViewIndex, visible);
+			})
+		);
 
 		if (initialSpitWidth) {
 			queueMicrotask(() => this.splitView.resizeView(this.diffViewIndex, initialSpitWidth));
@@ -343,10 +375,7 @@ export class TestResultsViewContent extends Disposable {
 	 * Shows a message in-place without showing or changing the peek location.
 	 * This is mostly used if peeking a message without a location.
 	 */
-	public reveal(opts: {
-		subject: InspectSubject;
-		preserveFocus: boolean;
-	}) {
+	public reveal(opts: { subject: InspectSubject; preserveFocus: boolean }) {
 		this.didReveal.fire(opts);
 
 		if (this.current && equalsSubject(this.current, opts.subject)) {
@@ -366,12 +395,12 @@ export class TestResultsViewContent extends Disposable {
 	}
 
 	private setCallStackFrames(messageFrame: AnyStackFrame, stack: ITestMessageStackFrame[]) {
-		this.callStackWidget.setFrames([messageFrame, ...stack.map(frame => new CallStackFrame(
-			frame.label,
-			frame.uri,
-			frame.position?.lineNumber,
-			frame.position?.column,
-		))]);
+		this.callStackWidget.setFrames([
+			messageFrame,
+			...stack.map(
+				frame => new CallStackFrame(frame.label, frame.uri, frame.position?.lineNumber, frame.position?.column)
+			)
+		]);
 	}
 
 	/**
@@ -395,10 +424,13 @@ export class TestResultsViewContent extends Disposable {
 		// don't show it again because it's just a duplicate
 		const topFrame = frames[0];
 		const peekLocation = subject.revealLocation;
-		const isTopFrameSame = peekLocation && topFrame.position && topFrame.uri
-			&& topFrame.position.lineNumber === peekLocation.range.startLineNumber
-			&& topFrame.position.column === peekLocation.range.startColumn
-			&& this.uriIdentityService.extUri.isEqual(topFrame.uri, peekLocation.uri);
+		const isTopFrameSame =
+			peekLocation &&
+			topFrame.position &&
+			topFrame.uri &&
+			topFrame.position.lineNumber === peekLocation.range.startLineNumber &&
+			topFrame.position.column === peekLocation.range.startColumn &&
+			this.uriIdentityService.extUri.isEqual(topFrame.uri, peekLocation.uri);
 
 		return isTopFrameSame ? frames.slice(1) : frames;
 	}
@@ -409,7 +441,12 @@ export class TestResultsViewContent extends Disposable {
 		this.messageContainer.style.visibility = 'hidden';
 		this.stackContainer.appendChild(this.messageContainer);
 
-		const topFrame = this.currentTopFrame = this.instantiationService.createInstance(MessageStackFrame, this.messageContainer, this.followupWidget, subject);
+		const topFrame = (this.currentTopFrame = this.instantiationService.createInstance(
+			MessageStackFrame,
+			this.messageContainer,
+			this.followupWidget,
+			subject
+		));
 
 		const hasMultipleFrames = callFrames.length > 0;
 		topFrame.showHeader.set(hasMultipleFrames, undefined);
@@ -422,20 +459,27 @@ export class TestResultsViewContent extends Disposable {
 			}
 
 			if (provider.onScrolled) {
-				this.currentSubjectStore.add(this.callStackWidget.onDidScroll(evt => {
-					provider.onScrolled!(evt);
-				}));
+				this.currentSubjectStore.add(
+					this.callStackWidget.onDidScroll(evt => {
+						provider.onScrolled!(evt);
+					})
+				);
 			}
 
 			if (provider.onDidContentSizeChange) {
-				this.currentSubjectStore.add(provider.onDidContentSizeChange(() => {
-					const width = this.splitView.getViewSize(this.diffViewIndex);
-					if (this.dimension && !this.isDoingLayoutUpdate && width !== -1) {
-						this.isDoingLayoutUpdate = true;
-						topFrame.height.set(provider.layout({ width, height: this.dimension.height }, hasMultipleFrames)!, undefined);
-						this.isDoingLayoutUpdate = false;
-					}
-				}));
+				this.currentSubjectStore.add(
+					provider.onDidContentSizeChange(() => {
+						const width = this.splitView.getViewSize(this.diffViewIndex);
+						if (this.dimension && !this.isDoingLayoutUpdate && width !== -1) {
+							this.isDoingLayoutUpdate = true;
+							topFrame.height.set(
+								provider.layout({ width, height: this.dimension.height }, hasMultipleFrames)!,
+								undefined
+							);
+							this.isDoingLayoutUpdate = false;
+						}
+					})
+				);
 			}
 		}
 
@@ -445,7 +489,10 @@ export class TestResultsViewContent extends Disposable {
 	private layoutContentWidgets(dimension: dom.Dimension, width = this.splitView.getViewSize(this.diffViewIndex)) {
 		this.isDoingLayoutUpdate = true;
 		for (const provider of this.contentProviders) {
-			const frameHeight = provider.layout({ height: dimension.height, width }, !!this.currentTopFrame?.showHeader.get());
+			const frameHeight = provider.layout(
+				{ height: dimension.height, width },
+				!!this.currentTopFrame?.showHeader.get()
+			);
 			if (frameHeight) {
 				this.currentTopFrame?.height.set(frameHeight, undefined);
 			}
@@ -458,31 +505,38 @@ export class TestResultsViewContent extends Disposable {
 			return;
 		}
 
-		this.currentSubjectStore.add(toDisposable(() => {
-			this.contextKeyResultOutdated.reset();
-			this.contextKeyTestMessage.reset();
-		}));
+		this.currentSubjectStore.add(
+			toDisposable(() => {
+				this.contextKeyResultOutdated.reset();
+				this.contextKeyTestMessage.reset();
+			})
+		);
 
 		this.contextKeyTestMessage.set(subject.contextValue || '');
 		if (subject.result instanceof LiveTestResult) {
 			this.contextKeyResultOutdated.set(subject.result.getStateById(subject.test.extId)?.retired ?? false);
-			this.currentSubjectStore.add(subject.result.onChange(ev => {
-				if (ev.item.item.extId === subject.test.extId) {
-					this.contextKeyResultOutdated.set(ev.item.retired ?? false);
-				}
-			}));
+			this.currentSubjectStore.add(
+				subject.result.onChange(ev => {
+					if (ev.item.item.extId === subject.test.extId) {
+						this.contextKeyResultOutdated.set(ev.item.retired ?? false);
+					}
+				})
+			);
 		} else {
 			this.contextKeyResultOutdated.set(true);
 		}
 
-		const instaService = this.currentSubjectStore.add(this.instantiationService
-			.createChild(new ServiceCollection([IContextKeyService, this.messageContextKeyService])));
+		const instaService = this.currentSubjectStore.add(
+			this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.messageContextKeyService]))
+		);
 
-		this.currentSubjectStore.add(instaService.createInstance(FloatingClickMenu, {
-			container: this.messageContainer,
-			menuId: MenuId.TestMessageContent,
-			getActionArg: () => (subject as MessageSubject).context,
-		}));
+		this.currentSubjectStore.add(
+			instaService.createInstance(FloatingClickMenu, {
+				container: this.messageContainer,
+				menuId: MenuId.TestMessageContent,
+				getActionArg: () => (subject as MessageSubject).context
+			})
+		);
 	}
 
 	public onLayoutBody(height: number, width: number) {
@@ -493,8 +547,6 @@ export class TestResultsViewContent extends Disposable {
 	public onWidth(width: number) {
 		this.splitView.layout(width);
 	}
-
-
 }
 
 const FOLLOWUP_ANIMATION_MIN_TIME = 500;
@@ -512,7 +564,7 @@ class FollowupActionWidget extends Disposable {
 	constructor(
 		private readonly editor: ICodeEditor | undefined,
 		@ITestService private readonly testService: ITestService,
-		@IQuickInputService private readonly quickInput: IQuickInputService,
+		@IQuickInputService private readonly quickInput: IQuickInputService
 	) {
 		super();
 	}
@@ -533,13 +585,15 @@ class FollowupActionWidget extends Disposable {
 			await new Promise(r => Event.once((subject.result as LiveTestResult).onComplete)(r));
 		}
 
-		const followups = await this.testService.provideTestFollowups({
-			extId: subject.test.extId,
-			messageIndex: subject.messageIndex,
-			resultId: subject.result.id,
-			taskIndex: subject.taskIndex,
-		}, cts.token);
-
+		const followups = await this.testService.provideTestFollowups(
+			{
+				extId: subject.test.extId,
+				messageIndex: subject.messageIndex,
+				resultId: subject.result.id,
+				taskIndex: subject.taskIndex
+			},
+			cts.token
+		);
 
 		if (!followups.followups.length || cts.token.isCancellationRequested) {
 			followups.dispose();
@@ -556,9 +610,11 @@ class FollowupActionWidget extends Disposable {
 			this.el.root.appendChild(this.makeMoreLink(followups.followups));
 		}
 
-		this.visibleStore.add(toDisposable(() => {
-			this.el.root.remove();
-		}));
+		this.visibleStore.add(
+			toDisposable(() => {
+				this.el.root.remove();
+			})
+		);
 	}
 
 	private makeFollowupLink(first: ITestFollowup) {
@@ -569,14 +625,18 @@ class FollowupActionWidget extends Disposable {
 
 	private makeMoreLink(followups: ITestFollowup[]) {
 		const link = this.makeLink(() =>
-			this.quickInput.pick(followups.map((f, i) => ({
-				label: f.message,
-				index: i
-			}))).then(picked => {
-				if (picked?.length) {
-					followups[picked[0].index].execute();
-				}
-			})
+			this.quickInput
+				.pick(
+					followups.map((f, i) => ({
+						label: f.message,
+						index: i
+					}))
+				)
+				.then(picked => {
+					if (picked?.length) {
+						followups[picked[0].index].execute();
+					}
+				})
 		);
 
 		link.innerText = localize('testFollowup.more', '+{0} More...', followups.length - 1);
@@ -587,12 +647,14 @@ class FollowupActionWidget extends Disposable {
 		const link = document.createElement('a');
 		link.tabIndex = 0;
 		this.visibleStore.add(dom.addDisposableListener(link, 'click', onClick));
-		this.visibleStore.add(dom.addDisposableListener(link, 'keydown', e => {
-			const event = new StandardKeyboardEvent(e);
-			if (event.equals(KeyCode.Space) || event.equals(KeyCode.Enter)) {
-				onClick();
-			}
-		}));
+		this.visibleStore.add(
+			dom.addDisposableListener(link, 'keydown', e => {
+				const event = new StandardKeyboardEvent(e);
+				if (event.equals(KeyCode.Space) || event.equals(KeyCode.Enter)) {
+					onClick();
+				}
+			})
+		);
 
 		return link;
 	}

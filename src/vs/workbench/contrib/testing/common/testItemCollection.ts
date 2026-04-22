@@ -7,7 +7,16 @@ import { Barrier, isThenable, RunOnceScheduler } from '../../../../base/common/a
 import { Emitter } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { assertNever } from '../../../../base/common/assert.js';
-import { applyTestItemUpdate, ITestItem, ITestTag, namespaceTestTag, TestDiffOpType, TestItemExpandState, TestsDiff, TestsDiffOp } from './testTypes.js';
+import {
+	applyTestItemUpdate,
+	ITestItem,
+	ITestTag,
+	namespaceTestTag,
+	TestDiffOpType,
+	TestItemExpandState,
+	TestsDiff,
+	TestsDiffOp
+} from './testTypes.js';
 import { TestId } from './testId.js';
 import { URI } from '../../../../base/common/uri.js';
 
@@ -32,7 +41,7 @@ export const enum TestItemEventOp {
 	RemoveChild,
 	SetProp,
 	Bulk,
-	DocumentSynced,
+	DocumentSynced
 }
 
 export interface ITestItemUpsertChild {
@@ -107,8 +116,12 @@ export interface ITestItemCollectionOptions<T> {
 const strictEqualComparator = <T>(a: T, b: T) => a === b;
 const diffableProps: { [K in keyof ITestItem]?: (a: ITestItem[K], b: ITestItem[K]) => boolean } = {
 	range: (a, b) => {
-		if (a === b) { return true; }
-		if (!a || !b) { return false; }
+		if (a === b) {
+			return true;
+		}
+		if (!a || !b) {
+			return false;
+		}
 		return a.equalsRange(b);
 	},
 	busy: strictEqualComparator,
@@ -126,10 +139,13 @@ const diffableProps: { [K in keyof ITestItem]?: (a: ITestItem[K], b: ITestItem[K
 		}
 
 		return true;
-	},
+	}
 };
 
-const diffableEntries = Object.entries(diffableProps) as readonly [keyof ITestItem, (a: unknown, b: unknown) => boolean][];
+const diffableEntries = Object.entries(diffableProps) as readonly [
+	keyof ITestItem,
+	(a: unknown, b: unknown) => boolean
+][];
 
 const diffTestItems = (a: ITestItem, b: ITestItem) => {
 	let output: Record<string, unknown> | undefined;
@@ -170,7 +186,7 @@ export class TestItemCollection<T extends ITestItemLike> extends Disposable {
 		return this.options.root;
 	}
 
-	public readonly tree = new Map</* full test id */string, CollectionItem<T>>();
+	public readonly tree = new Map</* full test id */ string, CollectionItem<T>>();
 	private readonly tags = new Map<string, { label?: string; refCount: number }>();
 
 	protected diff: TestsDiff = [];
@@ -317,7 +333,7 @@ export class TestItemCollection<T extends ITestItemLike> extends Disposable {
 					op: TestDiffOpType.Update,
 					item: {
 						extId: internal.fullId.toString(),
-						item: evt.update,
+						item: evt.update
 					}
 				});
 				break;
@@ -358,7 +374,7 @@ export class TestItemCollection<T extends ITestItemLike> extends Disposable {
 				fullId,
 				actual,
 				expandLevels: parent?.expandLevels /* intentionally undefined or 0 */ ? parent.expandLevels - 1 : undefined,
-				expand: TestItemExpandState.NotExpandable, // updated by `connectItemAndChildren`
+				expand: TestItemExpandState.NotExpandable // updated by `connectItemAndChildren`
 			};
 
 			actual.tags.forEach(this.incrementTagRefs, this);
@@ -369,8 +385,8 @@ export class TestItemCollection<T extends ITestItemLike> extends Disposable {
 				item: {
 					controllerId: this.options.controllerId,
 					expand: internal.expand,
-					item: this.options.toITestItem(actual),
-				},
+					item: this.options.toITestItem(actual)
+				}
 			});
 
 			this.connectItemAndChildren(actual, internal, parent);
@@ -457,8 +473,9 @@ export class TestItemCollection<T extends ITestItemLike> extends Disposable {
 		} else {
 			this.tags.set(tag.id, { refCount: 1 });
 			this.pushDiff({
-				op: TestDiffOpType.AddTag, tag: {
-					id: namespaceTestTag(this.options.controllerId, tag.id),
+				op: TestDiffOpType.AddTag,
+				tag: {
+					id: namespaceTestTag(this.options.controllerId, tag.id)
 				}
 			});
 		}
@@ -503,9 +520,7 @@ export class TestItemCollection<T extends ITestItemLike> extends Disposable {
 		if (!this._resolveHandler) {
 			newState = TestItemExpandState.NotExpandable;
 		} else if (internal.resolveBarrier) {
-			newState = internal.resolveBarrier.isOpen()
-				? TestItemExpandState.Expanded
-				: TestItemExpandState.BusyExpanding;
+			newState = internal.resolveBarrier.isOpen() ? TestItemExpandState.Expanded : TestItemExpandState.BusyExpanding;
 		} else {
 			newState = internal.actual.canResolveChildren
 				? TestItemExpandState.Expandable
@@ -543,7 +558,7 @@ export class TestItemCollection<T extends ITestItemLike> extends Disposable {
 		}
 
 		if (expandRequests.length) {
-			return Promise.all(expandRequests).then(() => { });
+			return Promise.all(expandRequests).then(() => {});
 		}
 	}
 
@@ -564,7 +579,7 @@ export class TestItemCollection<T extends ITestItemLike> extends Disposable {
 		internal.expand = TestItemExpandState.BusyExpanding;
 		this.pushExpandStateUpdate(internal);
 
-		const barrier = internal.resolveBarrier = new Barrier();
+		const barrier = (internal.resolveBarrier = new Barrier());
 		const applyError = (err: Error) => {
 			console.error(`Unhandled error in resolveHandler of test controller "${this.options.controllerId}"`, err);
 		};
@@ -658,11 +673,17 @@ export class InvalidTestItemError extends Error {
 
 export class MixedTestItemController extends Error {
 	constructor(id: string, ctrlA: string, ctrlB: string) {
-		super(`TestItem with ID "${id}" is from controller "${ctrlA}" and cannot be added as a child of an item from controller "${ctrlB}".`);
+		super(
+			`TestItem with ID "${id}" is from controller "${ctrlA}" and cannot be added as a child of an item from controller "${ctrlB}".`
+		);
 	}
 }
 
-export const createTestItemChildren = <T extends ITestItemLike>(api: ITestItemApi<T>, getApi: (item: T) => ITestItemApi<T>, checkCtor: Function): ITestItemChildren<T> => {
+export const createTestItemChildren = <T extends ITestItemLike>(
+	api: ITestItemApi<T>,
+	getApi: (item: T) => ITestItemApi<T>,
+	checkCtor: Function
+): ITestItemChildren<T> => {
 	let mapped = new Map<string, T>();
 
 	return {
@@ -719,7 +740,6 @@ export const createTestItemChildren = <T extends ITestItemLike>(api: ITestItemAp
 			mapped = newMapped;
 		},
 
-
 		/** @inheritdoc */
 		add(item: T) {
 			if (!(item instanceof checkCtor)) {
@@ -745,6 +765,6 @@ export const createTestItemChildren = <T extends ITestItemLike>(api: ITestItemAp
 		/** JSON serialization function. */
 		toJSON() {
 			return Array.from(mapped.values());
-		},
+		}
 	};
 };

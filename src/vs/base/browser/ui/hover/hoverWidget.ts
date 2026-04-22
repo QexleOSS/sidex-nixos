@@ -17,11 +17,10 @@ export const enum HoverPosition {
 	LEFT,
 	RIGHT,
 	BELOW,
-	ABOVE,
+	ABOVE
 }
 
 export class HoverWidget extends Disposable {
-
 	public readonly containerDomNode: HTMLElement;
 	public readonly contentsDomNode: HTMLElement;
 	public readonly scrollbar: DomScrollableElement;
@@ -38,9 +37,11 @@ export class HoverWidget extends Disposable {
 		this.contentsDomNode = document.createElement('div');
 		this.contentsDomNode.className = 'monaco-hover-content';
 
-		this.scrollbar = this._register(new DomScrollableElement(this.contentsDomNode, {
-			consumeMouseWheelIfScrollbarIsNeeded: true
-		}));
+		this.scrollbar = this._register(
+			new DomScrollableElement(this.contentsDomNode, {
+				consumeMouseWheelIfScrollbarIsNeeded: true
+			})
+		);
 		this.containerDomNode.appendChild(this.scrollbar.getDomNode());
 	}
 
@@ -50,7 +51,11 @@ export class HoverWidget extends Disposable {
 }
 
 export class HoverAction extends Disposable {
-	public static render(parent: HTMLElement, actionOptions: { label: string; iconClass?: string; run: (target: HTMLElement) => void; commandId: string }, keybindingLabel: string | null) {
+	public static render(
+		parent: HTMLElement,
+		actionOptions: { label: string; iconClass?: string; run: (target: HTMLElement) => void; commandId: string },
+		keybindingLabel: string | null
+	) {
 		return new HoverAction(parent, actionOptions, keybindingLabel);
 	}
 
@@ -62,7 +67,11 @@ export class HoverAction extends Disposable {
 
 	private readonly action: HTMLElement;
 
-	private constructor(parent: HTMLElement, actionOptions: { label: string; iconClass?: string; run: (target: HTMLElement) => void; commandId: string }, keybindingLabel: string | null) {
+	private constructor(
+		parent: HTMLElement,
+		actionOptions: { label: string; iconClass?: string; run: (target: HTMLElement) => void; commandId: string },
+		keybindingLabel: string | null
+	) {
 		super();
 
 		this.actionLabel = actionOptions.label;
@@ -98,30 +107,41 @@ export class HoverAction extends Disposable {
 }
 
 export function getHoverAccessibleViewHint(shouldHaveHint?: boolean, keybinding?: string | null): string | undefined {
-	return shouldHaveHint && keybinding ? localize('acessibleViewHint', "Inspect this in the accessible view with {0}.", keybinding) : shouldHaveHint ? localize('acessibleViewHintNoKbOpen', "Inspect this in the accessible view via the command Open Accessible View which is currently not triggerable via keybinding.") : '';
+	return shouldHaveHint && keybinding
+		? localize('acessibleViewHint', 'Inspect this in the accessible view with {0}.', keybinding)
+		: shouldHaveHint
+			? localize(
+					'acessibleViewHintNoKbOpen',
+					'Inspect this in the accessible view via the command Open Accessible View which is currently not triggerable via keybinding.'
+				)
+			: '';
 }
 
 export class ClickAction extends Disposable {
 	constructor(container: HTMLElement, run: (container: HTMLElement) => void) {
 		super();
-		this._register(dom.addDisposableListener(container, dom.EventType.CLICK, e => {
-			e.stopPropagation();
-			e.preventDefault();
-			run(container);
-		}));
+		this._register(
+			dom.addDisposableListener(container, dom.EventType.CLICK, e => {
+				e.stopPropagation();
+				e.preventDefault();
+				run(container);
+			})
+		);
 	}
 }
 
 export class KeyDownAction extends Disposable {
 	constructor(container: HTMLElement, run: (container: HTMLElement) => void, keyCodes: KeyCode[]) {
 		super();
-		this._register(dom.addDisposableListener(container, dom.EventType.KEY_DOWN, e => {
-			const event = new StandardKeyboardEvent(e);
-			if (keyCodes.some(keyCode => event.equals(keyCode))) {
-				e.stopPropagation();
-				e.preventDefault();
-				run(container);
-			}
-		}));
+		this._register(
+			dom.addDisposableListener(container, dom.EventType.KEY_DOWN, e => {
+				const event = new StandardKeyboardEvent(e);
+				if (keyCodes.some(keyCode => event.equals(keyCode))) {
+					e.stopPropagation();
+					e.preventDefault();
+					run(container);
+				}
+			})
+		);
 	}
 }

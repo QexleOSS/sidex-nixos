@@ -10,14 +10,12 @@ import { IReplElement } from '../common/debug.js';
 import { ReplEvaluationResult, ReplEvaluationInput } from '../common/replModel.js';
 import { Variable } from '../common/debugModel.js';
 
-
 type ParsedQuery = {
 	type: 'include' | 'exclude';
 	query: string;
 };
 
 export class ReplFilter implements ITreeFilter<IReplElement, FuzzyScore> {
-
 	static matchQuery = matchesFuzzy;
 
 	private _parsedQueries: ParsedQuery[] = [];
@@ -26,7 +24,9 @@ export class ReplFilter implements ITreeFilter<IReplElement, FuzzyScore> {
 		query = query.trim();
 
 		if (query && query !== '') {
-			const filters = splitGlobAware(query, ',').map(s => s.trim()).filter(s => !!s.length);
+			const filters = splitGlobAware(query, ',')
+				.map(s => s.trim())
+				.filter(s => !!s.length);
 			for (const f of filters) {
 				if (f.startsWith('\\')) {
 					this._parsedQueries.push({ type: 'include', query: f.slice(1) });
@@ -40,7 +40,11 @@ export class ReplFilter implements ITreeFilter<IReplElement, FuzzyScore> {
 	}
 
 	filter(element: IReplElement, parentVisibility: TreeVisibility): TreeFilterResult<FuzzyScore> {
-		if (element instanceof ReplEvaluationInput || element instanceof ReplEvaluationResult || element instanceof Variable) {
+		if (
+			element instanceof ReplEvaluationInput ||
+			element instanceof ReplEvaluationResult ||
+			element instanceof Variable
+		) {
 			// Only filter the output events, everything else is visible https://github.com/microsoft/vscode/issues/105863
 			return TreeVisibility.Visible;
 		}
@@ -62,6 +66,10 @@ export class ReplFilter implements ITreeFilter<IReplElement, FuzzyScore> {
 			}
 		}
 
-		return includeQueryPresent ? includeQueryMatched : (typeof parentVisibility !== 'undefined' ? parentVisibility : TreeVisibility.Visible);
+		return includeQueryPresent
+			? includeQueryMatched
+			: typeof parentVisibility !== 'undefined'
+				? parentVisibility
+				: TreeVisibility.Visible;
 	}
 }

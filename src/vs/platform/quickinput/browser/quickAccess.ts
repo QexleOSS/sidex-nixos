@@ -6,25 +6,40 @@
 import { DeferredPromise } from '../../../base/common/async.js';
 import { CancellationTokenSource } from '../../../base/common/cancellation.js';
 import { Event } from '../../../base/common/event.js';
-import { Disposable, DisposableStore, IDisposable, isDisposable, toDisposable } from '../../../base/common/lifecycle.js';
+import {
+	Disposable,
+	DisposableStore,
+	IDisposable,
+	isDisposable,
+	toDisposable
+} from '../../../base/common/lifecycle.js';
 import { IContextKeyService } from '../../contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../instantiation/common/instantiation.js';
-import { DefaultQuickAccessFilterValue, Extensions, IQuickAccessController, IQuickAccessOptions, IQuickAccessProvider, IQuickAccessProviderDescriptor, IQuickAccessRegistry } from '../common/quickAccess.js';
+import {
+	DefaultQuickAccessFilterValue,
+	Extensions,
+	IQuickAccessController,
+	IQuickAccessOptions,
+	IQuickAccessProvider,
+	IQuickAccessProviderDescriptor,
+	IQuickAccessRegistry
+} from '../common/quickAccess.js';
 import { IQuickInputService, IQuickPick, IQuickPickItem, ItemActivation } from '../common/quickInput.js';
 import { Registry } from '../../registry/common/platform.js';
 
 export class QuickAccessController extends Disposable implements IQuickAccessController {
-
 	private readonly registry = Registry.as<IQuickAccessRegistry>(Extensions.Quickaccess);
 	private readonly mapProviderToDescriptor = new Map<IQuickAccessProviderDescriptor, IQuickAccessProvider>();
 
 	private readonly lastAcceptedPickerValues = new Map<IQuickAccessProviderDescriptor, string>();
 
-	private visibleQuickAccess: {
-		readonly picker: IQuickPick<IQuickPickItem, { useSeparators: true }>;
-		readonly descriptor: IQuickAccessProviderDescriptor | undefined;
-		readonly value: string;
-	} | undefined = undefined;
+	private visibleQuickAccess:
+		| {
+				readonly picker: IQuickPick<IQuickPickItem, { useSeparators: true }>;
+				readonly descriptor: IQuickAccessProviderDescriptor | undefined;
+				readonly value: string;
+		  }
+		| undefined = undefined;
 
 	constructor(
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
@@ -32,15 +47,17 @@ export class QuickAccessController extends Disposable implements IQuickAccessCon
 		@IContextKeyService private readonly contextKeyService: IContextKeyService
 	) {
 		super();
-		this._register(toDisposable(() => {
-			for (const provider of this.mapProviderToDescriptor.values()) {
-				if (isDisposable(provider)) {
-					provider.dispose();
+		this._register(
+			toDisposable(() => {
+				for (const provider of this.mapProviderToDescriptor.values()) {
+					if (isDisposable(provider)) {
+						provider.dispose();
+					}
 				}
-			}
 
-			this.visibleQuickAccess?.picker.dispose();
-		}));
+				this.visibleQuickAccess?.picker.dispose();
+			})
+		);
 	}
 
 	pick(value = '', options?: IQuickAccessOptions): Promise<IQuickPickItem[] | undefined> {
@@ -53,8 +70,11 @@ export class QuickAccessController extends Disposable implements IQuickAccessCon
 
 	private doShowOrPick(value: string, pick: true, options?: IQuickAccessOptions): Promise<IQuickPickItem[] | undefined>;
 	private doShowOrPick(value: string, pick: false, options?: IQuickAccessOptions): void;
-	private doShowOrPick(value: string, pick: boolean, options?: IQuickAccessOptions): Promise<IQuickPickItem[] | undefined> | void {
-
+	private doShowOrPick(
+		value: string,
+		pick: boolean,
+		options?: IQuickAccessOptions
+	): Promise<IQuickPickItem[] | undefined> | void {
 		// Find provider for the value to show
 		const [provider, descriptor] = this.getOrInstantiateProvider(value, options?.enabledProviderPrefixes);
 
@@ -62,7 +82,6 @@ export class QuickAccessController extends Disposable implements IQuickAccessCon
 		const visibleQuickAccess = this.visibleQuickAccess;
 		const visibleDescriptor = visibleQuickAccess?.descriptor;
 		if (visibleQuickAccess && descriptor && visibleDescriptor === descriptor) {
-
 			// Apply value only if it is more specific than the prefix
 			// from the provider and we are not instructed to preserve
 			if (value !== descriptor.prefix && !options?.preserveValue) {
@@ -127,10 +146,12 @@ export class QuickAccessController extends Disposable implements IQuickAccessCon
 		let pickPromise: DeferredPromise<IQuickPickItem[]> | undefined = undefined;
 		if (pick) {
 			pickPromise = new DeferredPromise<IQuickPickItem[]>();
-			disposables.add(Event.once(picker.onWillAccept)(e => {
-				e.veto();
-				picker.hide();
-			}));
+			disposables.add(
+				Event.once(picker.onWillAccept)(e => {
+					e.veto();
+					picker.hide();
+				})
+			);
 		}
 
 		// Register listeners
@@ -174,7 +195,11 @@ export class QuickAccessController extends Disposable implements IQuickAccessCon
 		}
 	}
 
-	private adjustValueSelection(picker: IQuickPick<IQuickPickItem, { useSeparators: true }>, descriptor?: IQuickAccessProviderDescriptor, options?: IQuickAccessOptions): void {
+	private adjustValueSelection(
+		picker: IQuickPick<IQuickPickItem, { useSeparators: true }>,
+		descriptor?: IQuickAccessProviderDescriptor,
+		options?: IQuickAccessOptions
+	): void {
 		let valueSelection: [number, number];
 
 		// Preserve: just always put the cursor at the end
@@ -200,43 +225,55 @@ export class QuickAccessController extends Disposable implements IQuickAccessCon
 		const disposables = new DisposableStore();
 
 		// Remember as last visible picker and clean up once picker get's disposed
-		const visibleQuickAccess = this.visibleQuickAccess = { picker, descriptor, value };
-		disposables.add(toDisposable(() => {
-			if (visibleQuickAccess === this.visibleQuickAccess) {
-				this.visibleQuickAccess = undefined;
-			}
-		}));
+		const visibleQuickAccess = (this.visibleQuickAccess = { picker, descriptor, value });
+		disposables.add(
+			toDisposable(() => {
+				if (visibleQuickAccess === this.visibleQuickAccess) {
+					this.visibleQuickAccess = undefined;
+				}
+			})
+		);
 
 		// Whenever the value changes, check if the provider has
 		// changed and if so - re-create the picker from the beginning
-		disposables.add(picker.onDidChangeValue(value => {
-			const [providerForValue] = this.getOrInstantiateProvider(value, options?.enabledProviderPrefixes);
-			if (providerForValue !== provider) {
-				this.show(value, {
-					enabledProviderPrefixes: options?.enabledProviderPrefixes,
-					// do not rewrite value from user typing!
-					preserveValue: true,
-					// persist the value of the providerOptions from the original showing
-					providerOptions: options?.providerOptions
-				});
-			} else {
-				visibleQuickAccess.value = value; // remember the value in our visible one
-			}
-		}));
+		disposables.add(
+			picker.onDidChangeValue(value => {
+				const [providerForValue] = this.getOrInstantiateProvider(value, options?.enabledProviderPrefixes);
+				if (providerForValue !== provider) {
+					this.show(value, {
+						enabledProviderPrefixes: options?.enabledProviderPrefixes,
+						// do not rewrite value from user typing!
+						preserveValue: true,
+						// persist the value of the providerOptions from the original showing
+						providerOptions: options?.providerOptions
+					});
+				} else {
+					visibleQuickAccess.value = value; // remember the value in our visible one
+				}
+			})
+		);
 
 		// Remember picker input for future use when accepting
 		if (descriptor) {
-			disposables.add(picker.onDidAccept(() => {
-				this.lastAcceptedPickerValues.set(descriptor, picker.value);
-			}));
+			disposables.add(
+				picker.onDidAccept(() => {
+					this.lastAcceptedPickerValues.set(descriptor, picker.value);
+				})
+			);
 		}
 
 		return disposables;
 	}
 
-	private getOrInstantiateProvider(value: string, enabledProviderPrefixes?: string[]): [IQuickAccessProvider | undefined, IQuickAccessProviderDescriptor | undefined] {
+	private getOrInstantiateProvider(
+		value: string,
+		enabledProviderPrefixes?: string[]
+	): [IQuickAccessProvider | undefined, IQuickAccessProviderDescriptor | undefined] {
 		const providerDescriptor = this.registry.getQuickAccessProvider(value, this.contextKeyService);
-		if (!providerDescriptor || enabledProviderPrefixes && !enabledProviderPrefixes?.includes(providerDescriptor.prefix)) {
+		if (
+			!providerDescriptor ||
+			(enabledProviderPrefixes && !enabledProviderPrefixes?.includes(providerDescriptor.prefix))
+		) {
 			return [undefined, undefined];
 		}
 

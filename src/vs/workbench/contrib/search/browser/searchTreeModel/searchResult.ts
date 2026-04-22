@@ -12,18 +12,43 @@ import { IInstantiationService } from '../../../../../platform/instantiation/com
 import { IProgress, IProgressStep } from '../../../../../platform/progress/common/progress.js';
 import { NotebookEditorWidget } from '../../../notebook/browser/notebookEditorWidget.js';
 import { INotebookEditorService } from '../../../notebook/browser/services/notebookEditorService.js';
-import { IAITextQuery, IFileMatch, ISearchComplete, ITextQuery, QueryType } from '../../../../services/search/common/search.js';
-import { arrayContainsElementOrParent, IChangeEvent, ISearchTreeFileMatch, ISearchTreeFolderMatch, IPlainTextSearchHeading, ISearchModel, ISearchResult, isSearchTreeFileMatch, isSearchTreeFolderMatch, isSearchTreeFolderMatchNoRoot, isSearchTreeFolderMatchWithResource, isSearchTreeMatch, isTextSearchHeading, ITextSearchHeading, mergeSearchResultEvents, RenderableMatch, SEARCH_RESULT_PREFIX } from './searchTreeCommon.js';
+import {
+	IAITextQuery,
+	IFileMatch,
+	ISearchComplete,
+	ITextQuery,
+	QueryType
+} from '../../../../services/search/common/search.js';
+import {
+	arrayContainsElementOrParent,
+	IChangeEvent,
+	ISearchTreeFileMatch,
+	ISearchTreeFolderMatch,
+	IPlainTextSearchHeading,
+	ISearchModel,
+	ISearchResult,
+	isSearchTreeFileMatch,
+	isSearchTreeFolderMatch,
+	isSearchTreeFolderMatchNoRoot,
+	isSearchTreeFolderMatchWithResource,
+	isSearchTreeMatch,
+	isTextSearchHeading,
+	ITextSearchHeading,
+	mergeSearchResultEvents,
+	RenderableMatch,
+	SEARCH_RESULT_PREFIX
+} from './searchTreeCommon.js';
 
 import { RangeHighlightDecorations } from './rangeDecorations.js';
 import { PlainTextSearchHeadingImpl } from './textSearchHeading.js';
 import { AITextSearchHeadingImpl } from '../AISearch/aiSearchModel.js';
 
 export class SearchResultImpl extends Disposable implements ISearchResult {
-
-	private _onChange = this._register(new PauseableEmitter<IChangeEvent>({
-		merge: mergeSearchResultEvents
-	}));
+	private _onChange = this._register(
+		new PauseableEmitter<IChangeEvent>({
+			merge: mergeSearchResultEvents
+		})
+	);
 	readonly onChange: Event<IChangeEvent> = this._onChange.event;
 	private _onWillChangeModelListener: IDisposable | undefined;
 	private _onDidChangeModelListener: IDisposable | undefined;
@@ -35,23 +60,27 @@ export class SearchResultImpl extends Disposable implements ISearchResult {
 		public readonly searchModel: ISearchModel,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IModelService private readonly modelService: IModelService,
-		@INotebookEditorService private readonly notebookEditorService: INotebookEditorService,
+		@INotebookEditorService private readonly notebookEditorService: INotebookEditorService
 	) {
 		super();
-		this._plainTextSearchResult = this._register(this.instantiationService.createInstance(PlainTextSearchHeadingImpl, this));
+		this._plainTextSearchResult = this._register(
+			this.instantiationService.createInstance(PlainTextSearchHeadingImpl, this)
+		);
 		this._aiTextSearchResult = this._register(this.instantiationService.createInstance(AITextSearchHeadingImpl, this));
 
-		this._register(this._plainTextSearchResult.onChange((e) => this._onChange.fire(e)));
-		this._register(this._aiTextSearchResult.onChange((e) => this._onChange.fire(e)));
+		this._register(this._plainTextSearchResult.onChange(e => this._onChange.fire(e)));
+		this._register(this._aiTextSearchResult.onChange(e => this._onChange.fire(e)));
 
 		this.modelService.getModels().forEach(model => this.onModelAdded(model));
 		this._register(this.modelService.onModelAdded(model => this.onModelAdded(model)));
 
-		this._register(this.notebookEditorService.onDidAddNotebookEditor(widget => {
-			if (widget instanceof NotebookEditorWidget) {
-				this.onDidAddNotebookEditorWidget(<NotebookEditorWidget>widget);
-			}
-		}));
+		this._register(
+			this.notebookEditorService.onDidAddNotebookEditor(widget => {
+				if (widget instanceof NotebookEditorWidget) {
+					this.onDidAddNotebookEditorWidget(<NotebookEditorWidget>widget);
+				}
+			})
+		);
 
 		this._id = SEARCH_RESULT_PREFIX + Date.now().toString();
 	}
@@ -82,22 +111,27 @@ export class SearchResultImpl extends Disposable implements ISearchResult {
 	async batchReplace(elementsToReplace: RenderableMatch[]) {
 		try {
 			this._onChange.pause();
-			await Promise.all(elementsToReplace.map(async (elem) => {
-				const parent = elem.parent();
+			await Promise.all(
+				elementsToReplace.map(async elem => {
+					const parent = elem.parent();
 
-				if ((isSearchTreeFolderMatch(parent) || isSearchTreeFileMatch(parent)) && arrayContainsElementOrParent(parent, elementsToReplace)) {
-					// skip any children who have parents in the array
-					return;
-				}
+					if (
+						(isSearchTreeFolderMatch(parent) || isSearchTreeFileMatch(parent)) &&
+						arrayContainsElementOrParent(parent, elementsToReplace)
+					) {
+						// skip any children who have parents in the array
+						return;
+					}
 
-				if (isSearchTreeFileMatch(elem)) {
-					await elem.parent().replace(elem);
-				} else if (isSearchTreeMatch(elem)) {
-					await elem.parent().replace(elem);
-				} else if (isSearchTreeFolderMatch(elem)) {
-					await elem.replaceAll();
-				}
-			}));
+					if (isSearchTreeFileMatch(elem)) {
+						await elem.parent().replace(elem);
+					} else if (isSearchTreeMatch(elem)) {
+						await elem.parent().replace(elem);
+					} else if (isSearchTreeFolderMatch(elem)) {
+						await elem.replaceAll();
+					}
+				})
+			);
 		} finally {
 			this._onChange.resume();
 		}
@@ -109,11 +143,15 @@ export class SearchResultImpl extends Disposable implements ISearchResult {
 
 		try {
 			this._onChange.pause();
-			elementsToRemove.forEach((currentElement) => {
+			elementsToRemove.forEach(currentElement => {
 				if (!arrayContainsElementOrParent(currentElement, removedElems)) {
 					if (isTextSearchHeading(currentElement)) {
 						currentElement.hide();
-					} else if (!isSearchTreeFolderMatch(currentElement) || isSearchTreeFolderMatchWithResource(currentElement) || isSearchTreeFolderMatchNoRoot(currentElement)) {
+					} else if (
+						!isSearchTreeFolderMatch(currentElement) ||
+						isSearchTreeFolderMatchWithResource(currentElement) ||
+						isSearchTreeFolderMatchNoRoot(currentElement)
+					) {
 						if (isSearchTreeFileMatch(currentElement)) {
 							currentElement.parent().remove(currentElement);
 						} else if (isSearchTreeMatch(currentElement)) {
@@ -129,8 +167,7 @@ export class SearchResultImpl extends Disposable implements ISearchResult {
 						removedElems.push(currentElement);
 					}
 				}
-			}
-			);
+			});
 		} finally {
 			this._onChange.resume();
 		}
@@ -156,25 +193,20 @@ export class SearchResultImpl extends Disposable implements ISearchResult {
 	}
 
 	private onDidAddNotebookEditorWidget(widget: NotebookEditorWidget): void {
-
 		this._onWillChangeModelListener?.dispose();
-		this._onWillChangeModelListener = widget.onWillChangeModel(
-			(model) => {
-				if (model) {
-					this.onNotebookEditorWidgetRemoved(widget, model?.uri);
-				}
+		this._onWillChangeModelListener = widget.onWillChangeModel(model => {
+			if (model) {
+				this.onNotebookEditorWidgetRemoved(widget, model?.uri);
 			}
-		);
+		});
 
 		this._onDidChangeModelListener?.dispose();
 		// listen to view model change as we are searching on both inputs and outputs
-		this._onDidChangeModelListener = widget.onDidAttachViewModel(
-			() => {
-				if (widget.hasModel()) {
-					this.onNotebookEditorWidgetAdded(widget, widget.textModel.uri);
-				}
+		this._onDidChangeModelListener = widget.onDidAttachViewModel(() => {
+			if (widget.hasModel()) {
+				this.onNotebookEditorWidgetAdded(widget, widget.textModel.uri);
 			}
-		);
+		});
 	}
 
 	folderMatches(ai: boolean = false): ISearchTreeFolderMatch[] {
@@ -199,7 +231,6 @@ export class SearchResultImpl extends Disposable implements ISearchResult {
 		folderMatch?.unbindNotebookEditorWidget(editor, resource);
 	}
 
-
 	add(allRaw: IFileMatch[], searchInstanceID: string, ai: boolean, silent: boolean = false): void {
 		this._plainTextSearchResult.hidden = false;
 
@@ -215,12 +246,14 @@ export class SearchResultImpl extends Disposable implements ISearchResult {
 		this._aiTextSearchResult.clear();
 	}
 
-	remove(matches: ISearchTreeFileMatch | ISearchTreeFolderMatch | (ISearchTreeFileMatch | ISearchTreeFolderMatch)[], ai = false): void {
+	remove(
+		matches: ISearchTreeFileMatch | ISearchTreeFolderMatch | (ISearchTreeFileMatch | ISearchTreeFolderMatch)[],
+		ai = false
+	): void {
 		if (ai) {
 			this._aiTextSearchResult.remove(matches, ai);
 		}
 		this._plainTextSearchResult.remove(matches, ai);
-
 	}
 
 	replace(match: ISearchTreeFileMatch): Promise<any> {

@@ -41,18 +41,35 @@ export abstract class FilterViewPaneContainer extends ViewPaneContainer {
 		@IExtensionService extensionService: IExtensionService,
 		@IWorkspaceContextService contextService: IWorkspaceContextService,
 		@IViewDescriptorService viewDescriptorService: IViewDescriptorService,
-		@ILogService logService: ILogService,
+		@ILogService logService: ILogService
 	) {
+		super(
+			viewletId,
+			{ mergeViewWithContainerWhenSingleView: false },
+			instantiationService,
+			configurationService,
+			layoutService,
+			contextMenuService,
+			telemetryService,
+			extensionService,
+			themeService,
+			storageService,
+			contextService,
+			viewDescriptorService,
+			logService
+		);
+		this._register(
+			onDidChangeFilterValue(newFilterValue => {
+				this.filterValue = newFilterValue;
+				this.onFilterChanged(newFilterValue);
+			})
+		);
 
-		super(viewletId, { mergeViewWithContainerWhenSingleView: false }, instantiationService, configurationService, layoutService, contextMenuService, telemetryService, extensionService, themeService, storageService, contextService, viewDescriptorService, logService);
-		this._register(onDidChangeFilterValue(newFilterValue => {
-			this.filterValue = newFilterValue;
-			this.onFilterChanged(newFilterValue);
-		}));
-
-		this._register(this.viewContainerModel.onDidChangeActiveViewDescriptors(() => {
-			this.updateAllViews(this.viewContainerModel.activeViewDescriptors);
-		}));
+		this._register(
+			this.viewContainerModel.onDidChangeActiveViewDescriptors(() => {
+				this.updateAllViews(this.viewContainerModel.activeViewDescriptors);
+			})
+		);
 	}
 
 	private updateAllViews(viewDescriptors: ReadonlyArray<IViewDescriptor>) {
@@ -65,14 +82,20 @@ export abstract class FilterViewPaneContainer extends ViewPaneContainer {
 				this.allViews.set(filterOnValue, new Map());
 			}
 			this.allViews.get(filterOnValue)!.set(descriptor.id, descriptor);
-			if (this.filterValue && !this.filterValue.includes(filterOnValue) && this.panes.find(pane => pane.id === descriptor.id)) {
+			if (
+				this.filterValue &&
+				!this.filterValue.includes(filterOnValue) &&
+				this.panes.find(pane => pane.id === descriptor.id)
+			) {
 				this.viewContainerModel.setVisible(descriptor.id, false);
 			}
 		});
 	}
 
 	protected addConstantViewDescriptors(constantViewDescriptors: IViewDescriptor[]) {
-		constantViewDescriptors.forEach(viewDescriptor => this.constantViewDescriptors.set(viewDescriptor.id, viewDescriptor));
+		constantViewDescriptors.forEach(viewDescriptor =>
+			this.constantViewDescriptors.set(viewDescriptor.id, viewDescriptor)
+		);
 	}
 
 	protected abstract getFilterOn(viewDescriptor: IViewDescriptor): string | undefined;
@@ -144,5 +167,4 @@ export abstract class FilterViewPaneContainer extends ViewPaneContainer {
 	}
 
 	abstract override getTitle(): string;
-
 }

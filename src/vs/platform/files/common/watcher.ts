@@ -12,7 +12,6 @@ import { URI } from '../../../base/common/uri.js';
 import { FileChangeFilter, FileChangeType, IFileChange, isParent } from './files.js';
 
 interface IWatchRequest {
-
 	/**
 	 * The path to watch.
 	 */
@@ -61,7 +60,6 @@ export function isWatchRequestWithCorrelation(request: IWatchRequest): request i
 }
 
 export interface INonRecursiveWatchRequest extends IWatchRequest {
-
 	/**
 	 * The watcher will be non-recursive.
 	 */
@@ -69,7 +67,6 @@ export interface INonRecursiveWatchRequest extends IWatchRequest {
 }
 
 export interface IRecursiveWatchRequest extends IWatchRequest {
-
 	/**
 	 * The watcher will be recursive.
 	 */
@@ -94,7 +91,6 @@ export interface IWatcherErrorEvent {
 }
 
 export interface IWatcher {
-
 	/**
 	 * A normalized file change event from the raw events
 	 * the watcher emits.
@@ -137,7 +133,6 @@ export interface IRecursiveWatcher extends IWatcher {
 }
 
 export interface IRecursiveWatcherWithSubscribe extends IRecursiveWatcher {
-
 	/**
 	 * Subscribe to file events for the given path. The callback is called
 	 * whenever a file event occurs for the path. If the watcher failed,
@@ -151,7 +146,6 @@ export interface IRecursiveWatcherWithSubscribe extends IRecursiveWatcher {
 }
 
 export interface IRecursiveWatcherOptions {
-
 	/**
 	 * If `true`, will enable polling for all watchers, otherwise
 	 * will enable it for paths included in the string array.
@@ -180,7 +174,6 @@ export interface IUniversalWatcher extends IWatcher {
 }
 
 export abstract class AbstractWatcherClient extends Disposable {
-
 	private static readonly MAX_RESTARTS = 5;
 
 	private watcher: IWatcher | undefined;
@@ -205,7 +198,6 @@ export abstract class AbstractWatcherClient extends Disposable {
 	protected abstract createWatcher(disposables: DisposableStore): IWatcher;
 
 	protected init(): void {
-
 		// Associate disposables to the watcher
 		const disposables = new DisposableStore();
 		this.watcherDisposables.value = disposables;
@@ -221,7 +213,6 @@ export abstract class AbstractWatcherClient extends Disposable {
 	}
 
 	protected onError(error: string, failedRequest?: IUniversalWatchRequest): void {
-
 		// Restart on error (up to N times, if possible)
 		if (this.canRestart(error, failedRequest)) {
 			if (this.restartCounter < AbstractWatcherClient.MAX_RESTARTS && this.requests) {
@@ -251,10 +242,7 @@ export abstract class AbstractWatcherClient extends Disposable {
 			return false;
 		}
 
-		if (
-			error.indexOf('No space left on device') !== -1 ||
-			error.indexOf('EMFILE') !== -1
-		) {
+		if (error.indexOf('No space left on device') !== -1 || error.indexOf('EMFILE') !== -1) {
 			// do not restart when the error indicates that the system is running
 			// out of handles for file watching. this is not recoverable anyway
 			// and needs changes to the system before continuing
@@ -292,7 +280,6 @@ export abstract class AbstractWatcherClient extends Disposable {
 	}
 
 	override dispose(): void {
-
 		// Render the watcher invalid from here
 		this.watcher = undefined;
 
@@ -301,7 +288,6 @@ export abstract class AbstractWatcherClient extends Disposable {
 }
 
 export abstract class AbstractNonRecursiveWatcherClient extends AbstractWatcherClient {
-
 	constructor(
 		onFileChanges: (changes: IFileChange[]) => void,
 		onLogMessage: (msg: ILogMessage) => void,
@@ -314,7 +300,6 @@ export abstract class AbstractNonRecursiveWatcherClient extends AbstractWatcherC
 }
 
 export abstract class AbstractUniversalWatcherClient extends AbstractWatcherClient {
-
 	constructor(
 		onFileChanges: (changes: IFileChange[]) => void,
 		onLogMessage: (msg: ILogMessage) => void,
@@ -340,7 +325,6 @@ export function reviveFileChanges(changes: IFileChange[]): IFileChange[] {
 }
 
 export function coalesceEvents(changes: IFileChange[]): IFileChange[] {
-
 	// Build deltas
 	const coalescer = new EventCoalescer();
 	for (const event of changes) {
@@ -351,7 +335,6 @@ export function coalesceEvents(changes: IFileChange[]): IFileChange[] {
 }
 
 export function normalizeWatcherPattern(path: string, pattern: string | IRelativePattern): string | IRelativePattern {
-
 	// Patterns are always matched on the full absolute path
 	// of the event. As such, if the pattern is not absolute
 	// and is a string and does not start with a leading
@@ -365,7 +348,11 @@ export function normalizeWatcherPattern(path: string, pattern: string | IRelativ
 	return pattern;
 }
 
-export function parseWatcherPatterns(path: string, patterns: Array<string | IRelativePattern>, ignoreCase: boolean): ParsedPattern[] {
+export function parseWatcherPatterns(
+	path: string,
+	patterns: Array<string | IRelativePattern>,
+	ignoreCase: boolean
+): ParsedPattern[] {
 	const parsedPatterns: ParsedPattern[] = [];
 
 	for (const pattern of patterns) {
@@ -376,7 +363,6 @@ export function parseWatcherPatterns(path: string, patterns: Array<string | IRel
 }
 
 class EventCoalescer {
-
 	private readonly coalesced = new Set<IFileChange>();
 	private readonly mapPathToChange = new Map<string, IFileChange>();
 
@@ -400,7 +386,10 @@ class EventCoalescer {
 
 			// macOS/Windows: track renames to different case
 			// by keeping both CREATE and DELETE events
-			if (existingEvent.resource.fsPath !== event.resource.fsPath && (event.type === FileChangeType.DELETED || event.type === FileChangeType.ADDED)) {
+			if (
+				existingEvent.resource.fsPath !== event.resource.fsPath &&
+				(event.type === FileChangeType.DELETED || event.type === FileChangeType.ADDED)
+			) {
 				keepEvent = true;
 			}
 
@@ -416,7 +405,8 @@ class EventCoalescer {
 			}
 
 			// Do nothing. Keep the created event
-			else if (currentChangeType === FileChangeType.ADDED && newChangeType === FileChangeType.UPDATED) { }
+			else if (currentChangeType === FileChangeType.ADDED && newChangeType === FileChangeType.UPDATED) {
+			}
 
 			// Otherwise apply change type
 			else {
@@ -446,26 +436,30 @@ class EventCoalescer {
 		// 1.) split ADD/CHANGE and DELETED events
 		// 2.) sort short deleted paths to the top
 		// 3.) for each DELETE, check if there is a deleted parent and ignore the event in that case
-		return Array.from(this.coalesced).filter(e => {
-			if (e.type !== FileChangeType.DELETED) {
-				addOrChangeEvents.push(e);
+		return Array.from(this.coalesced)
+			.filter(e => {
+				if (e.type !== FileChangeType.DELETED) {
+					addOrChangeEvents.push(e);
 
-				return false; // remove ADD / CHANGE
-			}
+					return false; // remove ADD / CHANGE
+				}
 
-			return true; // keep DELETE
-		}).sort((e1, e2) => {
-			return e1.resource.fsPath.length - e2.resource.fsPath.length; // shortest path first
-		}).filter(e => {
-			if (deletedPaths.some(deletedPath => isParent(e.resource.fsPath, deletedPath, !isLinux /* ignorecase */))) {
-				return false; // DELETE is ignored if parent is deleted already
-			}
+				return true; // keep DELETE
+			})
+			.sort((e1, e2) => {
+				return e1.resource.fsPath.length - e2.resource.fsPath.length; // shortest path first
+			})
+			.filter(e => {
+				if (deletedPaths.some(deletedPath => isParent(e.resource.fsPath, deletedPath, !isLinux /* ignorecase */))) {
+					return false; // DELETE is ignored if parent is deleted already
+				}
 
-			// otherwise mark as deleted
-			deletedPaths.push(e.resource.fsPath);
+				// otherwise mark as deleted
+				deletedPaths.push(e.resource.fsPath);
 
-			return true;
-		}).concat(addOrChangeEvents);
+				return true;
+			})
+			.concat(addOrChangeEvents);
 	}
 }
 

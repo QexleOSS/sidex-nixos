@@ -12,7 +12,10 @@ import { isEqual } from '../../../../../base/common/resources.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IWorkbenchContribution } from '../../../../common/contributions.js';
 import { IWorkingCopyIdentifier, NO_TYPE_ID } from '../../../../services/workingCopy/common/workingCopy.js';
-import { IWorkingCopyEditorHandler, IWorkingCopyEditorService } from '../../../../services/workingCopy/common/workingCopyEditorService.js';
+import {
+	IWorkingCopyEditorHandler,
+	IWorkingCopyEditorService
+} from '../../../../services/workingCopy/common/workingCopyEditorService.js';
 import { FileEditorInput } from './fileEditorInput.js';
 import { IFileService } from '../../../../../platform/files/common/files.js';
 
@@ -26,7 +29,6 @@ interface ISerializedFileEditorInput {
 }
 
 export class FileEditorInputSerializer implements IEditorSerializer {
-
 	canSerialize(editorInput: EditorInput): boolean {
 		return true;
 	}
@@ -57,7 +59,14 @@ export class FileEditorInputSerializer implements IEditorSerializer {
 			const encoding = serializedFileEditorInput.encoding;
 			const languageId = serializedFileEditorInput.modeId;
 
-			const fileEditorInput = accessor.get(ITextEditorService).createTextEditor({ resource, label: name, description, encoding, languageId, forceFile: true }) as FileEditorInput;
+			const fileEditorInput = accessor.get(ITextEditorService).createTextEditor({
+				resource,
+				label: name,
+				description,
+				encoding,
+				languageId,
+				forceFile: true
+			}) as FileEditorInput;
 			if (preferredResource) {
 				fileEditorInput.setPreferredResource(preferredResource);
 			}
@@ -67,8 +76,10 @@ export class FileEditorInputSerializer implements IEditorSerializer {
 	}
 }
 
-export class FileEditorWorkingCopyEditorHandler extends Disposable implements IWorkbenchContribution, IWorkingCopyEditorHandler {
-
+export class FileEditorWorkingCopyEditorHandler
+	extends Disposable
+	implements IWorkbenchContribution, IWorkingCopyEditorHandler
+{
 	static readonly ID = 'workbench.contrib.fileEditorWorkingCopyEditorHandler';
 
 	constructor(

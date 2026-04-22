@@ -11,7 +11,9 @@ export class PromptTypeDetectionCapability extends Disposable implements IPrompt
 	readonly type = TerminalCapability.PromptTypeDetection;
 
 	private _promptType: string | undefined;
-	get promptType(): string | undefined { return this._promptType; }
+	get promptType(): string | undefined {
+		return this._promptType;
+	}
 
 	private readonly _onPromptTypeChanged = this._register(new Emitter<string | undefined>());
 	readonly onPromptTypeChanged = this._onPromptTypeChanged.event;

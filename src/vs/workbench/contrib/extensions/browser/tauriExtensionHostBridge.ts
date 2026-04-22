@@ -5,16 +5,17 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { invoke } from '@tauri-apps/api/core';
-import { Disposable, DisposableStore, toDisposable } from '../../../base/common/lifecycle.js';
-import { Emitter } from '../../../base/common/event.js';
-import * as languages from '../../../editor/common/languages.js';
-import { ILanguageFeaturesService } from '../../../editor/common/services/languageFeatures.js';
-import { ITextModel } from '../../../editor/common/model.js';
-import { Position } from '../../../editor/common/core/position.js';
-import { Range } from '../../../editor/common/core/range.js';
-import { URI } from '../../../base/common/uri.js';
-import { CancellationToken } from '../../../base/common/cancellation.js';
-import { IWorkbenchContribution, WorkbenchPhase, registerWorkbenchContribution2 } from '../../common/contributions.js';
+import { Disposable, DisposableStore, toDisposable } from '../../../../base/common/lifecycle.js';
+import { Emitter } from '../../../../base/common/event.js';
+import * as languages from '../../../../editor/common/languages.js';
+import { LanguageSelector } from '../../../../editor/common/languageSelector.js';
+import { ILanguageFeaturesService } from '../../../../editor/common/services/languageFeatures.js';
+import { ITextModel } from '../../../../editor/common/model.js';
+import { Position } from '../../../../editor/common/core/position.js';
+import { Range } from '../../../../editor/common/core/range.js';
+import { URI } from '../../../../base/common/uri.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { IWorkbenchContribution, WorkbenchPhase, registerWorkbenchContribution2 } from '../../../common/contributions.js';
 
 interface ExtHostMessage {
 	id?: number;
@@ -30,7 +31,7 @@ class ExtHostConnection extends Disposable {
 	private _ws: WebSocket | null = null;
 	private _reqId = 0;
 	private _pending = new Map<number, { resolve: (v: any) => void; reject: (e: Error) => void }>();
-	private _onEvent = this._register(new Emitter<ExtHostMessage>());
+	private _onEvent = this._register(new Emitter<any>());
 	readonly onEvent = this._onEvent.event;
 
 	async connect(): Promise<void> {
@@ -145,9 +146,10 @@ export class TauriExtensionHostBridge extends Disposable implements IWorkbenchCo
 	}
 
 	private _registerProviders(conn: ExtHostConnection): void {
-		const selector: languages.LanguageSelector = { scheme: 'file' };
+		const selector: LanguageSelector = { scheme: 'file' };
 
 		this._register(this._langFeatures.completionProvider.register(selector, {
+			_debugDisplayName: 'TauriExtHostCompletion',
 			provideCompletionItems: async (model: ITextModel, position: Position, _context, token: CancellationToken) => {
 				if (token.isCancellationRequested) { return { suggestions: [] }; }
 				try {

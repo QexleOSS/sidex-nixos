@@ -65,7 +65,12 @@ export class Selection extends Range {
 	 */
 	public readonly positionColumn: number;
 
-	constructor(selectionStartLineNumber: number, selectionStartColumn: number, positionLineNumber: number, positionColumn: number) {
+	constructor(
+		selectionStartLineNumber: number,
+		selectionStartColumn: number,
+		positionLineNumber: number,
+		positionColumn: number
+	) {
 		super(selectionStartLineNumber, selectionStartColumn, positionLineNumber, positionColumn);
 		this.selectionStartLineNumber = selectionStartLineNumber;
 		this.selectionStartColumn = selectionStartColumn;
@@ -77,16 +82,24 @@ export class Selection extends Range {
 	 * Transform to a human-readable representation.
 	 */
 	public override toString(): string {
-		return '[' + this.selectionStartLineNumber + ',' + this.selectionStartColumn + ' -> ' + this.positionLineNumber + ',' + this.positionColumn + ']';
+		return (
+			'[' +
+			this.selectionStartLineNumber +
+			',' +
+			this.selectionStartColumn +
+			' -> ' +
+			this.positionLineNumber +
+			',' +
+			this.positionColumn +
+			']'
+		);
 	}
 
 	/**
 	 * Test if equals other selection.
 	 */
 	public equalsSelection(other: ISelection): boolean {
-		return (
-			Selection.selectionsEqual(this, other)
-		);
+		return Selection.selectionsEqual(this, other);
 	}
 
 	/**
@@ -130,7 +143,7 @@ export class Selection extends Range {
 
 	/**
 	 * Get the position at the start of the selection.
-	*/
+	 */
 	public getSelectionStart(): Position {
 		return new Position(this.selectionStartLineNumber, this.selectionStartColumn);
 	}
@@ -169,14 +182,19 @@ export class Selection extends Range {
 	 * Create a `Selection` from an `ISelection`.
 	 */
 	public static liftSelection(sel: ISelection): Selection {
-		return new Selection(sel.selectionStartLineNumber, sel.selectionStartColumn, sel.positionLineNumber, sel.positionColumn);
+		return new Selection(
+			sel.selectionStartLineNumber,
+			sel.selectionStartColumn,
+			sel.positionLineNumber,
+			sel.positionColumn
+		);
 	}
 
 	/**
 	 * `a` equals `b`.
 	 */
 	public static selectionsArrEqual(a: ISelection[], b: ISelection[]): boolean {
-		if (a && !b || !a && b) {
+		if ((a && !b) || (!a && b)) {
 			return false;
 		}
 		if (!a && !b) {
@@ -198,19 +216,24 @@ export class Selection extends Range {
 	 */
 	public static isISelection(obj: unknown): obj is ISelection {
 		return (
-			!!obj
-			&& (typeof (obj as ISelection).selectionStartLineNumber === 'number')
-			&& (typeof (obj as ISelection).selectionStartColumn === 'number')
-			&& (typeof (obj as ISelection).positionLineNumber === 'number')
-			&& (typeof (obj as ISelection).positionColumn === 'number')
+			!!obj &&
+			typeof (obj as ISelection).selectionStartLineNumber === 'number' &&
+			typeof (obj as ISelection).selectionStartColumn === 'number' &&
+			typeof (obj as ISelection).positionLineNumber === 'number' &&
+			typeof (obj as ISelection).positionColumn === 'number'
 		);
 	}
 
 	/**
 	 * Create with a direction.
 	 */
-	public static createWithDirection(startLineNumber: number, startColumn: number, endLineNumber: number, endColumn: number, direction: SelectionDirection): Selection {
-
+	public static createWithDirection(
+		startLineNumber: number,
+		startColumn: number,
+		endLineNumber: number,
+		endColumn: number,
+		direction: SelectionDirection
+	): Selection {
 		if (direction === SelectionDirection.LTR) {
 			return new Selection(startLineNumber, startColumn, endLineNumber, endColumn);
 		}

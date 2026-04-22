@@ -16,7 +16,6 @@ import './media/quickInput.css';
 const $ = dom.$;
 
 export class QuickInputBox extends Disposable {
-
 	private container: HTMLElement;
 	private findInput: FindInput;
 	private _listFocusMode: boolean = false;
@@ -28,16 +27,15 @@ export class QuickInputBox extends Disposable {
 	) {
 		super();
 		this.container = dom.append(this.parent, $('.quick-input-box'));
-		this.findInput = this._register(new FindInput(
-			this.container,
-			undefined,
-			{
+		this.findInput = this._register(
+			new FindInput(this.container, undefined, {
 				label: '',
 				inputBoxStyles,
 				toggleStyles,
 				actionViewItemProvider: createToggleActionViewItemProvider(toggleStyles),
 				hideHoverOnValueChange: true
-			}));
+			})
+		);
 		// Don't set role="textbox" - the input element already has that implicit role
 		// Don't set aria-haspopup or aria-autocomplete by default - only add them when list is active
 	}
@@ -166,12 +164,26 @@ export class QuickInputBox extends Disposable {
 		if (decoration === Severity.Ignore) {
 			this.findInput.clearMessage();
 		} else {
-			this.findInput.showMessage({ type: decoration === Severity.Info ? MessageType.INFO : decoration === Severity.Warning ? MessageType.WARNING : MessageType.ERROR, content: '' });
+			this.findInput.showMessage({
+				type:
+					decoration === Severity.Info
+						? MessageType.INFO
+						: decoration === Severity.Warning
+							? MessageType.WARNING
+							: MessageType.ERROR,
+				content: ''
+			});
 		}
 	}
 
 	stylesForType(decoration: Severity) {
-		return this.findInput.inputBox.stylesForType(decoration === Severity.Info ? MessageType.INFO : decoration === Severity.Warning ? MessageType.WARNING : MessageType.ERROR);
+		return this.findInput.inputBox.stylesForType(
+			decoration === Severity.Info
+				? MessageType.INFO
+				: decoration === Severity.Warning
+					? MessageType.WARNING
+					: MessageType.ERROR
+		);
 	}
 
 	setFocus(): void {

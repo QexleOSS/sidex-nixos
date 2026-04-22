@@ -35,8 +35,6 @@ export class InstanceContext {
 }
 
 export class TerminalContextActionRunner extends ActionRunner {
-
-	// eslint-disable-next-line @typescript-eslint/naming-convention
 	protected override async runAction(action: IAction, context?: SingleOrMany<InstanceContext>): Promise<void> {
 		if (Array.isArray(context) && context.every(e => e instanceof InstanceContext)) {
 			// arg1: The (first) focused instance
@@ -48,7 +46,14 @@ export class TerminalContextActionRunner extends ActionRunner {
 	}
 }
 
-export function openContextMenu(targetWindow: Window, event: MouseEvent, contextInstances: SingleOrMany<ITerminalInstance> | undefined, menu: IMenu, contextMenuService: IContextMenuService, extraActions?: IAction[]): void {
+export function openContextMenu(
+	targetWindow: Window,
+	event: MouseEvent,
+	contextInstances: SingleOrMany<ITerminalInstance> | undefined,
+	menu: IMenu,
+	contextMenuService: IContextMenuService,
+	extraActions?: IAction[]
+): void {
 	const standardEvent = new StandardMouseEvent(targetWindow, event);
 
 	const actions = getFlatContextMenuActions(menu.getActions({ shouldForwardArgs: true }));

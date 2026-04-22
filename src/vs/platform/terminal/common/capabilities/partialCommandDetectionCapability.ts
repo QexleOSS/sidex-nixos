@@ -24,7 +24,9 @@ export class PartialCommandDetectionCapability extends DisposableStore implement
 
 	private readonly _commands: IMarker[] = [];
 
-	get commands(): readonly IMarker[] { return this._commands; }
+	get commands(): readonly IMarker[] {
+		return this._commands;
+	}
 
 	private readonly _onCommandFinished = this.add(new Emitter<IMarker>());
 	readonly onCommandFinished = this._onCommandFinished.event;
@@ -35,13 +37,15 @@ export class PartialCommandDetectionCapability extends DisposableStore implement
 	) {
 		super();
 		this.add(this._terminal.onData(e => this._onData(e)));
-		this.add(this._terminal.parser.registerCsiHandler({ final: 'J' }, params => {
-			if (params.length >= 1 && (params[0] === 2 || params[0] === 3)) {
-				this._clearCommandsInViewport();
-			}
-			// We don't want to override xterm.js' default behavior, just augment it
-			return false;
-		}));
+		this.add(
+			this._terminal.parser.registerCsiHandler({ final: 'J' }, params => {
+				if (params.length >= 1 && (params[0] === 2 || params[0] === 3)) {
+					this._clearCommandsInViewport();
+				}
+				// We don't want to override xterm.js' default behavior, just augment it
+				return false;
+			})
+		);
 		if (this._onDidExecuteText) {
 			this.add(this._onDidExecuteText(() => this._onEnter()));
 		}

@@ -1,21 +1,29 @@
 mod commands;
 
-use commands::debug::DebugAdapterStore;
+use commands::db_state::SidexDbState;
+use commands::debug::{DapClientStore, DebugAdapterStore};
 use commands::ext_host::ExtensionPlatformSupervisor;
 use commands::extension_diagnostics::ExtensionDiagnosticsStore;
 use commands::extension_wasm::WasmExtensionRuntime;
 use commands::index::IndexStore;
 use commands::logging::LoggerStore;
+use commands::lsp::LspState;
 use commands::process::ProcessStore;
+use commands::remote::RemoteManagerStore;
+use commands::settings::SettingsStore;
 use commands::storage::StorageDb;
 use commands::tasks::TaskProcessStore;
 use commands::terminal::TerminalStore;
+use commands::updater::UpdateManagerState;
 use commands::watch::WatchStore;
 use commands::window::restore_and_show;
 use std::sync::Arc;
+#[cfg(target_os = "macos")]
 use tauri::menu::{Menu, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 use tauri::Manager;
 
+#[cfg(target_os = "macos")]
+#[allow(clippy::too_many_lines)]
 fn build_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let file_menu = SubmenuBuilder::new(app, "File")
         .item(
@@ -328,41 +336,22 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         .separator()
         .build()?;
 
-    #[cfg(target_os = "macos")]
-    let menu = {
-        let sidex_menu = SubmenuBuilder::new(app, "SideX")
-            .item(&PredefinedMenuItem::about(app, Some("About SideX"), None)?)
-            .separator()
-            .item(&PredefinedMenuItem::services(app, None)?)
-            .separator()
-            .item(&PredefinedMenuItem::hide(app, None)?)
-            .item(&PredefinedMenuItem::hide_others(app, None)?)
-            .item(&PredefinedMenuItem::show_all(app, None)?)
-            .separator()
-            .item(&PredefinedMenuItem::quit(app, None)?)
-            .build()?;
+    let sidex_menu = SubmenuBuilder::new(app, "SideX")
+        .item(&PredefinedMenuItem::about(app, Some("About SideX"), None)?)
+        .separator()
+        .item(&PredefinedMenuItem::services(app, None)?)
+        .separator()
+        .item(&PredefinedMenuItem::hide(app, None)?)
+        .item(&PredefinedMenuItem::hide_others(app, None)?)
+        .item(&PredefinedMenuItem::show_all(app, None)?)
+        .separator()
+        .item(&PredefinedMenuItem::quit(app, None)?)
+        .build()?;
 
-        Menu::with_items(
-            app,
-            &[
-                &sidex_menu,
-                &file_menu,
-                &edit_menu,
-                &selection_menu,
-                &view_menu,
-                &go_menu,
-                &run_menu,
-                &terminal_menu,
-                &window_menu,
-                &help_menu,
-            ],
-        )?
-    };
-
-    #[cfg(not(target_os = "macos"))]
     let menu = Menu::with_items(
         app,
         &[
+            &sidex_menu,
             &file_menu,
             &edit_menu,
             &selection_menu,
@@ -379,23 +368,78 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+#[allow(clippy::too_many_lines)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(UpdateManagerState::new())
+        .manage(Arc::new(commands::textmate::TextMateStore::new()))
+        .manage(Arc::new(commands::extensions::MarketplaceClientState::new()))
         .manage(Arc::new(TerminalStore::new()))
         .manage(Arc::new(ProcessStore::new()))
         .manage(Arc::new(DebugAdapterStore::new()))
+        .manage(Arc::new(DapClientStore::new()))
+        .manage(Arc::new(LspState::new()))
         .manage(Arc::new(TaskProcessStore::new()))
         .manage(Arc::new(WatchStore::new()))
         .manage(Arc::new(IndexStore::new(true)))
         .manage(Arc::new(LoggerStore::new()))
         .manage(ExtensionPlatformSupervisor::new())
         .manage(ExtensionDiagnosticsStore::new())
+        .manage(Arc::new(SettingsStore::new()))
+        .manage(Arc::new(sidex_extension_api::CommandRegistry::new()))
+        .manage(Arc::new(RemoteManagerStore::new()))
         .manage(Arc::new(
             WasmExtensionRuntime::new().expect("failed to initialize WASM runtime"),
         ))
+        .register_asynchronous_uri_scheme_protocol("sidex-asset", |_ctx, request, responder| {
+            std::thread::spawn(move || {
+                let raw_path = request.uri().path();
+                let decoded = urlencoding::decode(raw_path.strip_prefix('/').unwrap_or(raw_path))
+                    .unwrap_or_default();
+
+                let Ok(data) = std::fs::read(decoded.as_ref()) else {
+                    responder.respond(
+                        tauri::http::Response::builder()
+                            .status(404)
+                            .header("Access-Control-Allow-Origin", "*")
+                            .body(Vec::new())
+                            .unwrap(),
+                    );
+                    return;
+                };
+
+                let mime = match std::path::Path::new(decoded.as_ref())
+                    .extension()
+                    .and_then(|e| e.to_str())
+                {
+                    Some("png") => "image/png",
+                    Some("jpg" | "jpeg") => "image/jpeg",
+                    Some("gif") => "image/gif",
+                    Some("svg") => "image/svg+xml",
+                    Some("webp") => "image/webp",
+                    Some("ico") => "image/x-icon",
+                    Some("woff") => "font/woff",
+                    Some("woff2") => "font/woff2",
+                    Some("ttf") => "font/ttf",
+                    Some("css") => "text/css",
+                    Some("js") => "text/javascript",
+                    Some("json") => "application/json",
+                    Some("wasm") => "application/wasm",
+                    _ => "application/octet-stream",
+                };
+
+                responder.respond(
+                    tauri::http::Response::builder()
+                        .status(200)
+                        .header("Content-Type", mime)
+                        .header("Access-Control-Allow-Origin", "*")
+                        .body(data)
+                        .unwrap(),
+                );
+            });
+        })
         .setup(|app| {
             let app_data = app
                 .path()
@@ -410,11 +454,39 @@ pub fn run() {
 
             app.manage(Arc::new(db));
 
+            {
+                let settings_store = app.state::<Arc<SettingsStore>>();
+                let user_settings_path = app_data.join("UserData").join("User").join("settings.json");
+                if user_settings_path.exists() {
+                    if let Err(e) = settings_store.load_user(&user_settings_path) {
+                        log::warn!("failed to pre-load user settings: {e}");
+                    }
+                }
+            }
+
+            let sidex_db_path = app_data.join("sidex_state.db");
+            let sidex_db = sidex_db::Database::open(&sidex_db_path)
+                .expect("failed to initialize sidex-db state database");
+            app.manage(Arc::new(SidexDbState::new(sidex_db)));
+
             let process_store = app.state::<Arc<ProcessStore>>();
             process_store.set_app_handle(app.handle().clone());
 
-            let menu = build_menu(app.handle())?;
-            app.set_menu(menu)?;
+            if let Err(err) = commands::updater::initialize(app.handle()) {
+                log::warn!("update manager disabled: {err}");
+            }
+            if let Err(err) = commands::profiles::initialize(app.handle()) {
+                log::warn!("profile storage disabled: {err}");
+            }
+            if let Err(err) = commands::secrets::initialize(app.handle()) {
+                log::warn!("secret storage disabled: {err}");
+            }
+
+            #[cfg(target_os = "macos")]
+            {
+                let menu = build_menu(app.handle())?;
+                app.set_menu(menu)?;
+            }
 
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -423,15 +495,23 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            #[allow(unexpected_cfgs)]
+            {
+                #[cfg(feature = "devtools")]
+                if let Some(window) = app.get_webview_window("main") {
+                    window.open_devtools();
+                }
+            }
+
             Ok(())
         })
         .on_menu_event(|app, event| {
             let id = event.id().0.as_str();
             if let Some(window) = app.get_webview_window("main") {
                 let escaped = id.replace('\\', "\\\\").replace('\'', "\\'");
-                let _ = window.eval(&format!(
-                    "window.dispatchEvent(new CustomEvent('sidex-native-menu', {{ detail: '{}' }}))",
-                    escaped
+                let _ = window.eval(format!(
+                    "window.dispatchEvent(new CustomEvent('sidex-native-menu', {{ detail: '{escaped}' }}))"
                 ));
             }
         })
@@ -458,7 +538,7 @@ pub fn run() {
             // Text processing
             commands::count_lines,
             commands::file_summary,
-            commands::normalize_line_endings,
+            commands::normalize_line_endings_cmd,
             commands::to_crlf,
             commands::trim_trailing_whitespace,
             commands::ensure_final_newline,
@@ -510,26 +590,70 @@ pub fn run() {
             commands::get_available_shells,
             commands::get_shell_integration_dir,
             commands::setup_zsh_dotdir,
+            // sidex-terminal crate features
+            commands::terminal_detect_shell,
+            commands::terminal_get_profiles,
+            commands::terminal_find_in_buffer,
             commands::search_files,
             commands::search_text,
+            commands::search_workspace,
+            commands::search_workspace_grouped,
+            commands::search_workspace_replace_preview,
+            commands::search_workspace_replace_apply,
             commands::create_window,
             commands::close_window,
             commands::set_window_title,
             commands::get_monitors,
             commands::save_window_state,
+            commands::update_check,
+            commands::update_download,
+            commands::update_apply,
+            commands::update_cancel,
+            commands::update_state,
+            commands::update_cleanup,
+            commands::update_quit_and_install,
+            commands::profiles_load,
+            commands::profiles_save,
+            commands::profiles_load_associations,
+            commands::profiles_save_associations,
+            commands::secret_get,
+            commands::secret_set,
+            commands::secret_delete,
+            commands::secret_keys,
+            commands::textmate_load_grammar,
+            commands::textmate_update_theme,
+            commands::textmate_tokenize_line,
+		commands::textmate_tokenize_line_binary,
+            commands::textmate_tokenize_document,
+            commands::textmate_release_stack,
             commands::get_os_info,
             commands::get_env,
             commands::get_all_env,
             commands::get_shell,
+            commands::get_user_data_dir,
             commands::storage_get,
             commands::storage_set,
             commands::storage_delete,
+            // sidex-db state persistence
+            commands::db_get_recent_files,
+            commands::db_get_recent_workspaces,
+            commands::db_save_workspace_state,
+            commands::db_get_workspace_state,
+            // Layered settings
+            commands::settings_get,
+            commands::settings_update,
+            commands::settings_load,
+            commands::settings_parse_jsonc,
+            commands::settings_modify_jsonc,
             commands::git_status,
             commands::git_diff,
             commands::git_log,
             commands::git_add,
             commands::git_commit,
             commands::git_checkout,
+            commands::git_restore,
+            commands::git_clean,
+            commands::git_checkout_file,
             commands::git_branches,
             commands::git_init,
             commands::git_is_repo,
@@ -545,6 +669,27 @@ pub fn run() {
             commands::git_show,
             commands::git_run,
             commands::git_log_graph,
+            commands::git_blame,
+            commands::git_cherry_pick,
+            commands::git_delete_branch_force,
+            commands::git_fetch_all,
+            commands::git_get_config,
+            commands::git_get_remotes,
+            commands::git_list_branches,
+            commands::git_list_submodules,
+            commands::git_list_tags,
+            commands::git_merge,
+            commands::git_pull_detailed,
+            commands::git_push_detailed,
+            commands::git_rebase,
+            commands::git_rename_branch,
+            commands::git_set_config,
+            commands::git_stash_apply,
+            commands::git_stash_drop_index,
+            commands::git_stash_list_parsed,
+            commands::git_submodule_init,
+            commands::git_submodule_update,
+            commands::git_tag,
             commands::extension_platform_bootstrap,
             commands::extension_platform_status,
             commands::extension_platform_restart,
@@ -553,13 +698,26 @@ pub fn run() {
             commands::fetch_url,
             commands::fetch_url_text,
             commands::proxy_request,
+            commands::proxy_request_full,
+            commands::clipboard_read_text,
+            commands::clipboard_write_text,
+            commands::open_external_url,
+            commands::env_shell,
+            commands::env_app_host,
             commands::debug_spawn_adapter,
             commands::debug_send,
             commands::debug_kill,
             commands::debug_list_adapters,
+            commands::dap_get_launch_configs,
+            commands::dap_get_adapter_registry,
+            commands::dap_start_adapter,
+            commands::dap_send_request,
+            commands::dap_stop_adapter,
             commands::task_spawn,
             commands::task_kill,
             commands::task_list,
+            commands::tasks_detect,
+            commands::tasks_parse_config,
             // File watching
             commands::watch_start,
             commands::watch_stop,
@@ -568,9 +726,13 @@ pub fn run() {
             commands::watch_is_active,
             // Extensions
             commands::install_extension,
+            commands::install_extension_from_url,
             commands::uninstall_extension,
             commands::list_installed_extensions,
             commands::list_available_extensions,
+            // Marketplace & contributions (sidex-extensions)
+            commands::extension_search_marketplace,
+            commands::extension_get_contributions,
             // WASM extensions
             commands::wasm_load_extension,
             commands::wasm_unload_extension,
@@ -642,6 +804,49 @@ pub fn run() {
             commands::index_update,
             commands::index_stats,
             commands::index_clear,
+            // LSP management
+            commands::lsp_get_server_registry,
+            commands::lsp_get_supported_languages,
+            commands::lsp_start_server,
+            commands::lsp_send_request,
+            commands::lsp_stop_server,
+            commands::lsp_list_servers,
+            // Syntax / language info
+            commands::syntax_get_languages,
+            commands::syntax_detect_language,
+            commands::syntax_detect_from_content,
+            commands::syntax_get_language_config,
+            commands::syntax_tokenize,
+            commands::textmate_tokenize_lines,
+            // Theme management
+            commands::theme_list,
+            commands::theme_get,
+            commands::theme_get_default_dark,
+            commands::theme_get_default_light,
+            // Keymap
+            commands::keymap_get_defaults,
+            commands::keymap_resolve,
+            commands::keymap_resolve_chord,
+            commands::keymap_get_all,
+            // Editor intelligence
+            commands::editor_detect_colors,
+            commands::editor_compute_bracket_pairs,
+            commands::editor_compute_folding_ranges,
+            // Remote development
+		commands::remote_list_ssh_hosts,
+            commands::remote_list_wsl_distros,
+            commands::remote_list_containers,
+            commands::remote_connect_ssh,
+            commands::remote_connect_wsl,
+            commands::remote_connect_container,
+            commands::remote_connect_codespace,
+            commands::remote_exec_ssh,
+            commands::remote_codespaces_list,
+            commands::remote_disconnect,
+            commands::remote_active_connections,
+            // Extension API introspection
+            commands::ext_api_get_namespaces,
+            commands::ext_api_get_commands,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

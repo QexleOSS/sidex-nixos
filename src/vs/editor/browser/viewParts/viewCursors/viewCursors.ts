@@ -8,12 +8,19 @@ import { FastDomNode, createFastDomNode } from '../../../../base/browser/fastDom
 import { IntervalTimer, TimeoutTimer } from '../../../../base/common/async.js';
 import { ViewPart } from '../../view/viewPart.js';
 import { IViewCursorRenderData, ViewCursor, CursorPlurality } from './viewCursor.js';
-import { TextEditorCursorBlinkingStyle, TextEditorCursorStyle, EditorOption } from '../../../common/config/editorOptions.js';
+import {
+	TextEditorCursorBlinkingStyle,
+	TextEditorCursorStyle,
+	EditorOption
+} from '../../../common/config/editorOptions.js';
 import { Position } from '../../../common/core/position.js';
 import {
-	editorCursorBackground, editorCursorForeground,
-	editorMultiCursorPrimaryForeground, editorMultiCursorPrimaryBackground,
-	editorMultiCursorSecondaryForeground, editorMultiCursorSecondaryBackground
+	editorCursorBackground,
+	editorCursorForeground,
+	editorMultiCursorPrimaryForeground,
+	editorMultiCursorPrimaryBackground,
+	editorMultiCursorSecondaryForeground,
+	editorMultiCursorSecondaryBackground
 } from '../../../common/core/editorColorRegistry.js';
 import { RenderingContext, RestrictedRenderingContext } from '../../view/renderingContext.js';
 import { ViewContext } from '../../../common/viewModel/viewContext.js';
@@ -28,7 +35,6 @@ import { WindowIntervalTimer, getWindow } from '../../../../base/browser/dom.js'
  * any secondary cursors that are currently active.
  */
 export class ViewCursors extends ViewPart {
-
 	static readonly BLINK_INTERVAL = 500;
 
 	private _readOnly: boolean;
@@ -127,11 +133,14 @@ export class ViewCursors extends ViewPart {
 		}
 		return true;
 	}
-	private _onCursorPositionChanged(position: Position, secondaryPositions: Position[], reason: CursorChangeReason): void {
-		const pauseAnimation = (
-			this._secondaryCursors.length !== secondaryPositions.length
-			|| (this._cursorSmoothCaretAnimation === 'explicit' && reason !== CursorChangeReason.Explicit)
-		);
+	private _onCursorPositionChanged(
+		position: Position,
+		secondaryPositions: Position[],
+		reason: CursorChangeReason
+	): void {
+		const pauseAnimation =
+			this._secondaryCursors.length !== secondaryPositions.length ||
+			(this._cursorSmoothCaretAnimation === 'explicit' && reason !== CursorChangeReason.Explicit);
 		this._primaryCursor.setPlurality(secondaryPositions.length ? CursorPlurality.MultiPrimary : CursorPlurality.Single);
 		this._primaryCursor.onCursorPositionChanged(position, pauseAnimation);
 		this._updateBlinking();
@@ -141,7 +150,10 @@ export class ViewCursors extends ViewPart {
 			const addCnt = secondaryPositions.length - this._secondaryCursors.length;
 			for (let i = 0; i < addCnt; i++) {
 				const newCursor = new ViewCursor(this._context, CursorPlurality.MultiSecondary);
-				this._domNode.domNode.insertBefore(newCursor.getDomNode().domNode, this._primaryCursor.getDomNode().domNode.nextSibling);
+				this._domNode.domNode.insertBefore(
+					newCursor.getDomNode().domNode,
+					this._primaryCursor.getDomNode().domNode.nextSibling
+				);
 				this._secondaryCursors.push(newCursor);
 			}
 		} else if (this._secondaryCursors.length > secondaryPositions.length) {
@@ -156,7 +168,6 @@ export class ViewCursors extends ViewPart {
 		for (let i = 0; i < secondaryPositions.length; i++) {
 			this._secondaryCursors[i].onCursorPositionChanged(secondaryPositions[i], pauseAnimation);
 		}
-
 	}
 	public override onCursorStateChanged(e: viewEvents.ViewCursorStateChangedEvent): boolean {
 		const positions: Position[] = [];
@@ -246,8 +257,8 @@ export class ViewCursors extends ViewPart {
 		const blinkingStyle = this._getCursorBlinking();
 
 		// hidden and solid are special as they involve no animations
-		const isHidden = (blinkingStyle === TextEditorCursorBlinkingStyle.Hidden);
-		const isSolid = (blinkingStyle === TextEditorCursorBlinkingStyle.Solid);
+		const isHidden = blinkingStyle === TextEditorCursorBlinkingStyle.Hidden;
+		const isSolid = blinkingStyle === TextEditorCursorBlinkingStyle.Solid;
 
 		if (isHidden) {
 			this._hide();
@@ -261,13 +272,17 @@ export class ViewCursors extends ViewPart {
 		if (!isHidden && !isSolid) {
 			if (blinkingStyle === TextEditorCursorBlinkingStyle.Blink) {
 				// flat blinking is handled by JavaScript to save battery life due to Chromium step timing issue https://bugs.chromium.org/p/chromium/issues/detail?id=361587
-				this._cursorFlatBlinkInterval.cancelAndSet(() => {
-					if (this._isVisible) {
-						this._hide();
-					} else {
-						this._show();
-					}
-				}, ViewCursors.BLINK_INTERVAL, getWindow(this._domNode.domNode));
+				this._cursorFlatBlinkInterval.cancelAndSet(
+					() => {
+						if (this._isVisible) {
+							this._hide();
+						} else {
+							this._show();
+						}
+					},
+					ViewCursors.BLINK_INTERVAL,
+					getWindow(this._domNode.domNode)
+				);
 			} else {
 				this._startCursorBlinkAnimation.setIfNotSet(() => {
 					this._blinkingEnabled = true;
@@ -397,8 +412,16 @@ registerThemingParticipant((theme, collector) => {
 
 	const cursorThemes: CursorTheme[] = [
 		{ class: '.cursor', foreground: editorCursorForeground, background: editorCursorBackground },
-		{ class: '.cursor-primary', foreground: editorMultiCursorPrimaryForeground, background: editorMultiCursorPrimaryBackground },
-		{ class: '.cursor-secondary', foreground: editorMultiCursorSecondaryForeground, background: editorMultiCursorSecondaryBackground },
+		{
+			class: '.cursor-primary',
+			foreground: editorMultiCursorPrimaryForeground,
+			background: editorMultiCursorPrimaryBackground
+		},
+		{
+			class: '.cursor-secondary',
+			foreground: editorMultiCursorSecondaryForeground,
+			background: editorMultiCursorSecondaryBackground
+		}
 	];
 
 	for (const cursorTheme of cursorThemes) {
@@ -408,9 +431,13 @@ registerThemingParticipant((theme, collector) => {
 			if (!caretBackground) {
 				caretBackground = caret.opposite();
 			}
-			collector.addRule(`.monaco-editor .cursors-layer ${cursorTheme.class} { background-color: ${caret}; border-color: ${caret}; color: ${caretBackground}; }`);
+			collector.addRule(
+				`.monaco-editor .cursors-layer ${cursorTheme.class} { background-color: ${caret}; border-color: ${caret}; color: ${caretBackground}; }`
+			);
 			if (isHighContrast(theme.type)) {
-				collector.addRule(`.monaco-editor .cursors-layer.has-selection ${cursorTheme.class} { border-left: 1px solid ${caretBackground}; border-right: 1px solid ${caretBackground}; }`);
+				collector.addRule(
+					`.monaco-editor .cursors-layer.has-selection ${cursorTheme.class} { border-left: 1px solid ${caretBackground}; border-right: 1px solid ${caretBackground}; }`
+				);
 			}
 		}
 	}

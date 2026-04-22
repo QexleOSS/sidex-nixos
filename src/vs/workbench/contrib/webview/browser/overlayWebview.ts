@@ -12,19 +12,38 @@ import { Disposable, DisposableStore, MutableDisposable } from '../../../../base
 import { autorun, observableValue } from '../../../../base/common/observable.js';
 import { URI } from '../../../../base/common/uri.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
-import { IContextKey, IContextKeyService, IScopedContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import {
+	IContextKey,
+	IContextKeyService,
+	IScopedContextKeyService
+} from '../../../../platform/contextkey/common/contextkey.js';
 import { ExtensionIdentifier } from '../../../../platform/extensions/common/extensions.js';
 import { IWorkbenchLayoutService } from '../../../services/layout/browser/layoutService.js';
 import { IEditorGroupsService } from '../../../services/editor/common/editorGroupsService.js';
-import { IOverlayWebview, IWebview, IWebviewElement, IWebviewService, KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_ENABLED, KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_VISIBLE, WebviewContentOptions, WebviewExtensionDescription, WebviewInitInfo, WebviewMessageReceivedEvent, WebviewOptions } from './webview.js';
+import {
+	IOverlayWebview,
+	IWebview,
+	IWebviewElement,
+	IWebviewService,
+	KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_ENABLED,
+	KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_VISIBLE,
+	WebviewContentOptions,
+	WebviewExtensionDescription,
+	WebviewInitInfo,
+	WebviewMessageReceivedEvent,
+	WebviewOptions
+} from './webview.js';
 
 /**
  * Webview that is absolutely positioned over another element and that can creates and destroys an underlying webview as needed.
  */
 export class OverlayWebview extends Disposable implements IOverlayWebview {
-
 	private _isFirstLoad = true;
-	private readonly _firstLoadPendingMessages = new Set<{ readonly message: unknown; readonly transfer?: readonly ArrayBuffer[]; readonly resolve: (value: boolean) => void }>();
+	private readonly _firstLoadPendingMessages = new Set<{
+		readonly message: unknown;
+		readonly transfer?: readonly ArrayBuffer[];
+		readonly resolve: (value: boolean) => void;
+	}>();
 	private readonly _webview = this._register(new MutableDisposable<IWebviewElement>());
 	private readonly _webviewEvents = this._register(new DisposableStore());
 
@@ -40,7 +59,9 @@ export class OverlayWebview extends Disposable implements IOverlayWebview {
 	private _owner: unknown = undefined;
 
 	private _windowId: number | undefined = undefined;
-	private get window() { return getWindowById(this._windowId, true).window; }
+	private get window() {
+		return getWindowById(this._windowId, true).window;
+	}
 
 	private readonly _scopedContextKeyService = this._register(new MutableDisposable<IScopedContextKeyService>());
 	private _findWidgetVisible: IContextKey<boolean> | undefined;
@@ -58,7 +79,7 @@ export class OverlayWebview extends Disposable implements IOverlayWebview {
 		@IWorkbenchLayoutService private readonly _layoutService: IWorkbenchLayoutService,
 		@IWebviewService private readonly _webviewService: IWebviewService,
 		@IContextKeyService private readonly _baseContextKeyService: IContextKeyService,
-		@IEditorGroupsService private readonly _editorGroupsService: IEditorGroupsService,
+		@IEditorGroupsService private readonly _editorGroupsService: IEditorGroupsService
 	) {
 		super();
 
@@ -145,7 +166,7 @@ export class OverlayWebview extends Disposable implements IOverlayWebview {
 		this._show(targetWindow);
 
 		if (oldOwner !== owner) {
-			const contextKeyService = (scopedContextKeyService || this._baseContextKeyService);
+			const contextKeyService = scopedContextKeyService || this._baseContextKeyService;
 
 			// Explicitly clear before creating the new context.
 			// Otherwise we create the new context while the old one is still around
@@ -237,7 +258,7 @@ export class OverlayWebview extends Disposable implements IOverlayWebview {
 				title: this._title,
 				options: this._options,
 				contentOptions: this._contentOptions,
-				extension: this.extension,
+				extension: this.extension
 			});
 			this._webview.value = webview;
 			webview.state = this._state;
@@ -260,26 +281,60 @@ export class OverlayWebview extends Disposable implements IOverlayWebview {
 
 			// Forward events from inner webview to outer listeners
 			this._webviewEvents.clear();
-			this._webviewEvents.add(webview.onDidFocus(() => { this._onDidFocus.fire(); }));
-			this._webviewEvents.add(webview.onDidBlur(() => { this._onDidBlur.fire(); }));
-			this._webviewEvents.add(webview.onDidClickLink(x => { this._onDidClickLink.fire(x); }));
-			this._webviewEvents.add(webview.onMessage(x => { this._onMessage.fire(x); }));
-			this._webviewEvents.add(webview.onMissingCsp(x => { this._onMissingCsp.fire(x); }));
-			this._webviewEvents.add(webview.onDidWheel(x => { this._onDidWheel.fire(x); }));
-			this._webviewEvents.add(webview.onFatalError(x => { this._onFatalError.fire(x); }));
-			this._webviewEvents.add(autorun(reader => {
-				this.intrinsicContentSize.set(reader.readObservable(webview.intrinsicContentSize), undefined, undefined);
-			}));
+			this._webviewEvents.add(
+				webview.onDidFocus(() => {
+					this._onDidFocus.fire();
+				})
+			);
+			this._webviewEvents.add(
+				webview.onDidBlur(() => {
+					this._onDidBlur.fire();
+				})
+			);
+			this._webviewEvents.add(
+				webview.onDidClickLink(x => {
+					this._onDidClickLink.fire(x);
+				})
+			);
+			this._webviewEvents.add(
+				webview.onMessage(x => {
+					this._onMessage.fire(x);
+				})
+			);
+			this._webviewEvents.add(
+				webview.onMissingCsp(x => {
+					this._onMissingCsp.fire(x);
+				})
+			);
+			this._webviewEvents.add(
+				webview.onDidWheel(x => {
+					this._onDidWheel.fire(x);
+				})
+			);
+			this._webviewEvents.add(
+				webview.onFatalError(x => {
+					this._onFatalError.fire(x);
+				})
+			);
+			this._webviewEvents.add(
+				autorun(reader => {
+					this.intrinsicContentSize.set(reader.readObservable(webview.intrinsicContentSize), undefined, undefined);
+				})
+			);
 
-			this._webviewEvents.add(webview.onDidScroll(x => {
-				this._initialScrollProgress = x.scrollYPercentage;
-				this._onDidScroll.fire(x);
-			}));
+			this._webviewEvents.add(
+				webview.onDidScroll(x => {
+					this._initialScrollProgress = x.scrollYPercentage;
+					this._onDidScroll.fire(x);
+				})
+			);
 
-			this._webviewEvents.add(webview.onDidUpdateState(state => {
-				this._state = state;
-				this._onDidUpdateState.fire(state);
-			}));
+			this._webviewEvents.add(
+				webview.onDidUpdateState(state => {
+					this._state = state;
+					this._onDidUpdateState.fire(state);
+				})
+			);
 
 			if (this._isFirstLoad) {
 				this._firstLoadPendingMessages.forEach(async msg => {
@@ -310,35 +365,47 @@ export class OverlayWebview extends Disposable implements IOverlayWebview {
 		this._withWebview(webview => webview.setTitle(title));
 	}
 
-	public get initialScrollProgress(): number { return this._initialScrollProgress; }
+	public get initialScrollProgress(): number {
+		return this._initialScrollProgress;
+	}
 	public set initialScrollProgress(value: number) {
 		this._initialScrollProgress = value;
-		this._withWebview(webview => webview.initialScrollProgress = value);
+		this._withWebview(webview => (webview.initialScrollProgress = value));
 	}
 
-	public get state(): string | undefined { return this._state; }
+	public get state(): string | undefined {
+		return this._state;
+	}
 	public set state(value: string | undefined) {
 		this._state = value;
-		this._withWebview(webview => webview.state = value);
+		this._withWebview(webview => (webview.state = value));
 	}
 
-	public get extension(): WebviewExtensionDescription | undefined { return this._extension; }
+	public get extension(): WebviewExtensionDescription | undefined {
+		return this._extension;
+	}
 	public set extension(value: WebviewExtensionDescription | undefined) {
 		this._extension = value;
-		this._withWebview(webview => webview.extension = value);
+		this._withWebview(webview => (webview.extension = value));
 	}
 
-	public get options(): WebviewOptions { return this._options; }
-	public set options(value: WebviewOptions) { this._options = { customClasses: this._options.customClasses, ...value }; }
+	public get options(): WebviewOptions {
+		return this._options;
+	}
+	public set options(value: WebviewOptions) {
+		this._options = { customClasses: this._options.customClasses, ...value };
+	}
 
-	public get contentOptions(): WebviewContentOptions { return this._contentOptions; }
+	public get contentOptions(): WebviewContentOptions {
+		return this._contentOptions;
+	}
 	public set contentOptions(value: WebviewContentOptions) {
 		this._contentOptions = value;
-		this._withWebview(webview => webview.contentOptions = value);
+		this._withWebview(webview => (webview.contentOptions = value));
 	}
 
 	public set localResourcesRoot(resources: URI[]) {
-		this._withWebview(webview => webview.localResourcesRoot = resources);
+		this._withWebview(webview => (webview.localResourcesRoot = resources));
 	}
 
 	private readonly _onDidFocus = this._register(new Emitter<void>());
@@ -368,7 +435,9 @@ export class OverlayWebview extends Disposable implements IOverlayWebview {
 	private readonly _onFatalError = this._register(new Emitter<{ readonly message: string }>());
 	public onFatalError = this._onFatalError.event;
 
-	public readonly intrinsicContentSize = observableValue<{ readonly width: number; readonly height: number } | undefined>('WebviewIntrinsicContentSize', undefined);
+	public readonly intrinsicContentSize = observableValue<
+		{ readonly width: number; readonly height: number } | undefined
+	>('WebviewIntrinsicContentSize', undefined);
 
 	public async postMessage(message: unknown, transfer?: readonly ArrayBuffer[]): Promise<boolean> {
 		if (this._webview.value) {
@@ -377,7 +446,7 @@ export class OverlayWebview extends Disposable implements IOverlayWebview {
 
 		if (this._isFirstLoad) {
 			let resolve: (x: boolean) => void;
-			const p = new Promise<boolean>(r => resolve = r);
+			const p = new Promise<boolean>(r => (resolve = r));
 			this._firstLoadPendingMessages.add({ message, transfer, resolve: resolve! });
 			return p;
 		}
@@ -385,14 +454,30 @@ export class OverlayWebview extends Disposable implements IOverlayWebview {
 		return false;
 	}
 
-	focus(): void { this._webview.value?.focus(); }
-	reload(): void { this._webview.value?.reload(); }
-	selectAll(): void { this._webview.value?.selectAll(); }
-	copy(): void { this._webview.value?.copy(); }
-	paste(): void { this._webview.value?.paste(); }
-	cut(): void { this._webview.value?.cut(); }
-	undo(): void { this._webview.value?.undo(); }
-	redo(): void { this._webview.value?.redo(); }
+	focus(): void {
+		this._webview.value?.focus();
+	}
+	reload(): void {
+		this._webview.value?.reload();
+	}
+	selectAll(): void {
+		this._webview.value?.selectAll();
+	}
+	copy(): void {
+		this._webview.value?.copy();
+	}
+	paste(): void {
+		this._webview.value?.paste();
+	}
+	cut(): void {
+		this._webview.value?.cut();
+	}
+	undo(): void {
+		this._webview.value?.undo();
+	}
+	redo(): void {
+		this._webview.value?.redo();
+	}
 
 	showFind(animated = true) {
 		if (this._webview.value) {
@@ -406,7 +491,9 @@ export class OverlayWebview extends Disposable implements IOverlayWebview {
 		this._webview.value?.hideFind(animated);
 	}
 
-	runFindAction(previous: boolean): void { this._webview.value?.runFindAction(previous); }
+	runFindAction(previous: boolean): void {
+		this._webview.value?.runFindAction(previous);
+	}
 
 	private _withWebview(f: (webview: IWebview) => void): void {
 		if (this._webview.value) {

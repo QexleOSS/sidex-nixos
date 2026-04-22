@@ -7,7 +7,6 @@ import { IEncryptionService, KnownStorageProvider } from '../../../../platform/e
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 
 export class EncryptionService implements IEncryptionService {
-
 	declare readonly _serviceBrand: undefined;
 
 	encrypt(value: string): Promise<string> {

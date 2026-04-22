@@ -19,7 +19,11 @@ export interface IMergeResult {
 	conflicts: string[];
 }
 
-export function merge(local: IStringDictionary<string>, remote: IStringDictionary<string> | null, base: IStringDictionary<string> | null): IMergeResult {
+export function merge(
+	local: IStringDictionary<string>,
+	remote: IStringDictionary<string> | null,
+	base: IStringDictionary<string> | null
+): IMergeResult {
 	const localAdded: IStringDictionary<string> = {};
 	const localUpdated: IStringDictionary<string> = {};
 	const localRemoved: Set<string> = new Set<string>();
@@ -146,15 +150,28 @@ export function merge(local: IStringDictionary<string>, remote: IStringDictionar
 	return {
 		local: { added: localAdded, removed: [...localRemoved.values()], updated: localUpdated },
 		remote: { added: remoteAdded, removed: [...remoteRemoved.values()], updated: remoteUpdated },
-		conflicts: [...conflicts.values()],
+		conflicts: [...conflicts.values()]
 	};
 }
 
-function compare(from: IStringDictionary<string> | null, to: IStringDictionary<string> | null): { added: Set<string>; removed: Set<string>; updated: Set<string> } {
+function compare(
+	from: IStringDictionary<string> | null,
+	to: IStringDictionary<string> | null
+): { added: Set<string>; removed: Set<string>; updated: Set<string> } {
 	const fromKeys = from ? Object.keys(from) : [];
 	const toKeys = to ? Object.keys(to) : [];
-	const added = toKeys.filter(key => !fromKeys.includes(key)).reduce((r, key) => { r.add(key); return r; }, new Set<string>());
-	const removed = fromKeys.filter(key => !toKeys.includes(key)).reduce((r, key) => { r.add(key); return r; }, new Set<string>());
+	const added = toKeys
+		.filter(key => !fromKeys.includes(key))
+		.reduce((r, key) => {
+			r.add(key);
+			return r;
+		}, new Set<string>());
+	const removed = fromKeys
+		.filter(key => !toKeys.includes(key))
+		.reduce((r, key) => {
+			r.add(key);
+			return r;
+		}, new Set<string>());
 	const updated: Set<string> = new Set<string>();
 
 	for (const key of fromKeys) {

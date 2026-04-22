@@ -13,7 +13,9 @@ export interface IAccessibleViewInformationService {
 	hasShownAccessibleView(viewId: string): boolean;
 }
 
-export const IAccessibleViewInformationService = createDecorator<IAccessibleViewInformationService>('accessibleViewInformationService');
+export const IAccessibleViewInformationService = createDecorator<IAccessibleViewInformationService>(
+	'accessibleViewInformationService'
+);
 
 export class AccessibleViewInformationService extends Disposable implements IAccessibleViewInformationService {
 	declare readonly _serviceBrand: undefined;
@@ -21,6 +23,12 @@ export class AccessibleViewInformationService extends Disposable implements IAcc
 		super();
 	}
 	hasShownAccessibleView(viewId: string): boolean {
-		return this._storageService.getBoolean(`${ACCESSIBLE_VIEW_SHOWN_STORAGE_PREFIX}${viewId}`, StorageScope.APPLICATION, false) === true;
+		return (
+			this._storageService.getBoolean(
+				`${ACCESSIBLE_VIEW_SHOWN_STORAGE_PREFIX}${viewId}`,
+				StorageScope.APPLICATION,
+				false
+			) === true
+		);
 	}
 }

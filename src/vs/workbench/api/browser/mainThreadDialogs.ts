@@ -4,16 +4,24 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { URI } from '../../../base/common/uri.js';
-import { MainThreadDiaglogsShape, MainContext, MainThreadDialogOpenOptions, MainThreadDialogSaveOptions } from '../common/extHost.protocol.js';
+import {
+	MainThreadDiaglogsShape,
+	MainContext,
+	MainThreadDialogOpenOptions,
+	MainThreadDialogSaveOptions
+} from '../common/extHost.protocol.js';
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
-import { IFileDialogService, IOpenDialogOptions, ISaveDialogOptions } from '../../../platform/dialogs/common/dialogs.js';
+import {
+	IFileDialogService,
+	IOpenDialogOptions,
+	ISaveDialogOptions
+} from '../../../platform/dialogs/common/dialogs.js';
 
 @extHostNamedCustomer(MainContext.MainThreadDialogs)
 export class MainThreadDialogs implements MainThreadDiaglogsShape {
-
 	constructor(
 		context: IExtHostContext,
-		@IFileDialogService private readonly _fileDialogService: IFileDialogService,
+		@IFileDialogService private readonly _fileDialogService: IFileDialogService
 	) {
 		//
 	}

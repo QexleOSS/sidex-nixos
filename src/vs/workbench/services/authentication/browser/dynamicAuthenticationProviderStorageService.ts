@@ -5,7 +5,11 @@
 
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
-import { IDynamicAuthenticationProviderStorageService, DynamicAuthenticationProviderInfo, DynamicAuthenticationProviderTokensChangeEvent } from '../common/dynamicAuthenticationProviderStorage.js';
+import {
+	IDynamicAuthenticationProviderStorageService,
+	DynamicAuthenticationProviderInfo,
+	DynamicAuthenticationProviderTokensChangeEvent
+} from '../common/dynamicAuthenticationProviderStorage.js';
 import { ISecretStorageService } from '../../../../platform/secrets/common/secrets.js';
 import { IAuthorizationTokenResponse, isAuthorizationTokenResponse } from '../../../../base/common/oauth.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
@@ -13,7 +17,10 @@ import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { Queue } from '../../../../base/common/async.js';
 
-export class DynamicAuthenticationProviderStorageService extends Disposable implements IDynamicAuthenticationProviderStorageService {
+export class DynamicAuthenticationProviderStorageService
+	extends Disposable
+	implements IDynamicAuthenticationProviderStorageService
+{
 	declare readonly _serviceBrand: undefined;
 
 	private static readonly PROVIDERS_STORAGE_KEY = 'dynamicAuthProviders';
@@ -30,24 +37,26 @@ export class DynamicAuthenticationProviderStorageService extends Disposable impl
 
 		// Listen for secret storage changes and emit events for dynamic auth provider token changes
 		const queue = new Queue<void>();
-		this._register(this.secretStorageService.onDidChangeSecret(async (key: string) => {
-			let payload: { isDynamicAuthProvider: boolean; authProviderId: string; clientId: string } | undefined;
-			try {
-				payload = JSON.parse(key);
-			} catch (error) {
-				// Ignore errors... must not be a dynamic auth provider
-			}
-			if (payload?.isDynamicAuthProvider) {
-				void queue.queue(async () => {
-					const tokens = await this.getSessionsForDynamicAuthProvider(payload.authProviderId, payload.clientId);
-					this._onDidChangeTokens.fire({
-						authProviderId: payload.authProviderId,
-						clientId: payload.clientId,
-						tokens
+		this._register(
+			this.secretStorageService.onDidChangeSecret(async (key: string) => {
+				let payload: { isDynamicAuthProvider: boolean; authProviderId: string; clientId: string } | undefined;
+				try {
+					payload = JSON.parse(key);
+				} catch (error) {
+					// Ignore errors... must not be a dynamic auth provider
+				}
+				if (payload?.isDynamicAuthProvider) {
+					void queue.queue(async () => {
+						const tokens = await this.getSessionsForDynamicAuthProvider(payload.authProviderId, payload.clientId);
+						this._onDidChangeTokens.fire({
+							authProviderId: payload.authProviderId,
+							clientId: payload.clientId,
+							tokens
+						});
 					});
-				});
-			}
-		}));
+				}
+			})
+		);
 	}
 
 	async getClientRegistration(providerId: string): Promise<{ clientId?: string; clientSecret?: string } | undefined> {
@@ -78,7 +87,13 @@ export class DynamicAuthenticationProviderStorageService extends Disposable impl
 		return provider?.clientId;
 	}
 
-	async storeClientRegistration(providerId: string, authorizationServer: string, clientId: string, clientSecret?: string, label?: string): Promise<void> {
+	async storeClientRegistration(
+		providerId: string,
+		authorizationServer: string,
+		clientId: string,
+		clientSecret?: string,
+		label?: string
+	): Promise<void> {
 		// Store provider information for backward compatibility and UI display
 		this._trackProvider(providerId, authorizationServer, clientId, label);
 
@@ -118,7 +133,11 @@ export class DynamicAuthenticationProviderStorageService extends Disposable impl
 	}
 
 	private _getStoredProviders(): DynamicAuthenticationProviderInfo[] {
-		const stored = this.storageService.get(DynamicAuthenticationProviderStorageService.PROVIDERS_STORAGE_KEY, StorageScope.APPLICATION, '[]');
+		const stored = this.storageService.get(
+			DynamicAuthenticationProviderStorageService.PROVIDERS_STORAGE_KEY,
+			StorageScope.APPLICATION,
+			'[]'
+		);
 		try {
 			const providerInfos = JSON.parse(stored);
 			// MIGRATION: remove after an iteration or 2
@@ -157,7 +176,11 @@ export class DynamicAuthenticationProviderStorageService extends Disposable impl
 
 		// Remove sessions from secret storage if we have the provider info
 		if (providerInfo) {
-			const secretKey = JSON.stringify({ isDynamicAuthProvider: true, authProviderId: providerId, clientId: providerInfo.clientId });
+			const secretKey = JSON.stringify({
+				isDynamicAuthProvider: true,
+				authProviderId: providerId,
+				clientId: providerInfo.clientId
+			});
 			await this.secretStorageService.delete(secretKey);
 		}
 
@@ -166,12 +189,18 @@ export class DynamicAuthenticationProviderStorageService extends Disposable impl
 		await this.secretStorageService.delete(credentialsKey);
 	}
 
-	async getSessionsForDynamicAuthProvider(authProviderId: string, clientId: string): Promise<(IAuthorizationTokenResponse & { created_at: number })[] | undefined> {
+	async getSessionsForDynamicAuthProvider(
+		authProviderId: string,
+		clientId: string
+	): Promise<(IAuthorizationTokenResponse & { created_at: number })[] | undefined> {
 		const key = JSON.stringify({ isDynamicAuthProvider: true, authProviderId, clientId });
 		const value = await this.secretStorageService.get(key);
 		if (value) {
 			const parsed = JSON.parse(value);
-			if (!Array.isArray(parsed) || !parsed.every((t) => typeof t.created_at === 'number' && isAuthorizationTokenResponse(t))) {
+			if (
+				!Array.isArray(parsed) ||
+				!parsed.every(t => typeof t.created_at === 'number' && isAuthorizationTokenResponse(t))
+			) {
 				this.logService.error(`Invalid session data for ${authProviderId} (${clientId}) in secret storage:`, parsed);
 				await this.secretStorageService.delete(key);
 				return undefined;
@@ -181,7 +210,11 @@ export class DynamicAuthenticationProviderStorageService extends Disposable impl
 		return undefined;
 	}
 
-	async setSessionsForDynamicAuthProvider(authProviderId: string, clientId: string, sessions: (IAuthorizationTokenResponse & { created_at: number })[]): Promise<void> {
+	async setSessionsForDynamicAuthProvider(
+		authProviderId: string,
+		clientId: string,
+		sessions: (IAuthorizationTokenResponse & { created_at: number })[]
+	): Promise<void> {
 		const key = JSON.stringify({ isDynamicAuthProvider: true, authProviderId, clientId });
 		const value = JSON.stringify(sessions);
 		await this.secretStorageService.set(key, value);
@@ -189,4 +222,8 @@ export class DynamicAuthenticationProviderStorageService extends Disposable impl
 	}
 }
 
-registerSingleton(IDynamicAuthenticationProviderStorageService, DynamicAuthenticationProviderStorageService, InstantiationType.Delayed);
+registerSingleton(
+	IDynamicAuthenticationProviderStorageService,
+	DynamicAuthenticationProviderStorageService,
+	InstantiationType.Delayed
+);

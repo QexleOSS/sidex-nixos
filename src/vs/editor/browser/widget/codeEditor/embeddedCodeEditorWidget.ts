@@ -36,9 +36,23 @@ export class EmbeddedCodeEditorWidget extends CodeEditorWidget {
 		@IAccessibilityService accessibilityService: IAccessibilityService,
 		@ILanguageConfigurationService languageConfigurationService: ILanguageConfigurationService,
 		@ILanguageFeaturesService languageFeaturesService: ILanguageFeaturesService,
-		@IUserInteractionService userInteractionService: IUserInteractionService,
+		@IUserInteractionService userInteractionService: IUserInteractionService
 	) {
-		super(domElement, { ...parentEditor.getRawOptions(), overflowWidgetsDomNode: parentEditor.getOverflowWidgetsDomNode() }, codeEditorWidgetOptions, instantiationService, codeEditorService, commandService, contextKeyService, themeService, notificationService, accessibilityService, languageConfigurationService, languageFeaturesService, userInteractionService);
+		super(
+			domElement,
+			{ ...parentEditor.getRawOptions(), overflowWidgetsDomNode: parentEditor.getOverflowWidgetsDomNode() },
+			codeEditorWidgetOptions,
+			instantiationService,
+			codeEditorService,
+			commandService,
+			contextKeyService,
+			themeService,
+			notificationService,
+			accessibilityService,
+			languageConfigurationService,
+			languageFeaturesService,
+			userInteractionService
+		);
 
 		this._parentEditor = parentEditor;
 		this._overwriteOptions = options;
@@ -46,7 +60,9 @@ export class EmbeddedCodeEditorWidget extends CodeEditorWidget {
 		// Overwrite parent's options
 		super.updateOptions(this._overwriteOptions);
 
-		this._register(parentEditor.onDidChangeConfiguration((e: ConfigurationChangedEvent) => this._onParentConfigurationChanged(e)));
+		this._register(
+			parentEditor.onDidChangeConfiguration((e: ConfigurationChangedEvent) => this._onParentConfigurationChanged(e))
+		);
 	}
 
 	getParentEditor(): ICodeEditor {

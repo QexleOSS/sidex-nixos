@@ -7,23 +7,34 @@ import { Emitter, Event } from '../../../../../base/common/event.js';
 import { Disposable } from '../../../../../base/common/lifecycle.js';
 import { StopWatch } from '../../../../../base/common/stopwatch.js';
 import { LanguageId, TokenMetadata } from '../../../../../editor/common/encodedTokenAttributes.js';
-import { EncodedTokenizationResult, IBackgroundTokenizationStore, IBackgroundTokenizer, IState, ITokenizationSupport, TokenizationResult } from '../../../../../editor/common/languages.js';
+import {
+	EncodedTokenizationResult,
+	IBackgroundTokenizationStore,
+	IBackgroundTokenizer,
+	IState,
+	ITokenizationSupport,
+	TokenizationResult
+} from '../../../../../editor/common/languages.js';
 import { ITextModel } from '../../../../../editor/common/model.js';
 import type { IGrammar, StateStack } from 'vscode-textmate';
 
 export class TextMateTokenizationSupport extends Disposable implements ITokenizationSupport {
 	private readonly _seenLanguages: boolean[] = [];
 	private readonly _onDidEncounterLanguage: Emitter<LanguageId> = this._register(new Emitter<LanguageId>());
-	public get onDidEncounterLanguage(): Event<LanguageId> { return this._onDidEncounterLanguage.event; }
+	public get onDidEncounterLanguage(): Event<LanguageId> {
+		return this._onDidEncounterLanguage.event;
+	}
 
 	constructor(
 		private readonly _grammar: IGrammar,
 		private readonly _initialState: StateStack,
 		private readonly _containsEmbeddedLanguages: boolean,
-		private readonly _createBackgroundTokenizer: ((textModel: ITextModel, tokenStore: IBackgroundTokenizationStore) => IBackgroundTokenizer | undefined) | undefined,
+		private readonly _createBackgroundTokenizer:
+			| ((textModel: ITextModel, tokenStore: IBackgroundTokenizationStore) => IBackgroundTokenizer | undefined)
+			| undefined,
 		private readonly _backgroundTokenizerShouldOnlyVerifyTokens: () => boolean,
 		private readonly _reportTokenizationTime: (timeMs: number, lineLength: number, isRandomSample: boolean) => void,
-		private readonly _reportSlowTokenization: boolean,
+		private readonly _reportSlowTokenization: boolean
 	) {
 		super();
 	}
@@ -40,7 +51,10 @@ export class TextMateTokenizationSupport extends Disposable implements ITokeniza
 		throw new Error('Not supported!');
 	}
 
-	public createBackgroundTokenizer(textModel: ITextModel, store: IBackgroundTokenizationStore): IBackgroundTokenizer | undefined {
+	public createBackgroundTokenizer(
+		textModel: ITextModel,
+		store: IBackgroundTokenizationStore
+	): IBackgroundTokenizer | undefined {
 		if (this._createBackgroundTokenizer) {
 			return this._createBackgroundTokenizer(textModel, store);
 		}
@@ -70,7 +84,7 @@ export class TextMateTokenizationSupport extends Disposable implements ITokeniza
 			const tokens = textMateResult.tokens;
 
 			// Must check if any of the embedded languages was hit
-			for (let i = 0, len = (tokens.length >>> 1); i < len; i++) {
+			for (let i = 0, len = tokens.length >>> 1; i < len; i++) {
 				const metadata = tokens[(i << 1) + 1];
 				const languageId = TokenMetadata.getLanguageId(metadata);
 

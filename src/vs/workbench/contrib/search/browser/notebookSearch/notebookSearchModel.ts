@@ -10,33 +10,81 @@ import { IDisposable } from '../../../../../base/common/lifecycle.js';
 import { FindMatch } from '../../../../../editor/common/model.js';
 import { IModelService } from '../../../../../editor/common/services/model.js';
 import { ILabelService } from '../../../../../platform/label/common/label.js';
-import { ISearchRange, ITextSearchMatch, resultIsMatch, ITextSearchContext, IPatternInfo, ITextSearchPreviewOptions, IFileMatch } from '../../../../services/search/common/search.js';
+import {
+	ISearchRange,
+	ITextSearchMatch,
+	resultIsMatch,
+	ITextSearchContext,
+	IPatternInfo,
+	ITextSearchPreviewOptions,
+	IFileMatch
+} from '../../../../services/search/common/search.js';
 import { getTextSearchMatchWithModelContext } from '../../../../services/search/common/searchHelpers.js';
 import { FindMatchDecorationModel } from '../../../notebook/browser/contrib/find/findMatchDecorationModel.js';
 import { CellFindMatchModel } from '../../../notebook/browser/contrib/find/findModel.js';
-import { CellFindMatchWithIndex, CellWebviewFindMatch, ICellViewModel } from '../../../notebook/browser/notebookBrowser.js';
+import {
+	CellFindMatchWithIndex,
+	CellWebviewFindMatch,
+	ICellViewModel
+} from '../../../notebook/browser/notebookBrowser.js';
 import { NotebookEditorWidget } from '../../../notebook/browser/notebookEditorWidget.js';
 import { INotebookEditorService } from '../../../notebook/browser/services/notebookEditorService.js';
 import { NotebookCellsChangeType } from '../../../notebook/common/notebookCommon.js';
 import { CellSearchModel } from '../../common/cellSearchModel.js';
-import { INotebookCellMatchNoModel, isINotebookFileMatchNoModel, rawCellPrefix } from '../../common/searchNotebookHelpers.js';
-import { contentMatchesToTextSearchMatches, INotebookCellMatchWithModel, isINotebookCellMatchWithModel, isINotebookFileMatchWithModel, webviewMatchesToTextSearchMatches } from './searchNotebookHelpers.js';
-import { ISearchTreeMatch, ISearchTreeFolderMatch, ISearchTreeFolderMatchWorkspaceRoot, MATCH_PREFIX } from '../searchTreeModel/searchTreeCommon.js';
+import {
+	INotebookCellMatchNoModel,
+	isINotebookFileMatchNoModel,
+	rawCellPrefix
+} from '../../common/searchNotebookHelpers.js';
+import {
+	contentMatchesToTextSearchMatches,
+	INotebookCellMatchWithModel,
+	isINotebookCellMatchWithModel,
+	isINotebookFileMatchWithModel,
+	webviewMatchesToTextSearchMatches
+} from './searchNotebookHelpers.js';
+import {
+	ISearchTreeMatch,
+	ISearchTreeFolderMatch,
+	ISearchTreeFolderMatchWorkspaceRoot,
+	MATCH_PREFIX
+} from '../searchTreeModel/searchTreeCommon.js';
 import { IReplaceService } from '../replace.js';
 import { FileMatchImpl } from '../searchTreeModel/fileMatch.js';
-import { ICellMatch, IMatchInNotebook, INotebookFileInstanceMatch, isIMatchInNotebook } from './notebookSearchModelBase.js';
+import {
+	ICellMatch,
+	IMatchInNotebook,
+	INotebookFileInstanceMatch,
+	isIMatchInNotebook
+} from './notebookSearchModelBase.js';
 import { MatchImpl, textSearchResultToMatches } from '../searchTreeModel/match.js';
 
 export class MatchInNotebook extends MatchImpl implements IMatchInNotebook {
 	private _webviewIndex: number | undefined;
 
-	constructor(private readonly _cellParent: ICellMatch, _fullPreviewLines: string[], _fullPreviewRange: ISearchRange, _documentRange: ISearchRange, webviewIndex?: number) {
+	constructor(
+		private readonly _cellParent: ICellMatch,
+		_fullPreviewLines: string[],
+		_fullPreviewRange: ISearchRange,
+		_documentRange: ISearchRange,
+		webviewIndex?: number
+	) {
 		super(_cellParent.parent, _fullPreviewLines, _fullPreviewRange, _documentRange, false);
-		this._id = MATCH_PREFIX + this._parent.resource.toString() + '>' + this._cellParent.cellIndex + (webviewIndex ? '_' + webviewIndex : '') + '_' + this.notebookMatchTypeString() + this._range + this.getMatchString();
+		this._id =
+			MATCH_PREFIX +
+			this._parent.resource.toString() +
+			'>' +
+			this._cellParent.cellIndex +
+			(webviewIndex ? '_' + webviewIndex : '') +
+			'_' +
+			this.notebookMatchTypeString() +
+			this._range +
+			this.getMatchString();
 		this._webviewIndex = webviewIndex;
 	}
 
-	override parent(): INotebookFileInstanceMatch { // visible parent in search tree
+	override parent(): INotebookFileInstanceMatch {
+		// visible parent in search tree
 		return this._cellParent.parent;
 	}
 
@@ -53,7 +101,7 @@ export class MatchInNotebook extends MatchImpl implements IMatchInNotebook {
 	}
 
 	override get isReadonly(): boolean {
-		return super.isReadonly || (!this._cellParent.hasCellViewModel()) || this.isWebviewMatch();
+		return super.isReadonly || !this._cellParent.hasCellViewModel() || this.isWebviewMatch();
 	}
 
 	get cellIndex() {
@@ -77,9 +125,8 @@ export class CellMatch implements ICellMatch {
 	constructor(
 		private readonly _parent: INotebookFileInstanceMatch,
 		private _cell: ICellViewModel | undefined,
-		private readonly _cellIndex: number,
+		private readonly _cellIndex: number
 	) {
-
 		this._contentMatches = new Map<string, MatchInNotebook>();
 		this._webviewMatches = new Map<string, MatchInNotebook>();
 		this._context = new Map<number, string>();
@@ -94,7 +141,7 @@ export class CellMatch implements ICellMatch {
 	}
 
 	matches() {
-		return [...this._contentMatches.values(), ... this._webviewMatches.values()];
+		return [...this._contentMatches.values(), ...this._webviewMatches.values()];
 	}
 
 	get contentMatches(): MatchInNotebook[] {
@@ -122,7 +169,7 @@ export class CellMatch implements ICellMatch {
 
 	addContentMatches(textSearchMatches: ITextSearchMatch[]) {
 		const contentMatches = textSearchMatchesToNotebookMatches(textSearchMatches, this);
-		contentMatches.forEach((match) => {
+		contentMatches.forEach(match => {
 			this._contentMatches.set(match.id(), match);
 		});
 		this.addContext(textSearchMatches);
@@ -133,22 +180,30 @@ export class CellMatch implements ICellMatch {
 			// todo: get closed notebook results in search editor
 			return;
 		}
-		this.cell.resolveTextModel().then((textModel) => {
-			const textResultsWithContext = getTextSearchMatchWithModelContext(textSearchMatches, textModel, this.parent.parent().query!);
-			const contexts = textResultsWithContext.filter((result => !resultIsMatch(result)) as ((a: any) => a is ITextSearchContext));
-			contexts.map(context => ({ ...context, lineNumber: context.lineNumber + 1 }))
-				.forEach((context) => { this._context.set(context.lineNumber, context.text); });
+		this.cell.resolveTextModel().then(textModel => {
+			const textResultsWithContext = getTextSearchMatchWithModelContext(
+				textSearchMatches,
+				textModel,
+				this.parent.parent().query!
+			);
+			const contexts = textResultsWithContext.filter(
+				(result => !resultIsMatch(result)) as (a: any) => a is ITextSearchContext
+			);
+			contexts
+				.map(context => ({ ...context, lineNumber: context.lineNumber + 1 }))
+				.forEach(context => {
+					this._context.set(context.lineNumber, context.text);
+				});
 		});
 	}
 
 	addWebviewMatches(textSearchMatches: ITextSearchMatch[]) {
 		const webviewMatches = textSearchMatchesToNotebookMatches(textSearchMatches, this);
-		webviewMatches.forEach((match) => {
+		webviewMatches.forEach(match => {
 			this._webviewMatches.set(match.id(), match);
 		});
 		// TODO: add webview results to context
 	}
-
 
 	setCellModel(cell: ICellViewModel) {
 		this._cell = cell;
@@ -169,12 +224,9 @@ export class CellMatch implements ICellMatch {
 	get cell(): ICellViewModel | undefined {
 		return this._cell;
 	}
-
 }
 
 export class NotebookCompatibleFileMatch extends FileMatchImpl implements INotebookFileInstanceMatch {
-
-
 	private _notebookEditorWidget: NotebookEditorWidget | null = null;
 	private _editorWidgetListener: IDisposable | null = null;
 	private _notebookUpdateScheduler: RunOnceScheduler;
@@ -191,11 +243,23 @@ export class NotebookCompatibleFileMatch extends FileMatchImpl implements INoteb
 		@IModelService modelService: IModelService,
 		@IReplaceService replaceService: IReplaceService,
 		@ILabelService labelService: ILabelService,
-		@INotebookEditorService private readonly notebookEditorService: INotebookEditorService,
+		@INotebookEditorService private readonly notebookEditorService: INotebookEditorService
 	) {
-		super(_query, _previewOptions, _maxResults, _parent, rawMatch, _closestRoot, modelService, replaceService, labelService);
+		super(
+			_query,
+			_previewOptions,
+			_maxResults,
+			_parent,
+			rawMatch,
+			_closestRoot,
+			modelService,
+			replaceService,
+			labelService
+		);
 		this._cellMatches = new Map<string, ICellMatch>();
-		this._notebookUpdateScheduler = this._register(new RunOnceScheduler(this.updateMatchesForEditorWidget.bind(this), 250));
+		this._notebookUpdateScheduler = this._register(
+			new RunOnceScheduler(this.updateMatchesForEditorWidget.bind(this), 250)
+		);
 	}
 	private _cellMatches: Map<string, ICellMatch>;
 	public get cellContext(): Map<string, Map<number, string>> {
@@ -211,7 +275,11 @@ export class NotebookCompatibleFileMatch extends FileMatchImpl implements INoteb
 	}
 
 	addCellMatch(rawCell: INotebookCellMatchNoModel | INotebookCellMatchWithModel) {
-		const cellMatch = new CellMatch(this, isINotebookCellMatchWithModel(rawCell) ? rawCell.cell : undefined, rawCell.index);
+		const cellMatch = new CellMatch(
+			this,
+			isINotebookCellMatchWithModel(rawCell) ? rawCell.cell : undefined,
+			rawCell.index
+		);
 		this._cellMatches.set(cellMatch.id, cellMatch);
 		this.addWebviewMatchesToCell(cellMatch.id, rawCell.webviewResults);
 		this.addContentMatchesToCell(cellMatch.id, rawCell.contentResults);
@@ -248,7 +316,6 @@ export class NotebookCompatibleFileMatch extends FileMatchImpl implements INoteb
 		}
 	}
 
-
 	bindNotebookEditorWidget(widget: NotebookEditorWidget) {
 		if (this._notebookEditorWidget === widget) {
 			return;
@@ -256,12 +323,19 @@ export class NotebookCompatibleFileMatch extends FileMatchImpl implements INoteb
 
 		this._notebookEditorWidget = widget;
 
-		this._editorWidgetListener = this._notebookEditorWidget.textModel?.onDidChangeContent((e) => {
-			if (!e.rawEvents.some(event => event.kind === NotebookCellsChangeType.ChangeCellContent || event.kind === NotebookCellsChangeType.ModelChange)) {
-				return;
-			}
-			this._notebookUpdateScheduler.schedule();
-		}) ?? null;
+		this._editorWidgetListener =
+			this._notebookEditorWidget.textModel?.onDidChangeContent(e => {
+				if (
+					!e.rawEvents.some(
+						event =>
+							event.kind === NotebookCellsChangeType.ChangeCellContent ||
+							event.kind === NotebookCellsChangeType.ModelChange
+					)
+				) {
+					return;
+				}
+				this._notebookUpdateScheduler.schedule();
+			}) ?? null;
 		this._addNotebookHighlights();
 	}
 
@@ -333,7 +407,6 @@ export class NotebookCompatibleFileMatch extends FileMatchImpl implements INoteb
 			cell.addContentMatches(contentMatchesToTextSearchMatches(match.contentMatches, match.cell));
 			cell.addWebviewMatches(webviewMatchesToTextSearchMatches(match.webviewMatches));
 			this._cellMatches.set(cell.id, cell);
-
 		});
 
 		this._findMatchDecorationModel?.setAllFindMatchesDecorations(matches);
@@ -347,23 +420,27 @@ export class NotebookCompatibleFileMatch extends FileMatchImpl implements INoteb
 		if (!this._findMatchDecorationModel) {
 			return;
 		}
-		const cellFindMatch = coalesce(cells.map((cell): CellFindMatchModel | undefined => {
-			const webviewMatches: CellWebviewFindMatch[] = coalesce(cell.webviewMatches.map((match): CellWebviewFindMatch | undefined => {
-				if (!match.webviewIndex) {
+		const cellFindMatch = coalesce(
+			cells.map((cell): CellFindMatchModel | undefined => {
+				const webviewMatches: CellWebviewFindMatch[] = coalesce(
+					cell.webviewMatches.map((match): CellWebviewFindMatch | undefined => {
+						if (!match.webviewIndex) {
+							return undefined;
+						}
+						return {
+							index: match.webviewIndex
+						};
+					})
+				);
+				if (!cell.cell) {
 					return undefined;
 				}
-				return {
-					index: match.webviewIndex,
-				};
-			}));
-			if (!cell.cell) {
-				return undefined;
-			}
-			const findMatches: FindMatch[] = cell.contentMatches.map(match => {
-				return new FindMatch(match.range(), [match.text()]);
-			});
-			return new CellFindMatchModel(cell.cell, cell.cellIndex, findMatches, webviewMatches);
-		}));
+				const findMatches: FindMatch[] = cell.contentMatches.map(match => {
+					return new FindMatch(match.range(), [match.text()]);
+				});
+				return new CellFindMatchModel(cell.cell, cell.cellIndex, findMatches, webviewMatches);
+			})
+		);
 		try {
 			this._findMatchDecorationModel.setAllFindMatchesDecorations(cellFindMatch);
 		} catch (e) {
@@ -378,8 +455,9 @@ export class NotebookCompatibleFileMatch extends FileMatchImpl implements INoteb
 		this._textMatches = new Map<string, ISearchTreeMatch>();
 
 		const wordSeparators = this._query.isWordMatch && this._query.wordSeparators ? this._query.wordSeparators : null;
-		const allMatches = await this._notebookEditorWidget
-			.find(this._query.pattern, {
+		const allMatches = await this._notebookEditorWidget.find(
+			this._query.pattern,
+			{
 				regex: this._query.isRegExp,
 				wholeWord: this._query.isWordMatch,
 				caseSensitive: this._query.isCaseSensitive,
@@ -387,8 +465,13 @@ export class NotebookCompatibleFileMatch extends FileMatchImpl implements INoteb
 				includeMarkupInput: this._query.notebookInfo?.isInNotebookMarkdownInput,
 				includeMarkupPreview: this._query.notebookInfo?.isInNotebookMarkdownPreview,
 				includeCodeInput: this._query.notebookInfo?.isInNotebookCellInput,
-				includeOutput: this._query.notebookInfo?.isInNotebookCellOutput,
-			}, CancellationToken.None, false, true, this.searchInstanceID);
+				includeOutput: this._query.notebookInfo?.isInNotebookCellOutput
+			},
+			CancellationToken.None,
+			false,
+			true,
+			this.searchInstanceID
+		);
 
 		this.updateNotebookMatches(allMatches, true);
 	}
@@ -407,18 +490,19 @@ export class NotebookCompatibleFileMatch extends FileMatchImpl implements INoteb
 		if (match.webviewIndex === undefined) {
 			return this._findMatchDecorationModel.highlightCurrentFindMatchDecorationInCell(match.cell, match.range());
 		} else {
-			return this._findMatchDecorationModel.highlightCurrentFindMatchDecorationInWebview(match.cell, match.webviewIndex);
+			return this._findMatchDecorationModel.highlightCurrentFindMatchDecorationInWebview(
+				match.cell,
+				match.webviewIndex
+			);
 		}
 	}
 
-
 	override matches(): ISearchTreeMatch[] {
-		const matches = Array.from(this._cellMatches.values()).flatMap((e) => e.matches());
+		const matches = Array.from(this._cellMatches.values()).flatMap(e => e.matches());
 		return [...super.matches(), ...matches];
 	}
 
 	protected override removeMatch(match: ISearchTreeMatch) {
-
 		if (match instanceof MatchInNotebook) {
 			match.cellParent.remove(match);
 			if (match.cellParent.matches().length === 0) {
@@ -442,7 +526,6 @@ export class NotebookCompatibleFileMatch extends FileMatchImpl implements INoteb
 		return Array.from(this._cellMatches.values());
 	}
 
-
 	override createMatches(): void {
 		const model = this.modelService.getModel(this._resource);
 		if (model) {
@@ -456,12 +539,9 @@ export class NotebookCompatibleFileMatch extends FileMatchImpl implements INoteb
 				this.bindNotebookEditorWidget(notebookEditorWidgetBorrow.value);
 			}
 			if (this.rawMatch.results) {
-				this.rawMatch.results
-					.filter(resultIsMatch)
-					.forEach(rawMatch => {
-						textSearchResultToMatches(rawMatch, this, false)
-							.forEach(m => this.add(m));
-					});
+				this.rawMatch.results.filter(resultIsMatch).forEach(rawMatch => {
+					textSearchResultToMatches(rawMatch, this, false).forEach(m => this.add(m));
+				});
 			}
 
 			if (isINotebookFileMatchWithModel(this.rawMatch) || isINotebookFileMatchNoModel(this.rawMatch)) {
@@ -500,17 +580,25 @@ export class NotebookCompatibleFileMatch extends FileMatchImpl implements INoteb
 		this.unbindNotebookEditorWidget();
 		super.dispose();
 	}
-
 }
 // text search to notebook matches
 
-export function textSearchMatchesToNotebookMatches(textSearchMatches: ITextSearchMatch[], cell: CellMatch): MatchInNotebook[] {
+export function textSearchMatchesToNotebookMatches(
+	textSearchMatches: ITextSearchMatch[],
+	cell: CellMatch
+): MatchInNotebook[] {
 	const notebookMatches: MatchInNotebook[] = [];
-	textSearchMatches.forEach((textSearchMatch) => {
+	textSearchMatches.forEach(textSearchMatch => {
 		const previewLines = textSearchMatch.previewText.split('\n');
-		textSearchMatch.rangeLocations.map((rangeLocation) => {
+		textSearchMatch.rangeLocations.map(rangeLocation => {
 			const previewRange: ISearchRange = rangeLocation.preview;
-			const match = new MatchInNotebook(cell, previewLines, previewRange, rangeLocation.source, textSearchMatch.webviewIndex);
+			const match = new MatchInNotebook(
+				cell,
+				previewLines,
+				previewRange,
+				rangeLocation.source,
+				textSearchMatch.webviewIndex
+			);
 			notebookMatches.push(match);
 		});
 	});

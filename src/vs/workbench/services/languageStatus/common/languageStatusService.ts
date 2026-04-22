@@ -36,7 +36,6 @@ export interface ILanguageStatusProvider {
 export const ILanguageStatusService = createDecorator<ILanguageStatusService>('ILanguageStatusService');
 
 export interface ILanguageStatusService {
-
 	_serviceBrand: undefined;
 
 	readonly onDidChange: Event<void>;
@@ -46,9 +45,7 @@ export interface ILanguageStatusService {
 	getLanguageStatus(model: ITextModel): ILanguageStatus[];
 }
 
-
 class LanguageStatusServiceImpl implements ILanguageStatusService {
-
 	declare _serviceBrand: undefined;
 
 	private readonly _provider = new LanguageFeatureRegistry<ILanguageStatus>();

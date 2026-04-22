@@ -15,7 +15,6 @@ interface ITerminalMarkerData {
 }
 
 export class TaskProblemMonitor extends Disposable {
-
 	private readonly terminalMarkerMap: Map<number, ITerminalMarkerData> = new Map();
 	private readonly terminalDisposables = new DisposableMap<number>();
 
@@ -32,43 +31,49 @@ export class TaskProblemMonitor extends Disposable {
 		const store = new DisposableStore();
 		this.terminalDisposables.set(terminal.instanceId, store);
 
-		store.add(terminal.onDisposed(() => {
-			this.terminalMarkerMap.delete(terminal.instanceId);
-			this.terminalDisposables.deleteAndDispose(terminal.instanceId);
-		}));
+		store.add(
+			terminal.onDisposed(() => {
+				this.terminalMarkerMap.delete(terminal.instanceId);
+				this.terminalDisposables.deleteAndDispose(terminal.instanceId);
+			})
+		);
 
-		store.add(problemMatcher.onDidFindErrors((markers: ITaskMarker[]) => {
-			const markerData = this.terminalMarkerMap.get(terminal.instanceId);
-			if (markerData) {
-				// Clear existing markers for a new set, otherwise older compilation
-				// issues will be included
-				markerData.markers.clear();
-				markerData.resources.clear();
+		store.add(
+			problemMatcher.onDidFindErrors((markers: ITaskMarker[]) => {
+				const markerData = this.terminalMarkerMap.get(terminal.instanceId);
+				if (markerData) {
+					// Clear existing markers for a new set, otherwise older compilation
+					// issues will be included
+					markerData.markers.clear();
+					markerData.resources.clear();
 
-				for (const marker of markers) {
-					if (marker.severity === MarkerSeverity.Error) {
-						markerData.resources.set(marker.resource.toString(), marker.resource);
-						const markersForOwner = markerData.markers.get(marker.owner);
-						let markerMap = markersForOwner;
-						if (!markerMap) {
-							markerMap = new Map();
-							markerData.markers.set(marker.owner, markerMap);
+					for (const marker of markers) {
+						if (marker.severity === MarkerSeverity.Error) {
+							markerData.resources.set(marker.resource.toString(), marker.resource);
+							const markersForOwner = markerData.markers.get(marker.owner);
+							let markerMap = markersForOwner;
+							if (!markerMap) {
+								markerMap = new Map();
+								markerData.markers.set(marker.owner, markerMap);
+							}
+							markerMap.set(marker.resource.toString(), marker);
+							this.terminalMarkerMap.set(terminal.instanceId, markerData);
 						}
-						markerMap.set(marker.resource.toString(), marker);
-						this.terminalMarkerMap.set(terminal.instanceId, markerData);
 					}
 				}
-			}
-		}));
-		store.add(problemMatcher.onDidRequestInvalidateLastMarker(() => {
-			const markerData = this.terminalMarkerMap.get(terminal.instanceId);
-			markerData?.markers.clear();
-			markerData?.resources.clear();
-			this.terminalMarkerMap.set(terminal.instanceId, {
-				resources: new Map<string, URI>(),
-				markers: new Map<string, Map<string, IMarkerData>>()
-			});
-		}));
+			})
+		);
+		store.add(
+			problemMatcher.onDidRequestInvalidateLastMarker(() => {
+				const markerData = this.terminalMarkerMap.get(terminal.instanceId);
+				markerData?.markers.clear();
+				markerData?.resources.clear();
+				this.terminalMarkerMap.set(terminal.instanceId, {
+					resources: new Map<string, URI>(),
+					markers: new Map<string, Map<string, IMarkerData>>()
+				});
+			})
+		);
 	}
 
 	/**

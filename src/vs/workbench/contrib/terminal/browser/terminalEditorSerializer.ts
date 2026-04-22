@@ -7,15 +7,20 @@ import { isNumber, isObject } from '../../../../base/common/types.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IEditorSerializer } from '../../../common/editor.js';
 import { EditorInput } from '../../../common/editor/editorInput.js';
-import { ISerializedTerminalEditorInput, ITerminalEditorService, ITerminalInstance, type IDeserializedTerminalEditorInput } from './terminal.js';
+import {
+	ISerializedTerminalEditorInput,
+	ITerminalEditorService,
+	ITerminalInstance,
+	type IDeserializedTerminalEditorInput
+} from './terminal.js';
 import { TerminalEditorInput } from './terminalEditorInput.js';
 
 export class TerminalInputSerializer implements IEditorSerializer {
-	constructor(
-		@ITerminalEditorService private readonly _terminalEditorService: ITerminalEditorService
-	) { }
+	constructor(@ITerminalEditorService private readonly _terminalEditorService: ITerminalEditorService) {}
 
-	public canSerialize(editorInput: TerminalEditorInput): editorInput is TerminalEditorInput & { readonly terminalInstance: ITerminalInstance } {
+	public canSerialize(
+		editorInput: TerminalEditorInput
+	): editorInput is TerminalEditorInput & { readonly terminalInstance: ITerminalInstance } {
 		return isNumber(editorInput.terminalInstance?.persistentProcessId) && editorInput.terminalInstance.shouldPersist;
 	}
 
@@ -26,7 +31,10 @@ export class TerminalInputSerializer implements IEditorSerializer {
 		return JSON.stringify(this._toJson(editorInput.terminalInstance));
 	}
 
-	public deserialize(instantiationService: IInstantiationService, serializedEditorInput: string): EditorInput | undefined {
+	public deserialize(
+		instantiationService: IInstantiationService,
+		serializedEditorInput: string
+	): EditorInput | undefined {
 		const editorInput = JSON.parse(serializedEditorInput) as unknown;
 		if (!isDeserializedTerminalEditorInput(editorInput)) {
 			throw new Error(`Could not revive terminal editor input, ${editorInput}`);

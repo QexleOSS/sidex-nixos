@@ -11,6 +11,7 @@ const jsOutputPath = resolve(__dirname, '..', 'public', 'builtin-extensions.js')
 
 if (!existsSync(extensionsDir)) {
   console.error(`Extensions directory not found: ${extensionsDir}`);
+  console.error(`Run "npm run setup:full" or "bash scripts/setup-extensions.sh" to populate it first.`);
   process.exit(1);
 }
 

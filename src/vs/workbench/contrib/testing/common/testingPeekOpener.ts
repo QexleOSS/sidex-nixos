@@ -53,4 +53,3 @@ export interface ITestingPeekOpener {
 }
 
 export const ITestingPeekOpener = createDecorator<ITestingPeekOpener>('testingPeekOpener');
-

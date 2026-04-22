@@ -33,16 +33,20 @@ export class GlyphRasterizer extends Disposable implements IGlyphRasterizer {
 			left: 0,
 			bottom: 0,
 			right: 0,
-			top: 0,
+			top: 0
 		},
 		originOffset: {
 			x: 0,
-			y: 0,
+			y: 0
 		},
 		fontBoundingBoxAscent: 0,
-		fontBoundingBoxDescent: 0,
+		fontBoundingBoxDescent: 0
 	};
-	private _workGlyphConfig: { chars: string | undefined; tokenMetadata: number; decorationStyleSetId: number } = { chars: undefined, tokenMetadata: 0, decorationStyleSetId: 0 };
+	private _workGlyphConfig: { chars: string | undefined; tokenMetadata: number; decorationStyleSetId: number } = {
+		chars: undefined,
+		tokenMetadata: 0,
+		decorationStyleSetId: 0
+	};
 
 	// TODO: Support workbench.fontAliasing correctly
 	private _antiAliasing: 'subpixel' | 'greyscale' = isMacintosh ? 'greyscale' : 'subpixel';
@@ -51,16 +55,18 @@ export class GlyphRasterizer extends Disposable implements IGlyphRasterizer {
 		readonly fontSize: number,
 		readonly fontFamily: string,
 		readonly devicePixelRatio: number,
-		private readonly _decorationStyleCache: DecorationStyleCache,
+		private readonly _decorationStyleCache: DecorationStyleCache
 	) {
 		super();
 
 		const devicePixelFontSize = Math.ceil(this.fontSize * devicePixelRatio);
 		this._canvas = new OffscreenCanvas(devicePixelFontSize * 3, devicePixelFontSize * 3);
-		this._ctx = ensureNonNullable(this._canvas.getContext('2d', {
-			willReadFrequently: true,
-			alpha: this._antiAliasing === 'greyscale',
-		}));
+		this._ctx = ensureNonNullable(
+			this._canvas.getContext('2d', {
+				willReadFrequently: true,
+				alpha: this._antiAliasing === 'greyscale'
+			})
+		);
 		this._ctx.textBaseline = 'top';
 		this._ctx.fillStyle = '#FFFFFF';
 		this._ctx.font = `${devicePixelFontSize}px ${this.fontFamily}`;
@@ -75,7 +81,7 @@ export class GlyphRasterizer extends Disposable implements IGlyphRasterizer {
 		chars: string,
 		tokenMetadata: number,
 		decorationStyleSetId: number,
-		colorMap: string[],
+		colorMap: string[]
 	): Readonly<IRasterizedGlyph> {
 		if (chars === '') {
 			return {
@@ -83,13 +89,17 @@ export class GlyphRasterizer extends Disposable implements IGlyphRasterizer {
 				boundingBox: { top: 0, left: 0, bottom: -1, right: -1 },
 				originOffset: { x: 0, y: 0 },
 				fontBoundingBoxAscent: 0,
-				fontBoundingBoxDescent: 0,
+				fontBoundingBoxDescent: 0
 			};
 		}
 		// Check if the last glyph matches the config, reuse if so. This helps avoid unnecessary
 		// work when the rasterizer is called multiple times like when the glyph doesn't fit into a
 		// page.
-		if (this._workGlyphConfig.chars === chars && this._workGlyphConfig.tokenMetadata === tokenMetadata && this._workGlyphConfig.decorationStyleSetId === decorationStyleSetId) {
+		if (
+			this._workGlyphConfig.chars === chars &&
+			this._workGlyphConfig.tokenMetadata === tokenMetadata &&
+			this._workGlyphConfig.decorationStyleSetId === decorationStyleSetId
+		) {
 			return this._workGlyph;
 		}
 		this._workGlyphConfig.chars = chars;
@@ -102,7 +112,7 @@ export class GlyphRasterizer extends Disposable implements IGlyphRasterizer {
 		chars: string,
 		tokenMetadata: number,
 		decorationStyleSetId: number,
-		colorMap: string[],
+		colorMap: string[]
 	): Readonly<IRasterizedGlyph> {
 		const devicePixelFontSize = Math.ceil(this.fontSize * this.devicePixelRatio);
 		const canvasDim = devicePixelFontSize * 3;
@@ -178,16 +188,22 @@ export class GlyphRasterizer extends Disposable implements IGlyphRasterizer {
 			// Position strikethrough at approximately the vertical center of
 			// lowercase letters.
 			const strikethroughY = Math.round(originY - this._textMetrics.alphabeticBaseline * 0.65);
-			const lineWidth = decorationStyleSet?.strikethroughThickness !== undefined
-				? Math.round(decorationStyleSet.strikethroughThickness * this.devicePixelRatio)
-				: Math.max(1, Math.floor(devicePixelFontSize / 10));
+			const lineWidth =
+				decorationStyleSet?.strikethroughThickness !== undefined
+					? Math.round(decorationStyleSet.strikethroughThickness * this.devicePixelRatio)
+					: Math.max(1, Math.floor(devicePixelFontSize / 10));
 			// Apply strikethrough color if specified
 			if (decorationStyleSet?.strikethroughColor !== undefined) {
 				this._ctx.fillStyle = `#${decorationStyleSet.strikethroughColor.toString(16).padStart(8, '0')}`;
 			}
 			// Intentionally do not apply the sub pixel x offset to
 			// strikethrough to ensure successive glyphs form a contiguous line.
-			this._ctx.fillRect(originX, strikethroughY - Math.floor(lineWidth / 2), Math.ceil(this._textMetrics.width), lineWidth);
+			this._ctx.fillRect(
+				originX,
+				strikethroughY - Math.floor(lineWidth / 2),
+				Math.ceil(this._textMetrics.width),
+				lineWidth
+			);
 		}
 
 		this._ctx.restore();
@@ -254,17 +270,13 @@ export class GlyphRasterizer extends Disposable implements IGlyphRasterizer {
 		// 	debugger;
 		// }
 
-
-
 		return this._workGlyph;
 	}
 
 	private _clearColor(imageData: ImageData, r: number, g: number, b: number) {
 		for (let offset = 0; offset < imageData.data.length; offset += 4) {
 			// Check exact match
-			if (imageData.data[offset] === r &&
-				imageData.data[offset + 1] === g &&
-				imageData.data[offset + 2] === b) {
+			if (imageData.data[offset] === r && imageData.data[offset + 1] === g && imageData.data[offset + 2] === b) {
 				imageData.data[offset + 3] = 0;
 			}
 		}

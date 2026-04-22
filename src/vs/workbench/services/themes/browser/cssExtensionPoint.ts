@@ -31,13 +31,16 @@ interface ICSSCacheEntry {
 const cssExtensionPoint = ExtensionsRegistry.registerExtensionPoint<ICSSExtensionPoint[]>({
 	extensionPoint: 'css',
 	jsonSchema: {
-		description: nls.localize('contributes.css', "Contributes CSS files to be loaded in the workbench."),
+		description: nls.localize('contributes.css', 'Contributes CSS files to be loaded in the workbench.'),
 		type: 'array',
 		items: {
 			type: 'object',
 			properties: {
 				path: {
-					description: nls.localize('contributes.css.path', "Path to the CSS file. The path is relative to the extension folder."),
+					description: nls.localize(
+						'contributes.css.path',
+						'Path to the CSS file. The path is relative to the extension folder.'
+					),
 					type: 'string'
 				}
 			},
@@ -48,14 +51,13 @@ const cssExtensionPoint = ExtensionsRegistry.registerExtensionPoint<ICSSExtensio
 });
 
 class CSSFileWatcher implements IDisposable {
-
 	private readonly watchedLocations = new Map<string, { readonly uri: URI; readonly disposables: DisposableStore }>();
 
 	constructor(
 		private readonly fileService: IFileService,
 		private readonly environmentService: IBrowserWorkbenchEnvironmentService,
 		private readonly onUpdate: (uri: URI) => void
-	) { }
+	) {}
 
 	watch(uri: URI): void {
 		const key = uri.toString();
@@ -69,11 +71,13 @@ class CSSFileWatcher implements IDisposable {
 
 		const disposables = new DisposableStore();
 		disposables.add(this.fileService.watch(uri));
-		disposables.add(this.fileService.onDidFilesChange(e => {
-			if (e.contains(uri, FileChangeType.UPDATED)) {
-				this.onUpdate(uri);
-			}
-		}));
+		disposables.add(
+			this.fileService.onDidFilesChange(e => {
+				if (e.contains(uri, FileChangeType.UPDATED)) {
+					this.onUpdate(uri);
+				}
+			})
+		);
 		this.watchedLocations.set(key, { uri, disposables });
 	}
 
@@ -95,9 +99,11 @@ class CSSFileWatcher implements IDisposable {
 }
 
 export class CSSExtensionPoint {
-
 	private readonly disposables = new DisposableStore();
-	private readonly stylesheetsByExtension = new Map<string, { readonly uri: URI; readonly element: HTMLLinkElement; readonly disposables: DisposableStore }[]>();
+	private readonly stylesheetsByExtension = new Map<
+		string,
+		{ readonly uri: URI; readonly element: HTMLLinkElement; readonly disposables: DisposableStore }[]
+	>();
 	private readonly pendingExtensions = new Map<string, IExtensionPointUser<ICSSExtensionPoint[]>>();
 	private readonly watcher: CSSFileWatcher;
 
@@ -107,15 +113,19 @@ export class CSSExtensionPoint {
 		@IWorkbenchThemeService private readonly themeService: IWorkbenchThemeService,
 		@IStorageService private readonly storageService: IStorageService
 	) {
-		this.watcher = this.disposables.add(new CSSFileWatcher(fileService, environmentService, uri => this.reloadStylesheet(uri)));
-		this.disposables.add(toDisposable(() => {
-			for (const entries of this.stylesheetsByExtension.values()) {
-				for (const entry of entries) {
-					entry.disposables.dispose();
+		this.watcher = this.disposables.add(
+			new CSSFileWatcher(fileService, environmentService, uri => this.reloadStylesheet(uri))
+		);
+		this.disposables.add(
+			toDisposable(() => {
+				for (const entries of this.stylesheetsByExtension.values()) {
+					for (const entry of entries) {
+						entry.disposables.dispose();
+					}
 				}
-			}
-			this.stylesheetsByExtension.clear();
-		}));
+				this.stylesheetsByExtension.clear();
+			})
+		);
 
 		// Apply cached CSS immediately on startup if a theme from the cached extension is active
 		this.applyCachedCSS();
@@ -171,9 +181,16 @@ export class CSSExtensionPoint {
 		const fileIconTheme = this.themeService.getFileIconTheme();
 		const productIconTheme = this.themeService.getProductIconTheme();
 
-		return !!(colorTheme.extensionData && ExtensionIdentifier.equals(colorTheme.extensionData.extensionId, extensionId)) ||
-			!!(fileIconTheme.extensionData && ExtensionIdentifier.equals(fileIconTheme.extensionData.extensionId, extensionId)) ||
-			!!(productIconTheme.extensionData && ExtensionIdentifier.equals(productIconTheme.extensionData.extensionId, extensionId));
+		return (
+			!!(colorTheme.extensionData && ExtensionIdentifier.equals(colorTheme.extensionData.extensionId, extensionId)) ||
+			!!(
+				fileIconTheme.extensionData && ExtensionIdentifier.equals(fileIconTheme.extensionData.extensionId, extensionId)
+			) ||
+			!!(
+				productIconTheme.extensionData &&
+				ExtensionIdentifier.equals(productIconTheme.extensionData.extensionId, extensionId)
+			)
+		);
 	}
 
 	private onThemeChange(): void {
@@ -206,7 +223,8 @@ export class CSSExtensionPoint {
 		const extensionValue = extension.value;
 		const collector = extension.collector;
 
-		const entries: { readonly uri: URI; readonly element: HTMLLinkElement; readonly disposables: DisposableStore }[] = [];
+		const entries: { readonly uri: URI; readonly element: HTMLLinkElement; readonly disposables: DisposableStore }[] =
+			[];
 		const cssLocations: string[] = [];
 
 		for (const cssContribution of extensionValue) {
@@ -219,7 +237,14 @@ export class CSSExtensionPoint {
 
 			// Validate that the CSS file is within the extension folder
 			if (!resources.isEqualOrParent(cssLocation, extensionLocation)) {
-				collector.warn(nls.localize('invalid.css.path.location', "Expected 'contributes.css.path' ({0}) to be included inside extension's folder ({1}).", cssLocation.path, extensionLocation.path));
+				collector.warn(
+					nls.localize(
+						'invalid.css.path.location',
+						"Expected 'contributes.css.path' ({0}) to be included inside extension's folder ({1}).",
+						cssLocation.path,
+						extensionLocation.path
+					)
+				);
 				continue;
 			}
 
@@ -265,7 +290,8 @@ export class CSSExtensionPoint {
 		}
 
 		// Apply cached CSS immediately
-		const entries: { readonly uri: URI; readonly element: HTMLLinkElement; readonly disposables: DisposableStore }[] = [];
+		const entries: { readonly uri: URI; readonly element: HTMLLinkElement; readonly disposables: DisposableStore }[] =
+			[];
 
 		for (const cssLocationString of cached.cssLocations) {
 			const cssLocation = URI.parse(cssLocationString);
@@ -296,7 +322,12 @@ export class CSSExtensionPoint {
 
 	private cacheExtensionCSS(extensionId: string, cssLocations: string[]): void {
 		const entry: ICSSCacheEntry = { extensionId, cssLocations };
-		this.storageService.store(CSS_CACHE_STORAGE_KEY, JSON.stringify(entry), StorageScope.PROFILE, StorageTarget.MACHINE);
+		this.storageService.store(
+			CSS_CACHE_STORAGE_KEY,
+			JSON.stringify(entry),
+			StorageScope.PROFILE,
+			StorageTarget.MACHINE
+		);
 	}
 
 	private clearCacheForExtension(extensionId: string): void {

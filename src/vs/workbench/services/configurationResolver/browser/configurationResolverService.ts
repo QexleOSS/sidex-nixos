@@ -17,7 +17,6 @@ import { IExtensionService } from '../../extensions/common/extensions.js';
 import { IPathService } from '../../path/common/pathService.js';
 
 export class ConfigurationResolverService extends BaseConfigurationResolverService {
-
 	constructor(
 		@IEditorService editorService: IEditorService,
 		@IConfigurationService configurationService: IConfigurationService,
@@ -27,11 +26,21 @@ export class ConfigurationResolverService extends BaseConfigurationResolverServi
 		@ILabelService labelService: ILabelService,
 		@IPathService pathService: IPathService,
 		@IExtensionService extensionService: IExtensionService,
-		@IStorageService storageService: IStorageService,
+		@IStorageService storageService: IStorageService
 	) {
-		super({ getAppRoot: () => undefined, getExecPath: () => undefined },
-			Promise.resolve(Object.create(null)), editorService, configurationService,
-			commandService, workspaceContextService, quickInputService, labelService, pathService, extensionService, storageService);
+		super(
+			{ getAppRoot: () => undefined, getExecPath: () => undefined },
+			Promise.resolve(Object.create(null)),
+			editorService,
+			configurationService,
+			commandService,
+			workspaceContextService,
+			quickInputService,
+			labelService,
+			pathService,
+			extensionService,
+			storageService
+		);
 	}
 }
 

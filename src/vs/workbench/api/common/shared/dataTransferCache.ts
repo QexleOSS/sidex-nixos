@@ -8,7 +8,6 @@ import { VSBuffer } from '../../../../base/common/buffer.js';
 import { IDataTransferFile, IReadonlyVSDataTransfer } from '../../../../base/common/dataTransfer.js';
 
 export class DataTransferFileCache {
-
 	private requestIdPool = 0;
 	private readonly dataTransferFiles = new Map</* requestId */ number, ReadonlyArray<IDataTransferFile>>();
 

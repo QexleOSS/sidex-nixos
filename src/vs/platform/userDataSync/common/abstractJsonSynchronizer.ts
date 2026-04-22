@@ -13,14 +13,24 @@ import { ITelemetryService } from '../../telemetry/common/telemetry.js';
 import { IUriIdentityService } from '../../uriIdentity/common/uriIdentity.js';
 import { IUserDataProfile } from '../../userDataProfile/common/userDataProfile.js';
 import { AbstractFileSynchroniser, IAcceptResult, IFileResourcePreview, IMergeResult } from './abstractSynchronizer.js';
-import { Change, IRemoteUserData, IUserDataSyncLocalStoreService, IUserDataSyncConfiguration, IUserDataSynchroniser, IUserDataSyncLogService, IUserDataSyncEnablementService, IUserDataSyncStoreService, USER_DATA_SYNC_SCHEME, SyncResource } from './userDataSync.js';
+import {
+	Change,
+	IRemoteUserData,
+	IUserDataSyncLocalStoreService,
+	IUserDataSyncConfiguration,
+	IUserDataSynchroniser,
+	IUserDataSyncLogService,
+	IUserDataSyncEnablementService,
+	IUserDataSyncStoreService,
+	USER_DATA_SYNC_SCHEME,
+	SyncResource
+} from './userDataSync.js';
 
 export interface IJsonResourcePreview extends IFileResourcePreview {
 	previewResult: IMergeResult;
 }
 
 export abstract class AbstractJsonSynchronizer extends AbstractFileSynchroniser implements IUserDataSynchroniser {
-
 	protected readonly version: number = 1;
 	private readonly previewResource: URI;
 	private readonly baseResource: URI;
@@ -42,9 +52,23 @@ export abstract class AbstractJsonSynchronizer extends AbstractFileSynchroniser 
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IUserDataSyncLogService logService: IUserDataSyncLogService,
 		@IConfigurationService configurationService: IConfigurationService,
-		@IUriIdentityService uriIdentityService: IUriIdentityService,
+		@IUriIdentityService uriIdentityService: IUriIdentityService
 	) {
-		super(fileResource, syncResourceMetadata, collection, fileService, environmentService, storageService, userDataSyncStoreService, userDataSyncLocalStoreService, userDataSyncEnablementService, telemetryService, logService, configurationService, uriIdentityService);
+		super(
+			fileResource,
+			syncResourceMetadata,
+			collection,
+			fileService,
+			environmentService,
+			storageService,
+			userDataSyncStoreService,
+			userDataSyncLocalStoreService,
+			userDataSyncEnablementService,
+			telemetryService,
+			logService,
+			configurationService,
+			uriIdentityService
+		);
 
 		this.previewResource = this.extUri.joinPath(this.syncPreviewFolder, previewFileName);
 		this.baseResource = this.previewResource.with({ scheme: USER_DATA_SYNC_SCHEME, authority: 'base' });
@@ -56,12 +80,21 @@ export abstract class AbstractJsonSynchronizer extends AbstractFileSynchroniser 
 	protected abstract getContentFromSyncContent(syncContent: string): string | null;
 	protected abstract toSyncContent(content: string | null): object;
 
-	protected async generateSyncPreview(remoteUserData: IRemoteUserData, lastSyncUserData: IRemoteUserData | null, isRemoteDataFromCurrentMachine: boolean, userDataSyncConfiguration: IUserDataSyncConfiguration): Promise<IJsonResourcePreview[]> {
-		const remoteContent = remoteUserData.syncData ? this.getContentFromSyncContent(remoteUserData.syncData.content) : null;
+	protected async generateSyncPreview(
+		remoteUserData: IRemoteUserData,
+		lastSyncUserData: IRemoteUserData | null,
+		isRemoteDataFromCurrentMachine: boolean,
+		userDataSyncConfiguration: IUserDataSyncConfiguration
+	): Promise<IJsonResourcePreview[]> {
+		const remoteContent = remoteUserData.syncData
+			? this.getContentFromSyncContent(remoteUserData.syncData.content)
+			: null;
 
 		// Use remote data as last sync data if last sync data does not exist and remote data is from same machine
 		lastSyncUserData = lastSyncUserData === null && isRemoteDataFromCurrentMachine ? remoteUserData : lastSyncUserData;
-		const lastSyncContent: string | null = lastSyncUserData?.syncData ? this.getContentFromSyncContent(lastSyncUserData.syncData.content) : null;
+		const lastSyncContent: string | null = lastSyncUserData?.syncData
+			? this.getContentFromSyncContent(lastSyncUserData.syncData.content)
+			: null;
 
 		// Get file content last to get the latest
 		const fileContent = await this.getLocalFileContent();
@@ -73,11 +106,14 @@ export abstract class AbstractJsonSynchronizer extends AbstractFileSynchroniser 
 
 		if (remoteUserData.syncData) {
 			const localContent = fileContent ? fileContent.value.toString() : null;
-			if (!lastSyncContent // First time sync
-				|| lastSyncContent !== localContent // Local has forwarded
-				|| lastSyncContent !== remoteContent // Remote has forwarded
+			if (
+				!lastSyncContent || // First time sync
+				lastSyncContent !== localContent || // Local has forwarded
+				lastSyncContent !== remoteContent // Remote has forwarded
 			) {
-				this.logService.trace(`${this.syncResourceLogLabel}: Merging remote ${this.syncResource.syncResource} with local ${this.syncResource.syncResource}...`);
+				this.logService.trace(
+					`${this.syncResourceLogLabel}: Merging remote ${this.syncResource.syncResource} with local ${this.syncResource.syncResource}...`
+				);
 				const result = this.merge(localContent, remoteContent, lastSyncContent);
 				content = result.content;
 				hasConflicts = result.hasConflicts;
@@ -88,41 +124,47 @@ export abstract class AbstractJsonSynchronizer extends AbstractFileSynchroniser 
 
 		// First time syncing to remote
 		else if (fileContent) {
-			this.logService.trace(`${this.syncResourceLogLabel}: Remote ${this.syncResource.syncResource} does not exist. Synchronizing ${this.syncResource.syncResource} for the first time.`);
+			this.logService.trace(
+				`${this.syncResourceLogLabel}: Remote ${this.syncResource.syncResource} does not exist. Synchronizing ${this.syncResource.syncResource} for the first time.`
+			);
 			content = fileContent.value.toString();
 			hasRemoteChanged = true;
 		}
 
 		const previewResult: IMergeResult = {
 			content: hasConflicts ? lastSyncContent : content,
-			localChange: hasLocalChanged ? fileContent ? Change.Modified : Change.Added : Change.None,
+			localChange: hasLocalChanged ? (fileContent ? Change.Modified : Change.Added) : Change.None,
 			remoteChange: hasRemoteChanged ? Change.Modified : Change.None,
 			hasConflicts
 		};
 
 		const localContent = fileContent ? fileContent.value.toString() : null;
-		return [{
-			fileContent,
+		return [
+			{
+				fileContent,
 
-			baseResource: this.baseResource,
-			baseContent: lastSyncContent,
+				baseResource: this.baseResource,
+				baseContent: lastSyncContent,
 
-			localResource: this.localResource,
-			localContent,
-			localChange: previewResult.localChange,
+				localResource: this.localResource,
+				localContent,
+				localChange: previewResult.localChange,
 
-			remoteResource: this.remoteResource,
-			remoteContent,
-			remoteChange: previewResult.remoteChange,
+				remoteResource: this.remoteResource,
+				remoteContent,
+				remoteChange: previewResult.remoteChange,
 
-			previewResource: this.previewResource,
-			previewResult,
-			acceptedResource: this.acceptedResource,
-		}];
+				previewResource: this.previewResource,
+				previewResult,
+				acceptedResource: this.acceptedResource
+			}
+		];
 	}
 
 	protected async hasRemoteChanged(lastSyncUserData: IRemoteUserData): Promise<boolean> {
-		const lastSyncContent: string | null = lastSyncUserData?.syncData ? this.getContentFromSyncContent(lastSyncUserData.syncData.content) : null;
+		const lastSyncContent: string | null = lastSyncUserData?.syncData
+			? this.getContentFromSyncContent(lastSyncUserData.syncData.content)
+			: null;
 		if (lastSyncContent === null) {
 			return true;
 		}
@@ -133,17 +175,25 @@ export abstract class AbstractJsonSynchronizer extends AbstractFileSynchroniser 
 		return result.hasLocalChanged || result.hasRemoteChanged;
 	}
 
-	protected async getMergeResult(resourcePreview: IJsonResourcePreview, token: CancellationToken): Promise<IMergeResult> {
+	protected async getMergeResult(
+		resourcePreview: IJsonResourcePreview,
+		token: CancellationToken
+	): Promise<IMergeResult> {
 		return resourcePreview.previewResult;
 	}
 
-	protected async getAcceptResult(resourcePreview: IJsonResourcePreview, resource: URI, content: string | null | undefined, token: CancellationToken): Promise<IAcceptResult> {
+	protected async getAcceptResult(
+		resourcePreview: IJsonResourcePreview,
+		resource: URI,
+		content: string | null | undefined,
+		token: CancellationToken
+	): Promise<IAcceptResult> {
 		/* Accept local resource */
 		if (this.extUri.isEqual(resource, this.localResource)) {
 			return {
 				content: resourcePreview.fileContent ? resourcePreview.fileContent.value.toString() : null,
 				localChange: Change.None,
-				remoteChange: Change.Modified,
+				remoteChange: Change.Modified
 			};
 		}
 
@@ -152,7 +202,7 @@ export abstract class AbstractJsonSynchronizer extends AbstractFileSynchroniser 
 			return {
 				content: resourcePreview.remoteContent,
 				localChange: Change.Modified,
-				remoteChange: Change.None,
+				remoteChange: Change.None
 			};
 		}
 
@@ -162,13 +212,13 @@ export abstract class AbstractJsonSynchronizer extends AbstractFileSynchroniser 
 				return {
 					content: resourcePreview.previewResult.content,
 					localChange: resourcePreview.previewResult.localChange,
-					remoteChange: resourcePreview.previewResult.remoteChange,
+					remoteChange: resourcePreview.previewResult.remoteChange
 				};
 			} else {
 				return {
 					content,
 					localChange: Change.Modified,
-					remoteChange: Change.Modified,
+					remoteChange: Change.Modified
 				};
 			}
 		}
@@ -176,12 +226,19 @@ export abstract class AbstractJsonSynchronizer extends AbstractFileSynchroniser 
 		throw new Error(`Invalid Resource: ${resource.toString()}`);
 	}
 
-	protected async applyResult(remoteUserData: IRemoteUserData, lastSyncUserData: IRemoteUserData | null, resourcePreviews: [IJsonResourcePreview, IAcceptResult][], force: boolean): Promise<void> {
+	protected async applyResult(
+		remoteUserData: IRemoteUserData,
+		lastSyncUserData: IRemoteUserData | null,
+		resourcePreviews: [IJsonResourcePreview, IAcceptResult][],
+		force: boolean
+	): Promise<void> {
 		const { fileContent } = resourcePreviews[0][0];
 		const { content, localChange, remoteChange } = resourcePreviews[0][1];
 
 		if (localChange === Change.None && remoteChange === Change.None) {
-			this.logService.info(`${this.syncResourceLogLabel}: No changes found during synchronizing ${this.syncResource.syncResource}.`);
+			this.logService.info(
+				`${this.syncResourceLogLabel}: No changes found during synchronizing ${this.syncResource.syncResource}.`
+			);
 		}
 
 		if (localChange !== Change.None) {
@@ -207,10 +264,14 @@ export abstract class AbstractJsonSynchronizer extends AbstractFileSynchroniser 
 		// Delete the preview
 		try {
 			await this.fileService.del(this.previewResource);
-		} catch (e) { /* ignore */ }
+		} catch (e) {
+			/* ignore */
+		}
 
 		if (lastSyncUserData?.ref !== remoteUserData.ref) {
-			this.logService.trace(`${this.syncResourceLogLabel}: Updating last synchronized ${this.syncResource.syncResource}...`);
+			this.logService.trace(
+				`${this.syncResourceLogLabel}: Updating last synchronized ${this.syncResource.syncResource}...`
+			);
 			await this.updateLastSyncUserData(remoteUserData);
 			this.logService.info(`${this.syncResourceLogLabel}: Updated last synchronized ${this.syncResource.syncResource}`);
 		}
@@ -221,23 +282,27 @@ export abstract class AbstractJsonSynchronizer extends AbstractFileSynchroniser 
 	}
 
 	async resolveContent(uri: URI): Promise<string | null> {
-		if (this.extUri.isEqual(this.remoteResource, uri)
-			|| this.extUri.isEqual(this.baseResource, uri)
-			|| this.extUri.isEqual(this.localResource, uri)
-			|| this.extUri.isEqual(this.acceptedResource, uri)
+		if (
+			this.extUri.isEqual(this.remoteResource, uri) ||
+			this.extUri.isEqual(this.baseResource, uri) ||
+			this.extUri.isEqual(this.localResource, uri) ||
+			this.extUri.isEqual(this.acceptedResource, uri)
 		) {
 			return this.resolvePreviewContent(uri);
 		}
 		return null;
 	}
 
-	private merge(originalLocalContent: string | null, originalRemoteContent: string | null, baseContent: string | null): {
+	private merge(
+		originalLocalContent: string | null,
+		originalRemoteContent: string | null,
+		baseContent: string | null
+	): {
 		content: string | null;
 		hasLocalChanged: boolean;
 		hasRemoteChanged: boolean;
 		hasConflicts: boolean;
 	} {
-
 		/* no changes */
 		if (originalLocalContent === null && originalRemoteContent === null && baseContent === null) {
 			return { content: null, hasLocalChanged: false, hasRemoteChanged: false, hasConflicts: false };

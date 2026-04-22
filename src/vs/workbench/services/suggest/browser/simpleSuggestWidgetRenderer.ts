@@ -56,8 +56,10 @@ export interface ISimpleSuggestWidgetFontInfo {
 	letterSpacing: number;
 }
 
-export class SimpleSuggestWidgetItemRenderer implements IListRenderer<SimpleCompletionItem, ISimpleSuggestionTemplateData> {
-
+export class SimpleSuggestWidgetItemRenderer implements IListRenderer<
+	SimpleCompletionItem,
+	ISimpleSuggestionTemplateData
+> {
 	private readonly _onDidToggleDetails = new Emitter<void>();
 	readonly onDidToggleDetails: Event<void> = this._onDidToggleDetails.event;
 
@@ -70,7 +72,8 @@ export class SimpleSuggestWidgetItemRenderer implements IListRenderer<SimpleComp
 		private readonly _onDidFontConfigurationChange: Event<void>,
 		@IThemeService private readonly _themeService: IThemeService,
 		@IModelService private readonly _modelService: IModelService,
-		@ILanguageService private readonly _languageService: ILanguageService) { }
+		@ILanguageService private readonly _languageService: ILanguageService
+	) {}
 
 	dispose(): void {
 		this._onDidToggleDetails.dispose();
@@ -124,7 +127,19 @@ export class SimpleSuggestWidgetItemRenderer implements IListRenderer<SimpleComp
 
 		configureFont();
 		this._disposables.add(this._onDidFontConfigurationChange(() => configureFont()));
-		return { root, left, right, icon, colorspan, iconLabel, iconContainer, parametersLabel, qualifierLabel, detailsLabel, disposables };
+		return {
+			root,
+			left,
+			right,
+			icon,
+			colorspan,
+			iconLabel,
+			iconContainer,
+			parametersLabel,
+			qualifierLabel,
+			detailsLabel,
+			disposables
+		};
 	}
 
 	renderElement(element: SimpleCompletionItem, index: number, data: ISimpleSuggestionTemplateData): void {
@@ -149,23 +164,45 @@ export class SimpleSuggestWidgetItemRenderer implements IListRenderer<SimpleComp
 			// special logic for 'file' completion items
 			data.icon.className = 'icon hide';
 			data.iconContainer.className = 'icon hide';
-			const labelClasses = getIconClasses(this._modelService, this._languageService, URI.from({ scheme: 'fake', path: element.textLabel }), FileKind.FILE);
-			const detailClasses = getIconClasses(this._modelService, this._languageService, URI.from({ scheme: 'fake', path: completion.detail }), FileKind.FILE);
+			const labelClasses = getIconClasses(
+				this._modelService,
+				this._languageService,
+				URI.from({ scheme: 'fake', path: element.textLabel }),
+				FileKind.FILE
+			);
+			const detailClasses = getIconClasses(
+				this._modelService,
+				this._languageService,
+				URI.from({ scheme: 'fake', path: completion.detail }),
+				FileKind.FILE
+			);
 			labelOptions.extraClasses = labelClasses.length > detailClasses.length ? labelClasses : detailClasses;
-
 		} else if (completion.kindLabel === 'Folder' && this._themeService.getFileIconTheme().hasFolderIcons) {
 			// special logic for 'folder' completion items
 			data.icon.className = 'icon hide';
 			data.iconContainer.className = 'icon hide';
 			labelOptions.extraClasses = [
-				getIconClasses(this._modelService, this._languageService, URI.from({ scheme: 'fake', path: element.textLabel }), FileKind.FOLDER),
-				getIconClasses(this._modelService, this._languageService, URI.from({ scheme: 'fake', path: completion.detail }), FileKind.FOLDER)
+				getIconClasses(
+					this._modelService,
+					this._languageService,
+					URI.from({ scheme: 'fake', path: element.textLabel }),
+					FileKind.FOLDER
+				),
+				getIconClasses(
+					this._modelService,
+					this._languageService,
+					URI.from({ scheme: 'fake', path: completion.detail }),
+					FileKind.FOLDER
+				)
 			].flat();
 		} else {
 			// normal icon
 			data.icon.className = 'icon hide';
 			data.iconContainer.className = '';
-			data.iconContainer.classList.add('suggest-icon', ...ThemeIcon.asClassNameArray(completion.icon || Codicon.symbolText));
+			data.iconContainer.classList.add(
+				'suggest-icon',
+				...ThemeIcon.asClassNameArray(completion.icon || Codicon.symbolText)
+			);
 		}
 
 		// if (completion.tags && completion.tags.indexOf(CompletionItemTag.Deprecated) >= 0) {

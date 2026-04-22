@@ -24,7 +24,6 @@ interface TypingIntervalResult {
  * Higher values indicate slower typing.
  */
 export class TypingInterval extends Disposable {
-
 	private readonly _typingSessions: TypingSession[] = [];
 	private _currentSession: TypingSession | null = null;
 	private _lastChangeTime = 0;
@@ -67,7 +66,7 @@ export class TypingInterval extends Disposable {
 		}
 
 		// If too much time has passed since last change, start a new session
-		if (this._currentSession && (now - this._lastChangeTime) > TypingInterval.MAX_SESSION_GAP_MS) {
+		if (this._currentSession && now - this._lastChangeTime > TypingInterval.MAX_SESSION_GAP_MS) {
 			this._finalizeCurrentSession();
 		}
 

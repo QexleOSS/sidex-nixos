@@ -23,9 +23,9 @@ export interface IXtermCore {
 				cell: {
 					width: number;
 					height: number;
-				}
-			}
-		},
+				};
+			};
+		};
 		_renderer: {
 			value?: unknown;
 		};

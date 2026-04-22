@@ -1,9 +1,3 @@
-/*---------------------------------------------------------------------------------------------
- *  Tauri Extension Host Bridge for SideX
- *  Connects to the local Node.js extension host via WebSocket, syncs open
- *  documents, and wires language provider results back into Monaco.
- *--------------------------------------------------------------------------------------------*/
-
 import { Disposable, IDisposable } from '../../../../base/common/lifecycle.js';
 import { registerWorkbenchContribution2, WorkbenchPhase } from '../../../common/contributions.js';
 import type { IWorkbenchContribution } from '../../../common/contributions.js';
@@ -18,6 +12,8 @@ import { IQuickInputService } from '../../../../platform/quickinput/common/quick
 import { ILanguageConfigurationService } from '../../../../editor/common/languages/languageConfigurationRegistry.js';
 import type { LanguageConfiguration } from '../../../../editor/common/languages/languageConfiguration.js';
 import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
+import { IStatusbarService, StatusbarAlignment } from '../../../services/statusbar/browser/statusbar.js';
+import type { IStatusbarEntryAccessor } from '../../../services/statusbar/browser/statusbar.js';
 import type { ITextModel } from '../../../../editor/common/model.js';
 import type { Position } from '../../../../editor/common/core/position.js';
 import type { CancellationToken } from '../../../../base/common/cancellation.js';
@@ -68,8 +64,31 @@ import {
 	type IExtensionManifestSummary,
 } from './extensionPlatformClient.js';
 import { listen } from '@tauri-apps/api/event';
+import { ITerminalService, ITerminalGroupService } from '../../terminal/browser/terminal.js';
+import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
+import { IProgressService, ProgressLocation } from '../../../../platform/progress/common/progress.js';
+import { IOpenerService } from '../../../../platform/opener/common/opener.js';
+import { IDebugService } from '../../debug/common/debug.js';
+import { IFileDialogService } from '../../../../platform/dialogs/common/dialogs.js';
+import { ITextFileService } from '../../../services/textfile/common/textfiles.js';
+import { IWebviewWorkbenchService } from '../../webviewPanel/browser/webviewWorkbenchService.js';
+import type { WebviewInput } from '../../webviewPanel/browser/webviewEditorInput.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { Registry } from '../../../../platform/registry/common/platform.js';
+import { Extensions as ViewExtensions, type IViewsRegistry, type ITreeViewDescriptor, type ITreeViewDataProvider, type ITreeItem } from '../../../common/views.js';
+import { TreeView, TreeViewPane } from '../../../browser/parts/views/treeView.js';
+import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
+import { IWorkbenchExtensionManagementService } from '../../../services/extensionManagement/common/extensionManagement.js';
+import type { InstallExtensionResult, IGalleryExtension } from '../../../../platform/extensionManagement/common/extensionManagement.js';
+import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
+import { ICommandService } from '../../../../platform/commands/common/commands.js';
+import { IWebviewViewService } from '../../webviewView/browser/webviewViewService.js';
+import { ExtensionIdentifier } from '../../../../platform/extensions/common/extensions.js';
+import { IWebviewService } from '../../webview/browser/webview.js';
+import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
+import type { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+
 
 function modelToParams(model: ITextModel, position: Position) {
 	return {
@@ -104,7 +123,7 @@ function sanitizeForExtHost(text: string): string {
 		.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '');
 }
 
-// ── Extension Host Contribution ───────────────────────────────────────────────
+
 
 interface HandshakeMessage {
 	type: 'sidex:handshake';
@@ -136,12 +155,22 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 	private _providerRegistrations: IDisposable[] = [];
 	private _documentsSyncInitialized = false;
 	private _activeEditorSyncInitialized = false;
+	private _editorTrackingInitialized = false;
+	private _initialEditorsDeltaSent = false;
+	private _trackedEditors = new Map<string, { editor: ICodeEditor; uri: string; listeners: IDisposable[] }>();
+	private _activeTrackedEditorId: string | null = null;
+	private _decorationTypes = new Map<string, IDisposable>();
 	private _modelContentListeners = new Map<string, IDisposable>();
 	private _tauriWatchListenerPromise: Promise<void> | undefined;
 	private _completionColdStart = true;
 	private _failureBurstLog = new Map<string, number>();
 
 	private _bootstrapExtensions: IExtensionManifestSummary[] = [];
+	private _statusBarItems = new Map<string, IStatusbarEntryAccessor>();
+	private _webviewPanels = new Map<string, WebviewInput>();
+	private _treeViews = new Map<string, TreeView>();
+	private _registeredCommands = new Map<string, IDisposable>();
+	private _webviewViewDisposables = new Map<string, IDisposable>();
 
 	constructor(
 		@ILogService private readonly logService: ILogService,
@@ -153,23 +182,84 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
 		@ILanguageConfigurationService private readonly langConfigService: ILanguageConfigurationService,
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
+		@IStatusbarService private readonly statusbarService: IStatusbarService,
+		@ITerminalService private readonly terminalService: ITerminalService,
+		@ITerminalGroupService private readonly terminalGroupService: ITerminalGroupService,
+		@INotificationService private readonly notificationService: INotificationService,
+		@IProgressService private readonly progressService: IProgressService,
+		@IOpenerService private readonly openerService: IOpenerService,
+		@IDebugService private readonly debugService: IDebugService,
+		@IFileDialogService private readonly fileDialogService: IFileDialogService,
+		@ITextFileService private readonly textFileService: ITextFileService,
+		@IWebviewWorkbenchService private readonly webviewWorkbenchService: IWebviewWorkbenchService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@ICommandService private readonly commandService: ICommandService,
+		@IWorkbenchExtensionManagementService private readonly extensionManagementService: IWorkbenchExtensionManagementService,
+		@IWebviewViewService private readonly webviewViewService: IWebviewViewService,
+		@IWebviewService private readonly webviewService: IWebviewService,
+		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 	) {
 		super();
 		this._init();
 	}
 
-	// ── Lifecycle ───────────────────────────────────────────────────────────
-
 	private async _init(): Promise<void> {
 		if ((globalThis as any).__SIDEX_TAURI__ !== true) {
 			return;
 		}
+		this._register(this.extensionManagementService.onDidInstallExtensions((results) => {
+			for (const result of results) {
+				if (result.local && !result.error) {
+					this._hotLoadInstalledExtension(result);
+				}
+			}
+		}));
 		try {
 			const bootstrap = await bootstrapExtensionPlatform();
 			this._applyBootstrap(bootstrap);
 			this._connect(bootstrap.transport.endpoint);
 		} catch (error) {
 			this.logService.warn(`[ExtHost] platform bootstrap failed ${(error as Error)?.message ?? String(error)}`);
+		}
+	}
+
+	private async _hotLoadInstalledExtension(result: InstallExtensionResult): Promise<void> {
+		const extId = result.identifier.id;
+		try {
+			const { invoke } = await import('@tauri-apps/api/core');
+
+			const source = result.source;
+			let installed: { id: string; path: string } | undefined;
+
+			if (source && !URI.isUri(source) && (source as IGalleryExtension).assets?.download?.uri) {
+				const downloadUrl = (source as IGalleryExtension).assets.download.uri;
+				this.logService.info(`[ExtHost] Downloading extension ${extId} from gallery`);
+				installed = await invoke<{ id: string; path: string }>('install_extension_from_url', { url: downloadUrl });
+			} else if (result.local?.location.scheme === 'file') {
+				installed = { id: extId, path: result.local.location.fsPath };
+			}
+
+			if (!installed?.path) {
+				this.logService.warn(`[ExtHost] Cannot hot-load ${extId}: no filesystem path available`);
+				return;
+			}
+
+			if (result.local?.manifest?.contributes) {
+				const cmds: { command?: string }[] = (result.local.manifest.contributes as any).commands || [];
+				for (const cmd of cmds) {
+					if (cmd.command) {
+						this._onCommandRegistered(cmd.command);
+					}
+				}
+			}
+
+			this.logService.info(`[ExtHost] Hot-loading extension ${extId} from ${installed.path}`);
+			const loadResult = await this._request<{ extensionId?: string; alreadyActive?: boolean }>('loadExtension', { extensionPath: installed.path });
+			if (loadResult?.extensionId && !loadResult.alreadyActive) {
+				this._send({ id: this._nextId(), type: 'activateExtension', params: { extensionId: loadResult.extensionId } });
+			}
+		} catch (err: any) {
+			this.logService.warn(`[ExtHost] Failed to hot-load ${extId}: ${err?.message ?? err}`);
 		}
 	}
 
@@ -197,8 +287,6 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 
 		this._syncDocumentsToWasm();
 	}
-
-	// ── WASM Document Sync ────────────────────────────────────────────────────
 
 	private _wasmDocSyncInitialized = false;
 
@@ -247,8 +335,6 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 			}
 		}));
 	}
-
-	// ── WASM Provider Registration ────────────────────────────────────────────
 
 	private _wasmProviderRegistrations: IDisposable[] = [];
 
@@ -449,6 +535,7 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 				this._send({ id: this._nextId(), type: 'initialize', params: { extensionPaths: [], workspaceFolders } });
 				this._syncOpenDocuments();
 				this._syncActiveEditor();
+				this._startEditorTracking();
 			};
 
 			ws.onmessage = (event) => {
@@ -503,8 +590,28 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		this._providerRegistrations.forEach(d => d.dispose());
 		this._wasmProviderRegistrations.forEach(d => d.dispose());
 		this._langConfigDisposables.forEach(d => d.dispose());
+		this._statusBarItems.forEach(a => a.dispose());
+		this._statusBarItems.clear();
+		this._extTerminals.forEach(t => { try { t.dispose(); } catch {} });
+		this._extTerminals.clear();
+		this._activeProgressResolvers.forEach(r => r());
+		this._activeProgressResolvers.clear();
+		this._webviewPanels.forEach(p => { try { p.dispose(); } catch {} });
+		this._webviewPanels.clear();
+		this._webviewViewDisposables.forEach(d => { try { d.dispose(); } catch {} });
+		this._webviewViewDisposables.clear();
+		this._treeViews.forEach(t => { try { t.dispose(); } catch {} });
+		this._treeViews.clear();
 		this._modelContentListeners.forEach(d => d.dispose());
 		this._modelContentListeners.clear();
+		this._trackedEditors.forEach(entry => entry.listeners.forEach(l => l.dispose()));
+		this._trackedEditors.clear();
+		this._activeTrackedEditorId = null;
+		this._decorationTypes.forEach(d => d.dispose());
+		this._decorationTypes.clear();
+		this._registeredCommands.forEach(d => d.dispose());
+		this._registeredCommands.clear();
+		this._typeOverrideInstalled = false;
 		this._tauriWatchUnlisten?.();
 		this._tauriWatchUnlisten = undefined;
 		this._tauriWatchListenerPromise = undefined;
@@ -515,8 +622,6 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		}
 		super.dispose();
 	}
-
-	// ── Messaging ────────────────────────────────────────────────────────────
 
 	private _nextId(): number {
 		return ++this._msgId;
@@ -582,6 +687,9 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 	private _capabilityRetryCount = 0;
 
 	private _handleMessage(msg: any): void {
+		if (msg.type === 'statusBarItemShow' || msg.type === 'statusBarItemUpdate') {
+			this.logService.info(`[ExtHost] RECV ${msg.type}: id=${msg.id} text="${msg.text}"`);
+		}
 		if (msg.id !== undefined && this._pendingCallbacks.has(msg.id)) {
 			const cb = this._pendingCallbacks.get(msg.id)!;
 			this._pendingCallbacks.delete(msg.id);
@@ -599,6 +707,12 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 			case 'extensionActivated':
 				this._activatedCount++;
 				this._queryAndRegisterProviders();
+				break;
+			case 'commandRegistered':
+				this._onCommandRegistered(msg.commandId);
+				break;
+			case 'executeWorkbenchCommand':
+				this._onExecuteWorkbenchCommand(msg.reqId, msg.command, msg.args);
 				break;
 			case 'diagnosticsChanged':
 				this._onDiagnosticsChanged(msg.uri, msg.diagnostics);
@@ -630,7 +744,404 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 			case 'stopFileWatch':
 				this._onStopFileWatch(msg.watcherId);
 				break;
+			case 'statusBarItemShow':
+				this._onStatusBarItemShow(msg);
+				break;
+			case 'statusBarItemUpdate':
+				this._onStatusBarItemUpdate(msg);
+				break;
+			case 'statusBarItemHide':
+				this._onStatusBarItemHide(msg.id);
+				break;
+			case 'statusBarItemRemove':
+				this._onStatusBarItemRemove(msg.id);
+				break;
+			case 'showOpenDialog':
+				this._onShowOpenDialog(msg.id, msg.options);
+				break;
+			case 'showSaveDialog':
+				this._onShowSaveDialog(msg.id, msg.options);
+				break;
+			case 'progressStart':
+				this._onProgressStart(msg.location, msg.title);
+				break;
+			case 'progressEnd':
+				this._onProgressEnd(msg.location, msg.title);
+				break;
+			case 'progress':
+				this._onProgress(msg);
+				break;
+			case 'createTerminal':
+				this._onCreateTerminal(msg);
+				break;
+			case 'terminalSendText':
+				this._onTerminalSendText(msg.terminalId, msg.text, msg.addNewLine);
+				break;
+			case 'terminalShow':
+				this._onTerminalShow(msg.terminalId);
+				break;
+			case 'terminalDispose':
+				this._onTerminalDispose(msg.terminalId);
+				break;
+			case 'createWebviewPanel':
+				this._onCreateWebviewPanel(msg);
+				break;
+			case 'webviewHtmlUpdate':
+				this._onWebviewHtmlUpdate(msg.panelId, msg.html);
+				break;
+			case 'webviewPanelUpdate':
+				this._onWebviewPanelUpdate(msg.panelId, msg.title);
+				break;
+			case 'webviewPostMessage':
+				this._onWebviewPostMessage(msg.panelId, msg.message);
+				break;
+			case 'webviewViewHtmlUpdate':
+				this._onWebviewViewHtmlUpdate(msg.webviewHandle, msg.html);
+				break;
+			case 'webviewViewPostMessage':
+				this._onWebviewViewPostMessage(msg.webviewHandle, msg.message);
+				break;
+			case 'webviewViewShow':
+				this.logService.trace(`[ExtHost] webviewViewShow: ${msg.webviewHandle}`);
+				break;
+			case 'webviewPanelReveal':
+				this._onWebviewPanelReveal(msg.panelId, msg.viewColumn, msg.preserveFocus);
+				break;
+			case 'webviewPanelIcon':
+				this._onWebviewPanelIcon(msg.panelId, msg.light, msg.dark);
+				break;
+			case 'webviewPanelDispose':
+				this._onWebviewPanelDispose(msg.panelId);
+				break;
+			case 'registerTreeDataProvider':
+				this._onRegisterTreeDataProvider(msg.viewId);
+				break;
+			case 'createTreeView':
+				this._onCreateTreeView(msg.viewId, msg.canSelectMany);
+				break;
+			case 'treeViewUpdate':
+				this._onTreeViewUpdate(msg.viewId, msg);
+				break;
+			case 'treeViewReveal':
+				this.logService.trace(`[ExtHost] treeViewReveal: ${msg.viewId}`);
+				break;
+			case 'startDebugging':
+				this._onStartDebugging(msg.folder, msg.config);
+				break;
+			case 'stopDebugging':
+				this._onStopDebugging(msg.sessionId);
+				break;
+			case 'debugConsoleAppend':
+				this.logService.trace(`[ExtHost] debugConsole: ${msg.value}`);
+				break;
+			case 'executeTask':
+				this.logService.info(`[ExtHost] executeTask: ${msg.name} (${msg.source})`);
+				break;
+			case 'terminateTask':
+				this.logService.info(`[ExtHost] terminateTask: ${msg.id}`);
+				break;
+			case 'openExternal':
+				this._onOpenExternal(msg.url);
+				break;
+			case 'registerUriHandler':
+				this.logService.info('[ExtHost] registerUriHandler');
+				break;
+			case 'registerWebviewViewProvider':
+				this._onRegisterWebviewViewProvider(msg.viewId);
+				break;
+			case 'registerCustomEditorProvider':
+				this.logService.info(`[ExtHost] registerCustomEditorProvider: ${msg.viewType}`);
+				break;
+			case 'registerTaskProvider':
+				this.logService.info(`[ExtHost] registerTaskProvider: ${msg.taskType}`);
+				break;
+			case 'scmSourceControlCreated':
+				this.logService.info(`[ExtHost] scmSourceControlCreated: ${msg.id}`);
+				break;
+			case 'registerChatParticipant':
+				this.logService.info(`[ExtHost] registerChatParticipant: ${msg.id}`);
+				break;
+			case 'registerLanguageModelTool':
+				this.logService.info(`[ExtHost] registerLanguageModelTool: ${msg.name}`);
+				break;
+			case 'registerAuthenticationProvider':
+				this.logService.info(`[ExtHost] registerAuthenticationProvider: ${msg.id}`);
+				break;
+			case 'createCommentController':
+				this.logService.info(`[ExtHost] createCommentController: ${msg.id}`);
+				break;
+			case 'createNotebookController':
+				this.logService.info(`[ExtHost] createNotebookController: ${msg.id}`);
+				break;
+			case 'trySetSelections':
+				this._onTrySetSelections(msg.editorId, msg.selections);
+				break;
+			case 'trySetOptions':
+				this._onTrySetOptions(msg.editorId, msg.options);
+				break;
+			case 'tryRevealRange':
+				this._onTryRevealRange(msg.editorId, msg.range, msg.revealType);
+				break;
+			case 'trySetDecorations':
+				this._onTrySetDecorations(msg.editorId, msg.key, msg.ranges);
+				break;
+			case 'registerDecorationType':
+				this._onRegisterDecorationType(msg.key, msg.options);
+				break;
+			case 'removeDecorationType':
+				this._onRemoveDecorationType(msg.key);
+				break;
 		}
+	}
+
+	private _onExecuteWorkbenchCommand(reqId: number, command: string, args: any[]): void {
+		this.commandService.executeCommand(command, ...(args || [])).then(
+			(result) => {
+				const editorState = this._getActiveEditorState();
+				this._send({ id: this._nextId(), type: 'workbenchCommandResult', params: { reqId, result: result ?? null, editorState } });
+			},
+			(err: unknown) => {
+				this._send({ id: this._nextId(), type: 'workbenchCommandResult', params: { reqId, error: err instanceof Error ? err.message : String(err) } });
+			}
+		);
+	}
+
+	private _getActiveEditorState(): { editorId: string; selections: any[] } | null {
+		if (!this._activeTrackedEditorId) {return null;}
+		const entry = this._trackedEditors.get(this._activeTrackedEditorId);
+		if (!entry) {return null;}
+		const allSelections = entry.editor.getSelections() || [];
+		return {
+			editorId: this._activeTrackedEditorId,
+			selections: allSelections.map((s: any) => ({
+				anchor: { line: s.selectionStartLineNumber - 1, character: s.selectionStartColumn - 1 },
+				active: { line: s.positionLineNumber - 1, character: s.positionColumn - 1 },
+			})),
+		};
+	}
+
+	private _onCommandRegistered(commandId: string): void {
+		if (!commandId || this._registeredCommands.has(commandId)) {
+			return;
+		}
+		if (commandId === 'type') {
+			this._installTypeCommandOverride();
+			return;
+		}
+		if (commandId === 'default:type') {
+			return;
+		}
+		if (commandId.startsWith('workbench.') || commandId.startsWith('editor.') || commandId.startsWith('_')) {
+			return;
+		}
+		if (CommandsRegistry.getCommand(commandId)) {
+			return;
+		}
+		const disposable = CommandsRegistry.registerCommand(commandId, (_accessor, ...args: any[]) => {
+			this.logService.info(`[ExtHost] CMD INVOKE: ${commandId}`);
+			return this._request('executeCommand', { command: commandId, args: args.map(a => {
+				try { return JSON.parse(JSON.stringify(a)); } catch { return String(a); }
+			}) });
+		});
+		this._registeredCommands.set(commandId, disposable);
+	}
+
+	private _typeOverrideInstalled = false;
+	private _installTypeCommandOverride(): void {
+		if (this._typeOverrideInstalled) {
+			return;
+		}
+		this._typeOverrideInstalled = true;
+		this.logService.info('[ExtHost] installing type command override (extension registered type handler)');
+		const disposable = CommandsRegistry.registerCommand('type', (_accessor, args: { text: string }) => {
+			if (!this._connected) {
+				return this.commandService.executeCommand('default:type', args);
+			}
+			return this._request('executeCommand', {
+				command: 'type',
+				args: [args],
+			}, { timeoutMs: 2000 }).catch(() => {
+				return this.commandService.executeCommand('default:type', args);
+			});
+		});
+		this._registeredCommands.set('type', disposable);
+	}
+
+	private _findTrackedEditor(editorId: string): ICodeEditor | undefined {
+		return this._trackedEditors.get(editorId)?.editor;
+	}
+
+	private _onTrySetSelections(editorId: string, selections: any[]): void {
+		const editor = this._findTrackedEditor(editorId);
+		if (!editor || !selections?.length) {return;}
+		const editorSelections = selections.map((s: any) => ({
+			selectionStartLineNumber: (s.anchor?.line ?? 0) + 1,
+			selectionStartColumn: (s.anchor?.character ?? 0) + 1,
+			positionLineNumber: (s.active?.line ?? 0) + 1,
+			positionColumn: (s.active?.character ?? 0) + 1,
+		}));
+		editor.setSelections(editorSelections);
+	}
+
+	private _onTrySetOptions(editorId: string, options: any): void {
+		const editor = this._findTrackedEditor(editorId);
+		if (!editor || !options) {return;}
+		const opts: Record<string, unknown> = {};
+		if (options.cursorStyle !== undefined) {opts.cursorStyle = options.cursorStyle;}
+		if (options.lineNumbers !== undefined) {
+			opts.lineNumbers = options.lineNumbers === 2 ? 'relative' : options.lineNumbers === 1 ? 'on' : 'off';
+		}
+		if (Object.keys(opts).length) {(editor as any).updateOptions(opts);}
+		if (options.tabSize !== undefined || options.insertSpaces !== undefined) {
+			const model = editor.getModel();
+			if (model) {model.updateOptions({ tabSize: options.tabSize, insertSpaces: options.insertSpaces });}
+		}
+	}
+
+	private _onTryRevealRange(editorId: string, range: any, revealType: number): void {
+		const editor = this._findTrackedEditor(editorId);
+		if (!editor || !range) {return;}
+		const monacoRange = new Range(
+			(range.start?.line ?? 0) + 1, (range.start?.character ?? 0) + 1,
+			(range.end?.line ?? 0) + 1, (range.end?.character ?? 0) + 1,
+		);
+		switch (revealType) {
+			case 1: editor.revealRangeInCenter(monacoRange); break;
+			case 2: editor.revealRangeInCenterIfOutsideViewport(monacoRange); break;
+			case 3: editor.revealRangeAtTop(monacoRange); break;
+			default: editor.revealRange(monacoRange); break;
+		}
+	}
+
+	private _onTrySetDecorations(editorId: string, key: string, ranges: any[]): void {
+		const editor = this._findTrackedEditor(editorId);
+		if (!editor || !key) {return;}
+		const decorations = (ranges || []).map((r: any) => {
+			const range = r.range || r;
+			return {
+				range: new Range(
+					(range.start?.line ?? 0) + 1, (range.start?.character ?? 0) + 1,
+					(range.end?.line ?? 0) + 1, (range.end?.character ?? 0) + 1,
+				),
+				options: { className: key },
+			};
+		});
+		(editor as any).setDecorationsByType('sidex-exthost', key, decorations);
+	}
+
+	private _onRegisterDecorationType(key: string, options: any): void {
+		if (!key || this._decorationTypes.has(key)) {return;}
+		try {
+			this.codeEditorService.registerDecorationType('sidex-exthost', key, options || {});
+			this._decorationTypes.set(key, { dispose: () => this.codeEditorService.removeDecorationType(key) });
+		} catch (e) {
+			this.logService.warn(`[ExtHost] registerDecorationType failed for ${key}:`, e);
+		}
+	}
+
+	private _onRemoveDecorationType(key: string): void {
+		const entry = this._decorationTypes.get(key);
+		if (entry) {
+			entry.dispose();
+			this._decorationTypes.delete(key);
+		}
+	}
+
+	private _onRegisterWebviewViewProvider(viewId: string): void {
+		if (this._webviewViewDisposables.has(viewId)) {
+			return;
+		}
+		this.logService.info(`[ExtHost] registerWebviewViewProvider: ${viewId}`);
+
+		const webviewHandles = new Map<string, { webview: any; listeners: IDisposable[] }>();
+
+		const registration = this.webviewViewService.register(viewId, {
+			resolve: async (webviewView, cancellation) => {
+				const webviewHandle = `wvv-${viewId}-${++this._msgId}`;
+				const listeners: IDisposable[] = [];
+
+				const rootUri = URI.from({ scheme: 'file', path: '/' });
+				webviewView.webview.localResourcesRoot = [rootUri];
+				webviewView.webview.contentOptions = {
+					...webviewView.webview.contentOptions,
+					allowScripts: true,
+					localResourceRoots: [rootUri],
+				};
+
+				listeners.push(webviewView.webview.onMessage(e => {
+					this._send({
+						id: this._nextId(),
+						type: 'webviewViewMessage',
+						params: { webviewHandle, message: e.message },
+					});
+				}));
+
+				webviewHandles.set(webviewHandle, { webview: webviewView.webview, listeners });
+
+				await this._request('resolveWebviewView', {
+					viewId,
+					webviewHandle,
+					title: webviewView.title,
+					state: undefined,
+				}, { timeoutMs: 30000 });
+			},
+		});
+
+		this._webviewViewDisposables.set(viewId, {
+			dispose: () => {
+				registration.dispose();
+				for (const [, entry] of webviewHandles) {
+					for (const l of entry.listeners) { l.dispose(); }
+				}
+				webviewHandles.clear();
+			},
+		});
+
+		(this as any)[`_wvvHandles_${viewId}`] = webviewHandles;
+	}
+
+	private _onWebviewViewHtmlUpdate(webviewHandle: string, html: string): void {
+		const handles = this._findWebviewHandles(webviewHandle);
+		if (handles) {
+			handles.webview.setHtml(html);
+		} else {
+			this.logService.warn(`[ExtHost] webviewViewHtmlUpdate: handle ${webviewHandle} not found`);
+		}
+	}
+
+	private _onWebviewViewPostMessage(webviewHandle: string, message: any): void {
+		const handles = this._findWebviewHandles(webviewHandle);
+		if (handles) {
+			this.logService.info(`[ExtHost] webviewViewPostMessage → ${webviewHandle}: ${JSON.stringify(message).substring(0, 200)}`);
+			handles.webview.postMessage(message);
+		} else {
+			this.logService.warn(`[ExtHost] webviewViewPostMessage: handle ${webviewHandle} not found`);
+		}
+	}
+
+	private _onWebviewPostMessage(panelId: string, message: any): void {
+		const panel = this._webviewPanels.get(panelId);
+		if (panel) {
+			panel.webview.postMessage(message);
+		}
+	}
+
+	private _findWebviewHandles(webviewHandle: string): { webview: any; listeners: IDisposable[] } | undefined {
+		for (const [viewId] of this._webviewViewDisposables) {
+			const map = (this as any)[`_wvvHandles_${viewId}`] as Map<string, { webview: any; listeners: IDisposable[] }> | undefined;
+			if (map?.has(webviewHandle)) {
+				return map.get(webviewHandle);
+			}
+		}
+		const viewIdMatch = webviewHandle.match(/^wvv-(.+)-\d+$/);
+		if (viewIdMatch) {
+			const viewId = viewIdMatch[1];
+			const map = (this as any)[`_wvvHandles_${viewId}`] as Map<string, { webview: any; listeners: IDisposable[] }> | undefined;
+			if (map && map.size > 0) {
+				return [...map.values()].pop();
+			}
+		}
+		return undefined;
 	}
 
 	private _onHandshake(msg: HandshakeMessage): void {
@@ -644,17 +1155,43 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		this._capabilityRetryTimer = undefined;
 		this.logService.info(`[ExtHost] Connected — ${msg.extensionCount} extensions`);
 
-		// Activate each discovered extension
+		this._request('resetPanels', {}, { timeoutMs: 3000, allowBeforeHandshake: true }).catch(() => {});
+
 		for (const ext of msg.extensions) {
 			this._send({ id: this._nextId(), type: 'activateExtension', params: { extensionId: ext.id } });
 		}
 
-		// Query capabilities after 3s
+		this._syncExtensionState();
+
 		setTimeout(() => {
 			if (!this._capabilitiesQueried) {
 				this._queryAndRegisterProviders();
 			}
 		}, 3000);
+	}
+
+	private _syncExtensionState(): void {
+		this._request<{
+			commands: string[];
+			webviewViewProviders: string[];
+			customEditorProviders: string[];
+		}>('getExtensionState', {}, { timeoutMs: 5000, allowBeforeHandshake: true }).then(
+			(state) => {
+				if (!state) { return; }
+				for (const cmd of state.commands) {
+					this._onCommandRegistered(cmd);
+				}
+				for (const viewId of state.webviewViewProviders) {
+					this._onRegisterWebviewViewProvider(viewId);
+				}
+				const kiloCmds = state.commands.filter(c => c.startsWith('kilo-code'));
+				this.logService.info(`[ExtHost] Synced state: ${state.commands.length} commands (${kiloCmds.length} kilo), ${state.webviewViewProviders.length} webview views`);
+				if (kiloCmds.length > 0) {
+					this.logService.info(`[ExtHost] Kilo commands: ${kiloCmds.join(', ')}`);
+				}
+			},
+			() => {}
+		);
 	}
 
 	private async _queryAndRegisterProviders(): Promise<void> {
@@ -698,6 +1235,19 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 			}
 			const unique = [...new Set(all)];
 			return unique.length > 0 ? unique as LanguageSelector : '*';
+		};
+
+		// SideX: New capability format — `{selector, extensionId, displayName}[]`.
+		// Old format was just `selector[][]` (arrays of selectors). Normalize.
+		const normalizeProviders = (raw: any): Array<{ selector: unknown[]; extensionId?: string; displayName?: string }> => {
+			if (!Array.isArray(raw)) { return []; }
+			return raw.map((entry: any) => {
+				if (entry && typeof entry === 'object' && 'selector' in entry) {
+					return { selector: entry.selector, extensionId: entry.extensionId, displayName: entry.displayName };
+				}
+				// Legacy: the entry IS the selector array
+				return { selector: entry };
+			});
 		};
 
 		if (caps.completion) {
@@ -792,21 +1342,31 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		}
 
 		if (caps.formatting) {
-			this._providerRegistrations.push(
-				this.languageFeatures.documentFormattingEditProvider.register(selectors(caps.formatting), {
-					provideDocumentFormattingEdits: (model, options, _token) =>
-						this._provideFormatting(model, options),
-				})
-			);
+			const formatters = normalizeProviders(caps.formatting);
+			for (const f of formatters) {
+				this._providerRegistrations.push(
+					this.languageFeatures.documentFormattingEditProvider.register(selectors([f.selector as unknown[]]), {
+						extensionId: f.extensionId ? new ExtensionIdentifier(f.extensionId) : undefined,
+						displayName: f.displayName,
+						provideDocumentFormattingEdits: (model, options, _token) =>
+							this._provideFormatting(model, options),
+					} as any)
+				);
+			}
 		}
 
 		if (caps.rangeFormatting) {
-			this._providerRegistrations.push(
-				this.languageFeatures.documentRangeFormattingEditProvider.register(selectors(caps.rangeFormatting), {
-					provideDocumentRangeFormattingEdits: (model, range, options, _token) =>
-						this._provideRangeFormatting(model, range, options),
-				})
-			);
+			const formatters = normalizeProviders(caps.rangeFormatting);
+			for (const f of formatters) {
+				this._providerRegistrations.push(
+					this.languageFeatures.documentRangeFormattingEditProvider.register(selectors([f.selector as unknown[]]), {
+						extensionId: f.extensionId ? new ExtensionIdentifier(f.extensionId) : undefined,
+						displayName: f.displayName,
+						provideDocumentRangeFormattingEdits: (model, range, options, _token) =>
+							this._provideRangeFormatting(model, range, options),
+					} as any)
+				);
+			}
 		}
 
 		if (caps.signatureHelp) {
@@ -901,7 +1461,6 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		this.logService.info(`[ExtHost] Registered providers for: ${Object.keys(caps).join(', ')}`);
 	}
 
-	// ── Language Providers ────────────────────────────────────────────────────
 
 	private async _provideCompletionItems(
 		model: ITextModel,
@@ -1441,7 +2000,6 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		}
 	}
 
-	// ── Document Synchronisation ──────────────────────────────────────────────
 
 	private _syncOpenDocuments(): void {
 		if (!this._documentsSyncInitialized) {
@@ -1463,6 +2021,13 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 					this._modelContentListeners.delete(uri);
 				}
 				this._send({ id: this._nextId(), type: 'documentClosed', params: { uri } });
+			}));
+			this._register(this.textFileService.files.onDidSave((e) => {
+				this._send({
+					id: this._nextId(),
+					type: 'documentSaved',
+					params: { uri: e.model.resource.toString() },
+				});
 			}));
 		}
 
@@ -1522,7 +2087,6 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 	}
 
 	private _syncActiveEditor(): void {
-		this._sendActiveEditor();
 		if (this._activeEditorSyncInitialized) {
 			return;
 		}
@@ -1551,7 +2115,230 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		}
 	}
 
-	// ── Diagnostics ───────────────────────────────────────────────────────────
+	private _startEditorTracking(): void {
+		if (this._editorTrackingInitialized) {return;}
+		this._editorTrackingInitialized = true;
+
+		const getEditorId = (editor: ICodeEditor): string => {
+			const model = editor.getModel();
+			return `${editor.getId()},${model?.id ?? 'null'}`;
+		};
+
+		const shouldTrack = (editor: ICodeEditor): boolean => {
+			if ((editor as any).isSimpleWidget) {return false;}
+			const model = editor.getModel();
+			return !!model && isSyncedModelScheme(model.uri.scheme);
+		};
+
+		const getEditorState = (editor: ICodeEditor) => {
+			const model = editor.getModel()!;
+			const selections = editor.getSelections() || [];
+			const config = editor.getOptions();
+			const visibleRanges = editor.getVisibleRanges() || [];
+			return {
+				id: getEditorId(editor),
+				documentUri: model.uri.toString(),
+				selections: selections.map((s: any) => ({
+					anchor: { line: s.selectionStartLineNumber - 1, character: s.selectionStartColumn - 1 },
+					active: { line: s.positionLineNumber - 1, character: s.positionColumn - 1 },
+				})),
+				options: {
+					tabSize: model.getOptions().tabSize,
+					insertSpaces: model.getOptions().insertSpaces,
+					cursorStyle: config.get(/* EditorOption.cursorStyle */ 34),
+					lineNumbers: config.get(/* EditorOption.lineNumbers */ 76)?.renderType ?? 1,
+				},
+				visibleRanges: visibleRanges.map((r: any) => ({
+					start: { line: r.startLineNumber - 1, character: r.startColumn - 1 },
+					end: { line: r.endLineNumber - 1, character: r.endColumn - 1 },
+				})),
+				viewColumn: 1,
+			};
+		};
+
+		const sendDelta = (removed: string[], added: any[], newActive: string | null | undefined) => {
+			if (!this._connected) {return;}
+			const delta: any = {};
+			if (removed.length) {delta.removedEditors = removed;}
+			if (added.length) {delta.addedEditors = added;}
+			if (newActive !== undefined) {delta.newActiveEditor = newActive;}
+			if (Object.keys(delta).length > 0) {
+				this._send({ id: this._nextId(), type: 'editorsDelta', params: delta });
+			}
+		};
+
+		const trackEditor = (editor: ICodeEditor) => {
+			if (!shouldTrack(editor)) {return;}
+			const editorId = getEditorId(editor);
+			if (this._trackedEditors.has(editorId)) {return;}
+
+			const listeners: IDisposable[] = [];
+
+			listeners.push(editor.onDidChangeCursorSelection((e) => {
+				if (!this._connected) {return;}
+				const model = editor.getModel();
+				if (!model || !isSyncedModelScheme(model.uri.scheme)) {return;}
+				const allSelections = editor.getSelections() || [];
+				this._send({
+					id: this._nextId(),
+					type: 'editorPropertiesChanged',
+					params: {
+						editorId,
+						selections: {
+							selections: allSelections.map((s: any) => ({
+								anchor: { line: s.selectionStartLineNumber - 1, character: s.selectionStartColumn - 1 },
+								active: { line: s.positionLineNumber - 1, character: s.positionColumn - 1 },
+							})),
+							source: e.source || 'keyboard',
+						},
+						options: null,
+						visibleRanges: null,
+					},
+				});
+			}));
+
+			listeners.push(editor.onDidChangeConfiguration(() => {
+				if (!this._connected) {return;}
+				const model = editor.getModel();
+				if (!model) {return;}
+				const config = editor.getOptions();
+				this._send({
+					id: this._nextId(),
+					type: 'editorPropertiesChanged',
+					params: {
+						editorId,
+						selections: null,
+						options: {
+							tabSize: model.getOptions().tabSize,
+							insertSpaces: model.getOptions().insertSpaces,
+							cursorStyle: config.get(34),
+							lineNumbers: config.get(76)?.renderType ?? 1,
+						},
+						visibleRanges: null,
+					},
+				});
+			}));
+
+			listeners.push(editor.onDidScrollChange(() => {
+				if (!this._connected) {return;}
+				const vr = editor.getVisibleRanges() || [];
+				this._send({
+					id: this._nextId(),
+					type: 'editorPropertiesChanged',
+					params: {
+						editorId,
+						selections: null,
+						options: null,
+						visibleRanges: vr.map((r: any) => ({
+							start: { line: r.startLineNumber - 1, character: r.startColumn - 1 },
+							end: { line: r.endLineNumber - 1, character: r.endColumn - 1 },
+						})),
+					},
+				});
+			}));
+
+			listeners.push(editor.onKeyDown((e: any) => {
+				if (!this._connected) {return;}
+				if (e.keyCode === 9 /* Escape */) {
+					const cmd = this._registeredCommands.has('extension.vim_escape') ? 'extension.vim_escape' : null;
+					if (cmd) {
+						e.preventDefault();
+						e.stopPropagation();
+						this._request('executeCommand', { command: cmd, args: [] }, { timeoutMs: 1000 }).catch(() => {});
+					}
+				}
+			}));
+
+			const model = editor.getModel()!;
+			this._trackedEditors.set(editorId, { editor, uri: model.uri.toString(), listeners });
+		};
+
+		const untrackEditor = (editor: ICodeEditor) => {
+			const editorId = getEditorId(editor);
+			const entry = this._trackedEditors.get(editorId);
+			if (entry) {
+				entry.listeners.forEach(l => l.dispose());
+				this._trackedEditors.delete(editorId);
+			}
+			return editorId;
+		};
+
+		const updateState = () => {
+			if (!this._connected) {return;}
+
+			const currentEditors = new Map<string, ICodeEditor>();
+			for (const editor of this.codeEditorService.listCodeEditors()) {
+				if (shouldTrack(editor)) {
+					currentEditors.set(getEditorId(editor), editor);
+				}
+			}
+
+			const removed: string[] = [];
+			for (const [id] of this._trackedEditors) {
+				if (!currentEditors.has(id)) {
+					const entry = this._trackedEditors.get(id)!;
+					entry.listeners.forEach(l => l.dispose());
+					this._trackedEditors.delete(id);
+					removed.push(id);
+				}
+			}
+
+			const added: any[] = [];
+			for (const [id, editor] of currentEditors) {
+				if (!this._trackedEditors.has(id)) {
+					trackEditor(editor);
+					added.push(getEditorState(editor));
+				}
+			}
+
+			let activeId: string | null = null;
+			for (const editor of this.codeEditorService.listCodeEditors()) {
+				if (editor.hasTextFocus() && shouldTrack(editor)) {
+					activeId = getEditorId(editor);
+					break;
+				}
+			}
+			if (!activeId) {
+				const activeControl = this.editorService.activeTextEditorControl;
+				if (activeControl && 'getId' in activeControl && shouldTrack(activeControl as any)) {
+					activeId = getEditorId(activeControl as any);
+				}
+			}
+
+			let activeChanged: string | null | undefined;
+			if (!this._initialEditorsDeltaSent) {
+				activeChanged = activeId;
+				this._activeTrackedEditorId = activeId;
+				this._initialEditorsDeltaSent = true;
+			} else {
+				activeChanged = activeId !== this._activeTrackedEditorId ? activeId : undefined;
+				if (activeChanged !== undefined) {this._activeTrackedEditorId = activeId;}
+			}
+
+			sendDelta(removed, added, activeChanged);
+		};
+
+		const handleAddedEditor = (editor: ICodeEditor) => {
+			const listeners: IDisposable[] = [];
+			listeners.push(editor.onDidChangeModel(() => updateState()));
+			listeners.push(editor.onDidFocusEditorText(() => updateState()));
+			updateState();
+			return listeners;
+		};
+
+		for (const existingEditor of this.codeEditorService.listCodeEditors()) {
+			handleAddedEditor(existingEditor);
+		}
+
+		this._register(this.codeEditorService.onCodeEditorAdd((editor) => {
+			handleAddedEditor(editor);
+		}));
+		this._register(this.codeEditorService.onCodeEditorRemove(() => updateState()));
+		this._register(this.editorService.onDidActiveEditorChange(() => updateState()));
+
+		updateState();
+	}
+
 
 	private static readonly _DIAG_OWNER = 'tauriExtHost';
 
@@ -1579,7 +2366,6 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		this.markerService.changeOne(TauriExtensionHostContribution._DIAG_OWNER, resource, markers);
 	}
 
-	// ── Workspace Apply Edit ──────────────────────────────────────────────────
 
 	private async _onApplyEdit(edits: any[]): Promise<void> {
 		if (!edits?.length) {
@@ -1599,7 +2385,6 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		}
 	}
 
-	// ── Show Text Document ────────────────────────────────────────────────────
 
 	private async _onShowTextDocument(uri: string, options?: any): Promise<void> {
 		if (!uri) {
@@ -1612,7 +2397,6 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		}
 	}
 
-	// ── Quick Pick / Input Box / Message Request ──────────────────────────────
 
 	private async _onShowQuickPick(requestId: number, items: string[], options: any): Promise<void> {
 		try {
@@ -1655,7 +2439,6 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		}
 	}
 
-	// ── Language Configuration ────────────────────────────────────────────────
 
 	private _langConfigDisposables = new Map<string, IDisposable>();
 
@@ -1697,7 +2480,6 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		this._langConfigDisposables.set(language, disposable);
 	}
 
-	// ── File System Watcher ───────────────────────────────────────────────────
 
 	private _activeWatches = new Map<number, number>(); // watcherId → Tauri watch_id
 	private _tauriWatchUnlisten: (() => void) | undefined;
@@ -1752,6 +2534,344 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		}
 	}
 
+
+	private _toWorkbenchAlignment(apiAlignment: number): StatusbarAlignment {
+		return apiAlignment === 2 ? StatusbarAlignment.RIGHT : StatusbarAlignment.LEFT;
+	}
+
+	private _makeStatusbarEntry(msg: any) {
+		return {
+			name: msg.name || msg.id,
+			text: msg.text || '',
+			ariaLabel: msg.name || msg.id,
+			tooltip: msg.tooltip || undefined,
+			command: msg.command || undefined,
+		};
+	}
+
+	private _onStatusBarItemShow(msg: any): void {
+		this.logService.info(`[ExtHost] statusBarItemShow: id=${msg.id} text="${msg.text}" alignment=${msg.alignment} priority=${msg.priority}`);
+		const existing = this._statusBarItems.get(msg.id);
+		if (existing) {
+			existing.update(this._makeStatusbarEntry(msg));
+			return;
+		}
+		try {
+			const accessor = this.statusbarService.addEntry(
+				this._makeStatusbarEntry(msg),
+				msg.id,
+				this._toWorkbenchAlignment(msg.alignment),
+				msg.priority ?? 0,
+			);
+			this._statusBarItems.set(msg.id, accessor);
+			this.logService.info(`[ExtHost] statusBarItem created: ${msg.id}`);
+		} catch (e) {
+			this.logService.warn(`[ExtHost] statusBarItemShow failed for ${msg.id}:`, e);
+		}
+	}
+
+	private _onStatusBarItemUpdate(msg: any): void {
+		const accessor = this._statusBarItems.get(msg.id);
+		if (accessor) {
+			accessor.update(this._makeStatusbarEntry(msg));
+		} else {
+			this._onStatusBarItemShow(msg);
+		}
+	}
+
+	private _onStatusBarItemHide(id: string): void {
+		const accessor = this._statusBarItems.get(id);
+		if (accessor) {
+			accessor.dispose();
+			this._statusBarItems.delete(id);
+		}
+	}
+
+	private _onStatusBarItemRemove(id: string): void {
+		const accessor = this._statusBarItems.get(id);
+		if (accessor) {
+			accessor.dispose();
+			this._statusBarItems.delete(id);
+		}
+	}
+
+	private _extTerminals = new Map<string, any>();
+
+	private async _onShowOpenDialog(reqId: number, options: any): Promise<void> {
+		try {
+			const result = await this.fileDialogService.showOpenDialog({
+				title: options?.title,
+				canSelectFiles: options?.canSelectFiles !== false,
+				canSelectFolders: options?.canSelectFolders === true,
+				canSelectMany: options?.canSelectMany === true,
+				defaultUri: options?.defaultUri ? URI.parse(options.defaultUri.toString()) : undefined,
+			});
+			const uris = result ? result.map((u: URI) => u.toString()) : undefined;
+			this._send({ id: reqId, result: uris });
+		} catch {
+			this._send({ id: reqId, result: undefined });
+		}
+	}
+
+	private async _onShowSaveDialog(reqId: number, options: any): Promise<void> {
+		try {
+			const result = await this.fileDialogService.showSaveDialog({
+				title: options?.title,
+				defaultUri: options?.defaultUri ? URI.parse(options.defaultUri.toString()) : undefined,
+			});
+			this._send({ id: reqId, result: result ? result.toString() : undefined });
+		} catch {
+			this._send({ id: reqId, result: undefined });
+		}
+	}
+
+	private _activeProgressResolvers = new Map<string, () => void>();
+
+	private _onProgressStart(location: number, title: string): void {
+		const key = `${location}:${title}`;
+		if (this._activeProgressResolvers.has(key)) {
+			return;
+		}
+		const progressLocation = location === 15 ? ProgressLocation.Notification
+			: location === 10 ? ProgressLocation.Window
+			: ProgressLocation.Notification;
+		this.progressService.withProgress(
+			{ location: progressLocation, title },
+			() => new Promise<void>((resolve) => {
+				this._activeProgressResolvers.set(key, resolve);
+			})
+		);
+	}
+
+	private _onProgressEnd(location: number, title: string): void {
+		const key = `${location}:${title}`;
+		const resolve = this._activeProgressResolvers.get(key);
+		if (resolve) {
+			resolve();
+			this._activeProgressResolvers.delete(key);
+		}
+	}
+
+	private _onProgress(_msg: any): void {
+	}
+
+	private async _onCreateTerminal(msg: any): Promise<void> {
+		try {
+			const location = msg.location?.viewColumn !== undefined
+				? { splitActiveTerminal: false }
+				: undefined;
+
+			const instance = await this.terminalService.createTerminal({
+				config: {
+					executable: msg.shellPath || undefined,
+					args: msg.shellArgs || undefined,
+					cwd: msg.cwd || undefined,
+					env: msg.env || undefined,
+					name: msg.name || undefined,
+					strictEnv: msg.strictEnv || false,
+					isTransient: msg.isTransient || false,
+				},
+				location,
+			});
+			if (instance) {
+				this._extTerminals.set(msg.terminalId, instance);
+				if (!msg.hideFromUser) {
+					this.terminalGroupService.showPanel(true);
+				}
+			}
+		} catch (e) {
+			this.logService.warn(`[ExtHost] createTerminal failed:`, e);
+		}
+	}
+
+	private _onTerminalSendText(id: string, text: string, addNewLine: boolean): void {
+		const instance = this._extTerminals.get(id);
+		if (instance) {
+			instance.sendText(text, addNewLine);
+		}
+	}
+
+	private _onTerminalShow(id: string): void {
+		const instance = this._extTerminals.get(id);
+		if (instance) {
+			this.terminalGroupService.showPanel(true);
+		}
+	}
+
+	private _onTerminalDispose(id: string): void {
+		const instance = this._extTerminals.get(id);
+		if (instance) {
+			instance.dispose();
+			this._extTerminals.delete(id);
+		}
+	}
+
+	private async _onStartDebugging(_folder: any, config: any): Promise<void> {
+		try {
+			await this.debugService.startDebugging(undefined, config);
+		} catch (e) {
+			this.logService.warn(`[ExtHost] startDebugging failed:`, e);
+		}
+	}
+
+	private async _onStopDebugging(sessionId?: string): Promise<void> {
+		try {
+			if (sessionId) {
+				const session = this.debugService.getModel().getSessions().find((s: any) => s.getId() === sessionId);
+				if (session) {
+					await this.debugService.stopSession(session);
+					return;
+				}
+			}
+			await this.debugService.stopSession(undefined);
+		} catch (e) {
+			this.logService.warn(`[ExtHost] stopDebugging failed:`, e);
+		}
+	}
+
+	private _onOpenExternal(url: string): void {
+		try {
+			this.openerService.open(URI.parse(url), { allowCommands: false });
+		} catch (e) {
+			this.logService.warn(`[ExtHost] openExternal failed:`, e);
+		}
+	}
+
+	private _onCreateWebviewPanel(msg: any): void {
+		try {
+			const webviewInput = this.webviewWorkbenchService.openWebview(
+				{
+					providedViewType: msg.viewType,
+					title: msg.title,
+					options: {
+						retainContextWhenHidden: msg.options?.retainContextWhenHidden ?? false,
+						enableFindWidget: msg.options?.enableFindWidget ?? false,
+					},
+					contentOptions: {
+						allowScripts: msg.options?.enableScripts ?? true,
+						localResourceRoots: [URI.from({ scheme: 'file', path: '/' })],
+					},
+					extension: undefined,
+				},
+				msg.viewType,
+				msg.title,
+				undefined,
+				{ preserveFocus: false },
+			);
+			this._webviewPanels.set(msg.panelId, webviewInput);
+			webviewInput.webview.onMessage(e => {
+				this._send({
+					id: this._nextId(),
+					type: 'webviewMessage',
+					params: { panelId: msg.panelId, message: e.message },
+				});
+			});
+			webviewInput.onWillDispose(() => {
+				this._webviewPanels.delete(msg.panelId);
+				this._send({
+					id: this._nextId(),
+					type: 'webviewPanelClosed',
+					params: { panelId: msg.panelId },
+				});
+			});
+		} catch (e) {
+			this.logService.warn(`[ExtHost] createWebviewPanel failed:`, e);
+		}
+	}
+
+	private _onWebviewHtmlUpdate(id: string, html: string): void {
+		const panel = this._webviewPanels.get(id);
+		if (panel) {
+			panel.webview.setHtml(html);
+		}
+	}
+
+	private _onWebviewPanelUpdate(id: string, title: string): void {
+		const panel = this._webviewPanels.get(id);
+		if (panel) {
+			panel.setWebviewTitle(title);
+		}
+	}
+
+	private _onWebviewPanelReveal(id: string, _viewColumn: number, preserveFocus: boolean): void {
+		const panel = this._webviewPanels.get(id);
+		if (panel) {
+			this.editorService.openEditor(panel, { preserveFocus });
+		}
+	}
+
+	private async _onWebviewPanelIcon(id: string, light: string | undefined, dark: string | undefined): Promise<void> {
+		const panel = this._webviewPanels.get(id);
+		if (!panel || (!light && !dark)) { return; }
+		try {
+			const { invoke } = await import('@tauri-apps/api/core');
+			const darkPath = dark || light || '';
+			const svgContent = await invoke<string>('read_file', { path: darkPath }).catch(() => '');
+			if (svgContent) {
+				const dataUri = URI.parse(`data:image/svg+xml;base64,${btoa(svgContent)}`);
+				panel.iconPath = { light: dataUri, dark: dataUri };
+			}
+		} catch {}
+	}
+
+	private _onWebviewPanelDispose(id: string): void {
+		const panel = this._webviewPanels.get(id);
+		if (panel) {
+			panel.dispose();
+			this._webviewPanels.delete(id);
+		}
+	}
+
+	private _getOrCreateTreeView(viewId: string): TreeView | null {
+		let treeView = this._treeViews.get(viewId);
+		if (treeView) {return treeView;}
+		const viewsRegistry = Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry);
+		const existing = viewsRegistry.getView(viewId) as ITreeViewDescriptor | null;
+		if (existing?.treeView) {
+			return existing.treeView as unknown as TreeView;
+		}
+		try {
+			treeView = this.instantiationService.createInstance(TreeView, viewId, viewId);
+			this._treeViews.set(viewId, treeView);
+			const explorerContainer = viewsRegistry.getViewContainer?.('workbench.view.explorer');
+			if (explorerContainer) {
+				viewsRegistry.registerViews([{
+					id: viewId,
+					name: { value: viewId, original: viewId },
+					ctorDescriptor: new SyncDescriptor(TreeViewPane),
+					treeView,
+					canToggleVisibility: true,
+					collapsed: true,
+				} as ITreeViewDescriptor], explorerContainer);
+			}
+			return treeView;
+		} catch (e) {
+			this.logService.warn(`[ExtHost] createTreeView failed:`, e);
+			return null;
+		}
+	}
+
+	private _onRegisterTreeDataProvider(viewId: string): void {
+		this._getOrCreateTreeView(viewId);
+		this._send({ id: this._nextId(), type: 'activateByEvent', params: { event: `onView:${viewId}` } });
+	}
+
+	private _onCreateTreeView(viewId: string, canSelectMany: boolean): void {
+		const tv = this._getOrCreateTreeView(viewId);
+		if (tv && canSelectMany) {
+			tv.canSelectMany = canSelectMany;
+		}
+		this._send({ id: this._nextId(), type: 'activateByEvent', params: { event: `onView:${viewId}` } });
+	}
+
+	private _onTreeViewUpdate(viewId: string, msg: any): void {
+		const tv = this._getOrCreateTreeView(viewId);
+		if (!tv) {return;}
+		if (msg.message !== undefined) {tv.message = msg.message;}
+		if (msg.title !== undefined) {tv.title = msg.title;}
+		if (msg.description !== undefined) {tv.description = msg.description;}
+	}
+
 	private async _setupTauriWatchListener(): Promise<void> {
 		if (this._tauriWatchUnlisten) {
 			return;
@@ -1774,7 +2894,6 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		}
 	}
 
-	// ── Additional Language Providers ──────────────────────────────────────────
 
 	private async _provideSelectionRanges(model: ITextModel, positions: Position[]): Promise<SelectionRange[][] | null> {
 		try {
@@ -1841,7 +2960,6 @@ class TauriExtensionHostContribution extends Disposable implements IWorkbenchCon
 		}
 	}
 
-	// ── Conversion Helpers ────────────────────────────────────────────────────
 
 	private _normalizeCompletionItems(items: any[]): CompletionItem[] {
 		const normalized: CompletionItem[] = [];

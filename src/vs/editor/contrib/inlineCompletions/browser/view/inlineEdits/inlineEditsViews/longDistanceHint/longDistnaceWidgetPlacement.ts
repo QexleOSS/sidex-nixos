@@ -47,7 +47,7 @@ export class WidgetPlacementContext {
 	constructor(
 		private readonly _lineRangeInfo: ContinuousLineSizes,
 		editorTrueContentWidth: number,
-		endOfLinePadding: (lineNumber: number) => number,
+		endOfLinePadding: (lineNumber: number) => number
 	) {
 		this.availableSpaceSizes = _lineRangeInfo.sizes.map((s, idx) => {
 			const lineNumber = _lineRangeInfo.lineRange.startLineNumber + idx;
@@ -71,7 +71,9 @@ export class WidgetPlacementContext {
 		const top = this._lineRangeInfo.top + this.availableSpaceHeightPrefixSums[sizeIdx];
 		const editorRange = OffsetRange.ofStartAndLength(top, previewEditorHeight);
 		const { previewEditorMargin, widgetPadding, widgetBorder, lowerBarHeight } = layoutConstants;
-		const verticalWidgetRange = editorRange.withMargin(previewEditorMargin + widgetPadding + widgetBorder).withMargin(0, lowerBarHeight);
+		const verticalWidgetRange = editorRange
+			.withMargin(previewEditorMargin + widgetPadding + widgetBorder)
+			.withMargin(0, lowerBarHeight);
 		return verticalWidgetRange;
 	}
 
@@ -87,22 +89,18 @@ export class WidgetPlacementContext {
 		if (this._lineRangeInfo.lineRange.length < 3) {
 			return undefined;
 		}
-		return findFirstMinimzeDistance(
-			this._lineRangeInfo.lineRange.addMargin(-1, -1),
-			targetLineNumber,
-			lineNumber => {
-				const verticalWidgetRange = this.getWidgetVerticalOutline(lineNumber, previewEditorHeight, layoutConstants);
-				const maxWidth = getMaxTowerHeightInAvailableArea(
-					verticalWidgetRange.delta(-this._lineRangeInfo.top),
-					this.availableSpaceSizesTransposed
-				);
-				if (maxWidth < layoutConstants.minWidgetWidth) {
-					return undefined;
-				}
-				const horizontalWidgetRange = OffsetRange.ofStartAndLength(editorTrueContentRight - maxWidth, maxWidth);
-				return { horizontalWidgetRange, verticalWidgetRange };
+		return findFirstMinimzeDistance(this._lineRangeInfo.lineRange.addMargin(-1, -1), targetLineNumber, lineNumber => {
+			const verticalWidgetRange = this.getWidgetVerticalOutline(lineNumber, previewEditorHeight, layoutConstants);
+			const maxWidth = getMaxTowerHeightInAvailableArea(
+				verticalWidgetRange.delta(-this._lineRangeInfo.top),
+				this.availableSpaceSizesTransposed
+			);
+			if (maxWidth < layoutConstants.minWidgetWidth) {
+				return undefined;
 			}
-		);
+			const horizontalWidgetRange = OffsetRange.ofStartAndLength(editorTrueContentRight - maxWidth, maxWidth);
+			return { horizontalWidgetRange, verticalWidgetRange };
+		});
 	}
 }
 /**
@@ -114,7 +112,7 @@ export function splitIntoContinuousLineRanges(
 	sizes: Size2D[],
 	top: number,
 	editorObs: ObservableCodeEditor,
-	reader: IReader,
+	reader: IReader
 ): ContinuousLineSizes[] {
 	const result: ContinuousLineSizes[] = [];
 	let currentRangeStart = lineRange.startLineNumber;
@@ -131,7 +129,7 @@ export function splitIntoContinuousLineRanges(
 			result.push({
 				lineRange: LineRange.ofLength(currentRangeStart, lineNumber - currentRangeStart),
 				top: currentRangeTop,
-				sizes: currentSizes,
+				sizes: currentSizes
 			});
 			currentRangeStart = lineNumber;
 			currentRangeTop = actualTop;
@@ -144,7 +142,7 @@ export function splitIntoContinuousLineRanges(
 	result.push({
 		lineRange: LineRange.ofLength(currentRangeStart, lineRange.endLineNumberExclusive - currentRangeStart),
 		top: currentRangeTop,
-		sizes: currentSizes,
+		sizes: currentSizes
 	});
 
 	// Don't observe each line individually for performance reasons
@@ -155,7 +153,11 @@ export function splitIntoContinuousLineRanges(
 	return result;
 }
 
-function findFirstMinimzeDistance<T>(range: LineRange, targetLine: number, predicate: (lineNumber: number) => T | undefined): T | undefined {
+function findFirstMinimzeDistance<T>(
+	range: LineRange,
+	targetLine: number,
+	predicate: (lineNumber: number) => T | undefined
+): T | undefined {
 	for (let offset = 0; ; offset++) {
 		const down = targetLine + offset;
 		if (down <= range.endLineNumberExclusive) {

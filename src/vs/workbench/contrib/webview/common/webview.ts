@@ -22,7 +22,9 @@ export const webviewResourceBaseHost = 'vscode-cdn.net';
 
 export const webviewRootResourceAuthority = `vscode-resource.${webviewResourceBaseHost}`;
 
-export const webviewGenericCspSource = `'self' https://*.${webviewResourceBaseHost}` + ((globalThis as any).__SIDEX_TAURI__ ? ' tauri:' : '');
+export const webviewGenericCspSource =
+	`'self' https://*.${webviewResourceBaseHost}` +
+	((globalThis as any).__SIDEX_TAURI__ ? ' tauri: https://tauri.localhost https://*.tauri.localhost asset:' : '');
 
 /**
  * Construct a uri that can load resources inside a webview
@@ -46,7 +48,7 @@ export function asWebviewUri(resource: URI, remoteInfo?: WebviewRemoteInfo): URI
 		resource = URI.from({
 			scheme: Schemas.vscodeRemote,
 			authority: remoteInfo.authority,
-			path: resource.path,
+			path: resource.path
 		});
 	}
 
@@ -55,7 +57,7 @@ export function asWebviewUri(resource: URI, remoteInfo?: WebviewRemoteInfo): URI
 		authority: `${resource.scheme}+${encodeAuthority(resource.authority)}.${webviewRootResourceAuthority}`,
 		path: resource.path,
 		fragment: resource.fragment,
-		query: resource.query,
+		query: resource.query
 	});
 }
 
@@ -63,9 +65,9 @@ function encodeAuthority(authority: string): string {
 	return authority.replace(/./g, char => {
 		const code = char.charCodeAt(0);
 		if (
-			(code >= CharCode.a && code <= CharCode.z)
-			|| (code >= CharCode.A && code <= CharCode.Z)
-			|| (code >= CharCode.Digit0 && code <= CharCode.Digit9)
+			(code >= CharCode.a && code <= CharCode.z) ||
+			(code >= CharCode.A && code <= CharCode.Z) ||
+			(code >= CharCode.Digit0 && code <= CharCode.Digit9)
 		) {
 			return char;
 		}

@@ -13,13 +13,12 @@ export interface INativeCliOptions {
  * A list of command line arguments we support natively.
  */
 export interface NativeParsedArgs {
-
 	// subcommands
 	tunnel?: INativeCliOptions & {
 		user: {
 			login: {
 				'access-token'?: string;
-				'provider'?: string;
+				provider?: string;
 			};
 		};
 	};
@@ -81,7 +80,7 @@ export interface NativeParsedArgs {
 	'disable-extension'?: string[]; // undefined or array of 1 or more
 	'list-extensions'?: boolean;
 	'show-versions'?: boolean;
-	'category'?: string;
+	category?: string;
 	'install-extension'?: string[]; // undefined or array of 1 or more
 	'pre-release'?: boolean;
 	'install-builtin-extension'?: string[]; // undefined or array of 1 or more
@@ -99,7 +98,7 @@ export interface NativeParsedArgs {
 	'export-default-keybindings'?: string;
 	'install-source'?: string;
 	'disable-updates'?: boolean;
-	'transient'?: boolean;
+	transient?: boolean;
 	'use-inmemory-secretstorage'?: boolean;
 	'password-store'?: string;
 	'disable-workspace-trust'?: boolean;
@@ -111,19 +110,19 @@ export interface NativeParsedArgs {
 	'file-chmod'?: boolean;
 	'enable-smoke-test-driver'?: boolean;
 	'skip-sessions-welcome'?: boolean;
-	'remote'?: string;
-	'force'?: boolean;
+	remote?: string;
+	force?: boolean;
 	'do-not-sync'?: boolean;
 	'preserve-env'?: boolean;
 	'force-user-env'?: boolean;
 	'force-disable-user-env'?: boolean;
-	'sync'?: 'on' | 'off';
-	'logsPath'?: string;
+	sync?: 'on' | 'off';
+	logsPath?: string;
 	'__enable-file-policy'?: boolean;
 	editSessionId?: string;
 	continueOn?: string;
 	'locate-shell-integration-path'?: string;
-	'profile'?: string;
+	profile?: string;
 	'profile-temp'?: boolean;
 	'disable-chromium-sandbox'?: boolean;
 	sandbox?: boolean;
@@ -140,19 +139,19 @@ export interface NativeParsedArgs {
 	'proxy-server'?: string;
 	'proxy-bypass-list'?: string;
 	'proxy-pac-url'?: string;
-	'inspect'?: string;
+	inspect?: string;
 	'inspect-brk'?: string;
 	'js-flags'?: string;
 	'disable-lcd-text'?: boolean;
 	'disable-gpu'?: boolean;
 	'disable-gpu-sandbox'?: boolean;
-	'nolazy'?: boolean;
+	nolazy?: boolean;
 	'force-device-scale-factor'?: string;
 	'force-renderer-accessibility'?: boolean;
 	'ignore-certificate-errors'?: boolean;
 	'allow-insecure-localhost'?: boolean;
 	'log-net-log'?: string;
-	'vmodule'?: string;
+	vmodule?: string;
 	'disable-dev-shm-usage'?: boolean;
 	'ozone-platform'?: string;
 	'enable-tracing'?: string;

@@ -7,7 +7,6 @@
  * Represents information about a specific difference between two sequences.
  */
 export class DiffChange {
-
 	/**
 	 * The position of the first element in the original sequence which
 	 * this change affects.

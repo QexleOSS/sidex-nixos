@@ -15,8 +15,7 @@ export class TerminalExternalLinkDetector implements ITerminalLinkDetector {
 		readonly id: string,
 		readonly xterm: Terminal,
 		private readonly _provideLinks: OmitFirstArg<ITerminalExternalLinkProvider['provideLinks']>
-	) {
-	}
+	) {}
 
 	async detect(lines: IBufferLine[], startLine: number, endLine: number): Promise<ITerminalSimpleLink[]> {
 		// Get the text representation of the wrapped line
@@ -31,12 +30,17 @@ export class TerminalExternalLinkDetector implements ITerminalLinkDetector {
 		}
 
 		const result = externalLinks.map(link => {
-			const bufferRange = convertLinkRangeToBuffer(lines, this.xterm.cols, {
-				startColumn: link.startIndex + 1,
-				startLineNumber: 1,
-				endColumn: link.startIndex + link.length + 1,
-				endLineNumber: 1
-			}, startLine);
+			const bufferRange = convertLinkRangeToBuffer(
+				lines,
+				this.xterm.cols,
+				{
+					startColumn: link.startIndex + 1,
+					startLineNumber: 1,
+					endColumn: link.startIndex + link.length + 1,
+					endLineNumber: 1
+				},
+				startLine
+			);
 			const matchingText = text.substring(link.startIndex, link.startIndex + link.length) || '';
 
 			const l: ITerminalSimpleLink = {

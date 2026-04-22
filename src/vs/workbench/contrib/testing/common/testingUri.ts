@@ -18,7 +18,7 @@ export const enum TestUriType {
 	/** Specific actual output message in a test */
 	ResultActualOutput,
 	/** Specific expected output message in a test */
-	ResultExpectedOutput,
+	ResultExpectedOutput
 }
 
 interface IAllOutputReference {
@@ -60,7 +60,7 @@ const enum TestUriParts {
 	Messages = 'message',
 	Text = 'TestFailureMessage',
 	ActualOutput = 'ActualOutput',
-	ExpectedOutput = 'ExpectedOutput',
+	ExpectedOutput = 'ExpectedOutput'
 }
 
 export const parseTestUri = (uri: URI): ParsedTestUri | undefined => {
@@ -105,7 +105,7 @@ export const buildTestUri = (parsed: ParsedTestUri): URI => {
 	if (parsed.type === TestUriType.TaskOutput) {
 		return URI.from({
 			...uriParts,
-			path: ['', parsed.resultId, TestUriParts.AllOutput, parsed.taskIndex].join('/'),
+			path: ['', parsed.resultId, TestUriParts.AllOutput, parsed.taskIndex].join('/')
 		});
 	}
 
@@ -113,7 +113,7 @@ export const buildTestUri = (parsed: ParsedTestUri): URI => {
 		URI.from({
 			...uriParts,
 			query: parsed.testExtId,
-			path: ['', resultId, TestUriParts.Messages, ...remaining].join('/'),
+			path: ['', resultId, TestUriParts.Messages, ...remaining].join('/')
 		});
 
 	switch (parsed.type) {
@@ -127,7 +127,7 @@ export const buildTestUri = (parsed: ParsedTestUri): URI => {
 			return URI.from({
 				...uriParts,
 				query: parsed.testExtId,
-				path: ['', parsed.resultId, TestUriParts.AllOutput, parsed.taskIndex].join('/'),
+				path: ['', parsed.resultId, TestUriParts.AllOutput, parsed.taskIndex].join('/')
 			});
 		default:
 			assertNever(parsed, 'Invalid test uri');

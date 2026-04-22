@@ -10,7 +10,14 @@ import { countEOL } from '../../core/misc/eolCounter.js';
 import { Position } from '../../core/position.js';
 import { LineRange } from '../../core/ranges/lineRange.js';
 import { StandardTokenType } from '../../encodedTokenAttributes.js';
-import { IBackgroundTokenizer, IState, ILanguageIdCodec, TokenizationRegistry, ITokenizationSupport, IBackgroundTokenizationStore } from '../../languages.js';
+import {
+	IBackgroundTokenizer,
+	IState,
+	ILanguageIdCodec,
+	TokenizationRegistry,
+	ITokenizationSupport,
+	IBackgroundTokenizationStore
+} from '../../languages.js';
 import { IAttachedView } from '../../model.js';
 import { FontTokensUpdate, IModelContentChangedEvent } from '../../textModelEvents.js';
 import { BackgroundTokenizationState } from '../../tokenizationTextModelPart.js';
@@ -19,7 +26,11 @@ import { ContiguousMultilineTokensBuilder } from '../../tokens/contiguousMultili
 import { ContiguousTokensStore } from '../../tokens/contiguousTokensStore.js';
 import { LineTokens } from '../../tokens/lineTokens.js';
 import { TextModel } from '../textModel.js';
-import { TokenizerWithStateStoreAndTextModel, DefaultBackgroundTokenizer, TrackingTokenizationStateStore } from '../textModelTokens.js';
+import {
+	TokenizerWithStateStoreAndTextModel,
+	DefaultBackgroundTokenizer,
+	TrackingTokenizationStateStore
+} from '../textModelTokens.js';
 import { AbstractSyntaxTokenBackend, AttachedViewHandler, AttachedViews } from './abstractSyntaxTokenBackend.js';
 
 /** For TextMate */
@@ -27,7 +38,8 @@ export class TokenizerSyntaxTokenBackend extends AbstractSyntaxTokenBackend {
 	private _tokenizer: TokenizerWithStateStoreAndTextModel | null = null;
 	protected _backgroundTokenizationState: BackgroundTokenizationState = BackgroundTokenizationState.InProgress;
 	protected readonly _onDidChangeBackgroundTokenizationState: Emitter<void> = this._register(new Emitter<void>());
-	public readonly onDidChangeBackgroundTokenizationState: Event<void> = this._onDidChangeBackgroundTokenizationState.event;
+	public readonly onDidChangeBackgroundTokenizationState: Event<void> =
+		this._onDidChangeBackgroundTokenizationState.event;
 
 	private _defaultBackgroundTokenizer: DefaultBackgroundTokenizer | null = null;
 	private readonly _backgroundTokenizer = this._register(new MutableDisposable<IBackgroundTokenizer>());
@@ -44,39 +56,43 @@ export class TokenizerSyntaxTokenBackend extends AbstractSyntaxTokenBackend {
 		languageIdCodec: ILanguageIdCodec,
 		textModel: TextModel,
 		private readonly getLanguageId: () => string,
-		attachedViews: AttachedViews,
+		attachedViews: AttachedViews
 	) {
 		super(languageIdCodec, textModel);
 
-		this._register(TokenizationRegistry.onDidChange((e) => {
-			const languageId = this.getLanguageId();
-			if (e.changedLanguages.indexOf(languageId) === -1) {
-				return;
-			}
-			this.todo_resetTokenization();
-		}));
+		this._register(
+			TokenizationRegistry.onDidChange(e => {
+				const languageId = this.getLanguageId();
+				if (e.changedLanguages.indexOf(languageId) === -1) {
+					return;
+				}
+				this.todo_resetTokenization();
+			})
+		);
 
 		this.todo_resetTokenization();
 
-		this._register(attachedViews.onDidChangeVisibleRanges(({ view, state }) => {
-			if (state) {
-				let existing = this._attachedViewStates.get(view);
-				if (!existing) {
-					existing = new AttachedViewHandler(() => this.refreshRanges(existing!.lineRanges));
-					this._attachedViewStates.set(view, existing);
+		this._register(
+			attachedViews.onDidChangeVisibleRanges(({ view, state }) => {
+				if (state) {
+					let existing = this._attachedViewStates.get(view);
+					if (!existing) {
+						existing = new AttachedViewHandler(() => this.refreshRanges(existing!.lineRanges));
+						this._attachedViewStates.set(view, existing);
+					}
+					existing.handleStateChange(state);
+
+					// Update background tokenizer viewport limit
+					const visibleRanges = state.visibleLineRanges;
+					if (visibleRanges.length > 0) {
+						const lastRange = visibleRanges[visibleRanges.length - 1];
+						this._defaultBackgroundTokenizer?.setViewportEndLine(lastRange.endLineNumber);
+					}
+				} else {
+					this._attachedViewStates.deleteAndDispose(view);
 				}
-				existing.handleStateChange(state);
-				
-				// Update background tokenizer viewport limit
-				const visibleRanges = state.visibleLineRanges;
-				if (visibleRanges.length > 0) {
-					const lastRange = visibleRanges[visibleRanges.length - 1];
-					this._defaultBackgroundTokenizer?.setViewportEndLine(lastRange.endLineNumber);
-				}
-			} else {
-				this._attachedViewStates.deleteAndDispose(view);
-			}
-		}));
+			})
+		);
 	}
 
 	public todo_resetTokenization(fireTokenChangeEvent: boolean = true): void {
@@ -91,9 +107,9 @@ export class TokenizerSyntaxTokenBackend extends AbstractSyntaxTokenBackend {
 				ranges: [
 					{
 						fromLineNumber: 1,
-						toLineNumber: this._textModel.getLineCount(),
-					},
-				],
+						toLineNumber: this._textModel.getLineCount()
+					}
+				]
 			});
 		}
 
@@ -117,7 +133,12 @@ export class TokenizerSyntaxTokenBackend extends AbstractSyntaxTokenBackend {
 
 		const [tokenizationSupport, initialState] = initializeTokenization();
 		if (tokenizationSupport && initialState) {
-			this._tokenizer = new TokenizerWithStateStoreAndTextModel(this._textModel.getLineCount(), tokenizationSupport, this._textModel, this._languageIdCodec);
+			this._tokenizer = new TokenizerWithStateStoreAndTextModel(
+				this._textModel.getLineCount(),
+				tokenizationSupport,
+				this._textModel,
+				this._languageIdCodec
+			);
 		} else {
 			this._tokenizer = null;
 		}
@@ -127,7 +148,7 @@ export class TokenizerSyntaxTokenBackend extends AbstractSyntaxTokenBackend {
 		this._defaultBackgroundTokenizer = null;
 		if (this._tokenizer) {
 			const b: IBackgroundTokenizationStore = {
-				setTokens: (tokens) => {
+				setTokens: tokens => {
 					this.setTokens(tokens);
 				},
 				setFontInfo: (changes: FontTokensUpdate) => {
@@ -143,30 +164,41 @@ export class TokenizerSyntaxTokenBackend extends AbstractSyntaxTokenBackend {
 					this._onDidChangeBackgroundTokenizationState.fire();
 				},
 				setEndState: (lineNumber, state) => {
-					if (!this._tokenizer) { return; }
+					if (!this._tokenizer) {
+						return;
+					}
 					const firstInvalidEndStateLineNumber = this._tokenizer.store.getFirstInvalidEndStateLineNumber();
 					// Don't accept states for definitely valid states, the renderer is ahead of the worker!
 					if (firstInvalidEndStateLineNumber !== null && lineNumber >= firstInvalidEndStateLineNumber) {
 						this._tokenizer?.store.setEndState(lineNumber, state);
 					}
-				},
+				}
 			};
 
-			if (tokenizationSupport && tokenizationSupport.createBackgroundTokenizer && !tokenizationSupport.backgroundTokenizerShouldOnlyVerifyTokens) {
+			if (
+				tokenizationSupport &&
+				tokenizationSupport.createBackgroundTokenizer &&
+				!tokenizationSupport.backgroundTokenizerShouldOnlyVerifyTokens
+			) {
 				this._backgroundTokenizer.value = tokenizationSupport.createBackgroundTokenizer(this._textModel, b);
 			}
 			if (!this._backgroundTokenizer.value && !this._textModel.isTooLargeForTokenization()) {
-				this._backgroundTokenizer.value = this._defaultBackgroundTokenizer =
-					new DefaultBackgroundTokenizer(this._tokenizer, b);
+				this._backgroundTokenizer.value = this._defaultBackgroundTokenizer = new DefaultBackgroundTokenizer(
+					this._tokenizer,
+					b
+				);
 				this._defaultBackgroundTokenizer.handleChanges();
 			}
 
-			if (tokenizationSupport?.backgroundTokenizerShouldOnlyVerifyTokens && tokenizationSupport.createBackgroundTokenizer) {
+			if (
+				tokenizationSupport?.backgroundTokenizerShouldOnlyVerifyTokens &&
+				tokenizationSupport.createBackgroundTokenizer
+			) {
 				this._debugBackgroundTokens = new ContiguousTokensStore(this._languageIdCodec);
 				this._debugBackgroundStates = new TrackingTokenizationStateStore(this._textModel.getLineCount());
 				this._debugBackgroundTokenizer.clear();
 				this._debugBackgroundTokenizer.value = tokenizationSupport.createBackgroundTokenizer(this._textModel, {
-					setTokens: (tokens) => {
+					setTokens: tokens => {
 						this._debugBackgroundTokens?.setMultilineTokens(tokens, this._textModel);
 					},
 					setFontInfo: (changes: FontTokensUpdate) => {
@@ -177,7 +209,7 @@ export class TokenizerSyntaxTokenBackend extends AbstractSyntaxTokenBackend {
 					},
 					setEndState: (lineNumber, state) => {
 						this._debugBackgroundStates?.setEndState(lineNumber, state);
-					},
+					}
 				});
 			} else {
 				this._debugBackgroundTokens = undefined;
@@ -197,7 +229,8 @@ export class TokenizerSyntaxTokenBackend extends AbstractSyntaxTokenBackend {
 		if (e.isFlush) {
 			// Don't fire the event, as the view might not have got the text change event yet
 			this.todo_resetTokenization(false);
-		} else if (!e.isEolChange) { // We don't have to do anything on an EOL change
+		} else if (!e.isEolChange) {
+			// We don't have to do anything on an EOL change
 			for (const c of e.changes) {
 				const [eolCount, firstLineLength] = countEOL(c.text);
 
@@ -213,11 +246,13 @@ export class TokenizerSyntaxTokenBackend extends AbstractSyntaxTokenBackend {
 		}
 	}
 
-	private setTokens(tokens: ContiguousMultilineTokens[]): { changes: { fromLineNumber: number; toLineNumber: number }[] } {
+	private setTokens(tokens: ContiguousMultilineTokens[]): {
+		changes: { fromLineNumber: number; toLineNumber: number }[];
+	} {
 		const { changes } = this._tokens.setMultilineTokens(tokens, this._textModel);
 
 		if (changes.length > 0) {
-			this._onDidChangeTokens.fire({ semanticTokensApplied: false, ranges: changes, });
+			this._onDidChangeTokens.fire({ semanticTokensApplied: false, ranges: changes });
 		}
 
 		return { changes: changes };
@@ -285,13 +320,12 @@ export class TokenizerSyntaxTokenBackend extends AbstractSyntaxTokenBackend {
 
 	public getLineTokens(lineNumber: number): LineTokens {
 		const lineText = this._textModel.getLineContent(lineNumber);
-		const result = this._tokens.getTokens(
-			this._textModel.getLanguageId(),
-			lineNumber - 1,
-			lineText
-		);
+		const result = this._tokens.getTokens(this._textModel.getLanguageId(), lineNumber - 1, lineText);
 		if (this._debugBackgroundTokens && this._debugBackgroundStates && this._tokenizer) {
-			if (this._debugBackgroundStates.getFirstInvalidEndStateLineNumberOrMax() > lineNumber && this._tokenizer.store.getFirstInvalidEndStateLineNumberOrMax() > lineNumber) {
+			if (
+				this._debugBackgroundStates.getFirstInvalidEndStateLineNumberOrMax() > lineNumber &&
+				this._tokenizer.store.getFirstInvalidEndStateLineNumberOrMax() > lineNumber
+			) {
 				const backgroundResult = this._debugBackgroundTokens.getTokens(
 					this._textModel.getLanguageId(),
 					lineNumber - 1,
@@ -314,7 +348,6 @@ export class TokenizerSyntaxTokenBackend extends AbstractSyntaxTokenBackend {
 		this.forceTokenization(position.lineNumber);
 		return this._tokenizer.getTokenTypeIfInsertingCharacter(position, character);
 	}
-
 
 	public tokenizeLinesAt(lineNumber: number, lines: string[]): LineTokens[] | null {
 		if (!this._tokenizer) {

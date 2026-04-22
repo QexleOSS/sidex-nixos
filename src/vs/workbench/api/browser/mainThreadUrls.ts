@@ -8,18 +8,20 @@ import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions
 import { IURLService, IOpenURLOptions } from '../../../platform/url/common/url.js';
 import { URI, UriComponents } from '../../../base/common/uri.js';
 import { Disposable, IDisposable } from '../../../base/common/lifecycle.js';
-import { IExtensionContributedURLHandler, IExtensionUrlHandler } from '../../services/extensions/browser/extensionUrlHandler.js';
+import {
+	IExtensionContributedURLHandler,
+	IExtensionUrlHandler
+} from '../../services/extensions/browser/extensionUrlHandler.js';
 import { ExtensionIdentifier } from '../../../platform/extensions/common/extensions.js';
 import { ITrustedDomainService } from '../../contrib/url/browser/trustedDomainService.js';
 
 class ExtensionUrlHandler implements IExtensionContributedURLHandler {
-
 	constructor(
 		private readonly proxy: ExtHostUrlsShape,
 		private readonly handle: number,
 		readonly extensionId: ExtensionIdentifier,
 		readonly extensionDisplayName: string
-	) { }
+	) {}
 
 	async handleURL(uri: URI, options?: IOpenURLOptions): Promise<boolean> {
 		if (!ExtensionIdentifier.equals(this.extensionId, uri.authority)) {
@@ -33,7 +35,6 @@ class ExtensionUrlHandler implements IExtensionContributedURLHandler {
 
 @extHostNamedCustomer(MainContext.MainThreadUrls)
 export class MainThreadUrls extends Disposable implements MainThreadUrlsShape {
-
 	private readonly proxy: ExtHostUrlsShape;
 	private readonly handlers = new Map<number, { extensionId: ExtensionIdentifier; disposable: IDisposable }>();
 
@@ -48,7 +49,11 @@ export class MainThreadUrls extends Disposable implements MainThreadUrlsShape {
 		this.proxy = context.getProxy(ExtHostContext.ExtHostUrls);
 	}
 
-	async $registerUriHandler(handle: number, extensionId: ExtensionIdentifier, extensionDisplayName: string): Promise<void> {
+	async $registerUriHandler(
+		handle: number,
+		extensionId: ExtensionIdentifier,
+		extensionDisplayName: string
+	): Promise<void> {
 		const handler = new ExtensionUrlHandler(this.proxy, handle, extensionId, extensionDisplayName);
 		const disposable = this.urlService.registerHandler(handler);
 

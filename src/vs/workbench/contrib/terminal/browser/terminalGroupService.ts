@@ -71,18 +71,22 @@ export class TerminalGroupService extends Disposable implements ITerminalGroupSe
 		super();
 
 		const terminalGroupCountContextKey = TerminalContextKeys.groupCount.bindTo(this._contextKeyService);
-		this._register(Event.runAndSubscribe(this.onDidChangeGroups, () => terminalGroupCountContextKey.set(this.groups.length)));
+		this._register(
+			Event.runAndSubscribe(this.onDidChangeGroups, () => terminalGroupCountContextKey.set(this.groups.length))
+		);
 
 		const splitTerminalActiveContextKey = TerminalContextKeys.splitTerminalActive.bindTo(this._contextKeyService);
-		this._register(Event.runAndSubscribe(this.onDidFocusInstance, () => {
-			const activeInstance = this.activeInstance;
-			splitTerminalActiveContextKey.set(activeInstance ? this.instanceIsSplit(activeInstance) : false);
-		}));
+		this._register(
+			Event.runAndSubscribe(this.onDidFocusInstance, () => {
+				const activeInstance = this.activeInstance;
+				splitTerminalActiveContextKey.set(activeInstance ? this.instanceIsSplit(activeInstance) : false);
+			})
+		);
 
 		this._register(this.onDidDisposeGroup(group => this._removeGroup(group)));
 		this._register(Event.any(this.onDidChangeActiveGroup, this.onDidChangeInstances)(() => this.updateVisibility()));
-		this._register(this._quickInputService.onShow(() => this._isQuickInputOpened = true));
-		this._register(this._quickInputService.onHide(() => this._isQuickInputOpened = false));
+		this._register(this._quickInputService.onShow(() => (this._isQuickInputOpened = true)));
+		this._register(this._quickInputService.onHide(() => (this._isQuickInputOpened = false)));
 	}
 
 	hidePanel(): void {
@@ -168,11 +172,13 @@ export class TerminalGroupService extends Disposable implements ITerminalGroupSe
 		group.addDisposable(Event.forward(group.onDidChangeInstanceCapability, this._onDidChangeInstanceCapability));
 		group.addDisposable(Event.forward(group.onInstancesChanged, this._onDidChangeInstances));
 		group.addDisposable(Event.forward(group.onDisposed, this._onDidDisposeGroup));
-		group.addDisposable(group.onDidChangeActiveInstance(e => {
-			if (group === this.activeGroup) {
-				this._onDidChangeActiveInstance.fire(e);
-			}
-		}));
+		group.addDisposable(
+			group.onDidChangeActiveInstance(e => {
+				if (group === this.activeGroup) {
+					this._onDidChangeActiveInstance.fire(e);
+				}
+			})
+		);
 		if (group.terminalInstances.length > 0) {
 			this._onDidChangeInstances.fire();
 		}
@@ -186,8 +192,9 @@ export class TerminalGroupService extends Disposable implements ITerminalGroupSe
 	}
 
 	async showPanel(focus?: boolean): Promise<void> {
-		const pane = this._viewsService.getActiveViewWithId(TERMINAL_VIEW_ID)
-			?? await this._viewsService.openView(TERMINAL_VIEW_ID, focus);
+		const pane =
+			this._viewsService.getActiveViewWithId(TERMINAL_VIEW_ID) ??
+			(await this._viewsService.openView(TERMINAL_VIEW_ID, focus));
 		pane?.setExpanded(true);
 
 		if (focus) {
@@ -336,11 +343,7 @@ export class TerminalGroupService extends Disposable implements ITerminalGroupSe
 	}
 
 	private _getValidTerminalGroups = (sources: ITerminalInstance[]): Set<ITerminalGroup> => {
-		return new Set(
-			sources
-				.map(source => this.getGroupForInstance(source))
-				.filter((group) => group !== undefined)
-		);
+		return new Set(sources.map(source => this.getGroupForInstance(source)).filter(group => group !== undefined));
 	};
 
 	moveGroup(source: SingleOrMany<ITerminalInstance>, target: ITerminalInstance) {
@@ -374,7 +377,8 @@ export class TerminalGroupService extends Disposable implements ITerminalGroupSe
 		const insertIndex = position === 'after' ? targetGroupIndex + 1 : targetGroupIndex;
 		this.groups.splice(insertIndex, 0, ...sortedSourceGroups);
 		for (const sourceGroup of sortedSourceGroups) {
-			const originSourceGroupIndex = position === 'after' ? this.groups.indexOf(sourceGroup) : this.groups.lastIndexOf(sourceGroup);
+			const originSourceGroupIndex =
+				position === 'after' ? this.groups.indexOf(sourceGroup) : this.groups.lastIndexOf(sourceGroup);
 			this.groups.splice(originSourceGroupIndex, 1);
 		}
 		this._onDidChangeInstances.fire();
@@ -498,9 +502,11 @@ export class TerminalGroupService extends Disposable implements ITerminalGroupSe
 	}
 
 	getGroupLabels(): string[] {
-		return this.groups.filter(group => group.terminalInstances.length > 0).map((group, index) => {
-			return `${index + 1}: ${group.title ? group.title : ''}`;
-		});
+		return this.groups
+			.filter(group => group.terminalInstances.length > 0)
+			.map((group, index) => {
+				return `${index + 1}: ${group.title ? group.title : ''}`;
+			});
 	}
 
 	/**

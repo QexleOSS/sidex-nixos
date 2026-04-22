@@ -8,7 +8,16 @@ import { Disposable, IDisposable, markAsSingleton, toDisposable } from '../../..
 import * as strings from '../../../base/common/strings.js';
 import { ITextModel } from '../model.js';
 import { DEFAULT_WORD_REGEXP, ensureValidWordDefinition } from '../core/wordHelper.js';
-import { EnterAction, FoldingRules, IAutoClosingPair, IndentationRule, LanguageConfiguration, AutoClosingPairs, CharacterPair, ExplicitLanguageConfiguration } from './languageConfiguration.js';
+import {
+	EnterAction,
+	FoldingRules,
+	IAutoClosingPair,
+	IndentationRule,
+	LanguageConfiguration,
+	AutoClosingPairs,
+	CharacterPair,
+	ExplicitLanguageConfiguration
+} from './languageConfiguration.js';
 import { CharacterPairSupport } from './supports/characterPair.js';
 import { BracketElectricCharacterSupport } from './supports/electricCharacter.js';
 import { IndentRulesSupport } from './supports/indentRules.js';
@@ -43,18 +52,18 @@ export interface ILanguageConfigurationService {
 	register(languageId: string, configuration: LanguageConfiguration, priority?: number): IDisposable;
 
 	getLanguageConfiguration(languageId: string): ResolvedLanguageConfiguration;
-
 }
 
 export class LanguageConfigurationServiceChangeEvent {
-	constructor(public readonly languageId: string | undefined) { }
+	constructor(public readonly languageId: string | undefined) {}
 
 	public affects(languageId: string): boolean {
 		return !this.languageId ? true : this.languageId === languageId;
 	}
 }
 
-export const ILanguageConfigurationService = createDecorator<ILanguageConfigurationService>('languageConfigurationService');
+export const ILanguageConfigurationService =
+	createDecorator<ILanguageConfigurationService>('languageConfigurationService');
 
 export class LanguageConfigurationService extends Disposable implements ILanguageConfigurationService {
 	_serviceBrand: undefined;
@@ -74,33 +83,33 @@ export class LanguageConfigurationService extends Disposable implements ILanguag
 
 		const languageConfigKeys = new Set(Object.values(customizedLanguageConfigKeys));
 
-		this._register(this.configurationService.onDidChangeConfiguration((e) => {
-			const globalConfigChanged = e.change.keys.some((k) =>
-				languageConfigKeys.has(k)
-			);
-			const localConfigChanged = e.change.overrides
-				.filter(([overrideLangName, keys]) =>
-					keys.some((k) => languageConfigKeys.has(k))
-				)
-				.map(([overrideLangName]) => overrideLangName);
+		this._register(
+			this.configurationService.onDidChangeConfiguration(e => {
+				const globalConfigChanged = e.change.keys.some(k => languageConfigKeys.has(k));
+				const localConfigChanged = e.change.overrides
+					.filter(([overrideLangName, keys]) => keys.some(k => languageConfigKeys.has(k)))
+					.map(([overrideLangName]) => overrideLangName);
 
-			if (globalConfigChanged) {
-				this.configurations.clear();
-				this.onDidChangeEmitter.fire(new LanguageConfigurationServiceChangeEvent(undefined));
-			} else {
-				for (const languageId of localConfigChanged) {
-					if (this.languageService.isRegisteredLanguageId(languageId)) {
-						this.configurations.delete(languageId);
-						this.onDidChangeEmitter.fire(new LanguageConfigurationServiceChangeEvent(languageId));
+				if (globalConfigChanged) {
+					this.configurations.clear();
+					this.onDidChangeEmitter.fire(new LanguageConfigurationServiceChangeEvent(undefined));
+				} else {
+					for (const languageId of localConfigChanged) {
+						if (this.languageService.isRegisteredLanguageId(languageId)) {
+							this.configurations.delete(languageId);
+							this.onDidChangeEmitter.fire(new LanguageConfigurationServiceChangeEvent(languageId));
+						}
 					}
 				}
-			}
-		}));
+			})
+		);
 
-		this._register(this._registry.onDidChange((e) => {
-			this.configurations.delete(e.languageId);
-			this.onDidChangeEmitter.fire(new LanguageConfigurationServiceChangeEvent(e.languageId));
-		}));
+		this._register(
+			this._registry.onDidChange(e => {
+				this.configurations.delete(e.languageId);
+				this.onDidChangeEmitter.fire(new LanguageConfigurationServiceChangeEvent(e.languageId));
+			})
+		);
 	}
 
 	public register(languageId: string, configuration: LanguageConfiguration, priority?: number): IDisposable {
@@ -121,7 +130,7 @@ function computeConfig(
 	languageId: string,
 	registry: LanguageConfigurationRegistry,
 	configurationService: IConfigurationService,
-	languageService: ILanguageService,
+	languageService: ILanguageService
 ): ResolvedLanguageConfiguration {
 	let languageConfig = registry.getLanguageConfiguration(languageId);
 
@@ -145,18 +154,21 @@ const customizedLanguageConfigKeys = {
 	colorizedBracketPairs: 'editor.language.colorizedBracketPairs'
 };
 
-function getCustomizedLanguageConfig(languageId: string, configurationService: IConfigurationService): LanguageConfiguration {
+function getCustomizedLanguageConfig(
+	languageId: string,
+	configurationService: IConfigurationService
+): LanguageConfiguration {
 	const brackets = configurationService.getValue(customizedLanguageConfigKeys.brackets, {
-		overrideIdentifier: languageId,
+		overrideIdentifier: languageId
 	});
 
 	const colorizedBracketPairs = configurationService.getValue(customizedLanguageConfigKeys.colorizedBracketPairs, {
-		overrideIdentifier: languageId,
+		overrideIdentifier: languageId
 	});
 
 	return {
 		brackets: validateBracketPairs(brackets),
-		colorizedBracketPairs: validateBracketPairs(colorizedBracketPairs),
+		colorizedBracketPairs: validateBracketPairs(colorizedBracketPairs)
 	};
 }
 
@@ -164,12 +176,14 @@ function validateBracketPairs(data: unknown): CharacterPair[] | undefined {
 	if (!Array.isArray(data)) {
 		return undefined;
 	}
-	return data.map(pair => {
-		if (!Array.isArray(pair) || pair.length !== 2) {
-			return undefined;
-		}
-		return [pair[0], pair[1]] as CharacterPair;
-	}).filter((p): p is CharacterPair => !!p);
+	return data
+		.map(pair => {
+			if (!Array.isArray(pair) || pair.length !== 2) {
+				return undefined;
+			}
+			return [pair[0], pair[1]] as CharacterPair;
+		})
+		.filter((p): p is CharacterPair => !!p);
 }
 
 export function getIndentationAtPosition(model: ITextModel, lineNumber: number, column: number): string {
@@ -192,36 +206,28 @@ class ComposedLanguageConfiguration {
 		this._resolved = null;
 	}
 
-	public register(
-		configuration: LanguageConfiguration,
-		priority: number
-	): IDisposable {
-		const entry = new LanguageConfigurationContribution(
-			configuration,
-			priority,
-			++this._order
-		);
+	public register(configuration: LanguageConfiguration, priority: number): IDisposable {
+		const entry = new LanguageConfigurationContribution(configuration, priority, ++this._order);
 		this._entries.push(entry);
 		this._resolved = null;
-		return markAsSingleton(toDisposable(() => {
-			for (let i = 0; i < this._entries.length; i++) {
-				if (this._entries[i] === entry) {
-					this._entries.splice(i, 1);
-					this._resolved = null;
-					break;
+		return markAsSingleton(
+			toDisposable(() => {
+				for (let i = 0; i < this._entries.length; i++) {
+					if (this._entries[i] === entry) {
+						this._entries.splice(i, 1);
+						this._resolved = null;
+						break;
+					}
 				}
-			}
-		}));
+			})
+		);
 	}
 
 	public getResolvedConfiguration(): ResolvedLanguageConfiguration | null {
 		if (!this._resolved) {
 			const config = this._resolve();
 			if (config) {
-				this._resolved = new ResolvedLanguageConfiguration(
-					this.languageId,
-					config
-				);
+				this._resolved = new ResolvedLanguageConfiguration(this.languageId, config);
 			}
 		}
 		return this._resolved;
@@ -248,7 +254,7 @@ function combineLanguageConfigurations(configs: LanguageConfiguration[]): Langua
 		autoCloseBefore: undefined,
 		folding: undefined,
 		colorizedBracketPairs: undefined,
-		__electricCharacterSupport: undefined,
+		__electricCharacterSupport: undefined
 	};
 	for (const entry of configs) {
 		result = {
@@ -262,7 +268,7 @@ function combineLanguageConfigurations(configs: LanguageConfiguration[]): Langua
 			autoCloseBefore: entry.autoCloseBefore || result.autoCloseBefore,
 			folding: entry.folding || result.folding,
 			colorizedBracketPairs: entry.colorizedBracketPairs || result.colorizedBracketPairs,
-			__electricCharacterSupport: entry.__electricCharacterSupport || result.__electricCharacterSupport,
+			__electricCharacterSupport: entry.__electricCharacterSupport || result.__electricCharacterSupport
 		};
 	}
 
@@ -274,7 +280,7 @@ class LanguageConfigurationContribution {
 		public readonly configuration: LanguageConfiguration,
 		public readonly priority: number,
 		public readonly order: number
-	) { }
+	) {}
 
 	public static cmp(a: LanguageConfigurationContribution, b: LanguageConfigurationContribution) {
 		if (a.priority === b.priority) {
@@ -287,7 +293,7 @@ class LanguageConfigurationContribution {
 }
 
 export class LanguageConfigurationChangeEvent {
-	constructor(public readonly languageId: string) { }
+	constructor(public readonly languageId: string) {}
 }
 
 export class LanguageConfigurationRegistry extends Disposable {
@@ -298,26 +304,32 @@ export class LanguageConfigurationRegistry extends Disposable {
 
 	constructor() {
 		super();
-		this._register(this.register(PLAINTEXT_LANGUAGE_ID, {
-			brackets: [
-				['(', ')'],
-				['[', ']'],
-				['{', '}'],
-			],
-			surroundingPairs: [
-				{ open: '{', close: '}' },
-				{ open: '[', close: ']' },
-				{ open: '(', close: ')' },
-				{ open: '<', close: '>' },
-				{ open: '\"', close: '\"' },
-				{ open: '\'', close: '\'' },
-				{ open: '`', close: '`' },
-			],
-			colorizedBracketPairs: [],
-			folding: {
-				offSide: true
-			}
-		}, 0));
+		this._register(
+			this.register(
+				PLAINTEXT_LANGUAGE_ID,
+				{
+					brackets: [
+						['(', ')'],
+						['[', ']'],
+						['{', '}']
+					],
+					surroundingPairs: [
+						{ open: '{', close: '}' },
+						{ open: '[', close: ']' },
+						{ open: '(', close: ')' },
+						{ open: '<', close: '>' },
+						{ open: '\"', close: '\"' },
+						{ open: "'", close: "'" },
+						{ open: '`', close: '`' }
+					],
+					colorizedBracketPairs: [],
+					folding: {
+						offSide: true
+					}
+				},
+				0
+			)
+		);
 	}
 
 	/**
@@ -333,10 +345,12 @@ export class LanguageConfigurationRegistry extends Disposable {
 		const disposable = entries.register(configuration, priority);
 		this._onDidChange.fire(new LanguageConfigurationChangeEvent(languageId));
 
-		return markAsSingleton(toDisposable(() => {
-			disposable.dispose();
-			this._onDidChange.fire(new LanguageConfigurationChangeEvent(languageId));
-		}));
+		return markAsSingleton(
+			toDisposable(() => {
+				disposable.dispose();
+				this._onDidChange.fire(new LanguageConfigurationChangeEvent(languageId));
+			})
+		);
 	}
 
 	public getLanguageConfiguration(languageId: string): ResolvedLanguageConfiguration | null {
@@ -347,7 +361,7 @@ export class LanguageConfigurationRegistry extends Disposable {
 
 /**
  * Immutable.
-*/
+ */
 export class ResolvedLanguageConfiguration {
 	private _brackets: RichEditBrackets | null;
 	private _electricCharacter: BracketElectricCharacterSupport | null;
@@ -368,9 +382,7 @@ export class ResolvedLanguageConfiguration {
 		this._brackets = null;
 		this._electricCharacter = null;
 		this._onEnterSupport =
-			this.underlyingConfig.brackets ||
-				this.underlyingConfig.indentationRules ||
-				this.underlyingConfig.onEnterRules
+			this.underlyingConfig.brackets || this.underlyingConfig.indentationRules || this.underlyingConfig.onEnterRules
 				? new OnEnterSupport(this.underlyingConfig)
 				: null;
 		this.comments = ResolvedLanguageConfiguration._handleComments(this.underlyingConfig);
@@ -379,18 +391,13 @@ export class ResolvedLanguageConfiguration {
 		this.wordDefinition = this.underlyingConfig.wordPattern || DEFAULT_WORD_REGEXP;
 		this.indentationRules = this.underlyingConfig.indentationRules;
 		if (this.underlyingConfig.indentationRules) {
-			this.indentRulesSupport = new IndentRulesSupport(
-				this.underlyingConfig.indentationRules
-			);
+			this.indentRulesSupport = new IndentRulesSupport(this.underlyingConfig.indentationRules);
 		} else {
 			this.indentRulesSupport = null;
 		}
 		this.foldingRules = this.underlyingConfig.folding || {};
 
-		this.bracketsNew = new LanguageBracketsConfiguration(
-			languageId,
-			this.underlyingConfig
-		);
+		this.bracketsNew = new LanguageBracketsConfiguration(languageId, this.underlyingConfig);
 	}
 
 	public getWordDefinition(): RegExp {
@@ -399,19 +406,14 @@ export class ResolvedLanguageConfiguration {
 
 	public get brackets(): RichEditBrackets | null {
 		if (!this._brackets && this.underlyingConfig.brackets) {
-			this._brackets = new RichEditBrackets(
-				this.languageId,
-				this.underlyingConfig.brackets
-			);
+			this._brackets = new RichEditBrackets(this.languageId, this.underlyingConfig.brackets);
 		}
 		return this._brackets;
 	}
 
 	public get electricCharacter(): BracketElectricCharacterSupport | null {
 		if (!this._electricCharacter) {
-			this._electricCharacter = new BracketElectricCharacterSupport(
-				this.brackets
-			);
+			this._electricCharacter = new BracketElectricCharacterSupport(this.brackets);
 		}
 		return this._electricCharacter;
 	}
@@ -425,12 +427,7 @@ export class ResolvedLanguageConfiguration {
 		if (!this._onEnterSupport) {
 			return null;
 		}
-		return this._onEnterSupport.onEnter(
-			autoIndent,
-			previousLineText,
-			beforeEnterText,
-			afterEnterText
-		);
+		return this._onEnterSupport.onEnter(autoIndent, previousLineText, beforeEnterText, afterEnterText);
 	}
 
 	public getAutoClosingPairs(): AutoClosingPairs {
@@ -445,9 +442,7 @@ export class ResolvedLanguageConfiguration {
 		return this.characterPair.getSurroundingPairs();
 	}
 
-	private static _handleComments(
-		conf: LanguageConfiguration
-	): ICommentsConfiguration | null {
+	private static _handleComments(conf: LanguageConfiguration): ICommentsConfiguration | null {
 		const commentRule = conf.comments;
 		if (!commentRule) {
 			return null;

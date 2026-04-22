@@ -75,7 +75,9 @@ export interface ICommandAndKeybindingRule<Args extends unknown[] = unknown[]> e
 export interface IKeybindingsRegistry {
 	registerKeybindingRule(rule: IKeybindingRule): IDisposable;
 	setExtensionKeybindings(rules: IExtensionKeybindingRule[]): void;
-	registerCommandAndKeybindingRule<Args extends unknown[] = unknown[]>(desc: ICommandAndKeybindingRule<Args>): IDisposable;
+	registerCommandAndKeybindingRule<Args extends unknown[] = unknown[]>(
+		desc: ICommandAndKeybindingRule<Args>
+	): IDisposable;
 	getDefaultKeybindings(): IKeybindingItem[];
 	getDefaultKeybindingsForOS(os: OperatingSystem): IKeybindingItem[];
 }
@@ -84,7 +86,6 @@ export interface IKeybindingsRegistry {
  * Stores all built-in and extension-provided keybindings (but not ones that user defines themselves)
  */
 class KeybindingsRegistryImpl implements IKeybindingsRegistry {
-
 	private _coreKeybindings: LinkedList<IKeybindingItem>;
 	private _coreKeybindingRules: LinkedList<IKeybindingRule>;
 	private _extensionKeybindings: IKeybindingItem[];
@@ -143,7 +144,11 @@ class KeybindingsRegistryImpl implements IKeybindingsRegistry {
 		}
 
 		const removeRule = this._coreKeybindingRules.push(rule);
-		result.add(toDisposable(() => { removeRule(); }));
+		result.add(
+			toDisposable(() => {
+				removeRule();
+			})
+		);
 
 		return result;
 	}
@@ -171,13 +176,17 @@ class KeybindingsRegistryImpl implements IKeybindingsRegistry {
 	}
 
 	public registerCommandAndKeybindingRule(desc: ICommandAndKeybindingRule): IDisposable {
-		return combinedDisposable(
-			this.registerKeybindingRule(desc),
-			CommandsRegistry.registerCommand(desc)
-		);
+		return combinedDisposable(this.registerKeybindingRule(desc), CommandsRegistry.registerCommand(desc));
 	}
 
-	private _registerDefaultKeybinding(keybinding: Keybinding, commandId: string, commandArgs: any, weight1: number, weight2: number, when: ContextKeyExpression | null | undefined): IDisposable {
+	private _registerDefaultKeybinding(
+		keybinding: Keybinding,
+		commandId: string,
+		commandArgs: any,
+		weight1: number,
+		weight2: number,
+		when: ContextKeyExpression | null | undefined
+	): IDisposable {
 		const remove = this._coreKeybindings.push({
 			keybinding: keybinding,
 			command: commandId,

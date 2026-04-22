@@ -10,9 +10,8 @@ type TrustedTypePolicyOptions = import('trusted-types/lib/index.d.ts').TrustedTy
 
 export function createTrustedTypesPolicy<Options extends TrustedTypePolicyOptions>(
 	policyName: string,
-	policyOptions?: Options,
+	policyOptions?: Options
 ): undefined | Pick<TrustedTypePolicy, 'name' | Extract<keyof Options, keyof TrustedTypePolicyOptions>> {
-
 	const monacoEnvironment = getMonacoEnvironment();
 
 	if (monacoEnvironment?.createTrustedTypesPolicy) {
@@ -24,7 +23,7 @@ export function createTrustedTypesPolicy<Options extends TrustedTypePolicyOption
 		}
 	}
 	try {
-		// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+		// eslint-disable-next-line local/code-no-any-casts
 		return (globalThis as any).trustedTypes?.createPolicy(policyName, policyOptions);
 	} catch (err) {
 		onUnexpectedError(err);

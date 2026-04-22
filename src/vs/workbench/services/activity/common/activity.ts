@@ -9,7 +9,12 @@ import { Event } from '../../../../base/common/event.js';
 import { IDisposable } from '../../../../base/common/lifecycle.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
-import { activityErrorBadgeBackground, activityErrorBadgeForeground, activityWarningBadgeBackground, activityWarningBadgeForeground } from '../../../../platform/theme/common/colors/miscColors.js';
+import {
+	activityErrorBadgeBackground,
+	activityErrorBadgeForeground,
+	activityWarningBadgeBackground,
+	activityWarningBadgeForeground
+} from '../../../../platform/theme/common/colors/miscColors.js';
 import { IColorTheme } from '../../../../platform/theme/common/themeService.js';
 import { ViewContainer } from '../../../common/views.js';
 
@@ -20,7 +25,6 @@ export interface IActivity {
 export const IActivityService = createDecorator<IActivityService>('activityService');
 
 export interface IActivityService {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -71,12 +75,10 @@ export interface IBadgeStyles {
 }
 
 class BaseBadge<T = unknown> implements IBadge {
-
 	constructor(
 		protected readonly descriptorFn: (arg: T) => string,
-		private readonly stylesFn: ((theme: IColorTheme) => IBadgeStyles | undefined) | undefined,
-	) {
-	}
+		private readonly stylesFn: ((theme: IColorTheme) => IBadgeStyles | undefined) | undefined
+	) {}
 
 	getDescription(): string {
 		return this.descriptorFn(null as T);
@@ -88,8 +90,10 @@ class BaseBadge<T = unknown> implements IBadge {
 }
 
 export class NumberBadge extends BaseBadge<number> {
-
-	constructor(readonly number: number, descriptorFn: (num: number) => string) {
+	constructor(
+		readonly number: number,
+		descriptorFn: (num: number) => string
+	) {
 		super(descriptorFn, undefined);
 
 		this.number = number;
@@ -104,7 +108,7 @@ export class IconBadge extends BaseBadge<void> {
 	constructor(
 		readonly icon: ThemeIcon,
 		descriptorFn: () => string,
-		stylesFn?: (theme: IColorTheme) => IBadgeStyles | undefined,
+		stylesFn?: (theme: IColorTheme) => IBadgeStyles | undefined
 	) {
 		super(descriptorFn, stylesFn);
 	}
@@ -121,7 +125,7 @@ export class WarningBadge extends IconBadge {
 		super(Codicon.warning, descriptorFn, (theme: IColorTheme) => ({
 			badgeBackground: theme.getColor(activityWarningBadgeBackground),
 			badgeForeground: theme.getColor(activityWarningBadgeForeground),
-			badgeBorder: undefined,
+			badgeBorder: undefined
 		}));
 	}
 }
@@ -131,7 +135,7 @@ export class ErrorBadge extends IconBadge {
 		super(Codicon.error, descriptorFn, (theme: IColorTheme) => ({
 			badgeBackground: theme.getColor(activityErrorBadgeBackground),
 			badgeForeground: theme.getColor(activityErrorBadgeForeground),
-			badgeBorder: undefined,
+			badgeBorder: undefined
 		}));
 	}
 }

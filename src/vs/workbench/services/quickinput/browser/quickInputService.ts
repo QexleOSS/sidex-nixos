@@ -16,7 +16,6 @@ import { IQuickInputService } from '../../../../platform/quickinput/common/quick
 import { InQuickPickContextKey } from '../../../browser/quickaccess.js';
 
 export class QuickInputService extends BaseQuickInputService {
-
 	private readonly inQuickInputContext = InQuickPickContextKey.bindTo(this.contextKeyService);
 
 	constructor(
@@ -25,7 +24,7 @@ export class QuickInputService extends BaseQuickInputService {
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IThemeService themeService: IThemeService,
-		@ILayoutService layoutService: ILayoutService,
+		@ILayoutService layoutService: ILayoutService
 	) {
 		super(instantiationService, contextKeyService, themeService, layoutService, configurationService);
 
@@ -40,7 +39,8 @@ export class QuickInputService extends BaseQuickInputService {
 	protected override createController(): QuickInputController {
 		return super.createController(this.layoutService, {
 			ignoreFocusOut: () => !this.configurationService.getValue('workbench.quickOpen.closeOnFocusLost'),
-			backKeybindingLabel: () => this.keybindingService.lookupKeybinding('workbench.action.quickInputBack')?.getLabel() || undefined,
+			backKeybindingLabel: () =>
+				this.keybindingService.lookupKeybinding('workbench.action.quickInputBack')?.getLabel() || undefined
 		});
 	}
 }

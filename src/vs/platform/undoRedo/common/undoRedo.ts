@@ -85,7 +85,7 @@ export class ResourceEditStackSnapshot {
 	constructor(
 		public readonly resource: URI,
 		public readonly elements: number[]
-	) { }
+	) {}
 }
 
 export class UndoRedoGroup {

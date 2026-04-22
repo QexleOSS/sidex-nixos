@@ -8,13 +8,23 @@ import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { isUNC } from '../../../../base/common/extpath.js';
 import { Schemas } from '../../../../base/common/network.js';
 import { URI } from '../../../../base/common/uri.js';
-import { FileOperationError, FileOperationResult, IFileService, IWriteFileOptions } from '../../../../platform/files/common/files.js';
+import {
+	FileOperationError,
+	FileOperationResult,
+	IFileService,
+	IWriteFileOptions
+} from '../../../../platform/files/common/files.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { IUriIdentityService } from '../../../../platform/uriIdentity/common/uriIdentity.js';
 import { getWebviewContentMimeType } from '../../../../platform/webview/common/mimeTypes.js';
 
 export namespace WebviewResourceResponse {
-	export enum Type { Success, Failed, AccessDenied, NotModified }
+	export enum Type {
+		Success,
+		Failed,
+		AccessDenied,
+		NotModified
+	}
 
 	export class StreamSuccess {
 		readonly type = Type.Success;
@@ -23,8 +33,8 @@ export namespace WebviewResourceResponse {
 			public readonly stream: VSBufferReadableStream,
 			public readonly etag: string | undefined,
 			public readonly mtime: number | undefined,
-			public readonly mimeType: string,
-		) { }
+			public readonly mimeType: string
+		) {}
 	}
 
 	export const Failed = { type: Type.Failed } as const;
@@ -35,8 +45,8 @@ export namespace WebviewResourceResponse {
 
 		constructor(
 			public readonly mimeType: string,
-			public readonly mtime: number | undefined,
-		) { }
+			public readonly mtime: number | undefined
+		) {}
 	}
 
 	export type StreamResponse = StreamSuccess | typeof Failed | typeof AccessDenied | NotModified;
@@ -51,14 +61,18 @@ export async function loadLocalResource(
 	uriIdentityService: IUriIdentityService,
 	fileService: IFileService,
 	logService: ILogService,
-	token: CancellationToken,
+	token: CancellationToken
 ): Promise<WebviewResourceResponse.StreamResponse> {
 	const resourceToLoad = getResourceToLoad(requestUri, options.roots, uriIdentityService);
 
-	logService.trace(`Webview.loadLocalResource - trying to load resource. requestUri=${requestUri}, resourceToLoad=${resourceToLoad}`);
+	logService.trace(
+		`Webview.loadLocalResource - trying to load resource. requestUri=${requestUri}, resourceToLoad=${resourceToLoad}`
+	);
 
 	if (!resourceToLoad) {
-		logService.trace(`Webview.loadLocalResource - access denied. requestUri=${requestUri}, resourceToLoad=${resourceToLoad}`);
+		logService.trace(
+			`Webview.loadLocalResource - access denied. requestUri=${requestUri}, resourceToLoad=${resourceToLoad}`
+		);
 		return WebviewResourceResponse.AccessDenied;
 	}
 
@@ -74,13 +88,17 @@ export async function loadLocalResource(
 
 			// NotModified status is expected and can be handled gracefully
 			if (result === FileOperationResult.FILE_NOT_MODIFIED_SINCE) {
-				logService.trace(`Webview.loadLocalResource - not modified. requestUri=${requestUri}, resourceToLoad=${resourceToLoad}`);
+				logService.trace(
+					`Webview.loadLocalResource - not modified. requestUri=${requestUri}, resourceToLoad=${resourceToLoad}`
+				);
 				return new WebviewResourceResponse.NotModified(mime, (err.options as IWriteFileOptions | undefined)?.mtime);
 			}
 		}
 
 		// Otherwise the error is unexpected.
-		logService.error(`Webview.loadLocalResource - Error using fileReader. requestUri=${requestUri}, resourceToLoad=${resourceToLoad}`);
+		logService.error(
+			`Webview.loadLocalResource - Error using fileReader. requestUri=${requestUri}, resourceToLoad=${resourceToLoad}`
+		);
 		return WebviewResourceResponse.Failed;
 	}
 }
@@ -88,7 +106,7 @@ export async function loadLocalResource(
 export function getResourceToLoad(
 	requestUri: URI,
 	roots: ReadonlyArray<URI>,
-	uriIdentityService: IUriIdentityService,
+	uriIdentityService: IUriIdentityService
 ): URI | undefined {
 	const requestUriNoQueryString = requestUri.with({ query: '' });
 	for (const root of roots) {
@@ -103,6 +121,10 @@ export function getResourceToLoad(
 function containsResource(root: URI, resource: URI, uriIdentityService: IUriIdentityService): boolean {
 	if (uriIdentityService.extUri.isEqual(root, resource, /* ignoreFragment */ true)) {
 		return false;
+	}
+
+	if (root.scheme === resource.scheme && root.path === '/') {
+		return true;
 	}
 
 	// Compare unc paths case-insensitively

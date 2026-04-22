@@ -37,5 +37,8 @@ export function normalizeIndentation(str: string, indentSize: number, insertSpac
 	if (firstNonWhitespaceIndex === -1) {
 		firstNonWhitespaceIndex = str.length;
 	}
-	return _normalizeIndentationFromWhitespace(str.substring(0, firstNonWhitespaceIndex), indentSize, insertSpaces) + str.substring(firstNonWhitespaceIndex);
+	return (
+		_normalizeIndentationFromWhitespace(str.substring(0, firstNonWhitespaceIndex), indentSize, insertSpaces) +
+		str.substring(firstNonWhitespaceIndex)
+	);
 }

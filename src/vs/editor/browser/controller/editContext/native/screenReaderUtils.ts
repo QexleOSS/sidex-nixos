@@ -7,7 +7,6 @@ import { IComputedEditorOptions } from '../../../../common/config/editorOptions.
 import { Selection } from '../../../../common/core/selection.js';
 
 export interface IScreenReaderContent {
-
 	dispose(): void;
 
 	/**

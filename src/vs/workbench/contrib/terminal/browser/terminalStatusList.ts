@@ -57,15 +57,19 @@ export class TerminalStatusList extends Disposable implements ITerminalStatusLis
 	private readonly _statusTimeouts: Map<string, number> = new Map();
 
 	private readonly _onDidAddStatus = this._register(new Emitter<ITerminalStatus>());
-	get onDidAddStatus(): Event<ITerminalStatus> { return this._onDidAddStatus.event; }
+	get onDidAddStatus(): Event<ITerminalStatus> {
+		return this._onDidAddStatus.event;
+	}
 	private readonly _onDidRemoveStatus = this._register(new Emitter<ITerminalStatus>());
-	get onDidRemoveStatus(): Event<ITerminalStatus> { return this._onDidRemoveStatus.event; }
+	get onDidRemoveStatus(): Event<ITerminalStatus> {
+		return this._onDidRemoveStatus.event;
+	}
 	private readonly _onDidChangePrimaryStatus = this._register(new Emitter<ITerminalStatus | undefined>());
-	get onDidChangePrimaryStatus(): Event<ITerminalStatus | undefined> { return this._onDidChangePrimaryStatus.event; }
+	get onDidChangePrimaryStatus(): Event<ITerminalStatus | undefined> {
+		return this._onDidChangePrimaryStatus.event;
+	}
 
-	constructor(
-		@IConfigurationService private readonly _configurationService: IConfigurationService
-	) {
+	constructor(@IConfigurationService private readonly _configurationService: IConfigurationService) {
 		super();
 	}
 
@@ -81,7 +85,9 @@ export class TerminalStatusList extends Disposable implements ITerminalStatusLis
 		return result;
 	}
 
-	get statuses(): ITerminalStatus[] { return Array.from(this._statuses.values()); }
+	get statuses(): ITerminalStatus[] {
+		return Array.from(this._statuses.values());
+	}
 
 	add(status: ITerminalStatus, duration?: number) {
 		status = this._applyAnimationSetting(status);
@@ -134,7 +140,11 @@ export class TerminalStatusList extends Disposable implements ITerminalStatusLis
 	}
 
 	private _applyAnimationSetting(status: ITerminalStatus): ITerminalStatus {
-		if (!status.icon || ThemeIcon.getModifier(status.icon) !== 'spin' || this._configurationService.getValue(TerminalSettingId.TabsEnableAnimation)) {
+		if (
+			!status.icon ||
+			ThemeIcon.getModifier(status.icon) !== 'spin' ||
+			this._configurationService.getValue(TerminalSettingId.TabsEnableAnimation)
+		) {
 			return status;
 		}
 		let icon;

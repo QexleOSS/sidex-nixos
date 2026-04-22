@@ -10,17 +10,10 @@ export const enum ClickAnimation {
 	Confetti = 1,
 	FloatingIcons = 2,
 	PulseWave = 3,
-	RadiantLines = 4,
+	RadiantLines = 4
 }
 
-const confettiColors = [
-	'#007acc',
-	'#005a9e',
-	'#0098ff',
-	'#4fc3f7',
-	'#64b5f6',
-	'#42a5f5',
-];
+const confettiColors = ['#007acc', '#005a9e', '#0098ff', '#4fc3f7', '#64b5f6', '#42a5f5'];
 
 let activeOverlay: HTMLElement | undefined;
 
@@ -66,7 +59,10 @@ function cleanupOverlay(duration: number) {
 /**
  * Bounce the element with a given scale and optional rotation.
  */
-export function bounceElement(element: HTMLElement, opts: { scale?: number[]; rotate?: number[]; translateY?: number[]; duration?: number }) {
+export function bounceElement(
+	element: HTMLElement,
+	opts: { scale?: number[]; rotate?: number[]; translateY?: number[]; duration?: number }
+) {
 	const frames: Keyframe[] = [];
 
 	const steps = Math.max(opts.scale?.length ?? 0, opts.rotate?.length ?? 0, opts.translateY?.length ?? 0);
@@ -102,7 +98,7 @@ export function bounceElement(element: HTMLElement, opts: { scale?: number[]; ro
 	element.animate(frames, {
 		duration: opts.duration ?? 350,
 		easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-		fill: 'forwards',
+		fill: 'forwards'
 	});
 }
 
@@ -123,7 +119,7 @@ export function triggerConfettiAnimation(element: HTMLElement) {
 	bounceElement(element, {
 		scale: [1, 1.3, 1],
 		rotate: [0, -10, 10, 0],
-		duration: 350,
+		duration: 350
 	});
 
 	// Confetti particles
@@ -147,16 +143,19 @@ export function triggerConfettiAnimation(element: HTMLElement) {
 		const tx = Math.cos(angle) * distance;
 		const ty = Math.sin(angle) * distance;
 
-		part.animate([
-			{ opacity: 0, transform: 'scale(0) translate(0, 0)' },
-			{ opacity: particleOpacity, transform: `scale(1) translate(${tx * 0.5}px, ${ty * 0.5}px)`, offset: 0.3 },
-			{ opacity: particleOpacity, transform: `scale(1) translate(${tx}px, ${ty}px)`, offset: 0.7 },
-			{ opacity: 0, transform: `scale(0) translate(${tx}px, ${ty}px)` },
-		], {
-			duration: 1100,
-			easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-			fill: 'forwards',
-		});
+		part.animate(
+			[
+				{ opacity: 0, transform: 'scale(0) translate(0, 0)' },
+				{ opacity: particleOpacity, transform: `scale(1) translate(${tx * 0.5}px, ${ty * 0.5}px)`, offset: 0.3 },
+				{ opacity: particleOpacity, transform: `scale(1) translate(${tx}px, ${ty}px)`, offset: 0.7 },
+				{ opacity: 0, transform: `scale(0) translate(${tx}px, ${ty}px)` }
+			],
+			{
+				duration: 1100,
+				easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+				fill: 'forwards'
+			}
+		);
 	}
 
 	// Expanding ring
@@ -171,14 +170,17 @@ export function triggerConfettiAnimation(element: HTMLElement) {
 	ring.style.boxSizing = 'border-box';
 	overlay.appendChild(ring);
 
-	ring.animate([
-		{ transform: 'scale(1)', opacity: 1 },
-		{ transform: 'scale(2)', opacity: 0 },
-	], {
-		duration: 800,
-		easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-		fill: 'forwards',
-	});
+	ring.animate(
+		[
+			{ transform: 'scale(1)', opacity: 1 },
+			{ transform: 'scale(2)', opacity: 0 }
+		],
+		{
+			duration: 800,
+			easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+			fill: 'forwards'
+		}
+	);
 
 	cleanupOverlay(2000);
 }
@@ -198,7 +200,7 @@ export function triggerFloatingIconsAnimation(element: HTMLElement, icon: ThemeI
 	// Element bounce upward
 	bounceElement(element, {
 		translateY: [0, -6, 0],
-		duration: 350,
+		duration: 350
 	});
 
 	// Floating icons
@@ -220,17 +222,31 @@ export function triggerFloatingIconsAnimation(element: HTMLElement, icon: ThemeI
 		const rotate1 = (Math.random() - 0.5) * 20;
 		const rotate2 = (Math.random() - 0.5) * 40;
 
-		iconEl.animate([
-			{ opacity: 0, transform: `translate(-50%, -50%) scale(0) rotate(${rotate1}deg)` },
-			{ opacity: 1, transform: `translate(calc(-50% + ${driftX * 0.3}px), calc(-50% + ${floatY * 0.3}px)) scale(1) rotate(${(rotate1 + rotate2) * 0.3}deg)`, offset: 0.3 },
-			{ opacity: 1, transform: `translate(calc(-50% + ${driftX * 0.7}px), calc(-50% + ${floatY * 0.7}px)) scale(1) rotate(${(rotate1 + rotate2) * 0.7}deg)`, offset: 0.7 },
-			{ opacity: 0, transform: `translate(calc(-50% + ${driftX}px), calc(-50% + ${floatY}px)) scale(0.8) rotate(${rotate2}deg)` },
-		], {
-			duration: 800 + (i % 3) * 200,
-			delay: i * 80,
-			easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-			fill: 'forwards',
-		});
+		iconEl.animate(
+			[
+				{ opacity: 0, transform: `translate(-50%, -50%) scale(0) rotate(${rotate1}deg)` },
+				{
+					opacity: 1,
+					transform: `translate(calc(-50% + ${driftX * 0.3}px), calc(-50% + ${floatY * 0.3}px)) scale(1) rotate(${(rotate1 + rotate2) * 0.3}deg)`,
+					offset: 0.3
+				},
+				{
+					opacity: 1,
+					transform: `translate(calc(-50% + ${driftX * 0.7}px), calc(-50% + ${floatY * 0.7}px)) scale(1) rotate(${(rotate1 + rotate2) * 0.7}deg)`,
+					offset: 0.7
+				},
+				{
+					opacity: 0,
+					transform: `translate(calc(-50% + ${driftX}px), calc(-50% + ${floatY}px)) scale(0.8) rotate(${rotate2}deg)`
+				}
+			],
+			{
+				duration: 800 + (i % 3) * 200,
+				delay: i * 80,
+				easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+				fill: 'forwards'
+			}
+		);
 	}
 
 	// Expanding ring
@@ -245,14 +261,17 @@ export function triggerFloatingIconsAnimation(element: HTMLElement, icon: ThemeI
 	ring.style.boxSizing = 'border-box';
 	overlay.appendChild(ring);
 
-	ring.animate([
-		{ transform: 'scale(1)', opacity: 1 },
-		{ transform: 'scale(2)', opacity: 0 },
-	], {
-		duration: 500,
-		easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-		fill: 'forwards',
-	});
+	ring.animate(
+		[
+			{ transform: 'scale(1)', opacity: 1 },
+			{ transform: 'scale(2)', opacity: 0 }
+		],
+		{
+			duration: 500,
+			easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+			fill: 'forwards'
+		}
+	);
 
 	cleanupOverlay(2000);
 }
@@ -273,7 +292,7 @@ export function triggerPulseWaveAnimation(element: HTMLElement) {
 	bounceElement(element, {
 		scale: [1, 1.1, 1],
 		rotate: [0, -12, 0],
-		duration: 400,
+		duration: 400
 	});
 
 	// Expanding rings
@@ -289,16 +308,19 @@ export function triggerPulseWaveAnimation(element: HTMLElement) {
 		ring.style.boxSizing = 'border-box';
 		overlay.appendChild(ring);
 
-		ring.animate([
-			{ transform: 'scale(0.8)', opacity: 0 },
-			{ transform: 'scale(0.8)', opacity: 0.6, offset: 0.01 },
-			{ transform: 'scale(2.5)', opacity: 0 },
-		], {
-			duration: 800,
-			delay: i * 150,
-			easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-			fill: 'forwards',
-		});
+		ring.animate(
+			[
+				{ transform: 'scale(0.8)', opacity: 0 },
+				{ transform: 'scale(0.8)', opacity: 0.6, offset: 0.01 },
+				{ transform: 'scale(2.5)', opacity: 0 }
+			],
+			{
+				duration: 800,
+				delay: i * 150,
+				easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+				fill: 'forwards'
+			}
+		);
 	}
 
 	// Sparkle dots
@@ -320,16 +342,19 @@ export function triggerPulseWaveAnimation(element: HTMLElement) {
 		const tx = Math.cos(angle) * distance;
 		const ty = Math.sin(angle) * distance;
 
-		dot.animate([
-			{ opacity: 0, transform: 'scale(0) translate(0, 0)' },
-			{ opacity: 1, transform: `scale(1) translate(${tx}px, ${ty}px)`, offset: 0.5 },
-			{ opacity: 0, transform: `scale(0) translate(${tx}px, ${ty}px)` },
-		], {
-			duration: 600,
-			delay: 100 + i * 50,
-			easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-			fill: 'forwards',
-		});
+		dot.animate(
+			[
+				{ opacity: 0, transform: 'scale(0) translate(0, 0)' },
+				{ opacity: 1, transform: `scale(1) translate(${tx}px, ${ty}px)`, offset: 0.5 },
+				{ opacity: 0, transform: `scale(0) translate(${tx}px, ${ty}px)` }
+			],
+			{
+				duration: 600,
+				delay: 100 + i * 50,
+				easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+				fill: 'forwards'
+			}
+		);
 	}
 
 	// Background glow
@@ -343,15 +368,18 @@ export function triggerPulseWaveAnimation(element: HTMLElement) {
 	glow.style.backgroundColor = 'var(--vscode-focusBorder, #007acc)';
 	overlay.appendChild(glow);
 
-	glow.animate([
-		{ transform: 'scale(0.9)', opacity: 0 },
-		{ transform: 'scale(0.9)', opacity: 0.5, offset: 0.01 },
-		{ transform: 'scale(1.5)', opacity: 0 },
-	], {
-		duration: 500,
-		easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-		fill: 'forwards',
-	});
+	glow.animate(
+		[
+			{ transform: 'scale(0.9)', opacity: 0 },
+			{ transform: 'scale(0.9)', opacity: 0.5, offset: 0.01 },
+			{ transform: 'scale(1.5)', opacity: 0 }
+		],
+		{
+			duration: 500,
+			easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+			fill: 'forwards'
+		}
+	);
 
 	cleanupOverlay(2000);
 }
@@ -370,7 +398,7 @@ export function triggerRadiantLinesAnimation(element: HTMLElement) {
 	// Element scale bounce
 	bounceElement(element, {
 		scale: [1, 1.15, 1],
-		duration: 350,
+		duration: 350
 	});
 
 	// Dots at offset angles
@@ -396,17 +424,24 @@ export function triggerRadiantLinesAnimation(element: HTMLElement) {
 		const endX = Math.cos(angle) * endDistance;
 		const endY = Math.sin(angle) * endDistance;
 
-		dot.animate([
-			{ opacity: 0, transform: `scale(0) translate(${startX}px, ${startY}px)` },
-			{ opacity: dotOpacity, transform: `scale(1.2) translate(${(startX + endX) / 2}px, ${(startY + endY) / 2}px)`, offset: 0.25 },
-			{ opacity: dotOpacity, transform: `scale(1) translate(${endX * 0.8}px, ${endY * 0.8}px)`, offset: 0.5 },
-			{ opacity: dotOpacity * 0.5, transform: `scale(1) translate(${endX}px, ${endY}px)`, offset: 0.75 },
-			{ opacity: 0, transform: `scale(0.5) translate(${endX}px, ${endY}px)` },
-		], {
-			duration: 1100,
-			easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-			fill: 'forwards',
-		});
+		dot.animate(
+			[
+				{ opacity: 0, transform: `scale(0) translate(${startX}px, ${startY}px)` },
+				{
+					opacity: dotOpacity,
+					transform: `scale(1.2) translate(${(startX + endX) / 2}px, ${(startY + endY) / 2}px)`,
+					offset: 0.25
+				},
+				{ opacity: dotOpacity, transform: `scale(1) translate(${endX * 0.8}px, ${endY * 0.8}px)`, offset: 0.5 },
+				{ opacity: dotOpacity * 0.5, transform: `scale(1) translate(${endX}px, ${endY}px)`, offset: 0.75 },
+				{ opacity: 0, transform: `scale(0.5) translate(${endX}px, ${endY}px)` }
+			],
+			{
+				duration: 1100,
+				easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+				fill: 'forwards'
+			}
+		);
 	}
 
 	// Radiant lines
@@ -432,18 +467,21 @@ export function triggerRadiantLinesAnimation(element: HTMLElement) {
 		line.style.transformOrigin = 'bottom center';
 		lineWrapper.appendChild(line);
 
-		line.animate([
-			{ transform: 'scale(1, 0)', opacity: 0.6 },
-			{ transform: 'scale(1, 1)', opacity: 0.6, offset: 0.2 },
-			{ transform: 'scale(1, 1)', opacity: 0.6, offset: 0.6 },
-			{ transform: 'scale(1, 1)', opacity: 0.6, offset: 0.8 },
-			{ transform: 'scale(0, 0.3)', opacity: 0 },
-		], {
-			duration: 1200,
-			delay: 150,
-			easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-			fill: 'forwards',
-		});
+		line.animate(
+			[
+				{ transform: 'scale(1, 0)', opacity: 0.6 },
+				{ transform: 'scale(1, 1)', opacity: 0.6, offset: 0.2 },
+				{ transform: 'scale(1, 1)', opacity: 0.6, offset: 0.6 },
+				{ transform: 'scale(1, 1)', opacity: 0.6, offset: 0.8 },
+				{ transform: 'scale(0, 0.3)', opacity: 0 }
+			],
+			{
+				duration: 1200,
+				delay: 150,
+				easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+				fill: 'forwards'
+			}
+		);
 	}
 
 	cleanupOverlay(2000);

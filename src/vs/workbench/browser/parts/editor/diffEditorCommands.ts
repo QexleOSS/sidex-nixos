@@ -13,7 +13,11 @@ import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextke
 import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
 import { KeybindingsRegistry, KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { TextDiffEditor } from './textDiffEditor.js';
-import { ActiveCompareEditorCanSwapContext, TextCompareEditorActiveContext, TextCompareEditorVisibleContext } from '../../../common/contextkeys.js';
+import {
+	ActiveCompareEditorCanSwapContext,
+	TextCompareEditorActiveContext,
+	TextCompareEditorVisibleContext
+} from '../../../common/contextkeys.js';
 import { DiffEditorInput } from '../../../common/editor/diffEditorInput.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { IUntypedEditorInput } from '../../../common/editor.js';
@@ -61,7 +65,7 @@ export function registerDiffEditorCommands(): void {
 	MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		command: {
 			id: DIFF_OPEN_SIDE,
-			title: localize2('compare.openSide', 'Open Active Diff Side'),
+			title: localize2('compare.openSide', 'Open Active Diff Side')
 		}
 	});
 
@@ -76,7 +80,7 @@ export function registerDiffEditorCommands(): void {
 	MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		command: {
 			id: GOTO_NEXT_CHANGE,
-			title: localize2('compare.nextChange', 'Go to Next Change'),
+			title: localize2('compare.nextChange', 'Go to Next Change')
 		}
 	});
 
@@ -91,17 +95,19 @@ export function registerDiffEditorCommands(): void {
 	MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		command: {
 			id: GOTO_PREVIOUS_CHANGE,
-			title: localize2('compare.previousChange', 'Go to Previous Change'),
+			title: localize2('compare.previousChange', 'Go to Previous Change')
 		}
 	});
-
 
 	function getActiveTextDiffEditor(accessor: ServicesAccessor, args: unknown[]): TextDiffEditor | undefined {
 		const editorService = accessor.get(IEditorService);
 		const resource = args.length > 0 && args[0] instanceof URI ? args[0] : undefined;
 
 		for (const editor of [editorService.activeEditorPane, ...editorService.visibleEditorPanes]) {
-			if (editor instanceof TextDiffEditor && (!resource || editor.input instanceof DiffEditorInput && isEqual(editor.input.primary.resource, resource))) {
+			if (
+				editor instanceof TextDiffEditor &&
+				(!resource || (editor.input instanceof DiffEditorInput && isEqual(editor.input.primary.resource, resource)))
+			) {
 				return editor;
 			}
 		}
@@ -149,7 +155,9 @@ export function registerDiffEditorCommands(): void {
 		const activeTextDiffEditor = getActiveTextDiffEditor(accessor, args);
 
 		const m = activeTextDiffEditor?.getControl()?.getModifiedEditor()?.getModel();
-		if (!m) { return; }
+		if (!m) {
+			return;
+		}
 
 		const key = 'diffEditor.renderSideBySide';
 		const val = configService.getValue(m.uri, key);
@@ -161,7 +169,9 @@ export function registerDiffEditorCommands(): void {
 		const activeTextDiffEditor = getActiveTextDiffEditor(accessor, args);
 
 		const m = activeTextDiffEditor?.getControl()?.getModifiedEditor()?.getModel();
-		if (!m) { return; }
+		if (!m) {
+			return;
+		}
 
 		const key = 'diffEditor.ignoreTrimWhitespace';
 		const val = configService.getValue(m.uri, key);
@@ -174,7 +184,12 @@ export function registerDiffEditorCommands(): void {
 		const diffEditor = getActiveTextDiffEditor(accessor, args);
 		const activeGroup = diffEditor?.group;
 		const diffInput = diffEditor?.input;
-		if (!diffEditor || typeof activeGroup === 'undefined' || !(diffInput instanceof DiffEditorInput) || !diffInput.modified.resource) {
+		if (
+			!diffEditor ||
+			typeof activeGroup === 'undefined' ||
+			!(diffInput instanceof DiffEditorInput) ||
+			!diffInput.modified.resource
+		) {
 			return;
 		}
 
@@ -187,7 +202,14 @@ export function registerDiffEditorCommands(): void {
 		// sure to first open the modified side if it is not
 		// yet opened. This ensures that the swapping is not
 		// bringing up a confirmation dialog to save.
-		if (diffInput.modified.isModified() && editorService.findEditors({ resource: diffInput.modified.resource, typeId: diffInput.modified.typeId, editorId: diffInput.modified.editorId }).length === 0) {
+		if (
+			diffInput.modified.isModified() &&
+			editorService.findEditors({
+				resource: diffInput.modified.resource,
+				typeId: diffInput.modified.typeId,
+				editorId: diffInput.modified.editorId
+			}).length === 0
+		) {
 			const editorToOpen: IUntypedEditorInput = { ...untypedDiffInput.modified };
 			if (!editorToOpen.options) {
 				editorToOpen.options = {};
@@ -199,20 +221,23 @@ export function registerDiffEditorCommands(): void {
 		}
 
 		// Replace the input with the swapped variant
-		await editorService.replaceEditors([
-			{
-				editor: diffInput,
-				replacement: {
-					...untypedDiffInput,
-					original: untypedDiffInput.modified,
-					modified: untypedDiffInput.original,
-					options: {
-						...untypedDiffInput.options,
-						pinned: true
+		await editorService.replaceEditors(
+			[
+				{
+					editor: diffInput,
+					replacement: {
+						...untypedDiffInput,
+						original: untypedDiffInput.modified,
+						modified: untypedDiffInput.original,
+						options: {
+							...untypedDiffInput.options,
+							pinned: true
+						}
 					}
 				}
-			}
-		], activeGroup);
+			],
+			activeGroup
+		);
 	}
 
 	KeybindingsRegistry.registerCommandAndKeybindingRule({
@@ -266,8 +291,8 @@ export function registerDiffEditorCommands(): void {
 	MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		command: {
 			id: TOGGLE_DIFF_SIDE_BY_SIDE,
-			title: localize2('toggleInlineView', "Toggle Inline View"),
-			category: localize('compare', "Compare")
+			title: localize2('toggleInlineView', 'Toggle Inline View'),
+			category: localize('compare', 'Compare')
 		},
 		when: TextCompareEditorActiveContext
 	});
@@ -275,8 +300,8 @@ export function registerDiffEditorCommands(): void {
 	MenuRegistry.appendMenuItem(MenuId.CommandPalette, {
 		command: {
 			id: DIFF_SWAP_SIDES,
-			title: localize2('swapDiffSides', "Swap Left and Right Editor Side"),
-			category: localize('compare', "Compare")
+			title: localize2('swapDiffSides', 'Swap Left and Right Editor Side'),
+			category: localize('compare', 'Compare')
 		},
 		when: ContextKeyExpr.and(TextCompareEditorActiveContext, ActiveCompareEditorCanSwapContext)
 	});

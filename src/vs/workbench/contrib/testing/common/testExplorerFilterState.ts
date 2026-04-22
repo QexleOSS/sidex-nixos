@@ -101,22 +101,31 @@ export class TestExplorerFilterState extends Disposable implements ITestExplorer
 	/** @inheritdoc */
 	public readonly fuzzy: MutableObservableValue<boolean>;
 
-	public readonly reveal: ISettableObservable<string | undefined> = observableValue('TestExplorerFilterState.reveal', undefined);
+	public readonly reveal: ISettableObservable<string | undefined> = observableValue(
+		'TestExplorerFilterState.reveal',
+		undefined
+	);
 
 	public readonly onDidRequestInputFocus = this.focusEmitter.event;
 
 	private selectTestInExplorerEmitter = this._register(new Emitter<string | undefined>());
 	public readonly onDidSelectTestInExplorer = this.selectTestInExplorerEmitter.event;
 
-	constructor(
-		@IStorageService storageService: IStorageService,
-	) {
+	constructor(@IStorageService storageService: IStorageService) {
 		super();
-		this.fuzzy = this._register(MutableObservableValue.stored(new StoredValue<boolean>({
-			key: 'testHistoryFuzzy',
-			scope: StorageScope.PROFILE,
-			target: StorageTarget.USER,
-		}, storageService), false));
+		this.fuzzy = this._register(
+			MutableObservableValue.stored(
+				new StoredValue<boolean>(
+					{
+						key: 'testHistoryFuzzy',
+						scope: StorageScope.PROFILE,
+						target: StorageTarget.USER
+					},
+					storageService
+				),
+				false
+			)
+		);
 	}
 
 	/** @inheritdoc */
@@ -187,7 +196,9 @@ export class TestExplorerFilterState extends Disposable implements ITestExplorer
 		globText += text.slice(lastIndex).trim();
 
 		if (globText.length) {
-			for (const filter of splitGlobAware(globText, ',').map(s => s.trim()).filter(s => !!s.length)) {
+			for (const filter of splitGlobAware(globText, ',')
+				.map(s => s.trim())
+				.filter(s => !!s.length)) {
 				if (filter.startsWith('!')) {
 					this.globList.push({ include: false, text: filter.slice(1).toLowerCase() });
 				} else {
@@ -220,7 +231,7 @@ export const enum TestFilterTerm {
 	Executed = '@executed',
 	CurrentDoc = '@doc',
 	OpenedFiles = '@openedFiles',
-	Hidden = '@hidden',
+	Hidden = '@hidden'
 }
 
 const allTestFilterTerms: readonly TestFilterTerm[] = [
@@ -228,5 +239,5 @@ const allTestFilterTerms: readonly TestFilterTerm[] = [
 	TestFilterTerm.Executed,
 	TestFilterTerm.CurrentDoc,
 	TestFilterTerm.OpenedFiles,
-	TestFilterTerm.Hidden,
+	TestFilterTerm.Hidden
 ];

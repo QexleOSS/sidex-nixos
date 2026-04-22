@@ -14,12 +14,9 @@ import './selectBox.css';
 import { SelectBoxList } from './selectBoxCustom.js';
 import { SelectBoxNative } from './selectBoxNative.js';
 
-
-
 // Public SelectBox interface - Calls routed to appropriate select implementation class
 
 export interface ISelectBoxDelegate extends IDisposable {
-
 	// Public SelectBox Interface
 	readonly onDidSelect: Event<ISelectData>;
 	setOptions(options: ISelectOptionItem[], selected?: number): void;
@@ -57,7 +54,7 @@ export interface ISelectOptionItem {
 export const SeparatorSelectOption: Readonly<ISelectOptionItem> = Object.freeze({
 	text: '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
 	isDisabled: true,
-	isSeparator: true,
+	isSeparator: true
 });
 
 export interface ISelectBoxStyles extends IListStyles {
@@ -78,7 +75,7 @@ export const unthemedSelectBoxStyles: ISelectBoxStyles = {
 	decoratorRightForeground: undefined,
 	selectListBackground: undefined,
 	selectListBorder: undefined,
-	focusBorder: undefined,
+	focusBorder: undefined
 };
 
 export interface ISelectData {
@@ -89,7 +86,13 @@ export interface ISelectData {
 export class SelectBox extends Widget implements ISelectBoxDelegate {
 	private selectBoxDelegate: ISelectBoxDelegate;
 
-	constructor(options: ISelectOptionItem[], selected: number, contextViewProvider: IContextViewProvider, styles: ISelectBoxStyles, selectBoxOptions?: ISelectBoxOptions) {
+	constructor(
+		options: ISelectOptionItem[],
+		selected: number,
+		contextViewProvider: IContextViewProvider,
+		styles: ISelectBoxStyles,
+		selectBoxOptions?: ISelectBoxOptions
+	) {
 		super();
 
 		// Default to native SelectBox for OSX unless overridden

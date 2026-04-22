@@ -10,7 +10,6 @@ import { InstantiationType, registerSingleton } from '../../../../platform/insta
 import { IElevatedFileService } from '../common/elevatedFileService.js';
 
 export class BrowserElevatedFileService implements IElevatedFileService {
-
 	readonly _serviceBrand: undefined;
 
 	isSupported(resource: URI): boolean {
@@ -20,7 +19,11 @@ export class BrowserElevatedFileService implements IElevatedFileService {
 		return false;
 	}
 
-	async writeFileElevated(resource: URI, value: VSBuffer | VSBufferReadable | VSBufferReadableStream, options?: IWriteFileOptions): Promise<IFileStatWithMetadata> {
+	async writeFileElevated(
+		resource: URI,
+		value: VSBuffer | VSBufferReadable | VSBufferReadableStream,
+		options?: IWriteFileOptions
+	): Promise<IFileStatWithMetadata> {
 		throw new Error('Unsupported');
 	}
 }

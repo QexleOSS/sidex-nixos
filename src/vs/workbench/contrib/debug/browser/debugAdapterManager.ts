@@ -20,12 +20,29 @@ import { IConfigurationService } from '../../../../platform/configuration/common
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IDialogService } from '../../../../platform/dialogs/common/dialogs.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
-import { Extensions as JSONExtensions, IJSONContributionRegistry } from '../../../../platform/jsonschemas/common/jsonContributionRegistry.js';
+import {
+	Extensions as JSONExtensions,
+	IJSONContributionRegistry
+} from '../../../../platform/jsonschemas/common/jsonContributionRegistry.js';
 import { IQuickInputService, IQuickPickItem } from '../../../../platform/quickinput/common/quickInput.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
 import { IWorkspaceFolder } from '../../../../platform/workspace/common/workspace.js';
 import { Breakpoints } from '../common/breakpoints.js';
-import { CONTEXT_DEBUGGERS_AVAILABLE, CONTEXT_DEBUG_EXTENSION_AVAILABLE, IAdapterDescriptor, IAdapterManager, IConfig, IConfigurationManager, IDebugAdapter, IDebugAdapterDescriptorFactory, IDebugAdapterFactory, IDebugConfiguration, IDebugSession, IGuessedDebugger, INTERNAL_CONSOLE_OPTIONS_SCHEMA } from '../common/debug.js';
+import {
+	CONTEXT_DEBUGGERS_AVAILABLE,
+	CONTEXT_DEBUG_EXTENSION_AVAILABLE,
+	IAdapterDescriptor,
+	IAdapterManager,
+	IConfig,
+	IConfigurationManager,
+	IDebugAdapter,
+	IDebugAdapterDescriptorFactory,
+	IDebugAdapterFactory,
+	IDebugConfiguration,
+	IDebugSession,
+	IGuessedDebugger,
+	INTERNAL_CONSOLE_OPTIONS_SCHEMA
+} from '../common/debug.js';
 import { Debugger } from '../common/debugger.js';
 import { breakpointsExtPoint, debuggersExtPoint, launchSchema, presentationSchema } from '../common/debugSchemas.js';
 import { TaskDefinitionRegistry } from '../../tasks/common/taskDefinitionRegistry.js';
@@ -43,7 +60,6 @@ export interface IAdapterManagerDelegate {
 }
 
 export class AdapterManager extends Disposable implements IAdapterManager {
-
 	private debuggers: Debugger[];
 	private adapterDescriptorFactories: IDebugAdapterDescriptorFactory[];
 	private debugAdapterFactories = new Map<string, IDebugAdapterFactory>();
@@ -73,7 +89,7 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 		@IDialogService private readonly dialogService: IDialogService,
 		@ILifecycleService private readonly lifecycleService: ILifecycleService,
 		@ITaskService private readonly tasksService: ITaskService,
-		@IMenuService private readonly menuService: IMenuService,
+		@IMenuService private readonly menuService: IMenuService
 	) {
 		super();
 		this.adapterDescriptorFactories = [];
@@ -83,29 +99,41 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 			this.debuggersAvailable = CONTEXT_DEBUGGERS_AVAILABLE.bindTo(contextKeyService);
 			this.debugExtensionsAvailable = CONTEXT_DEBUG_EXTENSION_AVAILABLE.bindTo(contextKeyService);
 		});
-		this._register(this.contextKeyService.onDidChangeContext(e => {
-			if (e.affectsSome(this.debuggerWhenKeys)) {
-				this.debuggersAvailable.set(this.hasEnabledDebuggers());
-				this.updateDebugAdapterSchema();
-			}
-		}));
-		this._register(this.onDidDebuggersExtPointRead(() => {
-			this.debugExtensionsAvailable.set(this.debuggers.length > 0);
-		}));
+		this._register(
+			this.contextKeyService.onDidChangeContext(e => {
+				if (e.affectsSome(this.debuggerWhenKeys)) {
+					this.debuggersAvailable.set(this.hasEnabledDebuggers());
+					this.updateDebugAdapterSchema();
+				}
+			})
+		);
+		this._register(
+			this.onDidDebuggersExtPointRead(() => {
+				this.debugExtensionsAvailable.set(this.debuggers.length > 0);
+			})
+		);
 
 		// generous debounce since this will end up calling `resolveTask` internally
 		const updateTaskScheduler = this._register(new RunOnceScheduler(() => this.updateTaskLabels(), 5000));
 
-		this._register(Event.any(tasksService.onDidChangeTaskConfig, tasksService.onDidChangeTaskProviders)(() => {
-			updateTaskScheduler.cancel();
-			updateTaskScheduler.schedule();
-		}));
-		this.lifecycleService.when(LifecyclePhase.Eventually)
+		this._register(
+			Event.any(
+				tasksService.onDidChangeTaskConfig,
+				tasksService.onDidChangeTaskProviders
+			)(() => {
+				updateTaskScheduler.cancel();
+				updateTaskScheduler.schedule();
+			})
+		);
+		this.lifecycleService
+			.when(LifecyclePhase.Eventually)
 			.then(() => this.debugExtensionsAvailable.set(this.debuggers.length > 0)); // If no extensions with a debugger contribution are loaded
 
-		this._register(delegate.onDidNewSession(s => {
-			this.usedDebugTypes.add(s.configuration.type);
-		}));
+		this._register(
+			delegate.onDidNewSession(s => {
+				this.usedDebugTypes.add(s.configuration.type);
+			})
+		);
 
 		updateTaskScheduler.schedule();
 	}
@@ -114,8 +142,10 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 		debuggersExtPoint.setHandler((extensions, delta) => {
 			delta.added.forEach(added => {
 				added.value.forEach(rawAdapter => {
-					if (!rawAdapter.type || (typeof rawAdapter.type !== 'string')) {
-						added.collector.error(nls.localize('debugNoType', "Debugger 'type' can not be omitted and must be of type 'string'."));
+					if (!rawAdapter.type || typeof rawAdapter.type !== 'string') {
+						added.collector.error(
+							nls.localize('debugNoType', "Debugger 'type' can not be omitted and must be of type 'string'.")
+						);
 					}
 
 					if (rawAdapter.type !== '*') {
@@ -150,7 +180,9 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 		});
 
 		breakpointsExtPoint.setHandler(extensions => {
-			this.breakpointContributions = extensions.flatMap(ext => ext.value.map(breakpoint => this.instantiationService.createInstance(Breakpoints, breakpoint)));
+			this.breakpointContributions = extensions.flatMap(ext =>
+				ext.value.map(breakpoint => this.instantiationService.createInstance(Breakpoints, breakpoint))
+			);
 		});
 	}
 
@@ -163,44 +195,59 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 
 	private updateDebugAdapterSchema() {
 		// update the schema to include all attributes, snippets and types from extensions.
-		const items = (<IJSONSchema>launchSchema.properties!['configurations'].items);
+		const items = <IJSONSchema>launchSchema.properties!['configurations'].items;
 		const taskSchema = TaskDefinitionRegistry.getJsonSchema();
 		const definitions: IJSONSchemaMap = {
-			'common': {
+			common: {
 				properties: {
-					'name': {
+					name: {
 						type: 'string',
-						description: nls.localize('debugName', "Name of configuration; appears in the launch configuration dropdown menu."),
+						description: nls.localize(
+							'debugName',
+							'Name of configuration; appears in the launch configuration dropdown menu.'
+						),
 						default: 'Launch'
 					},
-					'debugServer': {
+					debugServer: {
 						type: 'number',
-						description: nls.localize('debugServer', "For debug extension development only: if a port is specified VS Code tries to connect to a debug adapter running in server mode"),
+						description: nls.localize(
+							'debugServer',
+							'For debug extension development only: if a port is specified VS Code tries to connect to a debug adapter running in server mode'
+						),
 						default: 4711
 					},
-					'preLaunchTask': {
-						anyOf: [taskSchema, {
-							type: ['string']
-						}],
+					preLaunchTask: {
+						anyOf: [
+							taskSchema,
+							{
+								type: ['string']
+							}
+						],
 						default: '',
 						defaultSnippets: [{ body: { task: '', type: '' } }],
-						description: nls.localize('debugPrelaunchTask', "Task to run before debug session starts."),
-						examples: this.taskLabels,
+						description: nls.localize('debugPrelaunchTask', 'Task to run before debug session starts.'),
+						examples: this.taskLabels
 					},
-					'postDebugTask': {
-						anyOf: [taskSchema, {
-							type: ['string'],
-						}],
+					postDebugTask: {
+						anyOf: [
+							taskSchema,
+							{
+								type: ['string']
+							}
+						],
 						default: '',
 						defaultSnippets: [{ body: { task: '', type: '' } }],
-						description: nls.localize('debugPostDebugTask', "Task to run after debug session ends."),
-						examples: this.taskLabels,
+						description: nls.localize('debugPostDebugTask', 'Task to run after debug session ends.'),
+						examples: this.taskLabels
 					},
-					'presentation': presentationSchema,
-					'internalConsoleOptions': INTERNAL_CONSOLE_OPTIONS_SCHEMA,
-					'suppressMultipleSessionWarning': {
+					presentation: presentationSchema,
+					internalConsoleOptions: INTERNAL_CONSOLE_OPTIONS_SCHEMA,
+					suppressMultipleSessionWarning: {
 						type: 'boolean',
-						description: nls.localize('suppressMultipleSessionWarning', "Disable the warning when trying to start the same debug configuration more than once."),
+						description: nls.localize(
+							'suppressMultipleSessionWarning',
+							'Disable the warning when trying to start the same debug configuration more than once.'
+						),
 						default: true
 					}
 				}
@@ -261,7 +308,11 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 		return Promise.resolve(config);
 	}
 
-	runInTerminal(debugType: string, args: DebugProtocol.RunInTerminalRequestArguments, sessionId: string): Promise<number | undefined> {
+	runInTerminal(
+		debugType: string,
+		args: DebugProtocol.RunInTerminalRequestArguments,
+		sessionId: string
+	): Promise<number | undefined> {
 		const factory = this.debugAdapterFactories.get(debugType);
 		if (factory) {
 			return factory.runInTerminal(args, sessionId);
@@ -287,7 +338,9 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 
 	getDebugAdapterDescriptor(session: IDebugSession): Promise<IAdapterDescriptor | undefined> {
 		const config = session.configuration;
-		const providers = this.adapterDescriptorFactories.filter(p => p.type === config.type && p.createDebugAdapterDescriptor);
+		const providers = this.adapterDescriptorFactories.filter(
+			p => p.type === config.type && p.createDebugAdapterDescriptor
+		);
 		if (providers.length === 1) {
 			return providers[0].createDebugAdapterDescriptor(session);
 		} else {
@@ -336,9 +389,7 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 	}
 
 	someDebuggerInterestedInLanguage(languageId: string): boolean {
-		return !!this.debuggers
-			.filter(d => d.enabled)
-			.find(a => a.interestedInLanguage(languageId));
+		return !!this.debuggers.filter(d => d.enabled).find(a => a.interestedInLanguage(languageId));
 	}
 
 	async guessDebugger(gettingConfigurations: boolean): Promise<IGuessedDebugger | undefined> {
@@ -352,9 +403,7 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 			if (language) {
 				languageLabel = this.languageService.getLanguageName(language);
 			}
-			const adapters = this.debuggers
-				.filter(a => a.enabled)
-				.filter(a => language && a.interestedInLanguage(language));
+			const adapters = this.debuggers.filter(a => a.enabled).filter(a => language && a.interestedInLanguage(language));
 			if (adapters.length === 1) {
 				return { debugger: adapters[0] };
 			}
@@ -365,12 +414,18 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 
 		// We want to get the debuggers that have configuration providers in the case we are fetching configurations
 		// Or if a breakpoint can be set in the current file (good hint that an extension can handle it)
-		if ((!languageLabel || gettingConfigurations || (model && this.canSetBreakpointsIn(model))) && candidates.length === 0) {
+		if (
+			(!languageLabel || gettingConfigurations || (model && this.canSetBreakpointsIn(model))) &&
+			candidates.length === 0
+		) {
 			await this.activateDebuggers('onDebugInitialConfigurations');
 
 			candidates = this.debuggers
 				.filter(a => a.enabled)
-				.filter(dbg => dbg.hasInitialConfiguration() || dbg.hasDynamicConfigurationProviders() || dbg.hasConfigurationProvider());
+				.filter(
+					dbg =>
+						dbg.hasInitialConfiguration() || dbg.hasDynamicConfigurationProviders() || dbg.hasConfigurationProvider()
+				);
 		}
 
 		if (candidates.length === 0 && languageLabel) {
@@ -379,8 +434,16 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 			}
 			const { confirmed } = await this.dialogService.confirm({
 				type: Severity.Warning,
-				message: nls.localize('CouldNotFindLanguage', "You don't have an extension for debugging {0}. Should we find a {0} extension in the Marketplace?", languageLabel),
-				primaryButton: nls.localize({ key: 'findExtension', comment: ['&& denotes a mnemonic'] }, "&&Find {0} extension", languageLabel)
+				message: nls.localize(
+					'CouldNotFindLanguage',
+					"You don't have an extension for debugging {0}. Should we find a {0} extension in the Marketplace?",
+					languageLabel
+				),
+				primaryButton: nls.localize(
+					{ key: 'findExtension', comment: ['&& denotes a mnemonic'] },
+					'&&Find {0} extension',
+					languageLabel
+				)
 			});
 			if (confirmed) {
 				await this.commandService.executeCommand('debug.installAdditionalDebuggers', languageLabel);
@@ -408,12 +471,16 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 			}
 		});
 
-		const picks: ({ label: string; pick?: () => IGuessedDebugger | Promise<IGuessedDebugger | undefined>; type?: string } | MenuItemAction)[] = [];
+		const picks: (
+			| { label: string; pick?: () => IGuessedDebugger | Promise<IGuessedDebugger | undefined>; type?: string }
+			| MenuItemAction
+		)[] = [];
 		const dynamic = await this.delegate.configurationManager().getDynamicProviders();
 		if (suggestedCandidates.length > 0) {
 			picks.push(
-				{ type: 'separator', label: nls.localize('suggestedDebuggers', "Suggested") },
-				...suggestedCandidates.map(c => ({ label: c.label, pick: () => ({ debugger: c }) })));
+				{ type: 'separator', label: nls.localize('suggestedDebuggers', 'Suggested') },
+				...suggestedCandidates.map(c => ({ label: c.label, pick: () => ({ debugger: c }) }))
+			);
 		}
 
 		if (otherCandidates.length > 0) {
@@ -431,19 +498,25 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 
 			for (const d of dynamic) {
 				picks.push({
-					label: nls.localize('moreOptionsForDebugType', "More {0} options...", d.label),
+					label: nls.localize('moreOptionsForDebugType', 'More {0} options...', d.label),
 					pick: async (): Promise<IGuessedDebugger | undefined> => {
 						const cfg = await d.pick();
-						if (!cfg) { return undefined; }
+						if (!cfg) {
+							return undefined;
+						}
 						return cfg && { debugger: this.getDebugger(d.type)!, withConfig: cfg };
-					},
+					}
 				});
 			}
 		}
 
 		picks.push(
 			{ type: 'separator', label: '' },
-			{ label: languageLabel ? nls.localize('installLanguage', "Install an extension for {0}...", languageLabel) : nls.localize('installExt', "Install extension...") }
+			{
+				label: languageLabel
+					? nls.localize('installLanguage', 'Install an extension for {0}...', languageLabel)
+					: nls.localize('installExt', 'Install extension...')
+			}
 		);
 
 		const contributed = this.menuService.getMenuActions(MenuId.DebugCreateConfiguration, this.contextKeyService);
@@ -453,23 +526,25 @@ export class AdapterManager extends Disposable implements IAdapterManager {
 			}
 		}
 
-		const placeHolder = nls.localize('selectDebug', "Select debugger");
-		return this.quickInputService.pick<{ label: string; debugger?: Debugger } | IQuickPickItem>(picks, { activeItem: picks[0], placeHolder }).then(async picked => {
-			if (picked && 'pick' in picked && typeof picked.pick === 'function') {
-				return await picked.pick();
-			}
+		const placeHolder = nls.localize('selectDebug', 'Select debugger');
+		return this.quickInputService
+			.pick<{ label: string; debugger?: Debugger } | IQuickPickItem>(picks, { activeItem: picks[0], placeHolder })
+			.then(async picked => {
+				if (picked && 'pick' in picked && typeof picked.pick === 'function') {
+					return await picked.pick();
+				}
 
-			if (picked instanceof MenuItemAction) {
-				picked.run();
-				return;
-			}
+				if (picked instanceof MenuItemAction) {
+					picked.run();
+					return;
+				}
 
-			if (picked) {
-				this.commandService.executeCommand('debug.installAdditionalDebuggers', languageLabel);
-			}
+				if (picked) {
+					this.commandService.executeCommand('debug.installAdditionalDebuggers', languageLabel);
+				}
 
-			return undefined;
-		});
+				return undefined;
+			});
 	}
 
 	private initExtensionActivationsIfNeeded(): void {

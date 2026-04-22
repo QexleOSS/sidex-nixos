@@ -73,12 +73,15 @@ declare const navigator: INavigator;
 
 // Native environment
 if (typeof nodeProcess === 'object') {
-	_isWindows = (nodeProcess.platform === 'win32');
-	_isMacintosh = (nodeProcess.platform === 'darwin');
-	_isLinux = (nodeProcess.platform === 'linux');
+	_isWindows = nodeProcess.platform === 'win32';
+	_isMacintosh = nodeProcess.platform === 'darwin';
+	_isLinux = nodeProcess.platform === 'linux';
 	_isLinuxSnap = _isLinux && !!nodeProcess.env['SNAP'] && !!nodeProcess.env['SNAP_REVISION'];
 	_isElectron = isElectronProcess;
-	_isCI = !!nodeProcess.env['CI'] || !!nodeProcess.env['BUILD_ARTIFACTSTAGINGDIRECTORY'] || !!nodeProcess.env['GITHUB_WORKSPACE'];
+	_isCI =
+		!!nodeProcess.env['CI'] ||
+		!!nodeProcess.env['BUILD_ARTIFACTSTAGINGDIRECTORY'] ||
+		!!nodeProcess.env['GITHUB_WORKSPACE'];
 	_locale = LANGUAGE_DEFAULT;
 	_language = LANGUAGE_DEFAULT;
 	const rawNlsConfig = nodeProcess.env['VSCODE_NLS_CONFIG'];
@@ -89,8 +92,7 @@ if (typeof nodeProcess === 'object') {
 			_platformLocale = nlsConfig.osLocale;
 			_language = nlsConfig.resolvedLanguage || LANGUAGE_DEFAULT;
 			_translationsConfigFile = nlsConfig.languagePack?.translationsConfigFile;
-		} catch (e) {
-		}
+		} catch (e) {}
 	}
 	_isNative = true;
 }
@@ -100,7 +102,10 @@ else if (typeof navigator === 'object' && !isElectronRenderer) {
 	_userAgent = navigator.userAgent;
 	_isWindows = _userAgent.indexOf('Windows') >= 0;
 	_isMacintosh = _userAgent.indexOf('Macintosh') >= 0;
-	_isIOS = (_userAgent.indexOf('Macintosh') >= 0 || _userAgent.indexOf('iPad') >= 0 || _userAgent.indexOf('iPhone') >= 0) && !!navigator.maxTouchPoints && navigator.maxTouchPoints > 0;
+	_isIOS =
+		(_userAgent.indexOf('Macintosh') >= 0 || _userAgent.indexOf('iPad') >= 0 || _userAgent.indexOf('iPhone') >= 0) &&
+		!!navigator.maxTouchPoints &&
+		navigator.maxTouchPoints > 0;
 	_isLinux = _userAgent.indexOf('Linux') >= 0;
 	_isMobile = _userAgent?.indexOf('Mobi') >= 0;
 	_isWeb = true;
@@ -124,10 +129,14 @@ export type PlatformName = 'Web' | 'Windows' | 'Mac' | 'Linux';
 
 export function PlatformToString(platform: Platform): PlatformName {
 	switch (platform) {
-		case Platform.Web: return 'Web';
-		case Platform.Mac: return 'Mac';
-		case Platform.Linux: return 'Linux';
-		case Platform.Windows: return 'Windows';
+		case Platform.Web:
+			return 'Web';
+		case Platform.Mac:
+			return 'Mac';
+		case Platform.Linux:
+			return 'Linux';
+		case Platform.Windows:
+			return 'Windows';
 	}
 }
 
@@ -147,7 +156,7 @@ export const isLinuxSnap = _isLinuxSnap;
 export const isNative = _isNative;
 export const isElectron = _isElectron;
 export const isWeb = _isWeb;
-export const isWebWorker = (_isWeb && typeof $globalThis.importScripts === 'function');
+export const isWebWorker = _isWeb && typeof $globalThis.importScripts === 'function';
 export const webWorkerOrigin = isWebWorker ? $globalThis.origin : undefined;
 export const isIOS = _isIOS;
 export const isMobile = _isMobile;
@@ -167,7 +176,6 @@ export const userAgent = _userAgent;
 export const language = _language;
 
 export namespace Language {
-
 	export function value(): string {
 		return language;
 	}
@@ -208,7 +216,7 @@ export const platformLocale = _platformLocale;
  */
 export const translationsConfigFile = _translationsConfigFile;
 
-export const setTimeout0IsFaster = (typeof $globalThis.postMessage === 'function' && !$globalThis.importScripts);
+export const setTimeout0IsFaster = typeof $globalThis.postMessage === 'function' && !$globalThis.importScripts;
 
 /**
  * See https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#:~:text=than%204%2C%20then-,set%20timeout%20to%204,-.
@@ -254,7 +262,8 @@ export const enum OperatingSystem {
 	Macintosh = 2,
 	Linux = 3
 }
-export const OS = (_isMacintosh || _isIOS ? OperatingSystem.Macintosh : (_isWindows ? OperatingSystem.Windows : OperatingSystem.Linux));
+export const OS =
+	_isMacintosh || _isIOS ? OperatingSystem.Macintosh : _isWindows ? OperatingSystem.Windows : OperatingSystem.Linux;
 
 let _isLittleEndian = true;
 let _isLittleEndianComputed = false;
@@ -265,14 +274,14 @@ export function isLittleEndian(): boolean {
 		test[0] = 1;
 		test[1] = 2;
 		const view = new Uint16Array(test.buffer);
-		_isLittleEndian = (view[0] === (2 << 8) + 1);
+		_isLittleEndian = view[0] === (2 << 8) + 1;
 	}
 	return _isLittleEndian;
 }
 
 export const isChrome = !!(userAgent && userAgent.indexOf('Chrome') >= 0);
 export const isFirefox = !!(userAgent && userAgent.indexOf('Firefox') >= 0);
-export const isSafari = !!(!isChrome && (userAgent && userAgent.indexOf('Safari') >= 0));
+export const isSafari = !!(!isChrome && userAgent && userAgent.indexOf('Safari') >= 0);
 export const isEdge = !!(userAgent && userAgent.indexOf('Edg/') >= 0);
 export const isAndroid = !!(userAgent && userAgent.indexOf('Android') >= 0);
 

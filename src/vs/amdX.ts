@@ -3,7 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AppResourcePath, FileAccess, nodeModulesAsarPath, nodeModulesPath, Schemas, VSCODE_AUTHORITY } from './base/common/network.js';
+import {
+	AppResourcePath,
+	FileAccess,
+	nodeModulesAsarPath,
+	nodeModulesPath,
+	Schemas,
+	VSCODE_AUTHORITY
+} from './base/common/network.js';
 import * as platform from './base/common/platform.js';
 import { IProductConfiguration } from './base/common/product.js';
 import { generateUuid } from './base/common/uuid.js';
@@ -20,7 +27,7 @@ class DefineCall {
 		public readonly id: string | null | undefined,
 		public readonly dependencies: string[] | null | undefined,
 		public readonly callback: any
-	) { }
+	) {}
 }
 
 enum AMDModuleImporterState {
@@ -32,14 +39,15 @@ enum AMDModuleImporterState {
 class AMDModuleImporter {
 	public static INSTANCE = new AMDModuleImporter();
 
-	private readonly _isWebWorker = (typeof self === 'object' && self.constructor && self.constructor.name === 'DedicatedWorkerGlobalScope');
+	private readonly _isWebWorker =
+		typeof self === 'object' && self.constructor && self.constructor.name === 'DedicatedWorkerGlobalScope';
 	private readonly _isRenderer = typeof document === 'object';
 
 	private readonly _defineCalls: DefineCall[] = [];
 	private _state = AMDModuleImporterState.Uninitialized;
 	private _amdPolicy: Pick<TrustedTypePolicy, 'name' | 'createScriptURL'> | undefined;
 
-	constructor() { }
+	constructor() {}
 
 	private _initialize(): void {
 		if (this._state === AMDModuleImporterState.Uninitialized) {
@@ -72,23 +80,27 @@ class AMDModuleImporter {
 		globalThis.define.amd = true;
 
 		if (this._isRenderer) {
-			this._amdPolicy = globalThis._VSCODE_WEB_PACKAGE_TTP ?? window.trustedTypes?.createPolicy('amdLoader', {
-				createScriptURL(value: any) {
-					if (value.startsWith(window.location.origin)) {
-						return value;
+			this._amdPolicy =
+				globalThis._VSCODE_WEB_PACKAGE_TTP ??
+				window.trustedTypes?.createPolicy('amdLoader', {
+					createScriptURL(value: any) {
+						if (value.startsWith(window.location.origin)) {
+							return value;
+						}
+						if (value.startsWith(`${Schemas.vscodeFileResource}://${VSCODE_AUTHORITY}`)) {
+							return value;
+						}
+						throw new Error(`[trusted_script_src] Invalid script url: ${value}`);
 					}
-					if (value.startsWith(`${Schemas.vscodeFileResource}://${VSCODE_AUTHORITY}`)) {
-						return value;
-					}
-					throw new Error(`[trusted_script_src] Invalid script url: ${value}`);
-				}
-			});
+				});
 		} else if (this._isWebWorker) {
-			this._amdPolicy = globalThis._VSCODE_WEB_PACKAGE_TTP ?? globalThis.trustedTypes?.createPolicy('amdLoader', {
-				createScriptURL(value: string) {
-					return value;
-				}
-			});
+			this._amdPolicy =
+				globalThis._VSCODE_WEB_PACKAGE_TTP ??
+				globalThis.trustedTypes?.createPolicy('amdLoader', {
+					createScriptURL(value: string) {
+						return value;
+					}
+				});
 		}
 	}
 
@@ -104,7 +116,9 @@ class AMDModuleImporter {
 			});
 		}
 
-		const defineCall = await (this._isWebWorker ? this._workerLoadScript(scriptSrc) : this._rendererLoadScript(scriptSrc));
+		const defineCall = await (this._isWebWorker
+			? this._workerLoadScript(scriptSrc)
+			: this._rendererLoadScript(scriptSrc));
 		if (!defineCall) {
 			console.warn(`Did not receive a define call from script ${scriptSrc}`);
 			return <T>undefined;
@@ -115,7 +129,6 @@ class AMDModuleImporter {
 		const dependencyModules: string[] = [];
 
 		if (Array.isArray(defineCall.dependencies)) {
-
 			for (const mod of defineCall.dependencies) {
 				if (mod === 'exports') {
 					dependencyObjs.push(exports);
@@ -126,7 +139,9 @@ class AMDModuleImporter {
 		}
 
 		if (dependencyModules.length > 0) {
-			throw new Error(`Cannot resolve dependencies for script ${scriptSrc}. The dependencies are: ${dependencyModules.join(', ')}`);
+			throw new Error(
+				`Cannot resolve dependencies for script ${scriptSrc}. The dependencies are: ${dependencyModules.join(', ')}`
+			);
 		}
 		if (typeof defineCall.callback === 'function') {
 			return defineCall.callback(...dependencyObjs) ?? exports;
@@ -183,7 +198,11 @@ const cache = new Map<string, Promise<any>>();
  *
  * e.g. pass in `vscode-textmate/release/main.js`
  */
-export async function importAMDNodeModule<T>(nodeModuleName: string, pathInsideNodeModule: string, isBuilt?: boolean): Promise<T> {
+export async function importAMDNodeModule<T>(
+	nodeModuleName: string,
+	pathInsideNodeModule: string,
+	isBuilt?: boolean
+): Promise<T> {
 	if (isBuilt === undefined) {
 		const product = globalThis._VSCODE_PRODUCT_JSON as unknown as IProductConfiguration;
 		isBuilt = Boolean((product ?? globalThis.vscode?.context?.configuration()?.product)?.commit);
@@ -199,8 +218,8 @@ export async function importAMDNodeModule<T>(nodeModuleName: string, pathInsideN
 		// bit of a special case for: src/vs/workbench/services/languageDetection/browser/languageDetectionWebWorker.ts
 		scriptSrc = nodeModulePath;
 	} else {
-		const useASAR = (canASAR && isBuilt && !platform.isWeb);
-		const actualNodeModulesPath = (useASAR ? nodeModulesAsarPath : nodeModulesPath);
+		const useASAR = canASAR && isBuilt && !platform.isWeb;
+		const actualNodeModulesPath = useASAR ? nodeModulesAsarPath : nodeModulesPath;
 		const resourcePath: AppResourcePath = `${actualNodeModulesPath}/${nodeModulePath}`;
 		scriptSrc = FileAccess.asBrowserUri(resourcePath).toString(true);
 	}
@@ -212,10 +231,10 @@ export async function importAMDNodeModule<T>(nodeModuleName: string, pathInsideN
 export function resolveAmdNodeModulePath(nodeModuleName: string, pathInsideNodeModule: string): string {
 	const product = globalThis._VSCODE_PRODUCT_JSON as unknown as IProductConfiguration;
 	const isBuilt = Boolean((product ?? globalThis.vscode?.context?.configuration()?.product)?.commit);
-	const useASAR = (canASAR && isBuilt && !platform.isWeb);
+	const useASAR = canASAR && isBuilt && !platform.isWeb;
 
 	const nodeModulePath = `${nodeModuleName}/${pathInsideNodeModule}`;
-	const actualNodeModulesPath = (useASAR ? nodeModulesAsarPath : nodeModulesPath);
+	const actualNodeModulesPath = useASAR ? nodeModulesAsarPath : nodeModulesPath;
 	const resourcePath: AppResourcePath = `${actualNodeModulesPath}/${nodeModulePath}`;
 	return FileAccess.asBrowserUri(resourcePath).toString(true);
 }

@@ -17,7 +17,6 @@ export interface ISchemaContributions {
 }
 
 export interface IJSONContributionRegistry {
-
 	readonly onDidChangeSchema: Event<string>;
 	readonly onDidChangeSchemaAssociations: Event<void>;
 
@@ -54,8 +53,6 @@ export interface IJSONContributionRegistry {
 	hasSchemaContent(uri: string): boolean;
 }
 
-
-
 function normalizeId(id: string) {
 	if (id.length > 0 && id.charAt(id.length - 1) === '#') {
 		return id.substring(0, id.length - 1);
@@ -63,10 +60,7 @@ function normalizeId(id: string) {
 	return id;
 }
 
-
-
 class JSONContributionRegistry extends Disposable implements IJSONContributionRegistry {
-
 	private readonly schemasById: { [id: string]: IJSONSchema } = {};
 	private readonly schemaAssociations: { [uri: string]: string[] } = {};
 
@@ -82,10 +76,12 @@ class JSONContributionRegistry extends Disposable implements IJSONContributionRe
 		this._onDidChangeSchema.fire(uri);
 
 		if (store) {
-			store.add(toDisposable(() => {
-				delete this.schemasById[normalizedUri];
-				this._onDidChangeSchema.fire(uri);
-			}));
+			store.add(
+				toDisposable(() => {
+					delete this.schemasById[normalizedUri];
+					this._onDidChangeSchema.fire(uri);
+				})
+			);
 		}
 	}
 
@@ -120,7 +116,7 @@ class JSONContributionRegistry extends Disposable implements IJSONContributionRe
 
 	public getSchemaContributions(): ISchemaContributions {
 		return {
-			schemas: this.schemasById,
+			schemas: this.schemasById
 		};
 	}
 
@@ -136,7 +132,6 @@ class JSONContributionRegistry extends Disposable implements IJSONContributionRe
 	public getSchemaAssociations(): { [uri: string]: string[] } {
 		return this.schemaAssociations;
 	}
-
 }
 
 const jsonContributionRegistry = new JSONContributionRegistry();

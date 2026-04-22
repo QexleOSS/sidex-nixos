@@ -9,7 +9,6 @@ import { ICommand, ICursorStateComputerData, IEditOperationBuilder } from '../..
 import { ITextModel } from '../../../common/model.js';
 
 export class InPlaceReplaceCommand implements ICommand {
-
 	private readonly _editRange: Range;
 	private readonly _originalSelection: Selection;
 	private readonly _text: string;

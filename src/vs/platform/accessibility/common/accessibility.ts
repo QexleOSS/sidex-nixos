@@ -50,8 +50,9 @@ export function isAccessibilityInformation(obj: unknown): obj is IAccessibilityI
 	}
 
 	const candidate = obj as Partial<IAccessibilityInformation>;
-	return typeof candidate.label === 'string'
-		&& (typeof candidate.role === 'undefined' || typeof candidate.role === 'string');
+	return (
+		typeof candidate.label === 'string' && (typeof candidate.role === 'undefined' || typeof candidate.role === 'string')
+	);
 }
 
 export const ACCESSIBLE_VIEW_SHOWN_STORAGE_PREFIX = 'ACCESSIBLE_VIEW_SHOWN_';

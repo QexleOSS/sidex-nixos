@@ -8,7 +8,13 @@ import { Disposable, DisposableMap } from '../../../base/common/lifecycle.js';
 import { URI } from '../../../base/common/uri.js';
 import { Codicon } from '../../../base/common/codicons.js';
 import type * as vscode from 'vscode';
-import { BrowserTabDto, ExtHostBrowsersShape, IMainContext, MainContext, MainThreadBrowsersShape } from './extHost.protocol.js';
+import {
+	BrowserTabDto,
+	ExtHostBrowsersShape,
+	IMainContext,
+	MainContext,
+	MainThreadBrowsersShape
+} from './extHost.protocol.js';
 import { generateUuid } from '../../../base/common/uuid.js';
 import * as extHostTypes from './extHostTypes.js';
 import * as typeConverters from './extHostTypeConverters.js';
@@ -27,7 +33,7 @@ class ExtHostBrowserTab {
 		readonly id: string,
 		private readonly _proxy: MainThreadBrowsersShape,
 		private readonly _sessions: DisposableMap<string, ExtHostBrowserCDPSession>,
-		data: BrowserTabDto,
+		data: BrowserTabDto
 	) {
 		this._url = data.url;
 		this._title = data.title;
@@ -35,12 +41,16 @@ class ExtHostBrowserTab {
 
 		const that = this;
 		this.value = {
-			get url(): string { return that._url; },
-			get title(): string { return that._title; },
+			get url(): string {
+				return that._url;
+			},
+			get title(): string {
+				return that._title;
+			},
 			get icon(): vscode.IconPath {
 				return that._favicon
 					? URI.parse(that._favicon)
-					: new extHostTypes.ThemeIcon(Codicon.globe.id) as vscode.ThemeIcon;
+					: (new extHostTypes.ThemeIcon(Codicon.globe.id) as vscode.ThemeIcon);
 			},
 			startCDPSession(): Promise<vscode.BrowserCDPSession> {
 				return that._startCDPSession();
@@ -95,12 +105,16 @@ class ExtHostBrowserCDPSession {
 
 	constructor(
 		readonly id: string,
-		private readonly _proxy: MainThreadBrowsersShape,
+		private readonly _proxy: MainThreadBrowsersShape
 	) {
 		const that = this;
 		this.value = {
-			get onDidReceiveMessage(): Event<unknown> { return that._onDidReceiveMessage.event; },
-			get onDidClose(): Event<void> { return that._onDidClose.event; },
+			get onDidReceiveMessage(): Event<unknown> {
+				return that._onDidReceiveMessage.event;
+			},
+			get onDidClose(): Event<void> {
+				return that._onDidClose.event;
+			},
 			sendMessage(message: unknown): Promise<void> {
 				return that._sendMessage(message as CDPRequest);
 			},
@@ -134,7 +148,12 @@ class ExtHostBrowserCDPSession {
 		if (message.sessionId !== undefined && typeof message.sessionId !== 'string') {
 			throw new Error('Message sessionId must be a string');
 		}
-		await this._proxy.$sendCDPMessage(this.id, { id: message.id, method: message.method, params: message.params, sessionId: message.sessionId });
+		await this._proxy.$sendCDPMessage(this.id, {
+			id: message.id,
+			method: message.method,
+			params: message.params,
+			sessionId: message.sessionId
+		});
 	}
 
 	private async _close(): Promise<void> {
@@ -196,7 +215,7 @@ export class ExtHostBrowsers extends Disposable implements ExtHostBrowsersShape 
 		const viewColumn = typeConverters.ViewColumn.from(options?.viewColumn);
 		const dto = await this._proxy.$openBrowserTab(url, viewColumn, {
 			preserveFocus: options?.preserveFocus,
-			inactive: options?.background,
+			inactive: options?.background
 		});
 
 		return this._getOrCreateTab(dto).value;

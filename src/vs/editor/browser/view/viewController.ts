@@ -49,7 +49,6 @@ export interface ICommandDelegate {
 }
 
 export class ViewController {
-
 	private readonly configuration: IEditorConfiguration;
 	private readonly viewModel: IViewModel;
 	private readonly userInputEvents: ViewUserInputEvents;
@@ -75,7 +74,12 @@ export class ViewController {
 		this.commandDelegate.type(text);
 	}
 
-	public compositionType(text: string, replacePrevCharCnt: number, replaceNextCharCnt: number, positionDelta: number): void {
+	public compositionType(
+		text: string,
+		replacePrevCharCnt: number,
+		replaceNextCharCnt: number,
+		positionDelta: number
+	): void {
 		this.commandDelegate.compositionType(text, replacePrevCharCnt, replaceNextCharCnt, positionDelta);
 	}
 
@@ -179,12 +183,13 @@ export class ViewController {
 		const lineTokens = tokens.getLineTokens(lineNumber);
 		let startIndex = lineTokens.findTokenIndexAtOffset(column - 1);
 		let endIndex = startIndex;
-		while (startIndex > 0 &&
-			lineTokens.getStandardTokenType(startIndex - 1) === StandardTokenType.String) {
+		while (startIndex > 0 && lineTokens.getStandardTokenType(startIndex - 1) === StandardTokenType.String) {
 			startIndex--;
 		}
-		while (endIndex + 1 < lineTokens.getCount() &&
-			lineTokens.getStandardTokenType(endIndex + 1) === StandardTokenType.String) {
+		while (
+			endIndex + 1 < lineTokens.getCount() &&
+			lineTokens.getStandardTokenType(endIndex + 1) === StandardTokenType.String
+		) {
 			endIndex++;
 		}
 
@@ -198,7 +203,7 @@ export class ViewController {
 		// Verify the token looks like a complete quoted string (quote ... quote).
 		const lineContent = model.getLineContent(lineNumber);
 		const firstChar = lineContent.charAt(tokenStart);
-		if (firstChar !== '"' && firstChar !== '\'' && firstChar !== '`') {
+		if (firstChar !== '"' && firstChar !== "'" && firstChar !== '`') {
 			return undefined;
 		}
 		if (lineContent.charAt(tokenEnd - 1) !== firstChar) {
@@ -216,7 +221,7 @@ export class ViewController {
 
 	public dispatchMouse(data: IMouseDispatchData): void {
 		const options = this.configuration.options;
-		const selectionClipboardIsOn = (platform.isLinux && options.get(EditorOption.selectionClipboard));
+		const selectionClipboardIsOn = platform.isLinux && options.get(EditorOption.selectionClipboard);
 		const columnSelection = options.get(EditorOption.columnSelection);
 		const scrollOnMiddleClick = options.get(EditorOption.scrollOnMiddleClick);
 		if (data.middleButton && !selectionClipboardIsOn) {
@@ -268,7 +273,9 @@ export class ViewController {
 						if (options.get(EditorOption.doubleClickSelectsBlock)) {
 							const model = this.viewModel.model;
 							const modelPos = this._convertViewToModelPosition(data.position);
-							selection = ViewController._trySelectBracketContent(model, modelPos) || ViewController._trySelectStringContent(model, modelPos);
+							selection =
+								ViewController._trySelectBracketContent(model, modelPos) ||
+								ViewController._trySelectStringContent(model, modelPos);
 						}
 						if (selection) {
 							this._select(selection);
@@ -310,7 +317,10 @@ export class ViewController {
 		}
 	}
 
-	private _usualArgs(viewPosition: Position, revealType: NavigationCommandRevealType): CoreNavigationCommands.MoveCommandOptions {
+	private _usualArgs(
+		viewPosition: Position,
+		revealType: NavigationCommandRevealType
+	): CoreNavigationCommands.MoveCommandOptions {
 		viewPosition = this._validateViewColumn(viewPosition);
 		return {
 			source: 'mouse',
@@ -350,7 +360,10 @@ export class ViewController {
 	}
 
 	private _lastCursorMoveToSelect(viewPosition: Position, revealType: NavigationCommandRevealType): void {
-		CoreNavigationCommands.LastCursorMoveToSelect.runCoreEditorCommand(this.viewModel, this._usualArgs(viewPosition, revealType));
+		CoreNavigationCommands.LastCursorMoveToSelect.runCoreEditorCommand(
+			this.viewModel,
+			this._usualArgs(viewPosition, revealType)
+		);
 	}
 
 	private _wordSelect(viewPosition: Position, revealType: NavigationCommandRevealType): void {
@@ -358,11 +371,17 @@ export class ViewController {
 	}
 
 	private _wordSelectDrag(viewPosition: Position, revealType: NavigationCommandRevealType): void {
-		CoreNavigationCommands.WordSelectDrag.runCoreEditorCommand(this.viewModel, this._usualArgs(viewPosition, revealType));
+		CoreNavigationCommands.WordSelectDrag.runCoreEditorCommand(
+			this.viewModel,
+			this._usualArgs(viewPosition, revealType)
+		);
 	}
 
 	private _lastCursorWordSelect(viewPosition: Position, revealType: NavigationCommandRevealType): void {
-		CoreNavigationCommands.LastCursorWordSelect.runCoreEditorCommand(this.viewModel, this._usualArgs(viewPosition, revealType));
+		CoreNavigationCommands.LastCursorWordSelect.runCoreEditorCommand(
+			this.viewModel,
+			this._usualArgs(viewPosition, revealType)
+		);
 	}
 
 	private _lineSelect(viewPosition: Position, revealType: NavigationCommandRevealType): void {
@@ -370,15 +389,24 @@ export class ViewController {
 	}
 
 	private _lineSelectDrag(viewPosition: Position, revealType: NavigationCommandRevealType): void {
-		CoreNavigationCommands.LineSelectDrag.runCoreEditorCommand(this.viewModel, this._usualArgs(viewPosition, revealType));
+		CoreNavigationCommands.LineSelectDrag.runCoreEditorCommand(
+			this.viewModel,
+			this._usualArgs(viewPosition, revealType)
+		);
 	}
 
 	private _lastCursorLineSelect(viewPosition: Position, revealType: NavigationCommandRevealType): void {
-		CoreNavigationCommands.LastCursorLineSelect.runCoreEditorCommand(this.viewModel, this._usualArgs(viewPosition, revealType));
+		CoreNavigationCommands.LastCursorLineSelect.runCoreEditorCommand(
+			this.viewModel,
+			this._usualArgs(viewPosition, revealType)
+		);
 	}
 
 	private _lastCursorLineSelectDrag(viewPosition: Position, revealType: NavigationCommandRevealType): void {
-		CoreNavigationCommands.LastCursorLineSelectDrag.runCoreEditorCommand(this.viewModel, this._usualArgs(viewPosition, revealType));
+		CoreNavigationCommands.LastCursorLineSelectDrag.runCoreEditorCommand(
+			this.viewModel,
+			this._usualArgs(viewPosition, revealType)
+		);
 	}
 
 	private _select(selection: Selection): void {

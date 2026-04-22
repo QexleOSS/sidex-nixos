@@ -5,7 +5,8 @@
 import type * as marked from '../../../../base/common/marked/marked.js';
 import { htmlAttributeEncodeValue } from '../../../../base/common/strings.js';
 
-export const mathInlineRegExp = /(?<![a-zA-Z0-9])(?<dollars>\${1,2})(?!\.|\(["'])((?:\\.|[^\\\n])*?(?:\\.|[^\\\n\$]))\k<dollars>(?![a-zA-Z0-9])/; // Non-standard, but ensure opening $ is not preceded and closing $ is not followed by word/number characters, opening $ not followed by ., (", ('
+export const mathInlineRegExp =
+	/(?:(?:^|[^a-zA-Z0-9]))(?<dollars>\${1,2})(?!\.|\(["'])((?:\\.|[^\\\n])*?(?:\\.|[^\\\n\$]))\k<dollars>(?![a-zA-Z0-9])/;
 export const katexContainerClassName = 'vscode-katex-container';
 export const katexContainerLatexAttributeName = 'data-latex';
 
@@ -16,27 +17,34 @@ export namespace MarkedKatexExtension {
 
 	// From https://github.com/UziTech/marked-katex-extension/blob/main/src/index.js
 	// From https://github.com/UziTech/marked-katex-extension/blob/main/src/index.js
-	export interface MarkedKatexOptions extends KatexOptions { }
+	export interface MarkedKatexOptions extends KatexOptions {}
 
 	const blockRule = /^(\${1,2})\n((?:\\[^]|[^\\])+?)\n\1(?:\n|$)/;
 
-	export function extension(katex: typeof import('katex').default, options: MarkedKatexOptions = {}): marked.MarkedExtension {
+	export function extension(
+		katex: typeof import('katex').default,
+		options: MarkedKatexOptions = {}
+	): marked.MarkedExtension {
 		return {
 			extensions: [
 				inlineKatex(options, createRenderer(katex, options, false)),
-				blockKatex(options, createRenderer(katex, options, true)),
-			],
+				blockKatex(options, createRenderer(katex, options, true))
+			]
 		};
 	}
 
-	function createRenderer(katex: typeof import('katex').default, options: MarkedKatexOptions, isBlock: boolean): marked.RendererExtensionFunction {
+	function createRenderer(
+		katex: typeof import('katex').default,
+		options: MarkedKatexOptions,
+		isBlock: boolean
+	): marked.RendererExtensionFunction {
 		return (token: marked.Tokens.Generic) => {
 			let out: string;
 			try {
 				const html = katex.renderToString(token.text, {
 					...options,
 					throwOnError: true,
-					displayMode: token.displayMode,
+					displayMode: token.displayMode
 				});
 
 				// Wrap in a container with attribute as a fallback for extracting the original LaTeX source
@@ -50,7 +58,10 @@ export namespace MarkedKatexExtension {
 		};
 	}
 
-	function inlineKatex(options: MarkedKatexOptions, renderer: marked.RendererExtensionFunction): marked.TokenizerAndRendererExtension {
+	function inlineKatex(
+		options: MarkedKatexOptions,
+		renderer: marked.RendererExtensionFunction
+	): marked.TokenizerAndRendererExtension {
 		const ruleReg = inlineRule;
 		return {
 			name: 'inlineKatex',
@@ -81,16 +92,19 @@ export namespace MarkedKatexExtension {
 						type: 'inlineKatex',
 						raw: match[0],
 						text: match[2].trim(),
-						displayMode: match[1].length === 2,
+						displayMode: match[1].length === 2
 					};
 				}
 				return;
 			},
-			renderer,
+			renderer
 		};
 	}
 
-	function blockKatex(options: MarkedKatexOptions, renderer: marked.RendererExtensionFunction): marked.TokenizerAndRendererExtension {
+	function blockKatex(
+		options: MarkedKatexOptions,
+		renderer: marked.RendererExtensionFunction
+	): marked.TokenizerAndRendererExtension {
 		return {
 			name: 'blockKatex',
 			level: 'block',
@@ -104,12 +118,12 @@ export namespace MarkedKatexExtension {
 						type: 'blockKatex',
 						raw: match[0],
 						text: match[2].trim(),
-						displayMode: match[1].length === 2,
+						displayMode: match[1].length === 2
 					};
 				}
 				return;
 			},
-			renderer,
+			renderer
 		};
 	}
 }

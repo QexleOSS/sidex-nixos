@@ -57,7 +57,7 @@ export class MockUserInteractionService implements IUserInteractionService {
 		private readonly _simulateFocus: boolean = true,
 		private readonly _simulateHover: boolean = false,
 		private readonly _modifiers: IModifierKeyStatus = { ctrlKey: false, shiftKey: false, altKey: false, metaKey: false }
-	) { }
+	) {}
 
 	readModifierKeyStatus(_element: HTMLElement | Window, _reader: IReader | undefined): IModifierKeyStatus {
 		return this._modifiers;
@@ -72,14 +72,16 @@ export class MockUserInteractionService implements IUserInteractionService {
 	}
 
 	createDomFocusTracker(_element: HTMLElement): IFocusTracker {
-		const tracker = new class extends Disposable implements IFocusTracker {
+		const tracker = new (class extends Disposable implements IFocusTracker {
 			private readonly _onDidFocus = this._register(new Emitter<void>());
 			readonly onDidFocus = this._onDidFocus.event;
 			private readonly _onDidBlur = this._register(new Emitter<void>());
 			readonly onDidBlur = this._onDidBlur.event;
-			refreshState(): void { }
-			fireFocus(): void { this._onDidFocus.fire(); }
-		};
+			refreshState(): void {}
+			fireFocus(): void {
+				this._onDidFocus.fire();
+			}
+		})();
 		if (this._simulateFocus) {
 			queueMicrotask(() => tracker.fireFocus());
 		}

@@ -31,7 +31,12 @@ export function debugGetObservableGraph(obs: IObservable<any> | IObserver, optio
 	}
 }
 
-function formatObservableInfoWithDependencies(info: Info, indentLevel: number, alreadyListed: Set<IObservable<any> | IObserver>, options: IOptions): string {
+function formatObservableInfoWithDependencies(
+	info: Info,
+	indentLevel: number,
+	alreadyListed: Set<IObservable<any> | IObserver>,
+	options: IOptions
+): string {
 	const indent = '\t\t'.repeat(indentLevel);
 	const lines: string[] = [];
 
@@ -58,7 +63,12 @@ function formatObservableInfoWithDependencies(info: Info, indentLevel: number, a
 	return lines.join('\n');
 }
 
-function formatObservableInfoWithObservers(info: Info, indentLevel: number, alreadyListed: Set<IObservable<any> | IObserver>, options: IOptions): string {
+function formatObservableInfoWithObservers(
+	info: Info,
+	indentLevel: number,
+	alreadyListed: Set<IObservable<any> | IObserver>,
+	options: IOptions
+): string {
 	const indent = '\t\t'.repeat(indentLevel);
 	const lines: string[] = [];
 
@@ -86,7 +96,10 @@ function formatObservableInfoWithObservers(info: Info, indentLevel: number, alre
 }
 
 class Info {
-	public static from(obs: IObservable<any> | IObserver, debugNamePostProcessor: (name: string) => string): Info | undefined {
+	public static from(
+		obs: IObservable<any> | IObserver,
+		debugNamePostProcessor: (name: string) => string
+	): Info | undefined {
 		if (obs instanceof AutorunObserver) {
 			const state = obs.debugGetState();
 			return new Info(
@@ -136,15 +149,7 @@ class Info {
 	}
 
 	public static unknown(obs: IObservable<any> | IObserver): Info {
-		return new Info(
-			obs,
-			'(unknown)',
-			'unknown',
-			undefined,
-			'unknown',
-			[],
-			[]
-		);
+		return new Info(obs, '(unknown)', 'unknown', undefined, 'unknown', [], []);
 	}
 
 	constructor(
@@ -154,6 +159,6 @@ class Info {
 		public readonly value: any,
 		public readonly state: string,
 		public readonly dependencies: (IObservable<any> | IObserver)[],
-		public readonly observers: (IObservable<any> | IObserver)[],
-	) { }
+		public readonly observers: (IObservable<any> | IObserver)[]
+	) {}
 }

@@ -41,15 +41,13 @@ export function softAssertNever(value: never): void {
  * @param condition The condition to assert.
  * @param messageOrError An error message or error object to throw if condition is `falsy`.
  */
-export function assert(
-	condition: boolean,
-	messageOrError: string | Error = 'unexpected state',
-): asserts condition {
+export function assert(condition: boolean, messageOrError: string | Error = 'unexpected state'): asserts condition {
 	if (!condition) {
 		// if error instance is provided, use it, otherwise create a new one
-		const errorToThrow = typeof messageOrError === 'string'
-			? new BugIndicatingError(`Assertion Failed: ${messageOrError}`)
-			: messageOrError;
+		const errorToThrow =
+			typeof messageOrError === 'string'
+				? new BugIndicatingError(`Assertion Failed: ${messageOrError}`)
+				: messageOrError;
 
 		throw errorToThrow;
 	}

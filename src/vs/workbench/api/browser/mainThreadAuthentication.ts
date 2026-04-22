@@ -6,8 +6,26 @@
 import { Disposable, DisposableMap } from '../../../base/common/lifecycle.js';
 import * as nls from '../../../nls.js';
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
-import { AuthenticationSession, AuthenticationSessionsChangeEvent, IAuthenticationProvider, IAuthenticationService, IAuthenticationExtensionsService, AuthenticationSessionAccount, IAuthenticationProviderSessionOptions, isAuthenticationWwwAuthenticateRequest, IAuthenticationConstraint, IAuthenticationWwwAuthenticateRequest } from '../../services/authentication/common/authentication.js';
-import { ExtHostAuthenticationShape, ExtHostContext, IRegisterAuthenticationProviderDetails, IRegisterDynamicAuthenticationProviderDetails, MainContext, MainThreadAuthenticationShape } from '../common/extHost.protocol.js';
+import {
+	AuthenticationSession,
+	AuthenticationSessionsChangeEvent,
+	IAuthenticationProvider,
+	IAuthenticationService,
+	IAuthenticationExtensionsService,
+	AuthenticationSessionAccount,
+	IAuthenticationProviderSessionOptions,
+	isAuthenticationWwwAuthenticateRequest,
+	IAuthenticationConstraint,
+	IAuthenticationWwwAuthenticateRequest
+} from '../../services/authentication/common/authentication.js';
+import {
+	ExtHostAuthenticationShape,
+	ExtHostContext,
+	IRegisterAuthenticationProviderDetails,
+	IRegisterDynamicAuthenticationProviderDetails,
+	MainContext,
+	MainThreadAuthenticationShape
+} from '../common/extHost.protocol.js';
 import { IDialogService, IPromptButton } from '../../../platform/dialogs/common/dialogs.js';
 import Severity from '../../../base/common/severity.js';
 import { INotificationService } from '../../../platform/notification/common/notification.js';
@@ -46,7 +64,6 @@ export interface AuthenticationGetSessionOptions {
 }
 
 class MainThreadAuthenticationProvider extends Disposable implements IAuthenticationProvider {
-
 	readonly onDidChangeSessions: Event<AuthenticationSessionsChangeEvent>;
 
 	constructor(
@@ -56,7 +73,7 @@ class MainThreadAuthenticationProvider extends Disposable implements IAuthentica
 		public readonly supportsMultipleAccounts: boolean,
 		public readonly authorizationServers: ReadonlyArray<URI>,
 		public readonly resourceServer: URI | undefined,
-		onDidChangeSessionsEmitter: Emitter<AuthenticationSessionsChangeEvent>,
+		onDidChangeSessionsEmitter: Emitter<AuthenticationSessionsChangeEvent>
 	) {
 		super();
 		this.onDidChangeSessions = onDidChangeSessionsEmitter.event;
@@ -75,8 +92,10 @@ class MainThreadAuthenticationProvider extends Disposable implements IAuthentica
 	}
 }
 
-class MainThreadAuthenticationProviderWithChallenges extends MainThreadAuthenticationProvider implements IAuthenticationProvider {
-
+class MainThreadAuthenticationProviderWithChallenges
+	extends MainThreadAuthenticationProvider
+	implements IAuthenticationProvider
+{
 	constructor(
 		proxy: ExtHostAuthenticationShape,
 		id: string,
@@ -84,24 +103,22 @@ class MainThreadAuthenticationProviderWithChallenges extends MainThreadAuthentic
 		supportsMultipleAccounts: boolean,
 		authorizationServers: ReadonlyArray<URI>,
 		resourceServer: URI | undefined,
-		onDidChangeSessionsEmitter: Emitter<AuthenticationSessionsChangeEvent>,
+		onDidChangeSessionsEmitter: Emitter<AuthenticationSessionsChangeEvent>
 	) {
-		super(
-			proxy,
-			id,
-			label,
-			supportsMultipleAccounts,
-			authorizationServers,
-			resourceServer,
-			onDidChangeSessionsEmitter
-		);
+		super(proxy, id, label, supportsMultipleAccounts, authorizationServers, resourceServer, onDidChangeSessionsEmitter);
 	}
 
-	getSessionsFromChallenges(constraint: IAuthenticationConstraint, options: IAuthenticationProviderSessionOptions): Promise<readonly AuthenticationSession[]> {
+	getSessionsFromChallenges(
+		constraint: IAuthenticationConstraint,
+		options: IAuthenticationProviderSessionOptions
+	): Promise<readonly AuthenticationSession[]> {
 		return this._proxy.$getSessionsFromChallenges(this.id, constraint, options);
 	}
 
-	createSessionFromChallenges(constraint: IAuthenticationConstraint, options: IAuthenticationProviderSessionOptions): Promise<AuthenticationSession> {
+	createSessionFromChallenges(
+		constraint: IAuthenticationConstraint,
+		options: IAuthenticationProviderSessionOptions
+	): Promise<AuthenticationSession> {
 		return this._proxy.$createSessionFromChallenges(this.id, constraint, options);
 	}
 }
@@ -118,7 +135,8 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 		extHostContext: IExtHostContext,
 		@IProductService private readonly productService: IProductService,
 		@IAuthenticationService private readonly authenticationService: IAuthenticationService,
-		@IAuthenticationExtensionsService private readonly authenticationExtensionsService: IAuthenticationExtensionsService,
+		@IAuthenticationExtensionsService
+		private readonly authenticationExtensionsService: IAuthenticationExtensionsService,
 		@IAuthenticationAccessService private readonly authenticationAccessService: IAuthenticationAccessService,
 		@IAuthenticationUsageService private readonly authenticationUsageService: IAuthenticationUsageService,
 		@IDialogService private readonly dialogService: IDialogService,
@@ -128,59 +146,84 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 		@IOpenerService private readonly openerService: IOpenerService,
 		@ILogService private readonly logService: ILogService,
 		@IURLService private readonly urlService: IURLService,
-		@IDynamicAuthenticationProviderStorageService private readonly dynamicAuthProviderStorageService: IDynamicAuthenticationProviderStorageService,
+		@IDynamicAuthenticationProviderStorageService
+		private readonly dynamicAuthProviderStorageService: IDynamicAuthenticationProviderStorageService,
 		@IClipboardService private readonly clipboardService: IClipboardService,
 		@IQuickInputService private readonly quickInputService: IQuickInputService
 	) {
 		super();
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostAuthentication);
 
-		this._register(this.authenticationService.onDidChangeSessions(e => this._proxy.$onDidChangeAuthenticationSessions(e.providerId, e.label)));
-		this._register(this.authenticationService.onDidUnregisterAuthenticationProvider(e => {
-			if (!this._suppressUnregisterEvent) {
-				this._proxy.$onDidUnregisterAuthenticationProvider(e.id);
-			}
-		}));
-		this._register(this.authenticationExtensionsService.onDidChangeAccountPreference(e => {
-			const providerInfo = this.authenticationService.getProvider(e.providerId);
-			this._proxy.$onDidChangeAuthenticationSessions(providerInfo.id, providerInfo.label, e.extensionIds);
-		}));
+		this._register(
+			this.authenticationService.onDidChangeSessions(e =>
+				this._proxy.$onDidChangeAuthenticationSessions(e.providerId, e.label)
+			)
+		);
+		this._register(
+			this.authenticationService.onDidUnregisterAuthenticationProvider(e => {
+				if (!this._suppressUnregisterEvent) {
+					this._proxy.$onDidUnregisterAuthenticationProvider(e.id);
+				}
+			})
+		);
+		this._register(
+			this.authenticationExtensionsService.onDidChangeAccountPreference(e => {
+				const providerInfo = this.authenticationService.getProvider(e.providerId);
+				this._proxy.$onDidChangeAuthenticationSessions(providerInfo.id, providerInfo.label, e.extensionIds);
+			})
+		);
 
 		// Listen for dynamic authentication provider token changes
-		this._register(this.dynamicAuthProviderStorageService.onDidChangeTokens(e => {
-			this._proxy.$onDidChangeDynamicAuthProviderTokens(e.authProviderId, e.clientId, e.tokens);
-		}));
+		this._register(
+			this.dynamicAuthProviderStorageService.onDidChangeTokens(e => {
+				this._proxy.$onDidChangeDynamicAuthProviderTokens(e.authProviderId, e.clientId, e.tokens);
+			})
+		);
 
-		this._register(authenticationService.registerAuthenticationProviderHostDelegate({
-			// Prefer Node.js extension hosts when they're available. No CORS issues etc.
-			priority: extHostContext.extensionHostKind === ExtensionHostKind.LocalWebWorker ? 0 : 1,
-			create: async (authorizationServer, serverMetadata, resource) => {
-				// Auth Provider Id is a combination of the authorization server and the resource, if provided.
-				const authProviderId = resource ? `${authorizationServer.toString(true)} ${resource.resource}` : authorizationServer.toString(true);
-				const clientDetails = await this.dynamicAuthProviderStorageService.getClientRegistration(authProviderId);
-				let clientId = clientDetails?.clientId;
-				const clientSecret = clientDetails?.clientSecret;
-				let initialTokens: (IAuthorizationTokenResponse & { created_at: number })[] | undefined = undefined;
-				if (clientId) {
-					initialTokens = await this.dynamicAuthProviderStorageService.getSessionsForDynamicAuthProvider(authProviderId, clientId);
-					// If we don't already have a client id, check if the server supports the Client Id Metadata flow (see docs on the property)
-					// and add the "client id" if so.
-				} else if (serverMetadata.client_id_metadata_document_supported) {
-					clientId = this.productService.authClientIdMetadataUrl;
+		this._register(
+			authenticationService.registerAuthenticationProviderHostDelegate({
+				// Prefer Node.js extension hosts when they're available. No CORS issues etc.
+				priority: extHostContext.extensionHostKind === ExtensionHostKind.LocalWebWorker ? 0 : 1,
+				create: async (authorizationServer, serverMetadata, resource) => {
+					// Auth Provider Id is a combination of the authorization server and the resource, if provided.
+					const authProviderId = resource
+						? `${authorizationServer.toString(true)} ${resource.resource}`
+						: authorizationServer.toString(true);
+					const clientDetails = await this.dynamicAuthProviderStorageService.getClientRegistration(authProviderId);
+					let clientId = clientDetails?.clientId;
+					const clientSecret = clientDetails?.clientSecret;
+					let initialTokens: (IAuthorizationTokenResponse & { created_at: number })[] | undefined = undefined;
+					if (clientId) {
+						initialTokens = await this.dynamicAuthProviderStorageService.getSessionsForDynamicAuthProvider(
+							authProviderId,
+							clientId
+						);
+						// If we don't already have a client id, check if the server supports the Client Id Metadata flow (see docs on the property)
+						// and add the "client id" if so.
+					} else if (serverMetadata.client_id_metadata_document_supported) {
+						clientId = this.productService.authClientIdMetadataUrl;
+					}
+					return await this._proxy.$registerDynamicAuthProvider(
+						authorizationServer,
+						serverMetadata,
+						resource,
+						clientId,
+						clientSecret,
+						initialTokens
+					);
 				}
-				return await this._proxy.$registerDynamicAuthProvider(
-					authorizationServer,
-					serverMetadata,
-					resource,
-					clientId,
-					clientSecret,
-					initialTokens
-				);
-			}
-		}));
+			})
+		);
 	}
 
-	async $registerAuthenticationProvider({ id, label, supportsMultipleAccounts, resourceServer, supportedAuthorizationServers, supportsChallenges }: IRegisterAuthenticationProviderDetails): Promise<void> {
+	async $registerAuthenticationProvider({
+		id,
+		label,
+		supportsMultipleAccounts,
+		resourceServer,
+		supportedAuthorizationServers,
+		supportsChallenges
+	}: IRegisterAuthenticationProviderDetails): Promise<void> {
 		if (!this.authenticationService.declaredProviders.find(p => p.id === id)) {
 			// If telemetry shows that this is not happening much, we can instead throw an error here.
 			this.logService.warn(`Authentication provider ${id} was not declared in the Extension Manifest.`);
@@ -189,14 +232,16 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 				comment: 'An authentication provider was not declared in the Extension Manifest.';
 				id: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The provider id.' };
 			};
-			this.telemetryService.publicLog2<{ id: string }, AuthProviderNotDeclaredClassification>('authentication.providerNotDeclared', { id });
+			this.telemetryService.publicLog2<{ id: string }, AuthProviderNotDeclaredClassification>(
+				'authentication.providerNotDeclared',
+				{ id }
+			);
 		}
 		const emitter = new Emitter<AuthenticationSessionsChangeEvent>();
 		this._registrations.set(id, emitter);
 		const supportedAuthorizationServerUris = (supportedAuthorizationServers ?? []).map(i => URI.revive(i));
-		const provider =
-			supportsChallenges
-				? new MainThreadAuthenticationProviderWithChallenges(
+		const provider = supportsChallenges
+			? new MainThreadAuthenticationProviderWithChallenges(
 					this._proxy,
 					id,
 					label,
@@ -205,7 +250,7 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 					resourceServer ? URI.revive(resourceServer) : undefined,
 					emitter
 				)
-				: new MainThreadAuthenticationProvider(
+			: new MainThreadAuthenticationProvider(
 					this._proxy,
 					id,
 					label,
@@ -230,7 +275,10 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 
 	async $ensureProvider(id: string): Promise<void> {
 		if (!this.authenticationService.isAuthenticationProviderRegistered(id)) {
-			return await this.extensionService.activateByEvent(getAuthenticationProviderActivationEvent(id), ActivationKind.Immediate);
+			return await this.extensionService.activateByEvent(
+				getAuthenticationProviderActivationEvent(id),
+				ActivationKind.Immediate
+			);
 		}
 	}
 
@@ -249,7 +297,11 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 		const deferredPromise = new DeferredPromise<UriComponents>();
 		const disposable = this.urlService.registerHandler({
 			handleURL: async (uri: URI) => {
-				if (uri.scheme !== expectedUri.scheme || uri.authority !== expectedUri.authority || uri.path !== expectedUri.path) {
+				if (
+					uri.scheme !== expectedUri.scheme ||
+					uri.authority !== expectedUri.authority ||
+					uri.path !== expectedUri.path
+				) {
 					return false;
 				}
 				deferredPromise.complete(uri);
@@ -265,20 +317,20 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 	}
 
 	$showContinueNotification(message: string): Promise<boolean> {
-		const yes = nls.localize('yes', "Yes");
-		const no = nls.localize('no', "No");
+		const yes = nls.localize('yes', 'Yes');
+		const no = nls.localize('no', 'No');
 		const deferredPromise = new DeferredPromise<boolean>();
 		let result = false;
-		const handle = this.notificationService.prompt(
-			Severity.Warning,
-			message,
-			[{
+		const handle = this.notificationService.prompt(Severity.Warning, message, [
+			{
 				label: yes,
-				run: () => result = true
-			}, {
+				run: () => (result = true)
+			},
+			{
 				label: no,
-				run: () => result = false
-			}]);
+				run: () => (result = false)
+			}
+		]);
 		const disposable = handle.onDidClose(() => {
 			deferredPromise.complete(result);
 			disposable.dispose();
@@ -292,18 +344,42 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 			label: details.label,
 			supportsMultipleAccounts: true,
 			supportedAuthorizationServers: [details.authorizationServer],
-			resourceServer: details.resourceServer,
+			resourceServer: details.resourceServer
 		});
-		await this.dynamicAuthProviderStorageService.storeClientRegistration(details.id, URI.revive(details.authorizationServer).toString(true), details.clientId, details.clientSecret, details.label);
+		await this.dynamicAuthProviderStorageService.storeClientRegistration(
+			details.id,
+			URI.revive(details.authorizationServer).toString(true),
+			details.clientId,
+			details.clientSecret,
+			details.label
+		);
 	}
 
-	async $setSessionsForDynamicAuthProvider(authProviderId: string, clientId: string, sessions: (IAuthorizationTokenResponse & { created_at: number })[]): Promise<void> {
+	async $setSessionsForDynamicAuthProvider(
+		authProviderId: string,
+		clientId: string,
+		sessions: (IAuthorizationTokenResponse & { created_at: number })[]
+	): Promise<void> {
 		await this.dynamicAuthProviderStorageService.setSessionsForDynamicAuthProvider(authProviderId, clientId, sessions);
 	}
 
-	async $sendDidChangeDynamicProviderInfo({ providerId, clientId, authorizationServer, label, clientSecret }: Partial<{ providerId: string; clientId: string; authorizationServer: UriComponents; label: string; clientSecret: string }>): Promise<void> {
+	async $sendDidChangeDynamicProviderInfo({
+		providerId,
+		clientId,
+		authorizationServer,
+		label,
+		clientSecret
+	}: Partial<{
+		providerId: string;
+		clientId: string;
+		authorizationServer: UriComponents;
+		label: string;
+		clientSecret: string;
+	}>): Promise<void> {
 		this.logService.info(`Client ID for authentication provider ${providerId} changed to ${clientId}`);
-		const existing = this.dynamicAuthProviderStorageService.getInteractedProviders().find(p => p.providerId === providerId);
+		const existing = this.dynamicAuthProviderStorageService
+			.getInteractedProviders()
+			.find(p => p.providerId === providerId);
 		if (!existing) {
 			throw new Error(`Dynamic authentication provider ${providerId} not found. Has it been registered?`);
 		}
@@ -318,7 +394,12 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 		);
 	}
 
-	private async loginPrompt(provider: IAuthenticationProvider, extensionName: string, recreatingSession: boolean, options?: AuthenticationInteractiveOptions): Promise<boolean> {
+	private async loginPrompt(
+		provider: IAuthenticationProvider,
+		extensionName: string,
+		recreatingSession: boolean,
+		options?: AuthenticationInteractiveOptions
+	): Promise<boolean> {
 		let message: string;
 
 		// Check if the provider has a custom confirmation message
@@ -327,21 +408,31 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 			message = customMessage;
 		} else {
 			message = recreatingSession
-				? nls.localize('confirmRelogin', "The extension '{0}' wants you to sign in again using {1}.", extensionName, provider.label)
-				: nls.localize('confirmLogin', "The extension '{0}' wants to sign in using {1}.", extensionName, provider.label);
+				? nls.localize(
+						'confirmRelogin',
+						"The extension '{0}' wants you to sign in again using {1}.",
+						extensionName,
+						provider.label
+					)
+				: nls.localize(
+						'confirmLogin',
+						"The extension '{0}' wants to sign in using {1}.",
+						extensionName,
+						provider.label
+					);
 		}
 
 		const buttons: IPromptButton<boolean | undefined>[] = [
 			{
-				label: nls.localize({ key: 'allow', comment: ['&& denotes a mnemonic'] }, "&&Allow"),
+				label: nls.localize({ key: 'allow', comment: ['&& denotes a mnemonic'] }, '&&Allow'),
 				run() {
 					return true;
-				},
+				}
 			}
 		];
 		if (options?.learnMore) {
 			buttons.push({
-				label: nls.localize('learnMore', "Learn more"),
+				label: nls.localize('learnMore', 'Learn more'),
 				run: async () => {
 					const result = this.loginPrompt(provider, extensionName, recreatingSession, options);
 					await this.openerService.open(URI.revive(options.learnMore!), { allowCommands: true });
@@ -354,16 +445,24 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 			message,
 			buttons,
 			detail: options?.detail,
-			cancelButton: true,
+			cancelButton: true
 		});
 
 		return result ?? false;
 	}
 
-	private async continueWithIncorrectAccountPrompt(chosenAccountLabel: string, requestedAccountLabel: string): Promise<boolean> {
+	private async continueWithIncorrectAccountPrompt(
+		chosenAccountLabel: string,
+		requestedAccountLabel: string
+	): Promise<boolean> {
 		const result = await this.dialogService.prompt({
-			message: nls.localize('incorrectAccount', "Incorrect account detected"),
-			detail: nls.localize('incorrectAccountDetail', "The chosen account, {0}, does not match the requested account, {1}.", chosenAccountLabel, requestedAccountLabel),
+			message: nls.localize('incorrectAccount', 'Incorrect account detected'),
+			detail: nls.localize(
+				'incorrectAccountDetail',
+				'The chosen account, {0}, does not match the requested account, {1}.',
+				chosenAccountLabel,
+				requestedAccountLabel
+			),
 			type: Severity.Warning,
 			cancelButton: true,
 			buttons: [
@@ -375,7 +474,7 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 					label: nls.localize('loginWith', 'Login with {0}', requestedAccountLabel),
 					run: () => requestedAccountLabel
 				}
-			],
+			]
 		});
 
 		if (!result.result) {
@@ -385,14 +484,27 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 		return result.result === chosenAccountLabel;
 	}
 
-	private async doGetSession(providerId: string, scopeListOrRequest: ReadonlyArray<string> | IAuthenticationWwwAuthenticateRequest, extensionId: string, extensionName: string, options: AuthenticationGetSessionOptions): Promise<AuthenticationSession | undefined> {
+	private async doGetSession(
+		providerId: string,
+		scopeListOrRequest: ReadonlyArray<string> | IAuthenticationWwwAuthenticateRequest,
+		extensionId: string,
+		extensionName: string,
+		options: AuthenticationGetSessionOptions
+	): Promise<AuthenticationSession | undefined> {
 		const authorizationServer = URI.revive(options.authorizationServer);
-		const sessions = await this.authenticationService.getSessions(providerId, scopeListOrRequest, { account: options.account, authorizationServer }, true);
+		const sessions = await this.authenticationService.getSessions(
+			providerId,
+			scopeListOrRequest,
+			{ account: options.account, authorizationServer },
+			true
+		);
 		const provider = this.authenticationService.getProvider(providerId);
 
 		// Error cases
 		if (options.forceNewSession && options.createIfNone) {
-			throw new Error('Invalid combination of options. Please remove one of the following: forceNewSession, createIfNone');
+			throw new Error(
+				'Invalid combination of options. Please remove one of the following: forceNewSession, createIfNone'
+			);
 		}
 		if (options.forceNewSession && options.silent) {
 			throw new Error('Invalid combination of options. Please remove one of the following: forceNewSession, silent');
@@ -410,18 +522,28 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 		const matchingAccountPreferenceSession =
 			// If an account was passed in, that takes precedence over the account preference
 			options.account
-				// We only support one session per account per set of scopes so grab the first one here
-				? sessions[0]
+				? // We only support one session per account per set of scopes so grab the first one here
+					sessions[0]
 				: this._getAccountPreference(extensionId, providerId, sessions);
 
 		// Check if the sessions we have are valid
 		if (!options.forceNewSession && sessions.length) {
 			// If we have an existing session preference, use that. If not, we'll return any valid session at the end of this function.
-			if (matchingAccountPreferenceSession && this.authenticationAccessService.isAccessAllowed(providerId, matchingAccountPreferenceSession.account.label, extensionId)) {
+			if (
+				matchingAccountPreferenceSession &&
+				this.authenticationAccessService.isAccessAllowed(
+					providerId,
+					matchingAccountPreferenceSession.account.label,
+					extensionId
+				)
+			) {
 				return matchingAccountPreferenceSession;
 			}
 			// If we only have one account for a single auth provider, lets just check if it's allowed and return it if it is.
-			if (!provider.supportsMultipleAccounts && this.authenticationAccessService.isAccessAllowed(providerId, sessions[0].account.label, extensionId)) {
+			if (
+				!provider.supportsMultipleAccounts &&
+				this.authenticationAccessService.isAccessAllowed(providerId, sessions[0].account.label, extensionId)
+			) {
 				return sessions[0];
 			}
 		}
@@ -446,28 +568,35 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 
 			let session: AuthenticationSession;
 			if (sessions?.length && !options.forceNewSession) {
-				session = provider.supportsMultipleAccounts && !options.account
-					? await this.authenticationExtensionsService.selectSession(providerId, extensionId, extensionName, scopeListOrRequest, sessions)
-					: sessions[0];
+				session =
+					provider.supportsMultipleAccounts && !options.account
+						? await this.authenticationExtensionsService.selectSession(
+								providerId,
+								extensionId,
+								extensionName,
+								scopeListOrRequest,
+								sessions
+							)
+						: sessions[0];
 			} else {
-				const accountToCreate: AuthenticationSessionAccount | undefined = options.account ?? matchingAccountPreferenceSession?.account;
+				const accountToCreate: AuthenticationSessionAccount | undefined =
+					options.account ?? matchingAccountPreferenceSession?.account;
 				do {
-					session = await this.authenticationService.createSession(
-						providerId,
-						scopeListOrRequest,
-						{
-							activateImmediate: true,
-							account: accountToCreate,
-							authorizationServer
-						});
+					session = await this.authenticationService.createSession(providerId, scopeListOrRequest, {
+						activateImmediate: true,
+						account: accountToCreate,
+						authorizationServer
+					});
 				} while (
-					accountToCreate
-					&& accountToCreate.label !== session.account.label
-					&& !await this.continueWithIncorrectAccountPrompt(session.account.label, accountToCreate.label)
+					accountToCreate &&
+					accountToCreate.label !== session.account.label &&
+					!(await this.continueWithIncorrectAccountPrompt(session.account.label, accountToCreate.label))
 				);
 			}
 
-			this.authenticationAccessService.updateAllowedExtensions(providerId, session.account.label, [{ id: extensionId, name: extensionName, allowed: true }]);
+			this.authenticationAccessService.updateAllowedExtensions(providerId, session.account.label, [
+				{ id: extensionId, name: extensionName, allowed: true }
+			]);
 			this.authenticationExtensionsService.updateNewSessionRequests(providerId, [session]);
 			this.authenticationExtensionsService.updateAccountPreference(extensionId, providerId, session.account);
 			return session;
@@ -475,7 +604,9 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 
 		// For the silent flows, if we don't have a session that matches the account preference, we can return any valid session if there is only one to choose from.
 		if (!matchingAccountPreferenceSession) {
-			const validSessions = sessions.filter(session => this.authenticationAccessService.isAccessAllowed(providerId, session.account.label, extensionId));
+			const validSessions = sessions.filter(session =>
+				this.authenticationAccessService.isAccessAllowed(providerId, session.account.label, extensionId)
+			);
 			if (validSessions.length === 1) {
 				return validSessions[0];
 			}
@@ -486,14 +617,33 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 			// If there is a potential session, but the extension doesn't have access to it, use the "grant access" flow,
 			// otherwise request a new one.
 			sessions.length
-				? this.authenticationExtensionsService.requestSessionAccess(providerId, extensionId, extensionName, scopeListOrRequest, sessions)
-				: await this.authenticationExtensionsService.requestNewSession(providerId, scopeListOrRequest, extensionId, extensionName);
+				? this.authenticationExtensionsService.requestSessionAccess(
+						providerId,
+						extensionId,
+						extensionName,
+						scopeListOrRequest,
+						sessions
+					)
+				: await this.authenticationExtensionsService.requestNewSession(
+						providerId,
+						scopeListOrRequest,
+						extensionId,
+						extensionName
+					);
 		}
 		return undefined;
 	}
 
-	async $getSession(providerId: string, scopeListOrRequest: ReadonlyArray<string> | IAuthenticationWwwAuthenticateRequest, extensionId: string, extensionName: string, options: AuthenticationGetSessionOptions): Promise<AuthenticationSession | undefined> {
-		const scopes = isAuthenticationWwwAuthenticateRequest(scopeListOrRequest) ? scopeListOrRequest.fallbackScopes : scopeListOrRequest;
+	async $getSession(
+		providerId: string,
+		scopeListOrRequest: ReadonlyArray<string> | IAuthenticationWwwAuthenticateRequest,
+		extensionId: string,
+		extensionName: string,
+		options: AuthenticationGetSessionOptions
+	): Promise<AuthenticationSession | undefined> {
+		const scopes = isAuthenticationWwwAuthenticateRequest(scopeListOrRequest)
+			? scopeListOrRequest.fallbackScopes
+			: scopeListOrRequest;
 		if (scopes) {
 			this.sendClientIdUsageTelemetry(extensionId, providerId, scopes);
 		}
@@ -501,7 +651,13 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 
 		if (session) {
 			this.sendProviderUsageTelemetry(extensionId, providerId);
-			this.authenticationUsageService.addAccountUsage(providerId, session.account.label, session.scopes, extensionId, extensionName);
+			this.authenticationUsageService.addAccountUsage(
+				providerId,
+				session.account.label,
+				session.scopes,
+				extensionId,
+				extensionName
+			);
 		}
 
 		return session;
@@ -530,7 +686,10 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 				comment: 'Used to see which extensions are using the VSCode client id override';
 				extensionId: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The extension id.' };
 			};
-			this.telemetryService.publicLog2<{ extensionId: string }, ClientIdUsageClassification>('authentication.clientIdUsage', { extensionId });
+			this.telemetryService.publicLog2<{ extensionId: string }, ClientIdUsageClassification>(
+				'authentication.clientIdUsage',
+				{ extensionId }
+			);
 		}
 	}
 
@@ -546,13 +705,20 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 			extensionId: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The extension id.' };
 			providerId: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The provider id.' };
 		};
-		this.telemetryService.publicLog2<{ extensionId: string; providerId: string }, AuthProviderUsageClassification>('authentication.providerUsage', { providerId, extensionId });
+		this.telemetryService.publicLog2<{ extensionId: string; providerId: string }, AuthProviderUsageClassification>(
+			'authentication.providerUsage',
+			{ providerId, extensionId }
+		);
 	}
 
 	//#region Account Preferences
 	// TODO@TylerLeonhardt: Update this after a few iterations to no longer fallback to the session preference
 
-	private _getAccountPreference(extensionId: string, providerId: string, sessions: ReadonlyArray<AuthenticationSession>): AuthenticationSession | undefined {
+	private _getAccountPreference(
+		extensionId: string,
+		providerId: string,
+		sessions: ReadonlyArray<AuthenticationSession>
+	): AuthenticationSession | undefined {
 		if (sessions.length === 0) {
 			return undefined;
 		}
@@ -568,11 +734,16 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 	async $showDeviceCodeModal(userCode: string, verificationUri: string): Promise<boolean> {
 		const { result } = await this.dialogService.prompt({
 			type: Severity.Info,
-			message: nls.localize('deviceCodeTitle', "Device Code Authentication"),
-			detail: nls.localize('deviceCodeDetail', "Your code: {0}\n\nTo complete authentication, navigate to {1} and enter the code above.", userCode, verificationUri),
+			message: nls.localize('deviceCodeTitle', 'Device Code Authentication'),
+			detail: nls.localize(
+				'deviceCodeDetail',
+				'Your code: {0}\n\nTo complete authentication, navigate to {1} and enter the code above.',
+				userCode,
+				verificationUri
+			),
 			buttons: [
 				{
-					label: nls.localize('copyAndContinue', "Copy & Continue"),
+					label: nls.localize('copyAndContinue', 'Copy & Continue'),
 					run: () => true
 				}
 			],
@@ -585,35 +756,44 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 				await this.clipboardService.writeText(userCode);
 				return await this.openerService.open(URI.parse(verificationUri));
 			} catch (error) {
-				this.notificationService.error(nls.localize('failedToOpenUri', "Failed to open {0}", verificationUri));
+				this.notificationService.error(nls.localize('failedToOpenUri', 'Failed to open {0}', verificationUri));
 			}
 		}
 		return false;
 	}
 
-	async $promptForClientRegistration(authorizationServerUrl: string): Promise<{ clientId: string; clientSecret?: string } | undefined> {
+	async $promptForClientRegistration(
+		authorizationServerUrl: string
+	): Promise<{ clientId: string; clientSecret?: string } | undefined> {
 		const redirectUrls = 'http://127.0.0.1:33418\nhttps://vscode.dev/redirect';
 
 		// Show modal dialog first to explain the situation and get user consent
 		const result = await this.dialogService.prompt({
 			type: Severity.Info,
-			message: nls.localize('dcrNotSupported', "Dynamic Client Registration not supported"),
-			detail: nls.localize('dcrNotSupportedDetail', "The authorization server '{0}' does not support automatic client registration. Do you want to proceed by manually providing a client registration (client ID)?\n\nNote: When registering your OAuth application, make sure to include these redirect URIs:\n{1}", authorizationServerUrl, redirectUrls),
+			message: nls.localize('dcrNotSupported', 'Dynamic Client Registration not supported'),
+			detail: nls.localize(
+				'dcrNotSupportedDetail',
+				"The authorization server '{0}' does not support automatic client registration. Do you want to proceed by manually providing a client registration (client ID)?\n\nNote: When registering your OAuth application, make sure to include these redirect URIs:\n{1}",
+				authorizationServerUrl,
+				redirectUrls
+			),
 			buttons: [
 				{
-					label: nls.localize('dcrCopyUrlsAndProceed', "Copy URIs & Proceed"),
+					label: nls.localize('dcrCopyUrlsAndProceed', 'Copy URIs & Proceed'),
 					run: async () => {
 						try {
 							await this.clipboardService.writeText(redirectUrls);
 						} catch (error) {
-							this.notificationService.error(nls.localize('dcrFailedToCopy', "Failed to copy redirect URIs to clipboard."));
+							this.notificationService.error(
+								nls.localize('dcrFailedToCopy', 'Failed to copy redirect URIs to clipboard.')
+							);
 						}
 						return true;
 					}
-				},
+				}
 			],
 			cancelButton: {
-				label: nls.localize('cancel', "Cancel"),
+				label: nls.localize('cancel', 'Cancel'),
 				run: () => false
 			}
 		});
@@ -622,16 +802,19 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 			return undefined;
 		}
 
-		const sharedTitle = nls.localize('addClientRegistrationDetails', "Add Client Registration Details");
+		const sharedTitle = nls.localize('addClientRegistrationDetails', 'Add Client Registration Details');
 
 		const clientId = await this.quickInputService.input({
 			title: sharedTitle,
-			prompt: nls.localize('clientIdPrompt', "Enter an existing client ID that has been registered with the following redirect URIs: http://127.0.0.1:33418, https://vscode.dev/redirect"),
-			placeHolder: nls.localize('clientIdPlaceholder', "OAuth client ID (azye39d...)"),
+			prompt: nls.localize(
+				'clientIdPrompt',
+				'Enter an existing client ID that has been registered with the following redirect URIs: http://127.0.0.1:33418, https://vscode.dev/redirect'
+			),
+			placeHolder: nls.localize('clientIdPlaceholder', 'OAuth client ID (azye39d...)'),
 			ignoreFocusLost: true,
 			validateInput: async (value: string) => {
 				if (!value || value.trim().length === 0) {
-					return nls.localize('clientIdRequired', "Client ID is required");
+					return nls.localize('clientIdRequired', 'Client ID is required');
 				}
 				return undefined;
 			}
@@ -643,8 +826,12 @@ export class MainThreadAuthentication extends Disposable implements MainThreadAu
 
 		const clientSecret = await this.quickInputService.input({
 			title: sharedTitle,
-			prompt: nls.localize('clientSecretPrompt', "(optional) Enter an existing client secret associated with the client id '{0}' or leave this field blank", clientId),
-			placeHolder: nls.localize('clientSecretPlaceholder', "OAuth client secret (wer32o50f...) or leave it blank"),
+			prompt: nls.localize(
+				'clientSecretPrompt',
+				"(optional) Enter an existing client secret associated with the client id '{0}' or leave this field blank",
+				clientId
+			),
+			placeHolder: nls.localize('clientSecretPlaceholder', 'OAuth client secret (wer32o50f...) or leave it blank'),
 			password: true,
 			ignoreFocusLost: true
 		});

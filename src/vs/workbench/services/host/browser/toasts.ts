@@ -14,7 +14,11 @@ export interface IShowToastController {
 	onDidDisposeToast: (toast: IDisposable) => void;
 }
 
-export async function showBrowserToast(controller: IShowToastController, options: IToastOptions, token: CancellationToken): Promise<IToastResult> {
+export async function showBrowserToast(
+	controller: IShowToastController,
+	options: IToastOptions,
+	token: CancellationToken
+): Promise<IToastResult> {
 	const toast = await triggerBrowserToast(options.title, {
 		detail: options.body,
 		sticky: !options.silent
@@ -29,16 +33,18 @@ export async function showBrowserToast(controller: IShowToastController, options
 
 	const cts = new CancellationTokenSource(token);
 
-	disposables.add(toDisposable(() => {
-		controller.onDidDisposeToast(toast);
-		toast.dispose();
-		cts.dispose(true);
-	}));
+	disposables.add(
+		toDisposable(() => {
+			controller.onDidDisposeToast(toast);
+			toast.dispose();
+			cts.dispose(true);
+		})
+	);
 
 	return new Promise<IToastResult>(r => {
 		const resolve = (result: IToastResult) => {
-			r(result);				// first return the result before...
-			disposables.dispose();	// ...disposing which would invalidate the result object
+			r(result); // first return the result before...
+			disposables.dispose(); // ...disposing which would invalidate the result object
 		};
 
 		disposables.add(cts.token.onCancellationRequested(() => resolve({ supported: true, clicked: false })));
@@ -55,7 +61,10 @@ interface INotification extends IDisposable {
 	readonly onError: Event<void>;
 }
 
-async function triggerBrowserToast(message: string, options?: { detail?: string; sticky?: boolean }): Promise<INotification | undefined> {
+async function triggerBrowserToast(
+	message: string,
+	options?: { detail?: string; sticky?: boolean }
+): Promise<INotification | undefined> {
 	const permission = await Notification.requestPermission();
 	if (permission !== 'granted') {
 		return;
@@ -65,7 +74,7 @@ async function triggerBrowserToast(message: string, options?: { detail?: string;
 
 	const notification = new Notification(message, {
 		body: options?.detail,
-		requireInteraction: options?.sticky,
+		requireInteraction: options?.sticky
 	});
 
 	const onClick = disposables.add(new Emitter<void>());

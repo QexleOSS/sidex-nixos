@@ -25,8 +25,10 @@ export const STOP_SYNC_MODEL_DELTA_TIME_MS = 60 * 1000;
 export const WORKER_TEXT_MODEL_SYNC_CHANNEL = 'workerTextModelSync';
 
 export class WorkerTextModelSyncClient extends Disposable {
-
-	public static create(workerClient: IWebWorkerClient<unknown>, modelService: IModelService): WorkerTextModelSyncClient {
+	public static create(
+		workerClient: IWebWorkerClient<unknown>,
+		modelService: IModelService
+	): WorkerTextModelSyncClient {
 		return new WorkerTextModelSyncClient(
 			workerClient.getChannel<IWorkerTextModelSyncChannelServer>(WORKER_TEXT_MODEL_SYNC_CHANNEL),
 			modelService
@@ -67,13 +69,13 @@ export class WorkerTextModelSyncClient extends Disposable {
 				this._beginModelSync(resource, forceLargeModels);
 			}
 			if (this._syncedModels[resourceStr]) {
-				this._syncedModelsLastUsedTime[resourceStr] = (new Date()).getTime();
+				this._syncedModelsLastUsedTime[resourceStr] = new Date().getTime();
 			}
 		}
 	}
 
 	private _checkStopModelSync(): void {
-		const currentTime = (new Date()).getTime();
+		const currentTime = new Date().getTime();
 
 		const toRemove: string[] = [];
 		for (const modelUrl in this._syncedModelsLastUsedTime) {
@@ -107,15 +109,21 @@ export class WorkerTextModelSyncClient extends Disposable {
 		});
 
 		const toDispose = new DisposableStore();
-		toDispose.add(model.onDidChangeContent((e) => {
-			this._proxy.$acceptModelChanged(modelUrl.toString(), e);
-		}));
-		toDispose.add(model.onWillDispose(() => {
-			this._stopModelSync(modelUrl);
-		}));
-		toDispose.add(toDisposable(() => {
-			this._proxy.$acceptRemovedModel(modelUrl);
-		}));
+		toDispose.add(
+			model.onDidChangeContent(e => {
+				this._proxy.$acceptModelChanged(modelUrl.toString(), e);
+			})
+		);
+		toDispose.add(
+			model.onWillDispose(() => {
+				this._stopModelSync(modelUrl);
+			})
+		);
+		toDispose.add(
+			toDisposable(() => {
+				this._proxy.$acceptRemovedModel(modelUrl);
+			})
+		);
 
 		this._syncedModels[modelUrl] = toDispose;
 	}
@@ -129,7 +137,6 @@ export class WorkerTextModelSyncClient extends Disposable {
 }
 
 export class WorkerTextModelSyncServer implements IWorkerTextModelSyncChannelServer {
-
 	private readonly _models: { [uri: string]: MirrorModel };
 
 	constructor() {
@@ -146,7 +153,7 @@ export class WorkerTextModelSyncServer implements IWorkerTextModelSyncChannelSer
 
 	public getModels(): ICommonModel[] {
 		const all: MirrorModel[] = [];
-		Object.keys(this._models).forEach((key) => all.push(this._models[key]));
+		Object.keys(this._models).forEach(key => all.push(this._models[key]));
 		return all;
 	}
 
@@ -171,7 +178,6 @@ export class WorkerTextModelSyncServer implements IWorkerTextModelSyncChannelSer
 }
 
 export class MirrorModel extends BaseMirrorModel implements ICommonModel {
-
 	public get uri(): URI {
 		return this._uri;
 	}
@@ -213,7 +219,6 @@ export class MirrorModel extends BaseMirrorModel implements ICommonModel {
 	}
 
 	public getWordAtPosition(position: IPosition, wordDefinition: RegExp): Range | null {
-
 		const wordAtText = getWordAtText(
 			position.column,
 			ensureValidWordDefinition(wordDefinition),
@@ -244,9 +249,7 @@ export class MirrorModel extends BaseMirrorModel implements ICommonModel {
 		};
 	}
 
-
 	public words(wordDefinition: RegExp): Iterable<string> {
-
 		const lines = this._lines;
 		const wordenize = this._wordenize.bind(this);
 
@@ -297,7 +300,7 @@ export class MirrorModel extends BaseMirrorModel implements ICommonModel {
 
 		wordDefinition.lastIndex = 0; // reset lastIndex just to be sure
 
-		while (match = wordDefinition.exec(content)) {
+		while ((match = wordDefinition.exec(content))) {
 			if (match[0].length === 0) {
 				// it did match the empty string
 				break;
@@ -350,15 +353,15 @@ export class MirrorModel extends BaseMirrorModel implements ICommonModel {
 	}
 
 	private _validateRange(range: IRange): IRange {
-
 		const start = this._validatePosition({ lineNumber: range.startLineNumber, column: range.startColumn });
 		const end = this._validatePosition({ lineNumber: range.endLineNumber, column: range.endColumn });
 
-		if (start.lineNumber !== range.startLineNumber
-			|| start.column !== range.startColumn
-			|| end.lineNumber !== range.endLineNumber
-			|| end.column !== range.endColumn) {
-
+		if (
+			start.lineNumber !== range.startLineNumber ||
+			start.column !== range.startColumn ||
+			end.lineNumber !== range.endLineNumber ||
+			end.column !== range.endColumn
+		) {
 			return {
 				startLineNumber: start.lineNumber,
 				startColumn: start.column,
@@ -381,19 +384,16 @@ export class MirrorModel extends BaseMirrorModel implements ICommonModel {
 			lineNumber = 1;
 			column = 1;
 			hasChanged = true;
-
 		} else if (lineNumber > this._lines.length) {
 			lineNumber = this._lines.length;
 			column = this._lines[lineNumber - 1].length + 1;
 			hasChanged = true;
-
 		} else {
 			const maxCharacter = this._lines[lineNumber - 1].length + 1;
 			if (column < 1) {
 				column = 1;
 				hasChanged = true;
-			}
-			else if (column > maxCharacter) {
+			} else if (column > maxCharacter) {
 				column = maxCharacter;
 				hasChanged = true;
 			}

@@ -55,7 +55,6 @@ export const unthemedKeybindingLabelOptions: KeybindingLabelOptions = {
 };
 
 export class KeybindingLabel extends Disposable {
-
 	private domNode: HTMLElement;
 	private options: KeybindingLabelOptions;
 
@@ -66,7 +65,11 @@ export class KeybindingLabel extends Disposable {
 	private matches: Matches | undefined;
 	private didEverRender: boolean;
 
-	constructor(container: HTMLElement, private os: OperatingSystem, options?: KeybindingLabelOptions) {
+	constructor(
+		container: HTMLElement,
+		private os: OperatingSystem,
+		options?: KeybindingLabelOptions
+	) {
 		super();
 
 		this.options = options || Object.create(null);
@@ -78,7 +81,9 @@ export class KeybindingLabel extends Disposable {
 			this.domNode.style.color = labelForeground;
 		}
 
-		this.hover = this._register(getBaseLayerHoverDelegate().setupManagedHover(getDefaultHoverDelegate('mouse'), this.domNode, ''));
+		this.hover = this._register(
+			getBaseLayerHoverDelegate().setupManagedHover(getDefaultHoverDelegate('mouse'), this.domNode, '')
+		);
 
 		this.didEverRender = false;
 		container.appendChild(this.domNode);
@@ -153,7 +158,7 @@ export class KeybindingLabel extends Disposable {
 	}
 
 	private renderUnbound(parent: HTMLElement): void {
-		dom.append(parent, this.createKeyElement(localize('unbound', "Unbound")));
+		dom.append(parent, this.createKeyElement(localize('unbound', 'Unbound')));
 	}
 
 	private createKeyElement(label: string, extraClass = ''): HTMLElement {

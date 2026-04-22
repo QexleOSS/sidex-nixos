@@ -91,7 +91,7 @@ export const enum VSCodeOscPt {
 export const enum VSCodeOscProperty {
 	Task = 'Task',
 	Cwd = 'Cwd',
-	HasRichCommandDetection = 'HasRichCommandDetection',
+	HasRichCommandDetection = 'HasRichCommandDetection'
 }
 
 /**
@@ -119,5 +119,4 @@ function oscSequence(ps: number, pt: string, data?: string): string {
 	}
 	result += `\x07`;
 	return result;
-
 }

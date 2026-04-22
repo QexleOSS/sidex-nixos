@@ -10,7 +10,6 @@ import { URI } from '../../../base/common/uri.js';
  * Helper for creating and parsing browser view URIs.
  */
 export namespace BrowserViewUri {
-
 	export const scheme = Schemas.vscodeBrowser;
 
 	/**

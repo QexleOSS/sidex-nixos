@@ -54,7 +54,7 @@ export const enum SearchCommandIds {
 	FocusPreviousInputActionId = 'search.focus.previousInputBox',
 	RestrictSearchToFolderId = 'search.action.restrictSearchToFolder',
 	FindInFolderId = 'filesExplorer.findInFolder',
-	FindInWorkspaceId = 'filesExplorer.findInWorkspace',
+	FindInWorkspaceId = 'filesExplorer.findInWorkspace'
 }
 
 export const SearchContext = {
@@ -71,7 +71,10 @@ export const SearchContext = {
 	FirstMatchFocusKey: new RawContextKey<boolean>('firstMatchFocus', false),
 	FileMatchOrMatchFocusKey: new RawContextKey<boolean>('fileMatchOrMatchFocus', false), // This is actually, Match or File or Folder
 	FileMatchOrFolderMatchFocusKey: new RawContextKey<boolean>('fileMatchOrFolderMatchFocus', false),
-	FileMatchOrFolderMatchWithResourceFocusKey: new RawContextKey<boolean>('fileMatchOrFolderMatchWithResourceFocus', false), // Excludes "Other files"
+	FileMatchOrFolderMatchWithResourceFocusKey: new RawContextKey<boolean>(
+		'fileMatchOrFolderMatchWithResourceFocus',
+		false
+	), // Excludes "Other files"
 	FileFocusKey: new RawContextKey<boolean>('fileMatchFocus', false),
 	FolderFocusKey: new RawContextKey<boolean>('folderMatchFocus', false),
 	ResourceFolderFocusKey: new RawContextKey<boolean>('folderMatchWithResourceFocus', false),
@@ -85,5 +88,5 @@ export const SearchContext = {
 	InTreeViewKey: new RawContextKey<boolean>('inTreeView', false),
 	hasAIResultProvider: new RawContextKey<boolean>('hasAIResultProviderKey', false),
 	AIResultsTitle: new RawContextKey<boolean>('aiResultsTitle', false),
-	AIResultsRequested: new RawContextKey<boolean>('aiResultsRequested', false),
+	AIResultsRequested: new RawContextKey<boolean>('aiResultsRequested', false)
 };

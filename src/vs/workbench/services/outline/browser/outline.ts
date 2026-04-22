@@ -27,7 +27,11 @@ export interface IOutlineService {
 	_serviceBrand: undefined;
 	readonly onDidChange: Event<void>;
 	canCreateOutline(editor: IEditorPane): boolean;
-	createOutline(editor: IEditorPane, target: OutlineTarget, token: CancellationToken): Promise<IOutline<any> | undefined>;
+	createOutline(
+		editor: IEditorPane,
+		target: OutlineTarget,
+		token: CancellationToken
+	): Promise<IOutline<any> | undefined>;
 	registerOutlineCreator(creator: IOutlineCreator<any, any>): IDisposable;
 }
 
@@ -78,7 +82,6 @@ export interface OutlineChangeEvent {
 }
 
 export interface IOutline<E> {
-
 	readonly uri: URI | undefined;
 
 	readonly config: IOutlineListConfig<E>;
@@ -93,7 +96,6 @@ export interface IOutline<E> {
 	captureViewState(): IDisposable;
 	dispose(): void;
 }
-
 
 export const enum OutlineConfigKeys {
 	'icons' = 'outline.icons',

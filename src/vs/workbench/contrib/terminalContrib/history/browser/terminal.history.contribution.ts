@@ -10,16 +10,26 @@ import { localize2 } from '../../../../../nls.js';
 import { AccessibleViewProviderId } from '../../../../../platform/accessibility/browser/accessibleView.js';
 import { CONTEXT_ACCESSIBILITY_MODE_ENABLED } from '../../../../../platform/accessibility/common/accessibility.js';
 import { MenuId } from '../../../../../platform/actions/common/actions.js';
-import { ContextKeyExpr, IContextKeyService, type IContextKey } from '../../../../../platform/contextkey/common/contextkey.js';
+import {
+	ContextKeyExpr,
+	IContextKeyService,
+	type IContextKey
+} from '../../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { TerminalCapability } from '../../../../../platform/terminal/common/capabilities/capabilities.js';
 import { TerminalLocation } from '../../../../../platform/terminal/common/terminal.js';
 import { ResourceContextKey } from '../../../../common/contextkeys.js';
-import { accessibleViewCurrentProviderId, accessibleViewIsShown } from '../../../accessibility/browser/accessibilityConfiguration.js';
+import {
+	accessibleViewCurrentProviderId,
+	accessibleViewIsShown
+} from '../../../accessibility/browser/accessibilityConfiguration.js';
 import type { ITerminalContribution, ITerminalInstance } from '../../../terminal/browser/terminal.js';
 import { registerActiveInstanceAction, registerTerminalAction } from '../../../terminal/browser/terminalActions.js';
-import { registerTerminalContribution, type ITerminalContributionContext } from '../../../terminal/browser/terminalExtensions.js';
+import {
+	registerTerminalContribution,
+	type ITerminalContributionContext
+} from '../../../terminal/browser/terminalExtensions.js';
 import { TERMINAL_VIEW_ID } from '../../../terminal/common/terminal.js';
 import { TerminalContextKeys } from '../../../terminal/common/terminalContextKey.js';
 import { clearShellFileHistory, getCommandHistory, getDirectoryHistory } from '../common/history.js';
@@ -40,7 +50,7 @@ class TerminalHistoryContribution extends Disposable implements ITerminalContrib
 	constructor(
 		private readonly _ctx: ITerminalContributionContext,
 		@IContextKeyService contextKeyService: IContextKeyService,
-		@IInstantiationService private readonly _instantiationService: IInstantiationService,
+		@IInstantiationService private readonly _instantiationService: IInstantiationService
 	) {
 		super();
 
@@ -49,35 +59,47 @@ class TerminalHistoryContribution extends Disposable implements ITerminalContrib
 		// Track listeners per capability to avoid leaking disposables
 		const capabilityListeners = this._register(new DisposableMap<TerminalCapability, DisposableStore>());
 
-		this._register(_ctx.instance.capabilities.onDidAddCapability(e => {
-			// Dispose any existing listener for this capability before adding new one
-			capabilityListeners.deleteAndDispose(e.id);
+		this._register(
+			_ctx.instance.capabilities.onDidAddCapability(e => {
+				// Dispose any existing listener for this capability before adding new one
+				capabilityListeners.deleteAndDispose(e.id);
 
-			switch (e.id) {
-				case TerminalCapability.CwdDetection: {
-					const store = new DisposableStore();
-					store.add(e.capability.onDidChangeCwd(e => {
-						this._instantiationService.invokeFunction(getDirectoryHistory)?.add(e, { remoteAuthority: _ctx.instance.remoteAuthority });
-					}));
-					capabilityListeners.set(e.id, store);
-					break;
+				switch (e.id) {
+					case TerminalCapability.CwdDetection: {
+						const store = new DisposableStore();
+						store.add(
+							e.capability.onDidChangeCwd(e => {
+								this._instantiationService
+									.invokeFunction(getDirectoryHistory)
+									?.add(e, { remoteAuthority: _ctx.instance.remoteAuthority });
+							})
+						);
+						capabilityListeners.set(e.id, store);
+						break;
+					}
+					case TerminalCapability.CommandDetection: {
+						const store = new DisposableStore();
+						store.add(
+							e.capability.onCommandFinished(e => {
+								if (e.command.trim().length > 0) {
+									this._instantiationService
+										.invokeFunction(getCommandHistory)
+										?.add(e.command, { shellType: _ctx.instance.shellType });
+								}
+							})
+						);
+						capabilityListeners.set(e.id, store);
+						break;
+					}
 				}
-				case TerminalCapability.CommandDetection: {
-					const store = new DisposableStore();
-					store.add(e.capability.onCommandFinished(e => {
-						if (e.command.trim().length > 0) {
-							this._instantiationService.invokeFunction(getCommandHistory)?.add(e.command, { shellType: _ctx.instance.shellType });
-						}
-					}));
-					capabilityListeners.set(e.id, store);
-					break;
-				}
-			}
-		}));
+			})
+		);
 
-		this._register(_ctx.instance.capabilities.onDidRemoveCapability(e => {
-			capabilityListeners.deleteAndDispose(e.id);
-		}));
+		this._register(
+			_ctx.instance.capabilities.onDidRemoveCapability(e => {
+				capabilityListeners.deleteAndDispose(e.id);
+			})
+		);
 	}
 
 	/**
@@ -85,12 +107,13 @@ class TerminalHistoryContribution extends Disposable implements ITerminalContrib
 	 * rerun it in the active terminal.
 	 */
 	async runRecent(type: 'command' | 'cwd', filterMode?: 'fuzzy' | 'contiguous', value?: string): Promise<void> {
-		return this._instantiationService.invokeFunction(showRunRecentQuickPick,
+		return this._instantiationService.invokeFunction(
+			showRunRecentQuickPick,
 			this._ctx.instance,
 			this._terminalInRunCommandPicker,
 			type,
 			filterMode,
-			value,
+			value
 		);
 	}
 }
@@ -101,7 +124,10 @@ registerTerminalContribution(TerminalHistoryContribution.ID, TerminalHistoryCont
 
 // #region Actions
 
-const precondition = ContextKeyExpr.or(TerminalContextKeys.processSupported, TerminalContextKeys.terminalHasBeenCreated);
+const precondition = ContextKeyExpr.or(
+	TerminalContextKeys.processSupported,
+	TerminalContextKeys.terminalHasBeenCreated
+);
 
 registerTerminalAction({
 	id: TerminalHistoryCommandId.ClearPreviousSessionHistory,
@@ -117,7 +143,7 @@ registerActiveInstanceAction({
 	id: TerminalHistoryCommandId.GoToRecentDirectory,
 	title: localize2('workbench.action.terminal.goToRecentDirectory', 'Go to Recent Directory...'),
 	metadata: {
-		description: localize2('goToRecentDirectory.metadata', 'Goes to a recent folder'),
+		description: localize2('goToRecentDirectory.metadata', 'Goes to a recent folder')
 	},
 	precondition,
 	keybinding: {
@@ -139,7 +165,7 @@ registerActiveInstanceAction({
 			order: 0,
 			when: ResourceContextKey.Scheme.isEqualTo(Schemas.vscodeTerminal),
 			isHiddenByDefault: true
-		})),
+		}))
 	],
 	run: async (activeInstance, c) => {
 		const history = TerminalHistoryContribution.get(activeInstance);
@@ -162,7 +188,16 @@ registerTerminalAction({
 	keybinding: [
 		{
 			primary: KeyMod.CtrlCmd | KeyCode.KeyR,
-			when: ContextKeyExpr.and(CONTEXT_ACCESSIBILITY_MODE_ENABLED, ContextKeyExpr.or(TerminalContextKeys.focus, ContextKeyExpr.and(accessibleViewIsShown, accessibleViewCurrentProviderId.isEqualTo(AccessibleViewProviderId.Terminal)))),
+			when: ContextKeyExpr.and(
+				CONTEXT_ACCESSIBILITY_MODE_ENABLED,
+				ContextKeyExpr.or(
+					TerminalContextKeys.focus,
+					ContextKeyExpr.and(
+						accessibleViewIsShown,
+						accessibleViewCurrentProviderId.isEqualTo(AccessibleViewProviderId.Terminal)
+					)
+				)
+			),
 			weight: KeybindingWeight.WorkbenchContrib
 		},
 		{
@@ -186,13 +221,13 @@ registerTerminalAction({
 			order: 1,
 			when: ResourceContextKey.Scheme.isEqualTo(Schemas.vscodeTerminal),
 			isHiddenByDefault: true
-		})),
+		}))
 	],
 	run: async (c, accessor) => {
 		let activeInstance = c.service.activeInstance;
 		// If an instanec doesn't exist, create one and wait for shell type to be set
 		if (!activeInstance) {
-			const newInstance = activeInstance = await c.service.getActiveOrCreateInstance();
+			const newInstance = (activeInstance = await c.service.getActiveOrCreateInstance());
 			await c.service.revealActiveTerminal();
 			const store = new DisposableStore();
 			const wasDisposedPrematurely = await new Promise<boolean>(r => {

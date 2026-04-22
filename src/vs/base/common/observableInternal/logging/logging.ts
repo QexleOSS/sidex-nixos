@@ -64,9 +64,7 @@ export interface IObservableLogger {
 }
 
 class ComposedLogger implements IObservableLogger {
-	constructor(
-		public readonly loggers: IObservableLogger[],
-	) { }
+	constructor(public readonly loggers: IObservableLogger[]) {}
 
 	handleObservableCreated(observable: IObservable<any>, location: DebugLocation): void {
 		for (const logger of this.loggers) {

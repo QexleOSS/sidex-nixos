@@ -9,7 +9,6 @@ import { IStorageService, StorageScope, StorageTarget } from '../../../../../pla
 import { TerminalShellType } from '../../../../../platform/terminal/common/terminal.js';
 import { IExtensionService } from '../../../../services/extensions/common/extensions.js';
 
-
 export const TERMINAL_SUGGEST_DISCOVERABILITY_KEY = 'terminal.suggest.increasedDiscoverability';
 export const TERMINAL_SUGGEST_DISCOVERABILITY_COUNT_KEY = 'terminal.suggest.increasedDiscoverabilityCount';
 const TERMINAL_SUGGEST_DISCOVERABILITY_MAX_COUNT = 10;
@@ -33,12 +32,15 @@ export class TerminalSuggestShownTracker extends Disposable implements ITerminal
 		private readonly _shellType: TerminalShellType | undefined,
 		@IStorageService private readonly _storageService: IStorageService,
 		@IExtensionService private readonly _extensionService: IExtensionService
-
 	) {
 		super();
 		this._done = this._storageService.getBoolean(TERMINAL_SUGGEST_DISCOVERABILITY_KEY, StorageScope.APPLICATION, false);
-		this._count = this._storageService.getNumber(TERMINAL_SUGGEST_DISCOVERABILITY_COUNT_KEY, StorageScope.APPLICATION, 0);
-		this._register(this._extensionService.onWillStop(() => this._firstShownTracker = undefined));
+		this._count = this._storageService.getNumber(
+			TERMINAL_SUGGEST_DISCOVERABILITY_COUNT_KEY,
+			StorageScope.APPLICATION,
+			0
+		);
+		this._register(this._extensionService.onWillStop(() => (this._firstShownTracker = undefined)));
 	}
 
 	get done(): boolean {
@@ -65,7 +67,12 @@ export class TerminalSuggestShownTracker extends Disposable implements ITerminal
 			return;
 		}
 		this._count++;
-		this._storageService.store(TERMINAL_SUGGEST_DISCOVERABILITY_COUNT_KEY, this._count, StorageScope.APPLICATION, StorageTarget.USER);
+		this._storageService.store(
+			TERMINAL_SUGGEST_DISCOVERABILITY_COUNT_KEY,
+			this._count,
+			StorageScope.APPLICATION,
+			StorageTarget.USER
+		);
 		if (widgetElt && !widgetElt.classList.contains('increased-discoverability')) {
 			widgetElt.classList.add('increased-discoverability');
 		}
@@ -74,15 +81,22 @@ export class TerminalSuggestShownTracker extends Disposable implements ITerminal
 		} else if (!this._start) {
 			this.resetTimer();
 			this._start = Date.now();
-			this._timeout = this._register(new TimeoutTimer(() => {
-				this._setDone(widgetElt);
-			}, TERMINAL_SUGGEST_DISCOVERABILITY_MIN_MS));
+			this._timeout = this._register(
+				new TimeoutTimer(() => {
+					this._setDone(widgetElt);
+				}, TERMINAL_SUGGEST_DISCOVERABILITY_MIN_MS)
+			);
 		}
 	}
 
 	private _setDone(widgetElt: HTMLElement | undefined) {
 		this._done = true;
-		this._storageService.store(TERMINAL_SUGGEST_DISCOVERABILITY_KEY, true, StorageScope.APPLICATION, StorageTarget.USER);
+		this._storageService.store(
+			TERMINAL_SUGGEST_DISCOVERABILITY_KEY,
+			true,
+			StorageScope.APPLICATION,
+			StorageTarget.USER
+		);
 		if (widgetElt) {
 			widgetElt.classList.remove('increased-discoverability');
 		}

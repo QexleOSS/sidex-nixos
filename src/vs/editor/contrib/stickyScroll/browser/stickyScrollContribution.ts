@@ -4,7 +4,14 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { EditorContributionInstantiation, registerEditorContribution } from '../../../browser/editorExtensions.js';
-import { ToggleStickyScroll, FocusStickyScroll, SelectEditor, SelectPreviousStickyScrollLine, SelectNextStickyScrollLine, GoToStickyScrollLine } from './stickyScrollActions.js';
+import {
+	ToggleStickyScroll,
+	FocusStickyScroll,
+	SelectEditor,
+	SelectPreviousStickyScrollLine,
+	SelectNextStickyScrollLine,
+	GoToStickyScrollLine
+} from './stickyScrollActions.js';
 import { StickyScrollController } from './stickyScrollController.js';
 import { registerAction2 } from '../../../../platform/actions/common/actions.js';
 

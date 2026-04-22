@@ -19,7 +19,9 @@ async function ensureWasm(): Promise<any> {
 			try {
 				const wasmPath = '/wasm/tfidf/sidex_tfidf_wasm.js';
 				const resp = await fetch(wasmPath);
-				if (!resp.ok) { throw new Error(`HTTP ${resp.status}`); }
+				if (!resp.ok) {
+					throw new Error(`HTTP ${resp.status}`);
+				}
 				const code = await resp.text();
 				const blob = new Blob([code], { type: 'application/javascript' });
 				const url = URL.createObjectURL(blob);
@@ -69,7 +71,7 @@ export function createWasmTfIdfEngine(): WasmTfIdfEngine | null {
 		},
 		free() {
 			engine.free();
-		},
+		}
 	};
 }
 

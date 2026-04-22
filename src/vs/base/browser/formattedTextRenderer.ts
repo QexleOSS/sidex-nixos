@@ -24,10 +24,19 @@ export function renderText(text: string, _options?: FormattedTextRenderOptions, 
 	return element;
 }
 
-export function renderFormattedText(formattedText: string, options?: FormattedTextRenderOptions, target?: HTMLElement): HTMLElement {
+export function renderFormattedText(
+	formattedText: string,
+	options?: FormattedTextRenderOptions,
+	target?: HTMLElement
+): HTMLElement {
 	const element = target ?? document.createElement('div');
 	element.textContent = '';
-	_renderFormattedText(element, parseFormattedText(formattedText, !!options?.renderCodeSegments), options?.actionHandler, options?.renderCodeSegments);
+	_renderFormattedText(
+		element,
+		parseFormattedText(formattedText, !!options?.renderCodeSegments),
+		options?.actionHandler,
+		options?.renderCodeSegments
+	);
 	return element;
 }
 
@@ -78,7 +87,12 @@ interface IFormatParseTree {
 	children?: IFormatParseTree[];
 }
 
-function _renderFormattedText(element: Node, treeNode: IFormatParseTree, actionHandler?: IContentActionHandler, renderCodeSegments?: boolean) {
+function _renderFormattedText(
+	element: Node,
+	treeNode: IFormatParseTree,
+	actionHandler?: IContentActionHandler,
+	renderCodeSegments?: boolean
+) {
 	let child: Node | undefined;
 
 	if (treeNode.type === FormatType.Text) {
@@ -91,9 +105,11 @@ function _renderFormattedText(element: Node, treeNode: IFormatParseTree, actionH
 		child = document.createElement('code');
 	} else if (treeNode.type === FormatType.Action && actionHandler) {
 		const a = document.createElement('a');
-		actionHandler.disposables.add(DOM.addStandardDisposableListener(a, 'click', (event) => {
-			actionHandler.callback(String(treeNode.index), event);
-		}));
+		actionHandler.disposables.add(
+			DOM.addStandardDisposableListener(a, 'click', event => {
+				actionHandler.callback(String(treeNode.index), event);
+			})
+		);
 
 		child = a;
 	} else if (treeNode.type === FormatType.NewLine) {
@@ -107,14 +123,13 @@ function _renderFormattedText(element: Node, treeNode: IFormatParseTree, actionH
 	}
 
 	if (child && Array.isArray(treeNode.children)) {
-		treeNode.children.forEach((nodeChild) => {
+		treeNode.children.forEach(nodeChild => {
 			_renderFormattedText(child, nodeChild, actionHandler, renderCodeSegments);
 		});
 	}
 }
 
 function parseFormattedText(content: string, parseCodeSegments: boolean): IFormatParseTree {
-
 	const root: IFormatParseTree = {
 		type: FormatType.Root,
 		children: []
@@ -128,7 +143,7 @@ function parseFormattedText(content: string, parseCodeSegments: boolean): IForma
 	while (!stream.eos()) {
 		let next = stream.next();
 
-		const isEscapedFormatType = (next === '\\' && formatTagType(stream.peek(), parseCodeSegments) !== FormatType.Invalid);
+		const isEscapedFormatType = next === '\\' && formatTagType(stream.peek(), parseCodeSegments) !== FormatType.Invalid;
 		if (isEscapedFormatType) {
 			next = stream.next(); // unread the backslash if it escapes a format tag type
 		}
@@ -166,7 +181,6 @@ function parseFormattedText(content: string, parseCodeSegments: boolean): IForma
 			current.children!.push({
 				type: FormatType.NewLine
 			});
-
 		} else {
 			if (current.type !== FormatType.Text) {
 				const textCurrent: IFormatParseTree = {
@@ -176,7 +190,6 @@ function parseFormattedText(content: string, parseCodeSegments: boolean): IForma
 				current.children!.push(textCurrent);
 				stack.push(current);
 				current = textCurrent;
-
 			} else {
 				current.content += next;
 			}

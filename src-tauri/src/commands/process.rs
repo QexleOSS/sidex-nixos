@@ -1,4 +1,4 @@
-//! High-performance process and terminal management module for SideX
+//! High-performance process and terminal management module for `SideX`
 //!
 //! Features:
 //! - PTY (pseudo-terminal) support with full terminal emulation
@@ -59,6 +59,7 @@ pub struct OutputLine {
 }
 
 impl OutputLine {
+    #[allow(clippy::cast_possible_truncation)]
     fn new(text: String, is_stderr: bool) -> Self {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -134,7 +135,7 @@ impl RingBuffer {
         self.buffer.push_back(line);
     }
 
-    /// Get lines from the buffer (up to max_lines)
+    /// Get lines from the buffer (up to `max_lines`)
     fn get_lines(&self, max_lines: Option<usize>) -> Vec<OutputLine> {
         let max = max_lines.unwrap_or(100).min(self.buffer.len());
         self.buffer.iter().rev().take(max).rev().cloned().collect()
@@ -191,7 +192,7 @@ fn spawn_output_reader(
                         let _ = sender.send(OutputMessage::Shutdown);
                         break;
                     }
-                    let error_text = format!("\r\n[Terminal read error: {}]\r\n", e);
+                    let error_text = format!("\r\n[Terminal read error: {e}]\r\n");
                     let _ = sender.send(OutputMessage::Data(OutputLine::new(error_text, true)));
                     std::thread::sleep(Duration::from_millis(100));
                 }
@@ -209,7 +210,7 @@ pub struct Terminal {
     _handle: TermHandle,
     shell: String,
     cwd: String,
-    _pty: Box<dyn MasterPty + Send>,
+    pty: Box<dyn MasterPty + Send>,
     writer: Box<dyn Write + Send>,
     output: Arc<Mutex<RingBuffer>>,
     _sender: Sender<OutputMessage>,
@@ -221,6 +222,7 @@ pub struct Terminal {
 }
 
 impl Terminal {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         handle: TermHandle,
         shell: String,
@@ -242,7 +244,7 @@ impl Terminal {
             _handle: handle,
             shell,
             cwd,
-            _pty: pty,
+            pty,
             writer,
             output: output.clone(),
             _sender: sender,
@@ -259,21 +261,21 @@ impl Terminal {
     fn write(&mut self, data: &str) -> Result<(), String> {
         self.writer
             .write_all(data.as_bytes())
-            .map_err(|e| format!("Failed to write: {}", e))?;
+            .map_err(|e| format!("Failed to write: {e}"))?;
         self.writer
             .flush()
-            .map_err(|e| format!("Failed to flush: {}", e))
+            .map_err(|e| format!("Failed to flush: {e}"))
     }
 
     fn resize(&mut self, cols: u16, rows: u16) -> Result<(), String> {
-        self._pty
+        self.pty
             .resize(PtySize {
                 rows,
                 cols,
                 pixel_width: 0,
                 pixel_height: 0,
             })
-            .map_err(|e| format!("Failed to resize: {}", e))?;
+            .map_err(|e| format!("Failed to resize: {e}"))?;
         self.cols = cols;
         self.rows = rows;
         Ok(())
@@ -291,7 +293,7 @@ impl Terminal {
         self.is_alive.store(false, Ordering::SeqCst);
         self.child
             .kill()
-            .map_err(|e| format!("Failed to kill: {}", e))
+            .map_err(|e| format!("Failed to kill: {e}"))
     }
 }
 
@@ -313,7 +315,10 @@ impl ProcessStore {
         }
     }
 
-    pub fn set_app_handle(&self, _handle: AppHandle) {}
+    #[allow(clippy::unused_self)]
+    pub fn set_app_handle(&self, _handle: AppHandle) {
+        // Intentionally empty — kept for API compatibility
+    }
 
     fn insert(&self, handle: TermHandle, terminal: Terminal, receiver: Receiver<OutputMessage>) {
         self.terminals.lock().unwrap().insert(handle, terminal);
@@ -329,7 +334,41 @@ impl ProcessStore {
     }
 
     fn handles(&self) -> Vec<TermHandle> {
-        self.terminals.lock().unwrap().keys().cloned().collect()
+        self.terminals.lock().unwrap().keys().copied().collect()
+    }
+
+    /// Drain pending output and return the full buffer text for a terminal.
+    /// Used by `sidex_terminal` find-in-buffer integration.
+    pub fn buffer_text(&self, handle: TermHandle) -> Result<String, String> {
+        let mut terminals = self.terminals.lock().map_err(|e| e.to_string())?;
+        let terminal = terminals
+            .get_mut(&handle)
+            .ok_or_else(|| format!("Terminal {handle:?} not found"))?;
+
+        if let Ok(receivers) = self.output_receivers.try_lock() {
+            if let Some(receiver) = receivers.get(&handle) {
+                loop {
+                    match receiver.try_recv() {
+                        Ok(OutputMessage::Data(line)) => {
+                            terminal.output.lock().unwrap().push(line);
+                        }
+                        Ok(OutputMessage::Shutdown) => {
+                            terminal.is_alive.store(false, Ordering::SeqCst);
+                            break;
+                        }
+                        Err(_) => break,
+                    }
+                }
+            }
+        }
+
+        let output = terminal.output.lock().map_err(|e| e.to_string())?;
+        let lines = output.get_lines(Some(DEFAULT_RING_BUFFER_CAPACITY));
+        Ok(lines
+            .into_iter()
+            .map(|l| l.text)
+            .collect::<Vec<_>>()
+            .join("\n"))
     }
 }
 
@@ -432,16 +471,16 @@ fn get_best_shell(preferred: Option<&str>) -> (String, String) {
         }
     }
 
-    shells
-        .first()
-        .map(|s| (s.name.clone(), s.path.clone()))
-        .unwrap_or_else(|| {
+    shells.first().map_or_else(
+        || {
             if cfg!(target_os = "windows") {
                 ("PowerShell".to_string(), "powershell.exe".to_string())
             } else {
                 ("sh".to_string(), "/bin/sh".to_string())
             }
-        })
+        },
+        |s| (s.name.clone(), s.path.clone()),
+    )
 }
 
 // ============================================================================
@@ -450,12 +489,17 @@ fn get_best_shell(preferred: Option<&str>) -> (String, String) {
 
 /// Kill a process and all its children
 #[cfg(unix)]
+#[allow(
+    clippy::too_many_lines,
+    clippy::cast_possible_wrap,
+    clippy::unnecessary_wraps
+)]
 fn kill_process_tree(pid: u32) -> Result<(), String> {
     use std::process::Command;
 
     // Try to get child PIDs using pgrep (Linux/macOS)
     let output = Command::new("pgrep")
-        .args(&["-P", &pid.to_string()])
+        .args(["-P", &pid.to_string()])
         .output();
 
     if let Ok(output) = output {
@@ -510,6 +554,7 @@ fn kill_process_tree(pid: u32) -> Result<(), String> {
 
 /// Spawn a new terminal/shell
 #[tauri::command]
+#[allow(clippy::too_many_lines, clippy::needless_pass_by_value)]
 pub fn term_spawn(
     app: AppHandle,
     state: State<'_, Arc<ProcessStore>>,
@@ -531,7 +576,7 @@ pub fn term_spawn(
             pixel_width: 0,
             pixel_height: 0,
         })
-        .map_err(|e| format!("Failed to open PTY: {}", e))?;
+        .map_err(|e| format!("Failed to open PTY: {e}"))?;
 
     // Get shell with auto-detection
     let (shell_name, shell_path) = get_best_shell(shell.as_deref());
@@ -620,18 +665,18 @@ pub fn term_spawn(
     let child = pair
         .slave
         .spawn_command(cmd)
-        .map_err(|e| format!("Failed to spawn shell '{}': {}", shell_path, e))?;
+        .map_err(|e| format!("Failed to spawn shell '{shell_path}': {e}"))?;
 
     // Get PTY I/O handles
     let writer = pair
         .master
         .take_writer()
-        .map_err(|e| format!("Failed to get PTY writer: {}", e))?;
+        .map_err(|e| format!("Failed to get PTY writer: {e}"))?;
 
     let reader = pair
         .master
         .try_clone_reader()
-        .map_err(|e| format!("Failed to get PTY reader: {}", e))?;
+        .map_err(|e| format!("Failed to get PTY reader: {e}"))?;
 
     let pid = child.process_id().unwrap_or(0);
     let handle = TermHandle::next();
@@ -677,6 +722,7 @@ struct TermStartedEvent {
 
 /// Write input to terminal
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn term_write(
     state: State<'_, Arc<ProcessStore>>,
     handle: TermHandle,
@@ -685,13 +731,14 @@ pub fn term_write(
     let mut terminals = state.terminals.lock().map_err(|e| e.to_string())?;
     let terminal = terminals
         .get_mut(&handle)
-        .ok_or_else(|| format!("Terminal {:?} not found", handle))?;
+        .ok_or_else(|| format!("Terminal {handle:?} not found"))?;
 
     terminal.write(&data)
 }
 
 /// Resize terminal (PTY)
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn term_resize(
     state: State<'_, Arc<ProcessStore>>,
     handle: TermHandle,
@@ -701,13 +748,14 @@ pub fn term_resize(
     let mut terminals = state.terminals.lock().map_err(|e| e.to_string())?;
     let terminal = terminals
         .get_mut(&handle)
-        .ok_or_else(|| format!("Terminal {:?} not found", handle))?;
+        .ok_or_else(|| format!("Terminal {handle:?} not found"))?;
 
     terminal.resize(cols, rows)
 }
 
 /// Read terminal output (poll-based)
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn term_read(
     state: State<'_, Arc<ProcessStore>>,
     handle: TermHandle,
@@ -716,7 +764,7 @@ pub fn term_read(
     let mut terminals = state.terminals.lock().map_err(|e| e.to_string())?;
     let terminal = terminals
         .get_mut(&handle)
-        .ok_or_else(|| format!("Terminal {:?} not found", handle))?;
+        .ok_or_else(|| format!("Terminal {handle:?} not found"))?;
 
     // Process any pending messages from the receiver
     if let Ok(receivers) = state.output_receivers.try_lock() {
@@ -760,12 +808,13 @@ pub struct TermReadResult {
 
 /// Kill terminal and all child processes
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn term_kill(state: State<'_, Arc<ProcessStore>>, handle: TermHandle) -> Result<(), String> {
     let pid = {
         let mut terminals = state.terminals.lock().map_err(|e| e.to_string())?;
         let terminal = terminals
             .get_mut(&handle)
-            .ok_or_else(|| format!("Terminal {:?} not found", handle))?;
+            .ok_or_else(|| format!("Terminal {handle:?} not found"))?;
         terminal.pid()
     };
 
@@ -785,6 +834,7 @@ pub fn term_kill(state: State<'_, Arc<ProcessStore>>, handle: TermHandle) -> Res
 
 /// Get terminal info
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn term_info(
     state: State<'_, Arc<ProcessStore>>,
     handle: TermHandle,
@@ -792,7 +842,7 @@ pub fn term_info(
     let terminals = state.terminals.lock().map_err(|e| e.to_string())?;
     let terminal = terminals
         .get(&handle)
-        .ok_or_else(|| format!("Terminal {:?} not found", handle))?;
+        .ok_or_else(|| format!("Terminal {handle:?} not found"))?;
 
     let pid = terminal.pid().unwrap_or(0);
     let output = terminal.output.lock().map_err(|e| e.to_string())?;
@@ -811,18 +861,21 @@ pub fn term_info(
 
 /// List active terminals
 #[tauri::command]
+#[allow(clippy::unnecessary_wraps, clippy::needless_pass_by_value)]
 pub fn term_list(state: State<'_, Arc<ProcessStore>>) -> Result<Vec<TermHandle>, String> {
     Ok(state.handles())
 }
 
 /// Get available shells
 #[tauri::command]
+#[allow(clippy::unnecessary_wraps)]
 pub fn term_get_shells() -> Result<Vec<ShellInfo>, String> {
     Ok(detect_shells())
 }
 
 /// Check if a terminal is alive
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn term_is_alive(
     state: State<'_, Arc<ProcessStore>>,
     handle: TermHandle,
@@ -830,7 +883,7 @@ pub fn term_is_alive(
     let mut terminals = state.terminals.lock().map_err(|e| e.to_string())?;
     let terminal = terminals
         .get_mut(&handle)
-        .ok_or_else(|| format!("Terminal {:?} not found", handle))?;
+        .ok_or_else(|| format!("Terminal {handle:?} not found"))?;
 
     // Check if process has exited
     if terminal.is_alive.load(Ordering::SeqCst) {
@@ -852,6 +905,7 @@ pub fn term_is_alive(
 
 /// Execute a simple command (non-interactive)
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub async fn exec(
     command: String,
     args: Vec<String>,
@@ -884,15 +938,15 @@ pub async fn exec(
     // Spawn the process
     let mut child = cmd
         .spawn()
-        .map_err(|e| format!("Failed to spawn '{}': {}", command, e))?;
+        .map_err(|e| format!("Failed to spawn '{command}': {e}"))?;
 
     let stdout_handle = child.stdout.take();
     let stderr_handle = child.stderr.take();
 
     let stdout_task = tokio::spawn(async move {
+        use tokio::io::AsyncReadExt;
         if let Some(mut stdout) = stdout_handle {
             let mut buf = String::new();
-            use tokio::io::AsyncReadExt;
             let _ = stdout.read_to_string(&mut buf).await;
             buf
         } else {
@@ -901,9 +955,9 @@ pub async fn exec(
     });
 
     let stderr_task = tokio::spawn(async move {
+        use tokio::io::AsyncReadExt;
         if let Some(mut stderr) = stderr_handle {
             let mut buf = String::new();
-            use tokio::io::AsyncReadExt;
             let _ = stderr.read_to_string(&mut buf).await;
             buf
         } else {
@@ -925,9 +979,7 @@ pub async fn exec(
                 timed_out: false,
             })
         }
-        Ok(Err(e)) => {
-            Err(format!("Process error: {}", e))
-        }
+        Ok(Err(e)) => Err(format!("Process error: {e}")),
         Err(_) => {
             let _ = child.kill().await;
 
@@ -950,6 +1002,7 @@ pub async fn exec(
 
 /// Clear terminal output buffer
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn term_clear_buffer(
     state: State<'_, Arc<ProcessStore>>,
     handle: TermHandle,
@@ -957,7 +1010,7 @@ pub fn term_clear_buffer(
     let mut terminals = state.terminals.lock().map_err(|e| e.to_string())?;
     let terminal = terminals
         .get_mut(&handle)
-        .ok_or_else(|| format!("Terminal {:?} not found", handle))?;
+        .ok_or_else(|| format!("Terminal {handle:?} not found"))?;
 
     *terminal.output.lock().map_err(|e| e.to_string())? =
         RingBuffer::new(DEFAULT_RING_BUFFER_CAPACITY);
@@ -977,29 +1030,30 @@ const ALLOWED_SIGNALS: &[i32] = &[
 /// Send signal to terminal process (Unix only)
 #[cfg(unix)]
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn term_signal(
     state: State<'_, Arc<ProcessStore>>,
     handle: TermHandle,
     signal: i32,
 ) -> Result<(), String> {
     if !ALLOWED_SIGNALS.contains(&signal) {
-        return Err(format!("Signal {} is not in the allowed list", signal));
+        return Err(format!("Signal {signal} is not in the allowed list"));
     }
 
     let terminals = state.terminals.lock().map_err(|e| e.to_string())?;
     let terminal = terminals
         .get(&handle)
-        .ok_or_else(|| format!("Terminal {:?} not found", handle))?;
+        .ok_or_else(|| format!("Terminal {handle:?} not found"))?;
 
     if let Some(pid) = terminal.pid() {
         let pid_i32: i32 = pid
             .try_into()
-            .map_err(|_| format!("PID {} overflows i32", pid))?;
+            .map_err(|_| format!("PID {pid} overflows i32"))?;
         #[allow(unsafe_code)]
         unsafe {
             let result = libc::kill(pid_i32, signal);
             if result != 0 {
-                return Err(format!("Failed to send signal {} to {}", signal, pid));
+                return Err(format!("Failed to send signal {signal} to {pid}"));
             }
         }
     }
@@ -1019,6 +1073,7 @@ pub fn term_signal(
 
 /// Change terminal working directory (via shell command)
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn term_set_cwd(
     state: State<'_, Arc<ProcessStore>>,
     handle: TermHandle,
@@ -1027,7 +1082,7 @@ pub fn term_set_cwd(
     let mut terminals = state.terminals.lock().map_err(|e| e.to_string())?;
     let terminal = terminals
         .get_mut(&handle)
-        .ok_or_else(|| format!("Terminal {:?} not found", handle))?;
+        .ok_or_else(|| format!("Terminal {handle:?} not found"))?;
 
     // Send cd command via shell (platform-aware quoting)
     let cd_cmd = if cfg!(target_os = "windows") {

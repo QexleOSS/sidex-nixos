@@ -14,12 +14,16 @@ import { IModelService } from '../../../editor/common/services/model.js';
 import { ILanguageService } from '../../../editor/common/languages/language.js';
 import { ITextModelService } from '../../../editor/common/services/resolverService.js';
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
-import { ExtHostContext, ExtHostDocumentContentProvidersShape, MainContext, MainThreadDocumentContentProvidersShape } from '../common/extHost.protocol.js';
+import {
+	ExtHostContext,
+	ExtHostDocumentContentProvidersShape,
+	MainContext,
+	MainThreadDocumentContentProvidersShape
+} from '../common/extHost.protocol.js';
 import { CancellationTokenSource } from '../../../base/common/cancellation.js';
 
 @extHostNamedCustomer(MainContext.MainThreadDocumentContentProviders)
 export class MainThreadDocumentContentProviders implements MainThreadDocumentContentProvidersShape {
-
 	private readonly _resourceContentProvider = new DisposableMap<number>();
 	private readonly _pendingUpdate = new Map<string, CancellationTokenSource>();
 	private readonly _proxy: ExtHostDocumentContentProvidersShape;
@@ -74,7 +78,9 @@ export class MainThreadDocumentContentProviders implements MainThreadDocumentCon
 		this._pendingUpdate.set(model.id, myToken);
 
 		try {
-			const edits = await this._editorWorkerService.computeMoreMinimalEdits(model.uri, [{ text: value, range: model.getFullModelRange() }]);
+			const edits = await this._editorWorkerService.computeMoreMinimalEdits(model.uri, [
+				{ text: value, range: model.getFullModelRange() }
+			]);
 
 			// remove token
 			this._pendingUpdate.delete(model.id);

@@ -29,7 +29,6 @@ export interface IMouseEvent {
 }
 
 export class StandardMouseEvent implements IMouseEvent {
-
 	public readonly browserEvent: MouseEvent;
 
 	public readonly leftButton: boolean;
@@ -72,8 +71,10 @@ export class StandardMouseEvent implements IMouseEvent {
 			this.posy = e.pageY;
 		} else {
 			// Probably hit by MSGestureEvent
-			this.posx = e.clientX + this.target.ownerDocument.body.scrollLeft + this.target.ownerDocument.documentElement.scrollLeft;
-			this.posy = e.clientY + this.target.ownerDocument.body.scrollTop + this.target.ownerDocument.documentElement.scrollTop;
+			this.posx =
+				e.clientX + this.target.ownerDocument.body.scrollLeft + this.target.ownerDocument.documentElement.scrollLeft;
+			this.posy =
+				e.clientY + this.target.ownerDocument.body.scrollTop + this.target.ownerDocument.documentElement.scrollTop;
 		}
 
 		// Find the position of the iframe this code is executing in relative to the iframe where the event was captured.
@@ -92,7 +93,6 @@ export class StandardMouseEvent implements IMouseEvent {
 }
 
 export class DragMouseEvent extends StandardMouseEvent {
-
 	public readonly dataTransfer: DataTransfer;
 
 	constructor(targetWindow: Window, e: MouseEvent) {
@@ -126,17 +126,15 @@ interface IGeckoMouseWheelEvent {
 }
 
 export class StandardWheelEvent {
-
 	public readonly browserEvent: IMouseWheelEvent | null;
 	public readonly deltaY: number;
 	public readonly deltaX: number;
 	public readonly target: Node;
 
 	constructor(e: IMouseWheelEvent | null, deltaX: number = 0, deltaY: number = 0) {
-
 		this.browserEvent = e || null;
 		// eslint-disable-next-line local/code-no-any-casts
-		this.target = e ? (e.target || (<any>e).targetNode || e.srcElement) : null;
+		this.target = e ? e.target || (<any>e).targetNode || e.srcElement : null;
 
 		this.deltaY = deltaY;
 		this.deltaX = deltaX;
@@ -153,9 +151,9 @@ export class StandardWheelEvent {
 		if (e) {
 			// Old (deprecated) wheel events
 			// eslint-disable-next-line local/code-no-any-casts
-			const e1 = <IWebKitMouseWheelEvent><any>e;
+			const e1 = <IWebKitMouseWheelEvent>(<any>e);
 			// eslint-disable-next-line local/code-no-any-casts
-			const e2 = <IGeckoMouseWheelEvent><any>e;
+			const e2 = <IGeckoMouseWheelEvent>(<any>e);
 			const devicePixelRatio = e.view?.devicePixelRatio || 1;
 
 			// vertical delta scroll
@@ -171,7 +169,7 @@ export class StandardWheelEvent {
 			} else if (e.type === 'wheel') {
 				// Modern wheel event
 				// https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent
-				const ev = <WheelEvent><unknown>e;
+				const ev = <WheelEvent>(<unknown>e);
 
 				if (ev.deltaMode === ev.DOM_DELTA_LINE) {
 					// the deltas are expressed in lines
@@ -188,7 +186,7 @@ export class StandardWheelEvent {
 			// horizontal delta scroll
 			if (typeof e1.wheelDeltaX !== 'undefined') {
 				if (browser.isSafari && platform.isWindows) {
-					this.deltaX = - (e1.wheelDeltaX / 120);
+					this.deltaX = -(e1.wheelDeltaX / 120);
 				} else if (shouldFactorDPR) {
 					// Refs https://github.com/microsoft/vscode/issues/146403#issuecomment-1854538928
 					this.deltaX = e1.wheelDeltaX / (120 * devicePixelRatio);
@@ -200,7 +198,7 @@ export class StandardWheelEvent {
 			} else if (e.type === 'wheel') {
 				// Modern wheel event
 				// https://developer.mozilla.org/en-US/docs/Web/API/WheelEvent
-				const ev = <WheelEvent><unknown>e;
+				const ev = <WheelEvent>(<unknown>e);
 
 				if (ev.deltaMode === ev.DOM_DELTA_LINE) {
 					// the deltas are expressed in lines

@@ -5,7 +5,10 @@
 
 import { Emitter, Event } from '../../../base/common/event.js';
 import { IJSONSchema } from '../../../base/common/jsonSchema.js';
-import { IJSONContributionRegistry, Extensions as JSONExtensions } from '../../jsonschemas/common/jsonContributionRegistry.js';
+import {
+	IJSONContributionRegistry,
+	Extensions as JSONExtensions
+} from '../../jsonschemas/common/jsonContributionRegistry.js';
 import * as platform from '../../registry/common/platform.js';
 import { IColorTheme } from './themeService.js';
 import { Disposable } from '../../../base/common/lifecycle.js';
@@ -99,7 +102,6 @@ export const Extensions = {
 export const DEFAULT_SIZE_CONFIG_VALUE = 'default';
 
 export interface ISizeRegistry {
-
 	readonly onDidChangeSchema: Event<void>;
 
 	/**
@@ -139,19 +141,21 @@ export interface ISizeRegistry {
 	 * Notify when the color theme or settings change.
 	 */
 	notifyThemeUpdate(theme: IColorTheme): void;
-
 }
 
 type IJSONSchemaForSizes = IJSONSchema & { properties: { [name: string]: IJSONSchema } };
 
 class SizeRegistry extends Disposable implements ISizeRegistry {
-
 	private readonly _onDidChangeSchema = this._register(new Emitter<void>());
 	readonly onDidChangeSchema: Event<void> = this._onDidChangeSchema.event;
 
 	private sizesById: { [key: string]: SizeContribution };
 	private sizeSchema: IJSONSchemaForSizes = { type: 'object', properties: {} };
-	private sizeReferenceSchema: IJSONSchema & { enum: string[]; enumDescriptions: string[] } = { type: 'string', enum: [], enumDescriptions: [] };
+	private sizeReferenceSchema: IJSONSchema & { enum: string[]; enumDescriptions: string[] } = {
+		type: 'string',
+		enum: [],
+		enumDescriptions: []
+	};
 
 	constructor() {
 		super();
@@ -168,7 +172,12 @@ class SizeRegistry extends Disposable implements ISizeRegistry {
 		this._onDidChangeSchema.fire();
 	}
 
-	public registerSize(id: string, defaults: SizeDefaults | SizeValue | null, description: string, deprecationMessage?: string): SizeIdentifier {
+	public registerSize(
+		id: string,
+		defaults: SizeDefaults | SizeValue | null,
+		description: string,
+		deprecationMessage?: string
+	): SizeIdentifier {
 		const sizeContribution: SizeContribution = { id, description, defaults, deprecationMessage };
 		this.sizesById[id] = sizeContribution;
 
@@ -236,15 +245,22 @@ class SizeRegistry extends Disposable implements ISizeRegistry {
 			return a.localeCompare(b);
 		};
 
-		return Object.keys(this.sizesById).sort(sorter).map(k => `- \`${k}\`: ${this.sizesById[k].description}`).join('\n');
+		return Object.keys(this.sizesById)
+			.sort(sorter)
+			.map(k => `- \`${k}\`: ${this.sizesById[k].description}`)
+			.join('\n');
 	}
-
 }
 
 const sizeRegistry = new SizeRegistry();
 platform.Registry.add(Extensions.SizeContribution, sizeRegistry);
 
-export function registerSize(id: string, defaults: SizeDefaults | SizeValue | null, description: string, deprecationMessage?: string): SizeIdentifier {
+export function registerSize(
+	id: string,
+	defaults: SizeDefaults | SizeValue | null,
+	description: string,
+	deprecationMessage?: string
+): SizeIdentifier {
 	return sizeRegistry.registerSize(id, defaults, description, deprecationMessage);
 }
 

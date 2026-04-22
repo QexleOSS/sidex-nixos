@@ -8,7 +8,16 @@ import { Emitter, Event } from '../../../base/common/event.js';
 import { Disposable } from '../../../base/common/lifecycle.js';
 import { URI } from '../../../base/common/uri.js';
 import { IExtensionDescription } from '../../../platform/extensions/common/extensions.js';
-import { ExtHostEditorsShape, IEditorPropertiesChangeData, IMainContext, ITextDocumentShowOptions, ITextEditorDiffInformation, ITextEditorPositionData, MainContext, MainThreadTextEditorsShape } from './extHost.protocol.js';
+import {
+	ExtHostEditorsShape,
+	IEditorPropertiesChangeData,
+	IMainContext,
+	ITextDocumentShowOptions,
+	ITextEditorDiffInformation,
+	ITextEditorPositionData,
+	MainContext,
+	MainThreadTextEditorsShape
+} from './extHost.protocol.js';
 import { ExtHostDocumentsAndEditors } from './extHostDocumentsAndEditors.js';
 import { ExtHostTextEditor, TextEditorDecorationType } from './extHostTextEditor.js';
 import * as TypeConverters from './extHostTypeConverters.js';
@@ -16,34 +25,51 @@ import { TextEditorSelectionChangeKind, TextEditorChangeKind } from './extHostTy
 import * as vscode from 'vscode';
 
 export class ExtHostEditors extends Disposable implements ExtHostEditorsShape {
-
-	private readonly _onDidChangeTextEditorSelection = this._register(new Emitter<vscode.TextEditorSelectionChangeEvent>());
+	private readonly _onDidChangeTextEditorSelection = this._register(
+		new Emitter<vscode.TextEditorSelectionChangeEvent>()
+	);
 	private readonly _onDidChangeTextEditorOptions = this._register(new Emitter<vscode.TextEditorOptionsChangeEvent>());
-	private readonly _onDidChangeTextEditorVisibleRanges = this._register(new Emitter<vscode.TextEditorVisibleRangesChangeEvent>());
-	private readonly _onDidChangeTextEditorViewColumn = this._register(new Emitter<vscode.TextEditorViewColumnChangeEvent>());
-	private readonly _onDidChangeTextEditorDiffInformation = this._register(new Emitter<vscode.TextEditorDiffInformationChangeEvent>());
+	private readonly _onDidChangeTextEditorVisibleRanges = this._register(
+		new Emitter<vscode.TextEditorVisibleRangesChangeEvent>()
+	);
+	private readonly _onDidChangeTextEditorViewColumn = this._register(
+		new Emitter<vscode.TextEditorViewColumnChangeEvent>()
+	);
+	private readonly _onDidChangeTextEditorDiffInformation = this._register(
+		new Emitter<vscode.TextEditorDiffInformationChangeEvent>()
+	);
 	private readonly _onDidChangeActiveTextEditor = this._register(new Emitter<vscode.TextEditor | undefined>());
 	private readonly _onDidChangeVisibleTextEditors = this._register(new Emitter<readonly vscode.TextEditor[]>());
 
-	readonly onDidChangeTextEditorSelection: Event<vscode.TextEditorSelectionChangeEvent> = this._onDidChangeTextEditorSelection.event;
-	readonly onDidChangeTextEditorOptions: Event<vscode.TextEditorOptionsChangeEvent> = this._onDidChangeTextEditorOptions.event;
-	readonly onDidChangeTextEditorVisibleRanges: Event<vscode.TextEditorVisibleRangesChangeEvent> = this._onDidChangeTextEditorVisibleRanges.event;
-	readonly onDidChangeTextEditorViewColumn: Event<vscode.TextEditorViewColumnChangeEvent> = this._onDidChangeTextEditorViewColumn.event;
-	readonly onDidChangeTextEditorDiffInformation: Event<vscode.TextEditorDiffInformationChangeEvent> = this._onDidChangeTextEditorDiffInformation.event;
+	readonly onDidChangeTextEditorSelection: Event<vscode.TextEditorSelectionChangeEvent> =
+		this._onDidChangeTextEditorSelection.event;
+	readonly onDidChangeTextEditorOptions: Event<vscode.TextEditorOptionsChangeEvent> =
+		this._onDidChangeTextEditorOptions.event;
+	readonly onDidChangeTextEditorVisibleRanges: Event<vscode.TextEditorVisibleRangesChangeEvent> =
+		this._onDidChangeTextEditorVisibleRanges.event;
+	readonly onDidChangeTextEditorViewColumn: Event<vscode.TextEditorViewColumnChangeEvent> =
+		this._onDidChangeTextEditorViewColumn.event;
+	readonly onDidChangeTextEditorDiffInformation: Event<vscode.TextEditorDiffInformationChangeEvent> =
+		this._onDidChangeTextEditorDiffInformation.event;
 	readonly onDidChangeActiveTextEditor: Event<vscode.TextEditor | undefined> = this._onDidChangeActiveTextEditor.event;
-	readonly onDidChangeVisibleTextEditors: Event<readonly vscode.TextEditor[]> = this._onDidChangeVisibleTextEditors.event;
+	readonly onDidChangeVisibleTextEditors: Event<readonly vscode.TextEditor[]> =
+		this._onDidChangeVisibleTextEditors.event;
 
 	private readonly _proxy: MainThreadTextEditorsShape;
 
 	constructor(
 		mainContext: IMainContext,
-		private readonly _extHostDocumentsAndEditors: ExtHostDocumentsAndEditors,
+		private readonly _extHostDocumentsAndEditors: ExtHostDocumentsAndEditors
 	) {
 		super();
 		this._proxy = mainContext.getProxy(MainContext.MainThreadTextEditors);
 
-		this._register(this._extHostDocumentsAndEditors.onDidChangeVisibleTextEditors(e => this._onDidChangeVisibleTextEditors.fire(e)));
-		this._register(this._extHostDocumentsAndEditors.onDidChangeActiveTextEditor(e => this._onDidChangeActiveTextEditor.fire(e)));
+		this._register(
+			this._extHostDocumentsAndEditors.onDidChangeVisibleTextEditors(e => this._onDidChangeVisibleTextEditors.fire(e))
+		);
+		this._register(
+			this._extHostDocumentsAndEditors.onDidChangeActiveTextEditor(e => this._onDidChangeActiveTextEditor.fire(e))
+		);
 	}
 
 	getActiveTextEditor(): vscode.TextEditor | undefined {
@@ -54,15 +80,28 @@ export class ExtHostEditors extends Disposable implements ExtHostEditorsShape {
 	getVisibleTextEditors(internal: true): ExtHostTextEditor[];
 	getVisibleTextEditors(internal?: true): ExtHostTextEditor[] | vscode.TextEditor[] {
 		const editors = this._extHostDocumentsAndEditors.allEditors();
-		return internal
-			? editors
-			: editors.map(editor => editor.value);
+		return internal ? editors : editors.map(editor => editor.value);
 	}
 
-	showTextDocument(document: vscode.TextDocument, column: vscode.ViewColumn, preserveFocus: boolean): Promise<vscode.TextEditor>;
-	showTextDocument(document: vscode.TextDocument, options: { column: vscode.ViewColumn; preserveFocus: boolean; pinned: boolean }): Promise<vscode.TextEditor>;
-	showTextDocument(document: vscode.TextDocument, columnOrOptions: vscode.ViewColumn | vscode.TextDocumentShowOptions | undefined, preserveFocus?: boolean): Promise<vscode.TextEditor>;
-	async showTextDocument(document: vscode.TextDocument, columnOrOptions: vscode.ViewColumn | vscode.TextDocumentShowOptions | undefined, preserveFocus?: boolean): Promise<vscode.TextEditor> {
+	showTextDocument(
+		document: vscode.TextDocument,
+		column: vscode.ViewColumn,
+		preserveFocus: boolean
+	): Promise<vscode.TextEditor>;
+	showTextDocument(
+		document: vscode.TextDocument,
+		options: { column: vscode.ViewColumn; preserveFocus: boolean; pinned: boolean }
+	): Promise<vscode.TextEditor>;
+	showTextDocument(
+		document: vscode.TextDocument,
+		columnOrOptions: vscode.ViewColumn | vscode.TextDocumentShowOptions | undefined,
+		preserveFocus?: boolean
+	): Promise<vscode.TextEditor>;
+	async showTextDocument(
+		document: vscode.TextDocument,
+		columnOrOptions: vscode.ViewColumn | vscode.TextDocumentShowOptions | undefined,
+		preserveFocus?: boolean
+	): Promise<vscode.TextEditor> {
 		let options: ITextDocumentShowOptions;
 		if (typeof columnOrOptions === 'number') {
 			options = {
@@ -73,7 +112,10 @@ export class ExtHostEditors extends Disposable implements ExtHostEditorsShape {
 			options = {
 				position: TypeConverters.ViewColumn.from(columnOrOptions.viewColumn),
 				preserveFocus: columnOrOptions.preserveFocus,
-				selection: typeof columnOrOptions.selection === 'object' ? TypeConverters.Range.from(columnOrOptions.selection) : undefined,
+				selection:
+					typeof columnOrOptions.selection === 'object'
+						? TypeConverters.Range.from(columnOrOptions.selection)
+						: undefined,
 				pinned: typeof columnOrOptions.preview === 'boolean' ? !columnOrOptions.preview : undefined
 			};
 		} else {
@@ -90,13 +132,18 @@ export class ExtHostEditors extends Disposable implements ExtHostEditorsShape {
 		// we have no editor... having an id means that we had an editor
 		// on the main side and that it isn't the current editor anymore...
 		if (editorId) {
-			throw new Error(`Could NOT open editor for "${document.uri.toString()}" because another editor opened in the meantime.`);
+			throw new Error(
+				`Could NOT open editor for "${document.uri.toString()}" because another editor opened in the meantime.`
+			);
 		} else {
 			throw new Error(`Could NOT open editor for "${document.uri.toString()}".`);
 		}
 	}
 
-	createTextEditorDecorationType(extension: IExtensionDescription, options: vscode.DecorationRenderOptions): vscode.TextEditorDecorationType {
+	createTextEditorDecorationType(
+		extension: IExtensionDescription,
+		options: vscode.DecorationRenderOptions
+	): vscode.TextEditorDecorationType {
 		return new TextEditorDecorationType(this._proxy, extension, options).value;
 	}
 
@@ -125,7 +172,10 @@ export class ExtHostEditors extends Disposable implements ExtHostEditorsShape {
 		if (data.options) {
 			this._onDidChangeTextEditorOptions.fire({
 				textEditor: textEditor.value,
-				options: { ...data.options, lineNumbers: TypeConverters.TextEditorLineNumbersStyle.to(data.options.lineNumbers) }
+				options: {
+					...data.options,
+					lineNumbers: TypeConverters.TextEditorLineNumbersStyle.to(data.options.lineNumbers)
+				}
 			});
 		}
 		if (data.selections) {
@@ -181,7 +231,12 @@ export class ExtHostEditors extends Disposable implements ExtHostEditorsShape {
 			const modified = URI.revive(diff.modified);
 
 			const changes = diff.changes.map(change => {
-				const [originalStartLineNumber, originalEndLineNumberExclusive, modifiedStartLineNumber, modifiedEndLineNumberExclusive] = change;
+				const [
+					originalStartLineNumber,
+					originalEndLineNumberExclusive,
+					modifiedStartLineNumber,
+					modifiedEndLineNumberExclusive
+				] = change;
 
 				let kind: vscode.TextEditorChangeKind;
 				if (originalStartLineNumber === originalEndLineNumberExclusive) {

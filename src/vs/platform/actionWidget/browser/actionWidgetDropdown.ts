@@ -6,7 +6,13 @@
 import { IActionWidgetService } from './actionWidget.js';
 import { IAction } from '../../../base/common/actions.js';
 import { BaseDropdown, IActionProvider, IBaseDropdownOptions } from '../../../base/browser/ui/dropdown/dropdown.js';
-import { ActionListItemKind, IActionListDelegate, IActionListItem, IActionListItemHover, IActionListOptions } from './actionList.js';
+import {
+	ActionListItemKind,
+	IActionListDelegate,
+	IActionListItem,
+	IActionListItemHover,
+	IActionListOptions
+} from './actionList.js';
 import { ThemeIcon } from '../../../base/common/themables.js';
 import { Codicon } from '../../../base/common/codicons.js';
 import { getActiveElement, isHTMLElement } from '../../../base/browser/dom.js';
@@ -64,7 +70,6 @@ export interface IActionWidgetDropdownOptions extends IBaseDropdownOptions {
  * The benefits of this include non native features such as headers, descriptions, icons, and button bar
  */
 export class ActionWidgetDropdown extends BaseDropdown {
-
 	private _enabled: boolean = true;
 
 	constructor(
@@ -72,7 +77,7 @@ export class ActionWidgetDropdown extends BaseDropdown {
 		private readonly _options: IActionWidgetDropdownOptions,
 		@IActionWidgetService private readonly actionWidgetService: IActionWidgetService,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
-		@ITelemetryService private readonly telemetryService: ITelemetryService,
+		@ITelemetryService private readonly telemetryService: ITelemetryService
 	) {
 		super(container, _options);
 	}
@@ -82,7 +87,8 @@ export class ActionWidgetDropdown extends BaseDropdown {
 			return;
 		}
 
-		const actionBarActions = this._options.actionBarActions ?? this._options.actionBarActionProvider?.getActions() ?? [];
+		const actionBarActions =
+			this._options.actionBarActions ?? this._options.actionBarActionProvider?.getActions() ?? [];
 		const actions = this._options.actions ?? this._options.actionProvider?.getActions() ?? [];
 
 		// Track the currently selected option before opening
@@ -104,12 +110,11 @@ export class ActionWidgetDropdown extends BaseDropdown {
 		}
 
 		// Sort categories by order
-		const sortedCategories = Array.from(actionsByCategory.entries())
-			.sort((a, b) => {
-				const aOrder = a[1][0]?.category?.order ?? Number.MAX_SAFE_INTEGER;
-				const bOrder = b[1][0]?.category?.order ?? Number.MAX_SAFE_INTEGER;
-				return aOrder - bOrder;
-			});
+		const sortedCategories = Array.from(actionsByCategory.entries()).sort((a, b) => {
+			const aOrder = a[1][0]?.category?.order ?? Number.MAX_SAFE_INTEGER;
+			const bOrder = b[1][0]?.category?.order ?? Number.MAX_SAFE_INTEGER;
+			return aOrder - bOrder;
+		});
 
 		for (let i = 0; i < sortedCategories.length; i++) {
 			const [categoryLabel, categoryActions] = sortedCategories[i];
@@ -120,7 +125,7 @@ export class ActionWidgetDropdown extends BaseDropdown {
 					label: categoryLabel,
 					canPreview: false,
 					disabled: false,
-					hideIcon: false,
+					hideIcon: false
 				});
 			}
 
@@ -134,13 +139,14 @@ export class ActionWidgetDropdown extends BaseDropdown {
 					toolbarActions: action.toolbarActions,
 					kind: ActionListItemKind.Action,
 					canPreview: false,
-					group: { title: '', icon: action.icon ?? ThemeIcon.fromId(action.checked ? Codicon.check.id : Codicon.blank.id) },
+					group: {
+						title: '',
+						icon: action.icon ?? ThemeIcon.fromId(action.checked ? Codicon.check.id : Codicon.blank.id)
+					},
 					disabled: !action.enabled,
 					hideIcon: false,
 					label: action.label,
-					keybinding: this._options.showItemKeybindings ?
-						this.keybindingService.lookupKeybinding(action.id) :
-						undefined,
+					keybinding: this._options.showItemKeybindings ? this.keybindingService.lookupKeybinding(action.id) : undefined
 				});
 			}
 
@@ -151,13 +157,12 @@ export class ActionWidgetDropdown extends BaseDropdown {
 					kind: ActionListItemKind.Separator,
 					canPreview: false,
 					disabled: false,
-					hideIcon: false,
+					hideIcon: false
 				});
 			}
 		}
 
 		const previouslyFocusedElement = getActiveElement();
-
 
 		const auxiliaryActionIds = new Set(actionBarActions.map(action => action.id));
 
@@ -185,7 +190,7 @@ export class ActionWidgetDropdown extends BaseDropdown {
 					kind: ActionListItemKind.Separator,
 					canPreview: false,
 					disabled: false,
-					hideIcon: false,
+					hideIcon: false
 				});
 			}
 
@@ -198,7 +203,7 @@ export class ActionWidgetDropdown extends BaseDropdown {
 					group: { title: '', icon: ThemeIcon.fromId(Codicon.blank.id) },
 					disabled: !action.enabled,
 					hideIcon: false,
-					label: action.label,
+					label: action.label
 				});
 			}
 		}
@@ -207,7 +212,7 @@ export class ActionWidgetDropdown extends BaseDropdown {
 			isChecked(element) {
 				return element.kind === ActionListItemKind.Action && !!element?.item?.checked;
 			},
-			getRole: (e) => {
+			getRole: e => {
 				switch (e.kind) {
 					case ActionListItemKind.Action:
 						// Auxiliary actions are not checkable options, so use 'menuitem' to
@@ -219,7 +224,7 @@ export class ActionWidgetDropdown extends BaseDropdown {
 						return 'separator';
 				}
 			},
-			getWidgetRole: () => 'menu',
+			getWidgetRole: () => 'menu'
 		};
 
 		super.show();
@@ -241,7 +246,10 @@ export class ActionWidgetDropdown extends BaseDropdown {
 		this._enabled = enabled;
 	}
 
-	private _emitCloseEvent(optionBeforeOpen: IActionWidgetDropdownAction | undefined, selectedOption: IActionWidgetDropdownAction | undefined): void {
+	private _emitCloseEvent(
+		optionBeforeOpen: IActionWidgetDropdownAction | undefined,
+		selectedOption: IActionWidgetDropdownAction | undefined
+	): void {
 		const optionBefore = optionBeforeOpen;
 		const optionAfter = selectedOption;
 
@@ -255,7 +263,7 @@ export class ActionWidgetDropdown extends BaseDropdown {
 					optionIdBefore: this._options.reporter.includeOptions ? optionBefore?.id : undefined,
 					optionIdAfter: this._options.reporter.includeOptions ? optionAfter?.id : undefined,
 					optionLabelBefore: this._options.reporter.includeOptions ? optionBefore?.label : undefined,
-					optionLabelAfter: this._options.reporter.includeOptions ? optionAfter?.label : undefined,
+					optionLabelAfter: this._options.reporter.includeOptions ? optionAfter?.label : undefined
 				}
 			);
 		}
@@ -273,13 +281,42 @@ type ActionWidgetDropdownClosedEvent = {
 };
 
 type ActionWidgetDropdownClosedClassification = {
-	id: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The telemetry id of the dropdown picker.' };
-	name: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The telemetry name of the dropdown picker.' };
-	selectionChanged: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; isMeasurement: true; comment: 'Whether the user changed the selected option.' };
-	optionIdBefore: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The option configured before opening the dropdown.' };
-	optionIdAfter: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The option configured after closing the dropdown.' };
-	optionLabelBefore: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The label of the option configured before opening the dropdown.' };
-	optionLabelAfter: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The label of the option configured after closing the dropdown.' };
+	id: {
+		classification: 'SystemMetaData';
+		purpose: 'FeatureInsight';
+		comment: 'The telemetry id of the dropdown picker.';
+	};
+	name: {
+		classification: 'SystemMetaData';
+		purpose: 'FeatureInsight';
+		comment: 'The telemetry name of the dropdown picker.';
+	};
+	selectionChanged: {
+		classification: 'SystemMetaData';
+		purpose: 'FeatureInsight';
+		isMeasurement: true;
+		comment: 'Whether the user changed the selected option.';
+	};
+	optionIdBefore: {
+		classification: 'SystemMetaData';
+		purpose: 'FeatureInsight';
+		comment: 'The option configured before opening the dropdown.';
+	};
+	optionIdAfter: {
+		classification: 'SystemMetaData';
+		purpose: 'FeatureInsight';
+		comment: 'The option configured after closing the dropdown.';
+	};
+	optionLabelBefore: {
+		classification: 'SystemMetaData';
+		purpose: 'FeatureInsight';
+		comment: 'The label of the option configured before opening the dropdown.';
+	};
+	optionLabelAfter: {
+		classification: 'SystemMetaData';
+		purpose: 'FeatureInsight';
+		comment: 'The label of the option configured after closing the dropdown.';
+	};
 	owner: 'benibenj';
 	comment: 'Tracks action widget dropdown usage and selection changes.';
 };

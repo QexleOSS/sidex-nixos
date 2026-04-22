@@ -10,7 +10,11 @@ import { IInstantiationService } from '../../../../../../../platform/instantiati
 import { asCssVariable } from '../../../../../../../platform/theme/common/colorUtils.js';
 import { ICodeEditor } from '../../../../../../browser/editorBrowser.js';
 import { ObservableCodeEditor, observableCodeEditor } from '../../../../../../browser/observableCodeEditor.js';
-import { LineSource, renderLines, RenderOptions } from '../../../../../../browser/widget/diffEditor/components/diffEditorViewZones/renderLines.js';
+import {
+	LineSource,
+	renderLines,
+	RenderOptions
+} from '../../../../../../browser/widget/diffEditor/components/diffEditorViewZones/renderLines.js';
 import { Rect } from '../../../../../../common/core/2d/rect.js';
 import { Position } from '../../../../../../common/core/position.js';
 import { Range } from '../../../../../../common/core/range.js';
@@ -23,7 +27,12 @@ import { GhostText, GhostTextPart } from '../../../model/ghostText.js';
 import { InlineCompletionEditorType } from '../../../model/provideInlineCompletions.js';
 import { GhostTextView, IGhostTextWidgetData } from '../../ghostText/ghostTextView.js';
 import { IInlineEditsView, InlineEditClickEvent, InlineEditTabAction } from '../inlineEditsViewInterface.js';
-import { getEditorBackgroundColor, getModifiedBorderColor, INLINE_EDITS_BORDER_RADIUS, modifiedBackgroundColor } from '../theme.js';
+import {
+	getEditorBackgroundColor,
+	getModifiedBorderColor,
+	INLINE_EDITS_BORDER_RADIUS,
+	modifiedBackgroundColor
+} from '../theme.js';
 import { getPrefixTrim, mapOutFalsy } from '../utils/utils.js';
 
 const BORDER_WIDTH = 1;
@@ -39,14 +48,26 @@ export class InlineEditsInsertionView extends Disposable implements IInlineEdits
 
 	private readonly _state = derived(this, reader => {
 		const state = this._input.read(reader);
-		if (!state) { return undefined; }
+		if (!state) {
+			return undefined;
+		}
 
 		const textModel = this._editor.getModel()!;
 		const eol = textModel.getEOL();
 
-		if (state.startColumn === 1 && state.lineNumber > 1 && textModel.getLineLength(state.lineNumber) !== 0 && state.text.endsWith(eol) && !state.text.startsWith(eol)) {
+		if (
+			state.startColumn === 1 &&
+			state.lineNumber > 1 &&
+			textModel.getLineLength(state.lineNumber) !== 0 &&
+			state.text.endsWith(eol) &&
+			!state.text.startsWith(eol)
+		) {
 			const endOfLineColumn = textModel.getLineLength(state.lineNumber - 1) + 1;
-			return { lineNumber: state.lineNumber - 1, column: endOfLineColumn, text: eol + state.text.slice(0, -eol.length) };
+			return {
+				lineNumber: state.lineNumber - 1,
+				column: endOfLineColumn,
+				text: eol + state.text.slice(0, -eol.length)
+			};
 		}
 
 		return { lineNumber: state.lineNumber, column: state.startColumn, text: state.text };
@@ -102,17 +123,22 @@ export class InlineEditsInsertionView extends Disposable implements IInlineEdits
 	private readonly _ghostText = derived<GhostText | undefined>(reader => {
 		const state = this._state.read(reader);
 		const prefixTrim = this._maxPrefixTrim.read(reader);
-		if (!state) { return undefined; }
+		if (!state) {
+			return undefined;
+		}
 
 		const textModel = this._editor.getModel()!;
 		const eol = textModel.getEOL();
 		const modifiedLines = state.text.split(eol);
 
-		const inlineDecorations = modifiedLines.map((line, i) => new InlineDecoration(
-			new Range(i + 1, i === 0 ? 1 : prefixTrim.prefixTrim + 1, i + 1, line.length + 1),
-			'modified-background',
-			InlineDecorationType.Regular
-		));
+		const inlineDecorations = modifiedLines.map(
+			(line, i) =>
+				new InlineDecoration(
+					new Range(i + 1, i === 0 ? 1 : prefixTrim.prefixTrim + 1, i + 1, line.length + 1),
+					'modified-background',
+					InlineDecorationType.Regular
+				)
+		);
 
 		return new GhostText(state.lineNumber, [new GhostTextPart(state.column, state.text, false, inlineDecorations)]);
 	});
@@ -122,62 +148,73 @@ export class InlineEditsInsertionView extends Disposable implements IInlineEdits
 
 	constructor(
 		private readonly _editor: ICodeEditor,
-		private readonly _input: IObservable<{
-			lineNumber: number;
-			startColumn: number;
-			text: string;
-			editorType: InlineCompletionEditorType;
-		} | undefined>,
+		private readonly _input: IObservable<
+			| {
+					lineNumber: number;
+					startColumn: number;
+					text: string;
+					editorType: InlineCompletionEditorType;
+			  }
+			| undefined
+		>,
 		private readonly _tabAction: IObservable<InlineEditTabAction>,
 		@IInstantiationService instantiationService: IInstantiationService,
-		@ILanguageService private readonly _languageService: ILanguageService,
+		@ILanguageService private readonly _languageService: ILanguageService
 	) {
 		super();
 
 		this._editorObs = observableCodeEditor(this._editor);
 
-		this._ghostTextView = this._register(instantiationService.createInstance(
-			GhostTextView,
-			this._editor,
-			derived(reader => {
-				const ghostText = this._ghostText.read(reader);
-				if (!ghostText) {
-					return undefined;
+		this._ghostTextView = this._register(
+			instantiationService.createInstance(
+				GhostTextView,
+				this._editor,
+				derived(reader => {
+					const ghostText = this._ghostText.read(reader);
+					if (!ghostText) {
+						return undefined;
+					}
+					return {
+						ghostText: ghostText,
+						handleInlineCompletionShown: data => {
+							// This is a no-op for the insertion view, as it is handled by the InlineEditsView.
+						},
+						warning: undefined
+					} satisfies IGhostTextWidgetData;
+				}),
+				{
+					extraClasses: ['inline-edit'],
+					isClickable: true,
+					shouldKeepCursorStable: true
 				}
-				return {
-					ghostText: ghostText,
-					handleInlineCompletionShown: (data) => {
-						// This is a no-op for the insertion view, as it is handled by the InlineEditsView.
-					},
-					warning: undefined,
-				} satisfies IGhostTextWidgetData;
-			}),
-			{
-				extraClasses: ['inline-edit'],
-				isClickable: true,
-				shouldKeepCursorStable: true,
-			}
-		));
+			)
+		);
 
 		this.isHovered = this._ghostTextView.isHovered;
 
-		this._register(this._ghostTextView.onDidClick((e) => {
-			this._onDidClick.fire(new InlineEditClickEvent(e));
-		}));
+		this._register(
+			this._ghostTextView.onDidClick(e => {
+				this._onDidClick.fire(new InlineEditClickEvent(e));
+			})
+		);
 
-		this._register(this._editorObs.createOverlayWidget({
-			domNode: this._view.element,
-			position: constObservable(null),
-			allowEditorOverflow: false,
-			minContentWidthInPx: derived(this, reader => {
-				const info = this._overlayLayout.read(reader);
-				if (info === null) { return 0; }
-				return info.minContentWidthRequired;
-			}),
-		}));
+		this._register(
+			this._editorObs.createOverlayWidget({
+				domNode: this._view.element,
+				position: constObservable(null),
+				allowEditorOverflow: false,
+				minContentWidthInPx: derived(this, reader => {
+					const info = this._overlayLayout.read(reader);
+					if (info === null) {
+						return 0;
+					}
+					return info.minContentWidthRequired;
+				})
+			})
+		);
 	}
 
-	private readonly _display = derived(this, reader => !!this._state.read(reader) ? 'block' : 'none');
+	private readonly _display = derived(this, reader => (!!this._state.read(reader) ? 'block' : 'none'));
 
 	private readonly _editorMaxContentWidthInRange = derived(this, reader => {
 		const state = this._state.read(reader);
@@ -188,8 +225,12 @@ export class InlineEditsInsertionView extends Disposable implements IInlineEdits
 		const textModel = this._editor.getModel()!;
 		const eol = textModel.getEOL();
 
-		const textBeforeInsertion = state.text.startsWith(eol) ? '' : textModel.getValueInRange(new Range(state.lineNumber, 1, state.lineNumber, state.column));
-		const textAfterInsertion = textModel.getValueInRange(new Range(state.lineNumber, state.column, state.lineNumber, textModel.getLineLength(state.lineNumber) + 1));
+		const textBeforeInsertion = state.text.startsWith(eol)
+			? ''
+			: textModel.getValueInRange(new Range(state.lineNumber, 1, state.lineNumber, state.column));
+		const textAfterInsertion = textModel.getValueInRange(
+			new Range(state.lineNumber, state.column, state.lineNumber, textModel.getLineLength(state.lineNumber) + 1)
+		);
 		const text = textBeforeInsertion + state.text + textAfterInsertion;
 		const lines = text.split(eol);
 
@@ -212,14 +253,11 @@ export class InlineEditsInsertionView extends Disposable implements IInlineEdits
 	});
 
 	public readonly startLineOffset = this._trimVertically.map(v => v.topOffset);
-	public readonly originalLines = this._state.map(s => s ?
-		new LineRange(
-			s.lineNumber,
-			Math.min(s.lineNumber + 2, this._editor.getModel()!.getLineCount() + 1)
-		) : undefined
+	public readonly originalLines = this._state.map(s =>
+		s ? new LineRange(s.lineNumber, Math.min(s.lineNumber + 2, this._editor.getModel()!.getLineCount() + 1)) : undefined
 	);
 
-	private readonly _overlayLayout = derived(this, (reader) => {
+	private readonly _overlayLayout = derived(this, reader => {
 		this._ghostText.read(reader);
 		const state = this._state.read(reader);
 		if (!state) {
@@ -227,14 +265,16 @@ export class InlineEditsInsertionView extends Disposable implements IInlineEdits
 		}
 
 		// Update the overlay when the position changes
-		this._editorObs.observePosition(observableValue(this, new Position(state.lineNumber, state.column)), reader.store).read(reader);
+		this._editorObs
+			.observePosition(observableValue(this, new Position(state.lineNumber, state.column)), reader.store)
+			.read(reader);
 
 		const editorLayout = this._editorObs.layoutInfo.read(reader);
 		const horizontalScrollOffset = this._editorObs.scrollLeft.read(reader);
 		const verticalScrollbarWidth = this._editorObs.layoutInfoVerticalScrollbarWidth.read(reader);
 
 		const right = editorLayout.contentLeft + this._editorMaxContentWidthInRange.read(reader) - horizontalScrollOffset;
-		const prefixLeftOffset = this._maxPrefixTrim.read(reader).prefixLeftOffset ?? 0 /* fix due to observable bug? */;
+		const prefixLeftOffset = this._maxPrefixTrim.read(reader).prefixLeftOffset ?? 0; /* fix due to observable bug? */
 		const left = editorLayout.contentLeft + prefixLeftOffset - horizontalScrollOffset;
 		if (right <= left) {
 			return null;
@@ -253,70 +293,96 @@ export class InlineEditsInsertionView extends Disposable implements IInlineEdits
 			overlay,
 			startsAtContentLeft: prefixLeftOffset === 0,
 			contentLeft: editorLayout.contentLeft,
-			minContentWidthRequired: prefixLeftOffset + overlay.width + verticalScrollbarWidth,
+			minContentWidthRequired: prefixLeftOffset + overlay.width + verticalScrollbarWidth
 		};
 	}).recomputeInitiallyAndOnChange(this._store);
 
-	private readonly _modifiedOverlay = n.div({
-		style: { pointerEvents: 'none', }
-	}, derived(this, reader => {
-		const overlayLayoutObs = mapOutFalsy(this._overlayLayout).read(reader);
-		if (!overlayLayoutObs) { return undefined; }
-
-		// Create an overlay which hides the left hand side of the original overlay when it overflows to the left
-		// such that there is a smooth transition at the edge of content left
-		const overlayHider = overlayLayoutObs.map(layoutInfo => Rect.fromLeftTopRightBottom(
-			layoutInfo.contentLeft - BORDER_RADIUS - BORDER_WIDTH,
-			layoutInfo.overlay.top,
-			layoutInfo.contentLeft,
-			layoutInfo.overlay.bottom
-		)).read(reader);
-
-		const separatorWidth = this._input.map(i => i?.editorType === InlineCompletionEditorType.DiffEditor ? WIDGET_SEPARATOR_DIFF_EDITOR_WIDTH : WIDGET_SEPARATOR_WIDTH).read(reader);
-		const overlayRect = overlayLayoutObs.map(l => l.overlay.withMargin(0, BORDER_WIDTH, 0, l.startsAtContentLeft ? 0 : BORDER_WIDTH).intersectHorizontal(new OffsetRange(overlayHider.left, Number.MAX_SAFE_INTEGER)));
-		const underlayRect = overlayRect.map(rect => rect.withMargin(separatorWidth, separatorWidth));
-
-		const editorBackground = getEditorBackgroundColor(this._input.read(undefined)?.editorType ?? InlineCompletionEditorType.TextEditor);
-		return [
-			n.div({
-				class: 'originalUnderlayInsertion',
-				style: {
-					...underlayRect.read(reader).toStyles(),
-					borderRadius: BORDER_RADIUS,
-					border: `${BORDER_WIDTH + separatorWidth}px solid ${editorBackground}`,
-					boxSizing: 'border-box',
+	private readonly _modifiedOverlay = n
+		.div(
+			{
+				style: { pointerEvents: 'none' }
+			},
+			derived(this, reader => {
+				const overlayLayoutObs = mapOutFalsy(this._overlayLayout).read(reader);
+				if (!overlayLayoutObs) {
+					return undefined;
 				}
-			}),
-			n.div({
-				class: 'originalOverlayInsertion',
-				style: {
-					...overlayRect.read(reader).toStyles(),
-					borderRadius: BORDER_RADIUS,
-					border: getModifiedBorderColor(this._tabAction).map(bc => `${BORDER_WIDTH}px solid ${asCssVariable(bc)}`),
-					boxSizing: 'border-box',
-					backgroundColor: asCssVariable(modifiedBackgroundColor),
-				}
-			}),
-			n.div({
-				class: 'originalOverlayHiderInsertion',
-				style: {
-					...overlayHider.toStyles(),
-					backgroundColor: editorBackground,
-				}
+
+				// Create an overlay which hides the left hand side of the original overlay when it overflows to the left
+				// such that there is a smooth transition at the edge of content left
+				const overlayHider = overlayLayoutObs
+					.map(layoutInfo =>
+						Rect.fromLeftTopRightBottom(
+							layoutInfo.contentLeft - BORDER_RADIUS - BORDER_WIDTH,
+							layoutInfo.overlay.top,
+							layoutInfo.contentLeft,
+							layoutInfo.overlay.bottom
+						)
+					)
+					.read(reader);
+
+				const separatorWidth = this._input
+					.map(i =>
+						i?.editorType === InlineCompletionEditorType.DiffEditor
+							? WIDGET_SEPARATOR_DIFF_EDITOR_WIDTH
+							: WIDGET_SEPARATOR_WIDTH
+					)
+					.read(reader);
+				const overlayRect = overlayLayoutObs.map(l =>
+					l.overlay
+						.withMargin(0, BORDER_WIDTH, 0, l.startsAtContentLeft ? 0 : BORDER_WIDTH)
+						.intersectHorizontal(new OffsetRange(overlayHider.left, Number.MAX_SAFE_INTEGER))
+				);
+				const underlayRect = overlayRect.map(rect => rect.withMargin(separatorWidth, separatorWidth));
+
+				const editorBackground = getEditorBackgroundColor(
+					this._input.read(undefined)?.editorType ?? InlineCompletionEditorType.TextEditor
+				);
+				return [
+					n.div({
+						class: 'originalUnderlayInsertion',
+						style: {
+							...underlayRect.read(reader).toStyles(),
+							borderRadius: BORDER_RADIUS,
+							border: `${BORDER_WIDTH + separatorWidth}px solid ${editorBackground}`,
+							boxSizing: 'border-box'
+						}
+					}),
+					n.div({
+						class: 'originalOverlayInsertion',
+						style: {
+							...overlayRect.read(reader).toStyles(),
+							borderRadius: BORDER_RADIUS,
+							border: getModifiedBorderColor(this._tabAction).map(bc => `${BORDER_WIDTH}px solid ${asCssVariable(bc)}`),
+							boxSizing: 'border-box',
+							backgroundColor: asCssVariable(modifiedBackgroundColor)
+						}
+					}),
+					n.div({
+						class: 'originalOverlayHiderInsertion',
+						style: {
+							...overlayHider.toStyles(),
+							backgroundColor: editorBackground
+						}
+					})
+				];
 			})
-		];
-	})).keepUpdated(this._store);
+		)
+		.keepUpdated(this._store);
 
-	private readonly _view = n.div({
-		class: 'inline-edits-view',
-		style: {
-			position: 'absolute',
-			overflow: 'visible',
-			top: '0px',
-			left: '0px',
-			display: this._display,
-		},
-	}, [
-		[this._modifiedOverlay],
-	]).keepUpdated(this._store);
+	private readonly _view = n
+		.div(
+			{
+				class: 'inline-edits-view',
+				style: {
+					position: 'absolute',
+					overflow: 'visible',
+					top: '0px',
+					left: '0px',
+					display: this._display
+				}
+			},
+			[[this._modifiedOverlay]]
+		)
+		.keepUpdated(this._store);
 }

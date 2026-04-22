@@ -6,7 +6,16 @@
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
-import { IProcessDataEvent, IProcessProperty, IProcessPropertyMap, IProcessReadyEvent, IShellLaunchConfig, ITerminalChildProcess, ITerminalLaunchError, ProcessPropertyType } from '../../../../platform/terminal/common/terminal.js';
+import {
+	IProcessDataEvent,
+	IProcessProperty,
+	IProcessPropertyMap,
+	IProcessReadyEvent,
+	IShellLaunchConfig,
+	ITerminalChildProcess,
+	ITerminalLaunchError,
+	ProcessPropertyType
+} from '../../../../platform/terminal/common/terminal.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 
 export const IEmbedderTerminalService = createDecorator<IEmbedderTerminalService>('embedderTerminalService');
@@ -64,12 +73,11 @@ class EmbedderTerminalService implements IEmbedderTerminalService {
 			isFeatureTerminal: true,
 			customPtyImplementation(terminalId, cols, rows) {
 				return new EmbedderTerminalProcess(terminalId, options.pty);
-			},
+			}
 		};
 		this._onDidCreateTerminal.fire(slc);
 	}
 }
-
 
 class EmbedderTerminalProcess extends Disposable implements ITerminalChildProcess {
 	private readonly _pty: IEmbedderTerminalPty;
@@ -96,10 +104,14 @@ class EmbedderTerminalProcess extends Disposable implements ITerminalChildProces
 			this._register(this._pty.onDidClose(e => this._onProcessExit.fire(e || undefined)));
 		}
 		if (this._pty.onDidChangeName) {
-			this._register(this._pty.onDidChangeName(e => this._onDidChangeProperty.fire({
-				type: ProcessPropertyType.Title,
-				value: e
-			})));
+			this._register(
+				this._pty.onDidChangeName(e =>
+					this._onDidChangeProperty.fire({
+						type: ProcessPropertyType.Title,
+						value: e
+					})
+				)
+			);
 		}
 	}
 
@@ -147,7 +159,9 @@ class EmbedderTerminalProcess extends Disposable implements ITerminalChildProces
 	}
 
 	updateProperty(property: ProcessPropertyType, value: unknown): Promise<void> {
-		throw new Error(`updateProperty is not suppported in EmbedderTerminalProcess. property: ${property}, value: ${value}`);
+		throw new Error(
+			`updateProperty is not suppported in EmbedderTerminalProcess. property: ${property}, value: ${value}`
+		);
 	}
 }
 

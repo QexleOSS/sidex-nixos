@@ -7,11 +7,17 @@ import { Barrier } from '../../../base/common/async.js';
 import { Emitter, Event } from '../../../base/common/event.js';
 import { IChannelServer } from '../../../base/parts/ipc/common/ipc.js';
 import { IProductService } from '../../product/common/productService.js';
-import { IExtensionGalleryManifest, IExtensionGalleryManifestService, ExtensionGalleryManifestStatus } from './extensionGalleryManifest.js';
+import {
+	IExtensionGalleryManifest,
+	IExtensionGalleryManifestService,
+	ExtensionGalleryManifestStatus
+} from './extensionGalleryManifest.js';
 import { ExtensionGalleryManifestService } from './extensionGalleryManifestService.js';
 
-export class ExtensionGalleryManifestIPCService extends ExtensionGalleryManifestService implements IExtensionGalleryManifestService {
-
+export class ExtensionGalleryManifestIPCService
+	extends ExtensionGalleryManifestService
+	implements IExtensionGalleryManifestService
+{
 	declare readonly _serviceBrand: undefined;
 
 	private _onDidChangeExtensionGalleryManifest = this._register(new Emitter<IExtensionGalleryManifest | null>());
@@ -24,20 +30,20 @@ export class ExtensionGalleryManifestIPCService extends ExtensionGalleryManifest
 	private readonly barrier = new Barrier();
 
 	override get extensionGalleryManifestStatus(): ExtensionGalleryManifestStatus {
-		return this._extensionGalleryManifest ? ExtensionGalleryManifestStatus.Available : ExtensionGalleryManifestStatus.Unavailable;
+		return this._extensionGalleryManifest
+			? ExtensionGalleryManifestStatus.Available
+			: ExtensionGalleryManifestStatus.Unavailable;
 	}
 
-	constructor(
-		server: IChannelServer<unknown>,
-		@IProductService productService: IProductService
-	) {
+	constructor(server: IChannelServer<unknown>, @IProductService productService: IProductService) {
 		super(productService);
 		server.registerChannel('extensionGalleryManifest', {
 			listen: () => Event.None,
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 			call: async (context: any, command: string, args?: any): Promise<any> => {
 				switch (command) {
-					case 'setExtensionGalleryManifest': return Promise.resolve(this.setExtensionGalleryManifest(args[0]));
+					case 'setExtensionGalleryManifest':
+						return Promise.resolve(this.setExtensionGalleryManifest(args[0]));
 				}
 				throw new Error('Invalid call');
 			}
@@ -55,5 +61,4 @@ export class ExtensionGalleryManifestIPCService extends ExtensionGalleryManifest
 		this._onDidChangeExtensionGalleryManifestStatus.fire(this.extensionGalleryManifestStatus);
 		this.barrier.open();
 	}
-
 }

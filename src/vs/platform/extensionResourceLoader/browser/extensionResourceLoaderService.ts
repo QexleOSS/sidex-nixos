@@ -12,11 +12,13 @@ import { IStorageService } from '../../storage/common/storage.js';
 import { IEnvironmentService } from '../../environment/common/environment.js';
 import { ILogService } from '../../log/common/log.js';
 import { IConfigurationService } from '../../configuration/common/configuration.js';
-import { AbstractExtensionResourceLoaderService, IExtensionResourceLoaderService } from '../common/extensionResourceLoader.js';
+import {
+	AbstractExtensionResourceLoaderService,
+	IExtensionResourceLoaderService
+} from '../common/extensionResourceLoader.js';
 import { IExtensionGalleryManifestService } from '../../extensionManagement/common/extensionGalleryManifest.js';
 
 class ExtensionResourceLoaderService extends AbstractExtensionResourceLoaderService {
-
 	declare readonly _serviceBrand: undefined;
 
 	constructor(
@@ -26,15 +28,28 @@ class ExtensionResourceLoaderService extends AbstractExtensionResourceLoaderServ
 		@IEnvironmentService environmentService: IEnvironmentService,
 		@IConfigurationService configurationService: IConfigurationService,
 		@IExtensionGalleryManifestService extensionGalleryManifestService: IExtensionGalleryManifestService,
-		@ILogService logService: ILogService,
+		@ILogService logService: ILogService
 	) {
-		super(fileService, storageService, productService, environmentService, configurationService, extensionGalleryManifestService, logService);
+		super(
+			fileService,
+			storageService,
+			productService,
+			environmentService,
+			configurationService,
+			extensionGalleryManifestService,
+			logService
+		);
 	}
 
 	async readExtensionResource(uri: URI): Promise<string> {
 		uri = FileAccess.uriToBrowserUri(uri);
 
-		if (uri.scheme !== Schemas.http && uri.scheme !== Schemas.https && uri.scheme !== Schemas.data && uri.scheme !== Schemas.tauri) {
+		if (
+			uri.scheme !== Schemas.http &&
+			uri.scheme !== Schemas.https &&
+			uri.scheme !== Schemas.data &&
+			uri.scheme !== Schemas.tauri
+		) {
 			const result = await this._fileService.readFile(uri);
 			return result.value.toString();
 		}

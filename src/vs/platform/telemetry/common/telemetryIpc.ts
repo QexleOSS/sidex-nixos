@@ -14,8 +14,7 @@ export interface ITelemetryLog {
 }
 
 export class TelemetryAppenderChannel implements IServerChannel {
-
-	constructor(private appenders: ITelemetryAppender[]) { }
+	constructor(private appenders: ITelemetryAppender[]) {}
 
 	listen<T>(_: unknown, event: string): Event<T> {
 		throw new Error(`Event not found: ${event}`);
@@ -28,11 +27,11 @@ export class TelemetryAppenderChannel implements IServerChannel {
 }
 
 export class TelemetryAppenderClient implements ITelemetryAppender {
-
-	constructor(private channel: IChannel) { }
+	constructor(private channel: IChannel) {}
 
 	log(eventName: string, data?: unknown): unknown {
-		this.channel.call('log', { eventName, data })
+		this.channel
+			.call('log', { eventName, data })
 			.then(undefined, err => `Failed to log telemetry: ${console.warn(err)}`);
 
 		return Promise.resolve(null);

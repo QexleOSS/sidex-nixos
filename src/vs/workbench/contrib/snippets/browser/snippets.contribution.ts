@@ -39,34 +39,43 @@ const workbenchContribRegistry = Registry.as<IWorkbenchContributionsRegistry>(Wo
 workbenchContribRegistry.registerWorkbenchContribution(SnippetCodeActions, LifecyclePhase.Restored);
 
 // config
-Registry
-	.as<IConfigurationRegistry>(Extensions.Configuration)
-	.registerConfiguration({
-		...editorConfigurationBaseNode,
-		'properties': {
-			'editor.snippets.codeActions.enabled': {
-				'description': nls.localize('editor.snippets.codeActions.enabled', 'Controls if surround-with-snippets or file template snippets show as Code Actions.'),
-				'type': 'boolean',
-				'default': true
-			}
+Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfiguration({
+	...editorConfigurationBaseNode,
+	properties: {
+		'editor.snippets.codeActions.enabled': {
+			description: nls.localize(
+				'editor.snippets.codeActions.enabled',
+				'Controls if surround-with-snippets or file template snippets show as Code Actions.'
+			),
+			type: 'boolean',
+			default: true
 		}
-	});
-
+	}
+});
 
 // schema
 const languageScopeSchemaId = 'vscode://schemas/snippets';
 
 const snippetSchemaProperties: IJSONSchemaMap = {
 	prefix: {
-		description: nls.localize('snippetSchema.json.prefix', 'The prefix to use when selecting the snippet in intellisense'),
+		description: nls.localize(
+			'snippetSchema.json.prefix',
+			'The prefix to use when selecting the snippet in intellisense'
+		),
 		type: ['string', 'array']
 	},
 	isFileTemplate: {
-		description: nls.localize('snippetSchema.json.isFileTemplate', 'The snippet is meant to populate or replace a whole file'),
+		description: nls.localize(
+			'snippetSchema.json.isFileTemplate',
+			'The snippet is meant to populate or replace a whole file'
+		),
 		type: 'boolean'
 	},
 	body: {
-		markdownDescription: nls.localize('snippetSchema.json.body', 'The snippet content. Use `$1`, `${1:defaultText}` to define cursor positions, use `$0` for the final cursor position. Insert variable values with `${varName}` and `${varName:defaultText}`, e.g. `This is file: $TM_FILENAME`.'),
+		markdownDescription: nls.localize(
+			'snippetSchema.json.body',
+			'The snippet content. Use `$1`, `${1:defaultText}` to define cursor positions, use `$0` for the final cursor position. Insert variable values with `${varName}` and `${varName:defaultText}`, e.g. `This is file: $TM_FILENAME`.'
+		),
 		type: ['string', 'array'],
 		items: {
 			type: 'string'
@@ -77,14 +86,20 @@ const snippetSchemaProperties: IJSONSchemaMap = {
 		type: ['string', 'array']
 	},
 	include: {
-		markdownDescription: nls.localize('snippetSchema.json.include', 'A list of [glob patterns](https://aka.ms/vscode-glob-patterns) to include the snippet for specific files, e.g. `["**/*.test.ts", "*.spec.ts"]` or `"**/*.spec.ts"`. Patterns will match on the absolute path of a file if they contain a path separator and will match on the name of the file otherwise. You can exclude matching files via the `exclude` property.'),
+		markdownDescription: nls.localize(
+			'snippetSchema.json.include',
+			'A list of [glob patterns](https://aka.ms/vscode-glob-patterns) to include the snippet for specific files, e.g. `["**/*.test.ts", "*.spec.ts"]` or `"**/*.spec.ts"`. Patterns will match on the absolute path of a file if they contain a path separator and will match on the name of the file otherwise. You can exclude matching files via the `exclude` property.'
+		),
 		type: ['string', 'array'],
 		items: {
 			type: 'string'
 		}
 	},
 	exclude: {
-		markdownDescription: nls.localize('snippetSchema.json.exclude', 'A list of [glob patterns](https://aka.ms/vscode-glob-patterns) to exclude the snippet from specific files, e.g. `["**/*.min.js"]` or `"*.min.js"`. Patterns will match on the absolute path of a file if they contain a path separator and will match on the name of the file otherwise. Exclude patterns take precedence over `include` patterns.'),
+		markdownDescription: nls.localize(
+			'snippetSchema.json.exclude',
+			'A list of [glob patterns](https://aka.ms/vscode-glob-patterns) to exclude the snippet from specific files, e.g. `["**/*.min.js"]` or `"*.min.js"`. Patterns will match on the absolute path of a file if they contain a path separator and will match on the name of the file otherwise. Exclude patterns take precedence over `include` patterns.'
+		),
 		type: ['string', 'array'],
 		items: {
 			type: 'string'
@@ -96,10 +111,12 @@ const languageScopeSchema: IJSONSchema = {
 	id: languageScopeSchemaId,
 	allowComments: true,
 	allowTrailingCommas: true,
-	defaultSnippets: [{
-		label: nls.localize('snippetSchema.json.default', "Empty snippet"),
-		body: { '${1:snippetName}': { 'prefix': '${2:prefix}', 'body': '${3:snippet}', 'description': '${4:description}' } }
-	}],
+	defaultSnippets: [
+		{
+			label: nls.localize('snippetSchema.json.default', 'Empty snippet'),
+			body: { '${1:snippetName}': { prefix: '${2:prefix}', body: '${3:snippet}', description: '${4:description}' } }
+		}
+	],
 	type: 'object',
 	description: nls.localize('snippetSchema.json', 'User snippet configuration'),
 	additionalProperties: {
@@ -110,16 +127,24 @@ const languageScopeSchema: IJSONSchema = {
 	}
 };
 
-
 const globalSchemaId = 'vscode://schemas/global-snippets';
 const globalSchema: IJSONSchema = {
 	id: globalSchemaId,
 	allowComments: true,
 	allowTrailingCommas: true,
-	defaultSnippets: [{
-		label: nls.localize('snippetSchema.json.default', "Empty snippet"),
-		body: { '${1:snippetName}': { 'scope': '${2:scope}', 'prefix': '${3:prefix}', 'body': '${4:snippet}', 'description': '${5:description}' } }
-	}],
+	defaultSnippets: [
+		{
+			label: nls.localize('snippetSchema.json.default', 'Empty snippet'),
+			body: {
+				'${1:snippetName}': {
+					scope: '${2:scope}',
+					prefix: '${3:prefix}',
+					body: '${4:snippet}',
+					description: '${5:description}'
+				}
+			}
+		}
+	],
 	type: 'object',
 	description: nls.localize('snippetSchema.json', 'User snippet configuration'),
 	additionalProperties: {
@@ -128,7 +153,10 @@ const globalSchema: IJSONSchema = {
 		properties: {
 			...snippetSchemaProperties,
 			scope: {
-				description: nls.localize('snippetSchema.json.scope', "A list of language names to which this snippet applies, e.g. 'typescript,javascript'."),
+				description: nls.localize(
+					'snippetSchema.json.scope',
+					"A list of language names to which this snippet applies, e.g. 'typescript,javascript'."
+				),
 				type: 'string'
 			}
 		},
@@ -136,6 +164,8 @@ const globalSchema: IJSONSchema = {
 	}
 };
 
-const reg = Registry.as<JSONContributionRegistry.IJSONContributionRegistry>(JSONContributionRegistry.Extensions.JSONContribution);
+const reg = Registry.as<JSONContributionRegistry.IJSONContributionRegistry>(
+	JSONContributionRegistry.Extensions.JSONContribution
+);
 reg.registerSchema(languageScopeSchemaId, languageScopeSchema);
 reg.registerSchema(globalSchemaId, globalSchema);

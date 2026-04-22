@@ -3,8 +3,23 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { INotificationsModel, INotificationChangeEvent, NotificationChangeType, IStatusMessageChangeEvent, StatusMessageChangeType, IStatusMessageViewItem, NotificationsPosition, NotificationsSettings, getNotificationsPosition } from '../../../common/notifications.js';
-import { IStatusbarService, StatusbarAlignment, IStatusbarEntryAccessor, IStatusbarEntry } from '../../../services/statusbar/browser/statusbar.js';
+import {
+	INotificationsModel,
+	INotificationChangeEvent,
+	NotificationChangeType,
+	IStatusMessageChangeEvent,
+	StatusMessageChangeType,
+	IStatusMessageViewItem,
+	NotificationsPosition,
+	NotificationsSettings,
+	getNotificationsPosition
+} from '../../../common/notifications.js';
+import {
+	IStatusbarService,
+	StatusbarAlignment,
+	IStatusbarEntryAccessor,
+	IStatusbarEntry
+} from '../../../services/statusbar/browser/statusbar.js';
 import { Disposable, IDisposable, dispose } from '../../../../base/common/lifecycle.js';
 import { HIDE_NOTIFICATIONS_CENTER, SHOW_NOTIFICATIONS_CENTER } from './notificationsCommands.js';
 import { localize } from '../../../../nls.js';
@@ -12,7 +27,6 @@ import { INotificationService, NotificationsFilter } from '../../../../platform/
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 
 export class NotificationsStatus extends Disposable {
-
 	private notificationsCenterStatusItem: IStatusbarEntryAccessor | undefined;
 	private newNotificationsCount = 0;
 
@@ -44,15 +58,16 @@ export class NotificationsStatus extends Disposable {
 		this._register(this.model.onDidChangeNotification(e => this.onDidChangeNotification(e)));
 		this._register(this.model.onDidChangeStatusMessage(e => this.onDidChangeStatusMessage(e)));
 		this._register(this.notificationService.onDidChangeFilter(() => this.updateNotificationsCenterStatusItem()));
-		this._register(this.configurationService.onDidChangeConfiguration(e => {
-			if (e.affectsConfiguration(NotificationsSettings.NOTIFICATIONS_POSITION)) {
-				this.updateNotificationsCenterStatusItem();
-			}
-		}));
+		this._register(
+			this.configurationService.onDidChangeConfiguration(e => {
+				if (e.affectsConfiguration(NotificationsSettings.NOTIFICATIONS_POSITION)) {
+					this.updateNotificationsCenterStatusItem();
+				}
+			})
+		);
 	}
 
 	private onDidChangeNotification(e: INotificationChangeEvent): void {
-
 		// Consider a notification as unread as long as it only
 		// appeared as toast and not in the notification center
 		if (!this.isNotificationsCenterVisible) {
@@ -68,7 +83,6 @@ export class NotificationsStatus extends Disposable {
 	}
 
 	private updateNotificationsCenterStatusItem(): void {
-
 		// Figure out how many notifications have progress only if neither
 		// toasts are visible nor center is visible. In that case we still
 		// want to give a hint to the user that something is running.
@@ -84,9 +98,9 @@ export class NotificationsStatus extends Disposable {
 		// Show the status bar entry depending on do not disturb setting
 
 		let statusProperties: IStatusbarEntry = {
-			name: localize('status.notifications', "Notifications"),
+			name: localize('status.notifications', 'Notifications'),
 			text: `${notificationsInProgress > 0 || this.newNotificationsCount > 0 ? '$(bell-dot)' : '$(bell)'}`,
-			ariaLabel: localize('status.notifications', "Notifications"),
+			ariaLabel: localize('status.notifications', 'Notifications'),
 			command: this.isNotificationsCenterVisible ? HIDE_NOTIFICATIONS_CENTER : SHOW_NOTIFICATIONS_CENTER,
 			tooltip: this.getTooltip(notificationsInProgress),
 			showBeak: this.isNotificationsCenterVisible
@@ -96,8 +110,8 @@ export class NotificationsStatus extends Disposable {
 			statusProperties = {
 				...statusProperties,
 				text: `${notificationsInProgress > 0 || this.newNotificationsCount > 0 ? '$(bell-slash-dot)' : '$(bell-slash)'}`,
-				ariaLabel: localize('status.doNotDisturb', "Do Not Disturb"),
-				tooltip: localize('status.doNotDisturbTooltip', "Do Not Disturb Mode is Enabled")
+				ariaLabel: localize('status.doNotDisturb', 'Do Not Disturb'),
+				tooltip: localize('status.doNotDisturbTooltip', 'Do Not Disturb Mode is Enabled')
 			};
 		}
 
@@ -129,8 +143,8 @@ export class NotificationsStatus extends Disposable {
 					'status.notifications',
 					this.currentAlignment,
 					this.currentAlignment === StatusbarAlignment.LEFT
-						? Number.MAX_SAFE_INTEGER 	// almost leftmost on the left side
-						: Number.NEGATIVE_INFINITY 	// rightmost on the right side
+						? Number.MAX_SAFE_INTEGER // almost leftmost on the left side
+						: Number.NEGATIVE_INFINITY // rightmost on the right side
 				);
 			} else {
 				this.notificationsCenterStatusItem.update(statusProperties);
@@ -152,34 +166,51 @@ export class NotificationsStatus extends Disposable {
 
 	private getTooltip(notificationsInProgress: number): string {
 		if (this.isNotificationsCenterVisible) {
-			return localize('hideNotifications', "Hide Notifications");
+			return localize('hideNotifications', 'Hide Notifications');
 		}
 
 		if (this.model.notifications.length === 0) {
-			return localize('zeroNotifications', "No Notifications");
+			return localize('zeroNotifications', 'No Notifications');
 		}
 
 		if (notificationsInProgress === 0) {
 			if (this.newNotificationsCount === 0) {
-				return localize('noNotifications', "No New Notifications");
+				return localize('noNotifications', 'No New Notifications');
 			}
 
 			if (this.newNotificationsCount === 1) {
-				return localize('oneNotification', "1 New Notification");
+				return localize('oneNotification', '1 New Notification');
 			}
 
-			return localize({ key: 'notifications', comment: ['{0} will be replaced by a number'] }, "{0} New Notifications", this.newNotificationsCount);
+			return localize(
+				{ key: 'notifications', comment: ['{0} will be replaced by a number'] },
+				'{0} New Notifications',
+				this.newNotificationsCount
+			);
 		}
 
 		if (this.newNotificationsCount === 0) {
-			return localize({ key: 'noNotificationsWithProgress', comment: ['{0} will be replaced by a number'] }, "No New Notifications ({0} in progress)", notificationsInProgress);
+			return localize(
+				{ key: 'noNotificationsWithProgress', comment: ['{0} will be replaced by a number'] },
+				'No New Notifications ({0} in progress)',
+				notificationsInProgress
+			);
 		}
 
 		if (this.newNotificationsCount === 1) {
-			return localize({ key: 'oneNotificationWithProgress', comment: ['{0} will be replaced by a number'] }, "1 New Notification ({0} in progress)", notificationsInProgress);
+			return localize(
+				{ key: 'oneNotificationWithProgress', comment: ['{0} will be replaced by a number'] },
+				'1 New Notification ({0} in progress)',
+				notificationsInProgress
+			);
 		}
 
-		return localize({ key: 'notificationsWithProgress', comment: ['{0} and {1} will be replaced by a number'] }, "{0} New Notifications ({1} in progress)", this.newNotificationsCount, notificationsInProgress);
+		return localize(
+			{ key: 'notificationsWithProgress', comment: ['{0} and {1} will be replaced by a number'] },
+			'{0} New Notifications ({1} in progress)',
+			this.newNotificationsCount,
+			notificationsInProgress
+		);
 	}
 
 	update(isCenterVisible: boolean, isToastsVisible: boolean): void {
@@ -206,7 +237,6 @@ export class NotificationsStatus extends Disposable {
 		const statusItem = e.item;
 
 		switch (e.kind) {
-
 			// Show status notification
 			case StatusMessageChangeType.ADD:
 				this.doSetStatusMessage(statusItem);
@@ -240,7 +270,7 @@ export class NotificationsStatus extends Disposable {
 		let showHandle: Timeout | undefined = setTimeout(() => {
 			statusMessageEntry = this.statusbarService.addEntry(
 				{
-					name: localize('status.message', "Status Message"),
+					name: localize('status.message', 'Status Message'),
 					text: message,
 					ariaLabel: message
 				},

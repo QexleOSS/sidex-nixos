@@ -25,7 +25,11 @@ export class ExtHostQuickDiff implements ExtHostQuickDiffShape {
 		this.proxy = mainContext.getProxy(MainContext.MainThreadQuickDiff);
 	}
 
-	$provideOriginalResource(handle: number, uriComponents: UriComponents, token: CancellationToken): Promise<UriComponents | null> {
+	$provideOriginalResource(
+		handle: number,
+		uriComponents: UriComponents,
+		token: CancellationToken
+	): Promise<UriComponents | null> {
 		const uri = URI.revive(uriComponents);
 		const provider = this.providers.get(handle);
 
@@ -33,16 +37,28 @@ export class ExtHostQuickDiff implements ExtHostQuickDiffShape {
 			return Promise.resolve(null);
 		}
 
-		return asPromise(() => provider.provideOriginalResource!(uri, token))
-			.then<UriComponents | null>(r => r || null);
+		return asPromise(() => provider.provideOriginalResource!(uri, token)).then<UriComponents | null>(r => r || null);
 	}
 
-	registerQuickDiffProvider(extension: IExtensionDescription, selector: vscode.DocumentSelector, quickDiffProvider: vscode.QuickDiffProvider, id: string, label: string, rootUri?: vscode.Uri): vscode.Disposable {
+	registerQuickDiffProvider(
+		extension: IExtensionDescription,
+		selector: vscode.DocumentSelector,
+		quickDiffProvider: vscode.QuickDiffProvider,
+		id: string,
+		label: string,
+		rootUri?: vscode.Uri
+	): vscode.Disposable {
 		const handle = ExtHostQuickDiff.handlePool++;
 		this.providers.set(handle, quickDiffProvider);
 
 		const extensionId = ExtensionIdentifier.toKey(extension.identifier);
-		this.proxy.$registerQuickDiffProvider(handle, DocumentSelector.from(selector, this.uriTransformer), `${extensionId}.${id}`, label, rootUri);
+		this.proxy.$registerQuickDiffProvider(
+			handle,
+			DocumentSelector.from(selector, this.uriTransformer),
+			`${extensionId}.${id}`,
+			label,
+			rootUri
+		);
 		return {
 			dispose: () => {
 				this.proxy.$unregisterQuickDiffProvider(handle);

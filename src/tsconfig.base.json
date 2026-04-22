@@ -15,11 +15,6 @@
 		"forceConsistentCasingInFileNames": true,
 		"target": "ES2024",
 		"useDefineForClassFields": false,
-		"lib": [
-			"ES2024",
-			"DOM",
-			"DOM.Iterable",
-			"WebWorker.ImportScripts"
-		]
+		"lib": ["ES2024", "DOM", "DOM.Iterable", "WebWorker.ImportScripts"]
 	}
 }

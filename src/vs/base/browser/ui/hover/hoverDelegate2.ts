@@ -17,7 +17,7 @@ let baseHoverDelegate: IHoverDelegate2 = {
 		dispose: () => undefined,
 		show: () => undefined,
 		hide: () => undefined,
-		update: () => undefined,
+		update: () => undefined
 	}),
 	showManagedHover: () => undefined
 };

@@ -9,12 +9,15 @@ import { IEditorConfiguration } from '../config/editorConfiguration.js';
 import { ITextModel } from '../model.js';
 import { IViewModelLines } from './viewModelLines.js';
 import { ViewModelDecoration } from './viewModelDecoration.js';
-import { IViewDecorationsCollection, IInlineModelDecorationsComputerContext, InlineModelDecorationsComputer } from './inlineDecorations.js';
+import {
+	IViewDecorationsCollection,
+	IInlineModelDecorationsComputerContext,
+	InlineModelDecorationsComputer
+} from './inlineDecorations.js';
 import { ICoordinatesConverter } from '../coordinatesConverter.js';
 import { filterFontDecorations, filterValidationDecorations } from '../config/editorOptions.js';
 
 export class ViewModelDecorations implements IDisposable {
-
 	private readonly editorId: number;
 	private readonly configuration: IEditorConfiguration;
 	private readonly _linesCollection: IViewModelLines;
@@ -24,12 +27,26 @@ export class ViewModelDecorations implements IDisposable {
 	private _cachedModelDecorationsResolver: IViewDecorationsCollection | null;
 	private _cachedModelDecorationsResolverViewRange: Range | null;
 
-	constructor(editorId: number, model: ITextModel, configuration: IEditorConfiguration, linesCollection: IViewModelLines, coordinatesConverter: ICoordinatesConverter) {
+	constructor(
+		editorId: number,
+		model: ITextModel,
+		configuration: IEditorConfiguration,
+		linesCollection: IViewModelLines,
+		coordinatesConverter: ICoordinatesConverter
+	) {
 		this.editorId = editorId;
 		this.configuration = configuration;
 		this._linesCollection = linesCollection;
 		const context: IInlineModelDecorationsComputerContext = {
-			getModelDecorations: (viewRange: Range, onlyMinimapDecorations: boolean, onlyMarginDecorations: boolean) => this._linesCollection.getDecorationsInRange(viewRange, this.editorId, filterValidationDecorations(this.configuration.options), filterFontDecorations(this.configuration.options), onlyMinimapDecorations, onlyMarginDecorations)
+			getModelDecorations: (viewRange: Range, onlyMinimapDecorations: boolean, onlyMarginDecorations: boolean) =>
+				this._linesCollection.getDecorationsInRange(
+					viewRange,
+					this.editorId,
+					filterValidationDecorations(this.configuration.options),
+					filterFontDecorations(this.configuration.options),
+					onlyMinimapDecorations,
+					onlyMarginDecorations
+				)
 		};
 		this._inlineDecorationsComputer = new InlineModelDecorationsComputer(context, model, coordinatesConverter);
 		this._cachedModelDecorationsResolver = null;
@@ -67,8 +84,8 @@ export class ViewModelDecorations implements IDisposable {
 	}
 
 	public getDecorationsViewportData(viewRange: Range): IViewDecorationsCollection {
-		let cacheIsValid = (this._cachedModelDecorationsResolver !== null);
-		cacheIsValid = cacheIsValid && (viewRange.equalsRange(this._cachedModelDecorationsResolverViewRange));
+		let cacheIsValid = this._cachedModelDecorationsResolver !== null;
+		cacheIsValid = cacheIsValid && viewRange.equalsRange(this._cachedModelDecorationsResolverViewRange);
 		if (!cacheIsValid) {
 			this._cachedModelDecorationsResolver = this._inlineDecorationsComputer.getDecorations(viewRange, false, false);
 			this._cachedModelDecorationsResolverViewRange = viewRange;
@@ -76,8 +93,17 @@ export class ViewModelDecorations implements IDisposable {
 		return this._cachedModelDecorationsResolver!;
 	}
 
-	public getDecorationsOnLine(lineNumber: number, onlyMinimapDecorations: boolean = false, onlyMarginDecorations: boolean = false): IViewDecorationsCollection {
-		const range = new Range(lineNumber, this._linesCollection.getViewLineMinColumn(lineNumber), lineNumber, this._linesCollection.getViewLineMaxColumn(lineNumber));
+	public getDecorationsOnLine(
+		lineNumber: number,
+		onlyMinimapDecorations: boolean = false,
+		onlyMarginDecorations: boolean = false
+	): IViewDecorationsCollection {
+		const range = new Range(
+			lineNumber,
+			this._linesCollection.getViewLineMinColumn(lineNumber),
+			lineNumber,
+			this._linesCollection.getViewLineMaxColumn(lineNumber)
+		);
 		return this._inlineDecorationsComputer.getDecorations(range, onlyMinimapDecorations, onlyMarginDecorations);
 	}
 }

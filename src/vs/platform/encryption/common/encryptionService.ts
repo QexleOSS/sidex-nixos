@@ -12,10 +12,9 @@ export interface IEncryptionService extends ICommonEncryptionService {
 }
 
 export const IEncryptionMainService = createDecorator<IEncryptionMainService>('encryptionMainService');
-export interface IEncryptionMainService extends IEncryptionService { }
+export interface IEncryptionMainService extends IEncryptionService {}
 
 export interface ICommonEncryptionService {
-
 	readonly _serviceBrand: undefined;
 
 	encrypt(value: string): Promise<string>;
@@ -55,17 +54,21 @@ export const enum KnownStorageProvider {
 	dplib = 'dpapi',
 
 	// macOS
-	keychainAccess = 'keychain_access',
+	keychainAccess = 'keychain_access'
 }
 
 export function isKwallet(backend: string): boolean {
-	return backend === KnownStorageProvider.kwallet
-		|| backend === KnownStorageProvider.kwallet5
-		|| backend === KnownStorageProvider.kwallet6;
+	return (
+		backend === KnownStorageProvider.kwallet ||
+		backend === KnownStorageProvider.kwallet5 ||
+		backend === KnownStorageProvider.kwallet6
+	);
 }
 
 export function isGnome(backend: string): boolean {
-	return backend === KnownStorageProvider.gnomeAny
-		|| backend === KnownStorageProvider.gnomeLibsecret
-		|| backend === KnownStorageProvider.gnomeKeyring;
+	return (
+		backend === KnownStorageProvider.gnomeAny ||
+		backend === KnownStorageProvider.gnomeLibsecret ||
+		backend === KnownStorageProvider.gnomeKeyring
+	);
 }

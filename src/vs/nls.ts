@@ -12,7 +12,12 @@ export function getNLSLanguage(): string | undefined {
 }
 
 declare const document: { location?: { hash?: string } } | undefined;
-const isPseudo = getNLSLanguage() === 'pseudo' || (typeof document !== 'undefined' && document.location && typeof document.location.hash === 'string' && document.location.hash.indexOf('pseudo=true') >= 0);
+const isPseudo =
+	getNLSLanguage() === 'pseudo' ||
+	(typeof document !== 'undefined' &&
+		document.location &&
+		typeof document.location.hash === 'string' &&
+		document.location.hash.indexOf('pseudo=true') >= 0);
 
 export interface ILocalizeInfo {
 	key: string;
@@ -63,7 +68,11 @@ function _format(message: string, args: (string | number | boolean | undefined |
  *
  * @returns string The localized string.
  */
-export function localize(info: ILocalizeInfo, message: string, ...args: (string | number | boolean | undefined | null)[]): string;
+export function localize(
+	info: ILocalizeInfo,
+	message: string,
+	...args: (string | number | boolean | undefined | null)[]
+): string;
 
 /**
  * Marks a string to be localized. Returns the localized string.
@@ -77,12 +86,20 @@ export function localize(info: ILocalizeInfo, message: string, ...args: (string 
  *
  * @returns string The localized string.
  */
-export function localize(key: string, message: string, ...args: (string | number | boolean | undefined | null)[]): string;
+export function localize(
+	key: string,
+	message: string,
+	...args: (string | number | boolean | undefined | null)[]
+): string;
 
 /**
  * @skipMangle
  */
-export function localize(data: ILocalizeInfo | string /* | number when built */, message: string /* | null when built */, ...args: (string | number | boolean | undefined | null)[]): string {
+export function localize(
+	data: ILocalizeInfo | string /* | number when built */,
+	message: string /* | null when built */,
+	...args: (string | number | boolean | undefined | null)[]
+): string {
 	if (typeof data === 'number') {
 		return _format(lookupMessage(data, message), args);
 	}
@@ -118,7 +135,11 @@ function lookupMessage(index: number, fallback: string | null): string {
  *
  * @returns ILocalizedString which contains the localized string and the original string.
  */
-export function localize2(info: ILocalizeInfo, message: string, ...args: (string | number | boolean | undefined | null)[]): ILocalizedString;
+export function localize2(
+	info: ILocalizeInfo,
+	message: string,
+	...args: (string | number | boolean | undefined | null)[]
+): ILocalizedString;
 
 /**
  * Marks a string to be localized. Returns an {@linkcode ILocalizedString}
@@ -133,12 +154,20 @@ export function localize2(info: ILocalizeInfo, message: string, ...args: (string
  *
  * @returns ILocalizedString which contains the localized string and the original string.
  */
-export function localize2(key: string, message: string, ...args: (string | number | boolean | undefined | null)[]): ILocalizedString;
+export function localize2(
+	key: string,
+	message: string,
+	...args: (string | number | boolean | undefined | null)[]
+): ILocalizedString;
 
 /**
  * @skipMangle
  */
-export function localize2(data: ILocalizeInfo | string /* | number when built */, originalMessage: string, ...args: (string | number | boolean | undefined | null)[]): ILocalizedString {
+export function localize2(
+	data: ILocalizeInfo | string /* | number when built */,
+	originalMessage: string,
+	...args: (string | number | boolean | undefined | null)[]
+): ILocalizedString {
 	let message: string;
 	if (typeof data === 'number') {
 		message = lookupMessage(data, originalMessage);
@@ -155,7 +184,6 @@ export function localize2(data: ILocalizeInfo | string /* | number when built */
 }
 
 export interface INLSLanguagePackConfiguration {
-
 	/**
 	 * The path to the translations config file that contains pointers to
 	 * all message bundles for `main` and extensions.
@@ -177,7 +205,6 @@ export interface INLSLanguagePackConfiguration {
 }
 
 export interface INLSConfiguration {
-
 	/**
 	 * Locale as defined in `argv.json` or `app.getLocale()`.
 	 */

@@ -17,7 +17,6 @@ import { IWorkingCopy, IWorkingCopyBackup, IWorkingCopySaveEvent, WorkingCopyCap
  * known file system provider.
  */
 export interface IResourceWorkingCopy extends IWorkingCopy, IDisposable {
-
 	/**
 	 * An event for when the orphaned state of the resource working copy changes.
 	 */
@@ -40,7 +39,6 @@ export interface IResourceWorkingCopy extends IWorkingCopy, IDisposable {
 }
 
 export abstract class ResourceWorkingCopy extends Disposable implements IResourceWorkingCopy {
-
 	constructor(
 		readonly resource: URI,
 		@IFileService protected readonly fileService: IFileService
@@ -86,7 +84,6 @@ export abstract class ResourceWorkingCopy extends Disposable implements IResourc
 		if (fileEventImpactsUs && this.orphaned !== newInOrphanModeGuess) {
 			let newInOrphanModeValidated = false;
 			if (newInOrphanModeGuess) {
-
 				// We have received reports of users seeing delete events even though the file still
 				// exists (network shares issue: https://github.com/microsoft/vscode/issues/13665).
 				// Since we do not want to mark the working copy as orphaned, we have to check if the
@@ -117,7 +114,6 @@ export abstract class ResourceWorkingCopy extends Disposable implements IResourc
 
 	//#endregion
 
-
 	//#region Dispose
 
 	private readonly _onWillDispose = this._register(new Emitter<void>());
@@ -128,7 +124,6 @@ export abstract class ResourceWorkingCopy extends Disposable implements IResourc
 	}
 
 	override dispose(): void {
-
 		// State
 		this.orphaned = false;
 

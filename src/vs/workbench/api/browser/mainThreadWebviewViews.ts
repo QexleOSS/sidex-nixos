@@ -14,9 +14,7 @@ import { IWebviewViewService, WebviewView } from '../../contrib/webviewView/brow
 import { ITelemetryService } from '../../../platform/telemetry/common/telemetry.js';
 import { IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
 
-
 export class MainThreadWebviewsViews extends Disposable implements extHostProtocol.MainThreadWebviewViewsShape {
-
 	private readonly _proxy: extHostProtocol.ExtHostWebviewViewsShape;
 
 	private readonly _webviewViews = this._register(new DisposableMap<string, WebviewView>());
@@ -26,7 +24,7 @@ export class MainThreadWebviewsViews extends Disposable implements extHostProtoc
 		context: IExtHostContext,
 		private readonly mainThreadWebviews: MainThreadWebviews,
 		@ITelemetryService private readonly _telemetryService: ITelemetryService,
-		@IWebviewViewService private readonly _webviewViewService: IWebviewViewService,
+		@IWebviewViewService private readonly _webviewViewService: IWebviewViewService
 	) {
 		super();
 
@@ -69,7 +67,9 @@ export class MainThreadWebviewsViews extends Disposable implements extHostProtoc
 				const handle = generateUuid();
 
 				this._webviewViews.set(handle, webviewView);
-				this.mainThreadWebviews.addWebview(handle, webviewView.webview, { serializeBuffersForPostMessage: options.serializeBuffersForPostMessage });
+				this.mainThreadWebviews.addWebview(handle, webviewView.webview, {
+					serializeBuffersForPostMessage: options.serializeBuffersForPostMessage
+				});
 
 				let state = undefined;
 				if (webviewView.webview.state) {
@@ -87,15 +87,19 @@ export class MainThreadWebviewsViews extends Disposable implements extHostProtoc
 				}
 
 				const subscriptions = new DisposableStore();
-				subscriptions.add(webviewView.onDidChangeVisibility(visible => {
-					this._proxy.$onDidChangeWebviewViewVisibility(handle, visible);
-				}));
+				subscriptions.add(
+					webviewView.onDidChangeVisibility(visible => {
+						this._proxy.$onDidChangeWebviewViewVisibility(handle, visible);
+					})
+				);
 
-				subscriptions.add(webviewView.onDispose(() => {
-					this._proxy.$disposeWebviewView(handle);
-					this._webviewViews.deleteAndDispose(handle);
-					subscriptions.dispose();
-				}));
+				subscriptions.add(
+					webviewView.onDispose(() => {
+						this._proxy.$disposeWebviewView(handle);
+						this._webviewViews.deleteAndDispose(handle);
+						subscriptions.dispose();
+					})
+				);
 
 				type CreateWebviewViewTelemetry = {
 					extensionId: string;
@@ -109,7 +113,7 @@ export class MainThreadWebviewsViews extends Disposable implements extHostProtoc
 				};
 				this._telemetryService.publicLog2<CreateWebviewViewTelemetry, Classification>('webviews:createWebviewView', {
 					extensionId: extension.id.value,
-					id: viewType,
+					id: viewType
 				});
 
 				try {
@@ -140,4 +144,3 @@ export class MainThreadWebviewsViews extends Disposable implements extHostProtoc
 		return webviewView;
 	}
 }
-

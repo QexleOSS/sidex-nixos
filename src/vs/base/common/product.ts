@@ -25,9 +25,9 @@ export interface IProductWalkthroughStep {
 	when: string;
 	description: string;
 	media:
-	| { type: 'image'; path: string | { hc: string; hcLight?: string; light: string; dark: string }; altText: string }
-	| { type: 'svg'; path: string; altText: string }
-	| { type: 'markdown'; path: string };
+		| { type: 'image'; path: string | { hc: string; hcLight?: string; light: string; dark: string }; altText: string }
+		| { type: 'svg'; path: string; altText: string }
+		| { type: 'markdown'; path: string };
 }
 
 export interface IFeaturedExtension {
@@ -36,7 +36,6 @@ export interface IFeaturedExtension {
 	readonly description: string;
 	readonly imagePath: string;
 }
-
 
 export type ConfigurationSyncStore = {
 	url: string;
@@ -248,7 +247,7 @@ export interface IAppCenterConfiguration {
 	readonly 'win32-x64': string;
 	readonly 'win32-arm64': string;
 	readonly 'linux-x64': string;
-	readonly 'darwin': string;
+	readonly darwin: string;
 	readonly 'darwin-universal': string;
 	readonly 'darwin-arm64': string;
 }
@@ -270,7 +269,12 @@ export interface IExeBasedExtensionTip {
 	friendlyName: string;
 	windowsPath?: string;
 	important?: boolean;
-	recommendations: IStringDictionary<{ name: string; important?: boolean; isExtensionPack?: boolean; whenNotInstalled?: string[] }>;
+	recommendations: IStringDictionary<{
+		name: string;
+		important?: boolean;
+		isExtensionPack?: boolean;
+		whenNotInstalled?: string[];
+	}>;
 }
 
 export interface IRemoteExtensionTip {
@@ -304,5 +308,3 @@ export interface ISurveyData {
 	editCount: number;
 	userProbability: number;
 }
-
-

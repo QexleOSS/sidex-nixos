@@ -4,7 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { onUnexpectedError } from '../common/errors.js';
-import { escapeDoubleQuotes, IMarkdownString, MarkdownStringTrustedOptions, parseHrefAndDimensions, removeMarkdownEscapes } from '../common/htmlContent.js';
+import {
+	escapeDoubleQuotes,
+	IMarkdownString,
+	MarkdownStringTrustedOptions,
+	parseHrefAndDimensions,
+	removeMarkdownEscapes
+} from '../common/htmlContent.js';
 import { markdownEscapeEscapedIcons } from '../common/iconLabels.js';
 import { defaultGenerator } from '../common/idGenerator.js';
 import { KeyCode } from '../common/keyCodes.js';
@@ -116,7 +122,8 @@ const defaultMarkedRenderers = Object.freeze({
 		}
 
 		// Remove markdown escapes. Workaround for https://github.com/chjj/marked/issues/829
-		if (href === text) { // raw link case
+		if (href === text) {
+			// raw link case
 			text = removeMarkdownEscapes(text);
 		}
 
@@ -130,14 +137,15 @@ const defaultMarkedRenderers = Object.freeze({
 		}
 
 		// HTML Encode href
-		href = href.replace(/&/g, '&amp;')
+		href = href
+			.replace(/&/g, '&amp;')
 			.replace(/</g, '&lt;')
 			.replace(/>/g, '&gt;')
 			.replace(/"/g, '&quot;')
 			.replace(/'/g, '&#39;');
 
 		return `<a href="${href}" title="${title || href}" draggable="false">${text}</a>`;
-	},
+	}
 });
 
 /**
@@ -146,7 +154,9 @@ const defaultMarkedRenderers = Object.freeze({
  *
  * Based on GitHub's alert syntax: https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts
  */
-function createAlertBlockquoteRenderer(fallbackRenderer: (this: marked.Renderer, token: marked.Tokens.Blockquote) => string) {
+function createAlertBlockquoteRenderer(
+	fallbackRenderer: (this: marked.Renderer, token: marked.Tokens.Blockquote) => string
+) {
 	return function (this: marked.Renderer, token: marked.Tokens.Blockquote): string {
 		const { tokens } = token;
 		// Check if this blockquote starts with alert syntax [!TYPE]
@@ -176,11 +186,11 @@ function createAlertBlockquoteRenderer(fallbackRenderer: (this: marked.Renderer,
 		firstTextToken.text = firstTextToken.text.replace(pattern, '');
 
 		const alertIcons: Record<string, string> = {
-			'note': 'info',
-			'tip': 'light-bulb',
-			'important': 'comment',
-			'warning': 'alert',
-			'caution': 'stop'
+			note: 'info',
+			tip: 'light-bulb',
+			important: 'comment',
+			warning: 'alert',
+			caution: 'stop'
 		};
 
 		const type = match[1];
@@ -206,7 +216,11 @@ export interface IRenderedMarkdown extends IDisposable {
  * **Note** that for most cases you should be using {@link import('../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js').MarkdownRenderer MarkdownRenderer}
  * which comes with support for pretty code block rendering and which uses the default way of handling links.
  */
-export function renderMarkdown(markdown: IMarkdownString, options: MarkdownRenderOptions = {}, target?: HTMLElement): IRenderedMarkdown {
+export function renderMarkdown(
+	markdown: IMarkdownString,
+	options: MarkdownRenderOptions = {},
+	target?: HTMLElement
+): IRenderedMarkdown {
 	const disposables = new DisposableStore();
 	let isDisposed = false;
 
@@ -232,7 +246,7 @@ export function renderMarkdown(markdown: IMarkdownString, options: MarkdownRende
 	// Rewrite theme icons
 	if (markdown.supportThemeIcons) {
 		const elements = renderLabelWithIcons(renderedMarkdown);
-		renderedMarkdown = elements.map(e => typeof e === 'string' ? e : e.outerHTML).join('');
+		renderedMarkdown = elements.map(e => (typeof e === 'string' ? e : e.outerHTML)).join('');
 	}
 
 	const renderedContent = document.createElement('div');
@@ -251,12 +265,12 @@ export function renderMarkdown(markdown: IMarkdownString, options: MarkdownRende
 	}
 
 	if (codeBlocks.length > 0) {
-		Promise.all(codeBlocks).then((tuples) => {
+		Promise.all(codeBlocks).then(tuples => {
 			if (isDisposed) {
 				return;
 			}
 			const renderedElements = new Map(tuples);
-			// eslint-disable-next-line no-restricted-syntax
+
 			const placeholderElements = outElement.querySelectorAll<HTMLDivElement>(`div[data-code]`);
 			for (const placeholderElement of placeholderElements) {
 				const renderedElement = renderedElements.get(placeholderElement.dataset['code'] ?? '');
@@ -268,7 +282,7 @@ export function renderMarkdown(markdown: IMarkdownString, options: MarkdownRende
 		});
 	} else if (syncCodeBlocks.length > 0) {
 		const renderedElements = new Map(syncCodeBlocks);
-		// eslint-disable-next-line no-restricted-syntax
+
 		const placeholderElements = outElement.querySelectorAll<HTMLDivElement>(`div[data-code]`);
 		for (const placeholderElement of placeholderElements) {
 			const renderedElement = renderedElements.get(placeholderElement.dataset['code'] ?? '');
@@ -280,12 +294,13 @@ export function renderMarkdown(markdown: IMarkdownString, options: MarkdownRende
 
 	// Signal size changes for image tags
 	if (options.asyncRenderCallback) {
-		// eslint-disable-next-line no-restricted-syntax
 		for (const img of outElement.getElementsByTagName('img')) {
-			const listener = disposables.add(DOM.addDisposableListener(img, 'load', () => {
-				listener.dispose();
-				options.asyncRenderCallback!();
-			}));
+			const listener = disposables.add(
+				DOM.addDisposableListener(img, 'load', () => {
+					listener.dispose();
+					options.asyncRenderCallback!();
+				})
+			);
 		}
 	}
 
@@ -301,17 +316,19 @@ export function renderMarkdown(markdown: IMarkdownString, options: MarkdownRende
 		disposables.add(DOM.addDisposableListener(outElement, 'click', clickCb));
 		disposables.add(DOM.addDisposableListener(outElement, 'auxclick', clickCb));
 
-		disposables.add(DOM.addDisposableListener(outElement, 'keydown', (e) => {
-			const keyboardEvent = new StandardKeyboardEvent(e);
-			if (!keyboardEvent.equals(KeyCode.Space) && !keyboardEvent.equals(KeyCode.Enter)) {
-				return;
-			}
-			activateLink(markdown, options, keyboardEvent);
-		}));
+		disposables.add(
+			DOM.addDisposableListener(outElement, 'keydown', e => {
+				const keyboardEvent = new StandardKeyboardEvent(e);
+				if (!keyboardEvent.equals(KeyCode.Space) && !keyboardEvent.equals(KeyCode.Enter)) {
+					return;
+				}
+				activateLink(markdown, options, keyboardEvent);
+			})
+		);
 	}
 
 	// Remove/disable inputs
-	// eslint-disable-next-line no-restricted-syntax
+
 	for (const input of [...outElement.getElementsByTagName('input')]) {
 		if (input.attributes.getNamedItem('type')?.value === 'checkbox') {
 			input.setAttribute('disabled', '');
@@ -339,36 +356,41 @@ export function renderMarkdown(markdown: IMarkdownString, options: MarkdownRende
 }
 
 function rewriteRenderedLinks(markdown: IMarkdownString, options: MarkdownRenderOptions, root: HTMLElement) {
-	// eslint-disable-next-line no-restricted-syntax
 	for (const el of root.querySelectorAll('img, audio, video, source')) {
 		const src = el.getAttribute('src'); // Get the raw 'src' attribute value as text, not the resolved 'src'
 		if (src) {
 			let href = src;
 			try {
-				if (markdown.baseUri) { // absolute or relative local path, or file: uri
+				if (markdown.baseUri) {
+					// absolute or relative local path, or file: uri
 					href = resolveWithBaseUri(URI.from(markdown.baseUri), href);
 				}
-			} catch (err) { }
+			} catch (err) {}
 
 			el.setAttribute('src', massageHref(markdown, href, true));
 
 			if (options.sanitizerConfig?.remoteImageIsAllowed) {
 				const uri = URI.parse(href);
-				if (uri.scheme !== Schemas.file && uri.scheme !== Schemas.data && !options.sanitizerConfig.remoteImageIsAllowed(uri)) {
+				if (
+					uri.scheme !== Schemas.file &&
+					uri.scheme !== Schemas.data &&
+					!options.sanitizerConfig.remoteImageIsAllowed(uri)
+				) {
 					el.replaceWith(DOM.$('', undefined, el.outerHTML));
 				}
 			}
 		}
 	}
 
-	// eslint-disable-next-line no-restricted-syntax
 	for (const el of root.querySelectorAll('a')) {
 		const href = el.getAttribute('href'); // Get the raw 'href' attribute value as text, not the resolved 'href'
 		el.setAttribute('href', ''); // Clear out href. We use the `data-href` for handling clicks instead
-		if (!href
-			|| /^data:|javascript:/i.test(href)
-			|| (/^command:/i.test(href) && !markdown.isTrusted)
-			|| /^command:(\/\/\/)?_workbench\.downloadResource/i.test(href)) {
+		if (
+			!href ||
+			/^data:|javascript:/i.test(href) ||
+			(/^command:/i.test(href) && !markdown.isTrusted) ||
+			/^command:(\/\/\/)?_workbench\.downloadResource/i.test(href)
+		) {
 			// drop the link
 			el.replaceWith(...el.childNodes);
 		} else {
@@ -381,7 +403,15 @@ function rewriteRenderedLinks(markdown: IMarkdownString, options: MarkdownRender
 	}
 }
 
-function createMarkdownRenderer(marked: marked.Marked, options: MarkdownRenderOptions, markdown: IMarkdownString): { renderer: marked.Renderer; codeBlocks: Promise<[string, HTMLElement]>[]; syncCodeBlocks: [string, HTMLElement][] } {
+function createMarkdownRenderer(
+	marked: marked.Marked,
+	options: MarkdownRenderOptions,
+	markdown: IMarkdownString
+): {
+	renderer: marked.Renderer;
+	codeBlocks: Promise<[string, HTMLElement]>[];
+	syncCodeBlocks: [string, HTMLElement][];
+} {
 	const renderer = new marked.Renderer(options.markedOptions);
 	renderer.image = defaultMarkedRenderers.image;
 	renderer.link = defaultMarkedRenderers.link;
@@ -442,7 +472,11 @@ function preprocessMarkdownString(markdown: IMarkdownString) {
 	return value;
 }
 
-function activateLink(mdStr: IMarkdownString, options: MarkdownRenderOptions, event: StandardMouseEvent | StandardKeyboardEvent): void {
+function activateLink(
+	mdStr: IMarkdownString,
+	options: MarkdownRenderOptions,
+	event: StandardMouseEvent | StandardKeyboardEvent
+): void {
 	const target = event.target.closest('a[data-href]');
 	if (!DOM.isHTMLElement(target)) {
 		return;
@@ -545,7 +579,7 @@ type MdStrConfig = {
 function sanitizeRenderedMarkdown(
 	renderedMarkdown: string,
 	originalMdStrConfig: MdStrConfig,
-	options: MarkdownSanitizerConfig = {},
+	options: MarkdownSanitizerConfig = {}
 ): TrustedHTML {
 	const sanitizerConfig = getDomSanitizerConfig(originalMdStrConfig, options);
 	return domSanitize.sanitizeHtml(renderedMarkdown, sanitizerConfig);
@@ -553,7 +587,7 @@ function sanitizeRenderedMarkdown(
 
 export const allowedMarkdownHtmlTags = Object.freeze([
 	...domSanitize.basicMarkupHtmlTags,
-	'input', // Allow inputs for rendering checkboxes. Other types of inputs are removed and the inputs are always disabled
+	'input' // Allow inputs for rendering checkboxes. Other types of inputs are removed and the inputs are always disabled
 ]);
 
 export const allowedMarkdownHtmlAttributes = Object.freeze<Array<string | domSanitize.SanitizeAttributeRule>>([
@@ -593,7 +627,9 @@ export const allowedMarkdownHtmlAttributes = Object.freeze<Array<string | domSan
 		shouldKeep: (element, data) => {
 			if (element.tagName === 'SPAN') {
 				if (data.attrName === 'style') {
-					return /^(color\:(#[0-9a-fA-F]+|var\(--vscode(-[a-zA-Z0-9]+)+\));)?(background-color\:(#[0-9a-fA-F]+|var\(--vscode(-[a-zA-Z0-9]+)+\));)?(border-radius:[0-9]+px;)?$/.test(data.attrValue);
+					return /^(color\:(#[0-9a-fA-F]+|var\(--vscode(-[a-zA-Z0-9]+)+\));)?(background-color\:(#[0-9a-fA-F]+|var\(--vscode(-[a-zA-Z0-9]+)+\));)?(border-radius:[0-9]+px;)?$/.test(
+						data.attrValue
+					);
 				}
 			}
 			return false;
@@ -610,11 +646,14 @@ export const allowedMarkdownHtmlAttributes = Object.freeze<Array<string | domSan
 				}
 			}
 			return false;
-		},
-	},
+		}
+	}
 ]);
 
-function getDomSanitizerConfig(mdStrConfig: MdStrConfig, options: MarkdownSanitizerConfig): domSanitize.DomSanitizerConfig {
+function getDomSanitizerConfig(
+	mdStrConfig: MdStrConfig,
+	options: MarkdownSanitizerConfig
+): domSanitize.DomSanitizerConfig {
 	const isTrusted = mdStrConfig.isTrusted ?? false;
 	const allowedLinkSchemes = [
 		Schemas.http,
@@ -626,7 +665,7 @@ function getDomSanitizerConfig(mdStrConfig: MdStrConfig, options: MarkdownSaniti
 		Schemas.vscodeRemoteResource,
 		Schemas.vscodeNotebookCell,
 		// For links that are handled entirely by the action handler
-		Schemas.internal,
+		Schemas.internal
 	];
 
 	if (isTrusted) {
@@ -646,10 +685,10 @@ function getDomSanitizerConfig(mdStrConfig: MdStrConfig, options: MarkdownSaniti
 			override: options.allowedTags?.override ?? allowedMarkdownHtmlTags
 		},
 		allowedAttributes: {
-			override: options.allowedAttributes?.override ?? allowedMarkdownHtmlAttributes,
+			override: options.allowedAttributes?.override ?? allowedMarkdownHtmlAttributes
 		},
 		allowedLinkProtocols: {
-			override: allowedLinkSchemes,
+			override: allowedLinkSchemes
 		},
 		allowRelativeLinkPaths: !!mdStrConfig.baseUri,
 		allowedMediaProtocols: {
@@ -660,11 +699,11 @@ function getDomSanitizerConfig(mdStrConfig: MdStrConfig, options: MarkdownSaniti
 				Schemas.file,
 				Schemas.vscodeFileResource,
 				Schemas.vscodeRemote,
-				Schemas.vscodeRemoteResource,
+				Schemas.vscodeRemoteResource
 			]
 		},
 		allowRelativeMediaPaths: !!mdStrConfig.baseUri,
-		replaceWithPlaintext: options.replaceWithPlaintext,
+		replaceWithPlaintext: options.replaceWithPlaintext
 	};
 }
 
@@ -673,12 +712,15 @@ function getDomSanitizerConfig(mdStrConfig: MdStrConfig, options: MarkdownSaniti
  *
  * For example `# Header` would be output as `Header`.
  */
-export function renderAsPlaintext(str: IMarkdownString | string, options?: {
-	/** Controls if the ``` of code blocks should be preserved in the output or not */
-	readonly includeCodeBlocksFences?: boolean;
-	/** Controls if we want to format empty links from "Link [](file)" to "Link file" */
-	readonly useLinkFormatter?: boolean;
-}) {
+export function renderAsPlaintext(
+	str: IMarkdownString | string,
+	options?: {
+		/** Controls if the ``` of code blocks should be preserved in the output or not */
+		readonly includeCodeBlocksFences?: boolean;
+		/** Controls if we want to format empty links from "Link [](file)" to "Link file" */
+		readonly useLinkFormatter?: boolean;
+	}
+) {
 	if (typeof str === 'string') {
 		return str;
 	}
@@ -708,9 +750,9 @@ const unescapeInfo = new Map<string, string>([
 	['&quot;', '"'],
 	['&nbsp;', ' '],
 	['&amp;', '&'],
-	['&#39;', '\''],
+	['&#39;', "'"],
 	['&lt;', '<'],
-	['&gt;', '>'],
+	['&gt;', '>']
 ]);
 
 function createPlainTextRenderer(): marked.Renderer {
@@ -741,7 +783,12 @@ function createPlainTextRenderer(): marked.Renderer {
 		return this.parser.parseInline(tokens) + '\n';
 	};
 	renderer.table = function ({ header, rows }: marked.Tokens.Table): string {
-		return header.map(cell => this.tablecell(cell)).join(' ') + '\n' + rows.map(cells => cells.map(cell => this.tablecell(cell)).join(' ')).join('\n') + '\n';
+		return (
+			header.map(cell => this.tablecell(cell)).join(' ') +
+			'\n' +
+			rows.map(cells => cells.map(cell => this.tablecell(cell)).join(' ')).join('\n') +
+			'\n'
+		);
 	};
 	renderer.tablerow = ({ text }: marked.Tokens.TableRow): string => {
 		return text;
@@ -812,30 +859,21 @@ function completeSingleLinePattern(token: marked.Tokens.Text | marked.Tokens.Par
 			const lastLine = lines[lines.length - 1];
 			if (lastLine.includes('`')) {
 				return completeCodespan(token);
-			}
-
-			else if (lastLine.includes('**')) {
+			} else if (lastLine.includes('**')) {
 				return completeDoublestar(token);
-			}
-
-			else if (lastLine.match(/\*\w/)) {
+			} else if (lastLine.match(/\*\w/)) {
 				return completeStar(token);
-			}
-
-			else if (lastLine.match(/(^|\s)__\w/)) {
+			} else if (lastLine.match(/(^|\s)__\w/)) {
 				return completeDoubleUnderscore(token);
-			}
-
-			else if (lastLine.match(/(^|\s)_\w/)) {
+			} else if (lastLine.match(/(^|\s)_\w/)) {
 				return completeUnderscore(token);
-			}
-
-			else if (
+			} else if (
 				// Text with start of link target
 				hasLinkTextAndStartOfLinkTarget(lastLine) ||
 				// This token doesn't have the link text, eg if it contains other markdown constructs that are in other subtokens.
 				// But some preceding token does have an unbalanced [ at least
-				hasStartOfLinkTargetAndNoLinkText(lastLine) && token.tokens.slice(0, i).some(t => t.type === 'text' && t.raw.match(/\[[^\]]*$/))
+				(hasStartOfLinkTargetAndNoLinkText(lastLine) &&
+					token.tokens.slice(0, i).some(t => t.type === 'text' && t.raw.match(/\[[^\]]*$/)))
 			) {
 				const nextTwoSubTokens = token.tokens.slice(i + 1);
 
@@ -844,11 +882,12 @@ function completeSingleLinePattern(token: marked.Tokens.Text | marked.Tokens.Par
 				// Where "more text" is a title for the link or an argument to a vscode command link
 				if (
 					// If the link was parsed as a link, then look for a link token and a text token with a quote
-					nextTwoSubTokens[0]?.type === 'link' && nextTwoSubTokens[1]?.type === 'text' && nextTwoSubTokens[1].raw.match(/^ *"[^"]*$/) ||
+					(nextTwoSubTokens[0]?.type === 'link' &&
+						nextTwoSubTokens[1]?.type === 'text' &&
+						nextTwoSubTokens[1].raw.match(/^ *"[^"]*$/)) ||
 					// And if the link was not parsed as a link (eg command link), just look for a single quote in this token
 					lastLine.match(/^[^"]* +"[^"]*$/)
 				) {
-
 					return completeLinkTargetArg(token);
 				}
 				return completeLinkTarget(token);
@@ -913,11 +952,15 @@ function completeListItemPattern(list: marked.Tokens.List): marked.Tokens.List |
 		//    -
 		const lastItem = list.items.at(-1);
 		const lastToken = lastItem?.tokens.at(-1);
-		return lastToken?.type === 'heading' || lastToken?.type === 'list' && listEndsInHeading(lastToken as marked.Tokens.List);
+		return (
+			lastToken?.type === 'heading' ||
+			(lastToken?.type === 'list' && listEndsInHeading(lastToken as marked.Tokens.List))
+		);
 	};
 
 	let newToken: marked.Token | undefined;
-	if (lastListSubToken?.type === 'text' && !('inRawBlock' in lastListItem)) { // Why does Tag have a type of 'text'
+	if (lastListSubToken?.type === 'text' && !('inRawBlock' in lastListItem)) {
+		// Why does Tag have a type of 'text'
 		newToken = completeSingleLinePattern(lastListSubToken as marked.Tokens.Text);
 	} else if (listEndsInHeading(list)) {
 		const newList = marked.lexer(list.raw.trim() + ' &nbsp;')[0] as marked.Tokens.List;
@@ -928,7 +971,8 @@ function completeListItemPattern(list: marked.Tokens.List): marked.Tokens.List |
 		return newList;
 	}
 
-	if (!newToken || newToken.type !== 'paragraph') { // 'text' item inside the list item turns into paragraph
+	if (!newToken || newToken.type !== 'paragraph') {
+		// 'text' item inside the list item turns into paragraph
 		// Nothing to fix, or not a pattern we were expecting
 		return;
 	}
@@ -942,9 +986,7 @@ function completeListItemPattern(list: marked.Tokens.List): marked.Tokens.List |
 		return;
 	}
 
-	const newListItemText = lastListItemLead +
-		mergeRawTokenText(lastListItem.tokens.slice(0, -1)) +
-		newToken.raw;
+	const newListItemText = lastListItemLead + mergeRawTokenText(lastListItem.tokens.slice(0, -1)) + newToken.raw;
 
 	const newList = marked.lexer(previousListItemsText + newListItemText)[0] as marked.Tokens.List;
 	if (newList.type !== 'list') {
@@ -1006,10 +1048,7 @@ function fillInIncompleteTokensOnce(tokens: marked.TokensList): marked.TokensLis
 	}
 
 	if (newTokens) {
-		const newTokensList = [
-			...tokens.slice(0, i),
-			...newTokens
-		];
+		const newTokensList = [...tokens.slice(0, i), ...newTokens];
 		(newTokensList as marked.TokensList).links = tokens.links;
 		return newTokensList as marked.TokensList;
 	}
@@ -1023,7 +1062,6 @@ function fillInIncompleteTokensOnce(tokens: marked.TokensList): marked.TokensLis
 
 	return null;
 }
-
 
 function completeCodespan(token: marked.Token): marked.Token {
 	return completeWithString(token, '`');
@@ -1057,7 +1095,11 @@ function completeDoubleUnderscore(tokens: marked.Token): marked.Token {
 	return completeWithString(tokens, '__');
 }
 
-function completeWithString(tokens: marked.Token[] | marked.Token, closingString: string, shouldTrim = true): marked.Token {
+function completeWithString(
+	tokens: marked.Token[] | marked.Token,
+	closingString: string,
+	shouldTrim = true
+): marked.Token {
 	const mergedRawText = mergeRawTokenText(Array.isArray(tokens) ? tokens : [tokens]);
 
 	// If it was completed correctly, this should be a single token.

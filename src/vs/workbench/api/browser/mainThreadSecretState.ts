@@ -5,7 +5,12 @@
 
 import { Disposable } from '../../../base/common/lifecycle.js';
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
-import { ExtHostContext, ExtHostSecretStateShape, MainContext, MainThreadSecretStateShape } from '../common/extHost.protocol.js';
+import {
+	ExtHostContext,
+	ExtHostSecretStateShape,
+	MainContext,
+	MainThreadSecretStateShape
+} from '../common/extHost.protocol.js';
 import { ILogService } from '../../../platform/log/common/log.js';
 import { SequencerByKey } from '../../../base/common/async.js';
 import { ISecretStorageService } from '../../../platform/secrets/common/secrets.js';
@@ -27,12 +32,14 @@ export class MainThreadSecretState extends Disposable implements MainThreadSecre
 
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostSecretState);
 
-		this._register(this.secretStorageService.onDidChangeSecret((e: string) => {
-			const parsedKey = this.parseKey(e);
-			if (parsedKey) {
-				this._proxy.$onDidChangePassword(parsedKey);
-			}
-		}));
+		this._register(
+			this.secretStorageService.onDidChangeSecret((e: string) => {
+				const parsedKey = this.parseKey(e);
+				if (parsedKey) {
+					this._proxy.$onDidChangePassword(parsedKey);
+				}
+			})
+		);
 	}
 
 	$getPassword(extensionId: string, key: string): Promise<string | undefined> {
@@ -81,7 +88,10 @@ export class MainThreadSecretState extends Disposable implements MainThreadSecre
 		const allKeys = await this.secretStorageService.keys();
 		const keys = allKeys
 			.map(key => this.parseKey(key))
-			.filter((parsedKey): parsedKey is { extensionId: string; key: string } => parsedKey !== undefined && parsedKey.extensionId === extensionId)
+			.filter(
+				(parsedKey): parsedKey is { extensionId: string; key: string } =>
+					parsedKey !== undefined && parsedKey.extensionId === extensionId
+			)
 			.map(({ key }) => key); // Return only my keys
 		this.logService.trace(`[mainThreadSecretState] Got ${keys.length}key(s) for: `, extensionId);
 		return keys;

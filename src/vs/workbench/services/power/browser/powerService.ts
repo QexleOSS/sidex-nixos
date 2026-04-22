@@ -13,7 +13,6 @@ import { IPowerService, PowerSaveBlockerType, SystemIdleState, ThermalState } fr
  * Power APIs are not available in web environments.
  */
 export class BrowserPowerService extends Disposable implements IPowerService {
-
 	declare readonly _serviceBrand: undefined;
 
 	// Events never fire in browser

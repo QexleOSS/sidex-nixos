@@ -64,7 +64,13 @@ export class MarginViewLineDecorationsOverlay extends DedupOverlay {
 			const marginClassName = d.options.marginClassName;
 			const zIndex = d.options.zIndex;
 			if (marginClassName) {
-				r[rLen++] = new DecorationToRender(d.range.startLineNumber, d.range.endLineNumber, marginClassName, null, zIndex);
+				r[rLen++] = new DecorationToRender(
+					d.range.startLineNumber,
+					d.range.endLineNumber,
+					marginClassName,
+					null,
+					zIndex
+				);
 			}
 		}
 		return r;

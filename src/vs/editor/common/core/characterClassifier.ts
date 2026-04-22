@@ -65,7 +65,6 @@ const enum Boolean {
 }
 
 export class CharacterSet {
-
 	private readonly _actual: CharacterClassifier<Boolean>;
 
 	constructor() {
@@ -77,7 +76,7 @@ export class CharacterSet {
 	}
 
 	public has(charCode: number): boolean {
-		return (this._actual.get(charCode) === Boolean.True);
+		return this._actual.get(charCode) === Boolean.True;
 	}
 
 	public clear(): void {

@@ -13,7 +13,6 @@ import { IContextKeyService } from '../../../../platform/contextkey/common/conte
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IEditorProgressService } from '../../../../platform/progress/common/progress.js';
 export class EmbeddedDiffEditorWidget extends DiffEditorWidget {
-
 	private readonly _parentEditor: ICodeEditor;
 	private readonly _overwriteOptions: IDiffEditorOptions;
 
@@ -28,7 +27,16 @@ export class EmbeddedDiffEditorWidget extends DiffEditorWidget {
 		@IAccessibilitySignalService accessibilitySignalService: IAccessibilitySignalService,
 		@IEditorProgressService editorProgressService: IEditorProgressService
 	) {
-		super(domElement, parentEditor.getRawOptions(), codeEditorWidgetOptions, contextKeyService, instantiationService, codeEditorService, accessibilitySignalService, editorProgressService);
+		super(
+			domElement,
+			parentEditor.getRawOptions(),
+			codeEditorWidgetOptions,
+			contextKeyService,
+			instantiationService,
+			codeEditorService,
+			accessibilitySignalService,
+			editorProgressService
+		);
 
 		this._parentEditor = parentEditor;
 		this._overwriteOptions = options;

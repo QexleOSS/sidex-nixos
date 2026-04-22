@@ -13,11 +13,12 @@ export interface IUserKeybindingItem {
 	command: string | null;
 	commandArgs?: unknown;
 	when: ContextKeyExpression | undefined;
-	_sourceKey: string | undefined; /** captures `key` field from `keybindings.json`; `this.keybinding !== null` implies `_sourceKey !== null` */
+	_sourceKey:
+		| string
+		| undefined; /** captures `key` field from `keybindings.json`; `this.keybinding !== null` implies `_sourceKey !== null` */
 }
 
 export class KeybindingIO {
-
 	public static writeKeybindingItem(out: OutputBuilder, item: ResolvedKeybindingItem): void {
 		if (!item.resolvedKeybinding) {
 			return;
@@ -42,38 +43,30 @@ export class KeybindingIO {
 		out.write(' }');
 	}
 
-	public static readUserKeybindingItem(input: Object): IUserKeybindingItem {
-		const keybinding = 'key' in input && typeof input.key === 'string'
-			? KeybindingParser.parseKeybinding(input.key)
-			: null;
-		const when = 'when' in input && typeof input.when === 'string'
-			? ContextKeyExpr.deserialize(input.when)
-			: undefined;
-		const command = 'command' in input && typeof input.command === 'string'
-			? input.command
-			: null;
-		const commandArgs = 'args' in input && typeof input.args !== 'undefined'
-			? input.args
-			: undefined;
+	public static readUserKeybindingItem(input: object): IUserKeybindingItem {
+		const keybinding =
+			'key' in input && typeof input.key === 'string' ? KeybindingParser.parseKeybinding(input.key) : null;
+		const when = 'when' in input && typeof input.when === 'string' ? ContextKeyExpr.deserialize(input.when) : undefined;
+		const command = 'command' in input && typeof input.command === 'string' ? input.command : null;
+		const commandArgs = 'args' in input && typeof input.args !== 'undefined' ? input.args : undefined;
 		return {
 			keybinding,
 			command,
 			commandArgs,
 			when,
-			_sourceKey: 'key' in input && typeof input.key === 'string' ? input.key : undefined,
+			_sourceKey: 'key' in input && typeof input.key === 'string' ? input.key : undefined
 		};
 	}
 }
 
 function rightPaddedString(str: string, minChars: number): string {
 	if (str.length < minChars) {
-		return str + (new Array(minChars - str.length).join(' '));
+		return str + new Array(minChars - str.length).join(' ');
 	}
 	return str;
 }
 
 export class OutputBuilder {
-
 	private _lines: string[] = [];
 	private _currentLine: string = '';
 

@@ -12,7 +12,6 @@ import { Queue } from '../../../../base/common/async.js';
 import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
 
 export class ConfigurationCache implements IConfigurationCache {
-
 	private readonly cacheHome: URI;
 	private readonly cachedConfigurations: Map<string, CachedConfiguration> = new Map<string, CachedConfiguration>();
 
@@ -53,7 +52,6 @@ export class ConfigurationCache implements IConfigurationCache {
 }
 
 class CachedConfiguration {
-
 	private queue: Queue<void>;
 	private cachedConfigurationFolderResource: URI;
 	private cachedConfigurationFileResource: URI;
@@ -64,7 +62,10 @@ class CachedConfiguration {
 		private readonly fileService: IFileService
 	) {
 		this.cachedConfigurationFolderResource = joinPath(cacheHome, 'CachedConfigurations', type, key);
-		this.cachedConfigurationFileResource = joinPath(this.cachedConfigurationFolderResource, type === 'workspaces' ? 'workspace.json' : 'configuration.json');
+		this.cachedConfigurationFileResource = joinPath(
+			this.cachedConfigurationFolderResource,
+			type === 'workspaces' ? 'workspace.json' : 'configuration.json'
+		);
 		this.queue = new Queue<void>();
 	}
 
@@ -88,7 +89,9 @@ class CachedConfiguration {
 
 	async remove(): Promise<void> {
 		try {
-			await this.queue.queue(() => this.fileService.del(this.cachedConfigurationFolderResource, { recursive: true, useTrash: false }));
+			await this.queue.queue(() =>
+				this.fileService.del(this.cachedConfigurationFolderResource, { recursive: true, useTrash: false })
+			);
 		} catch (error) {
 			if ((<FileOperationError>error).fileOperationResult !== FileOperationResult.FILE_NOT_FOUND) {
 				throw error;
@@ -108,4 +111,3 @@ class CachedConfiguration {
 		}
 	}
 }
-

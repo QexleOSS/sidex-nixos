@@ -24,7 +24,11 @@ export interface BaseColor {
 	readonly provider: DocumentColorProvider;
 }
 
-export async function createColorHover(editorModel: ITextModel, colorInfo: IColorInformation, provider: DocumentColorProvider): Promise<BaseColor> {
+export async function createColorHover(
+	editorModel: ITextModel,
+	colorInfo: IColorInformation,
+	provider: DocumentColorProvider
+): Promise<BaseColor> {
 	const originalText = editorModel.getValueInRange(colorInfo.range);
 	const { red, green, blue, alpha } = colorInfo.color;
 	const rgba = new RGBA(Math.round(red * 255), Math.round(green * 255), Math.round(blue * 255), alpha);
@@ -51,21 +55,34 @@ export function updateEditorModel(editor: IActiveCodeEditor, range: Range, model
 		textEdits.push(...model.presentation.additionalTextEdits);
 	}
 	const replaceRange = Range.lift(edit.range);
-	const trackedRange = editor.getModel()._setTrackedRange(null, replaceRange, TrackedRangeStickiness.GrowsOnlyWhenTypingAfter);
+	const trackedRange = editor
+		.getModel()
+		._setTrackedRange(null, replaceRange, TrackedRangeStickiness.GrowsOnlyWhenTypingAfter);
 	editor.executeEdits('colorpicker', textEdits);
 	editor.pushUndoStop();
 	return editor.getModel()._getTrackedRange(trackedRange) ?? replaceRange;
 }
 
-export async function updateColorPresentations(editorModel: ITextModel, colorPickerModel: ColorPickerModel, color: Color, range: Range, colorHover: BaseColor): Promise<void> {
-	const colorPresentations = await getColorPresentations(editorModel, {
-		range: range,
-		color: {
-			red: color.rgba.r / 255,
-			green: color.rgba.g / 255,
-			blue: color.rgba.b / 255,
-			alpha: color.rgba.a
-		}
-	}, colorHover.provider, CancellationToken.None);
+export async function updateColorPresentations(
+	editorModel: ITextModel,
+	colorPickerModel: ColorPickerModel,
+	color: Color,
+	range: Range,
+	colorHover: BaseColor
+): Promise<void> {
+	const colorPresentations = await getColorPresentations(
+		editorModel,
+		{
+			range: range,
+			color: {
+				red: color.rgba.r / 255,
+				green: color.rgba.g / 255,
+				blue: color.rgba.b / 255,
+				alpha: color.rgba.a
+			}
+		},
+		colorHover.provider,
+		CancellationToken.None
+	);
 	colorPickerModel.colorPresentations = colorPresentations || [];
 }

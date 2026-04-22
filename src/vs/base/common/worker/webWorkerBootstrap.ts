@@ -16,7 +16,9 @@ declare const globalThis: {
 
 let initialized = false;
 
-export function initialize<T extends IWebWorkerServerRequestHandler>(factory: IWebWorkerServerRequestHandlerFactory<T>) {
+export function initialize<T extends IWebWorkerServerRequestHandler>(
+	factory: IWebWorkerServerRequestHandlerFactory<T>
+) {
 	if (initialized) {
 		throw new Error('WebWorker already initialized!');
 	}
@@ -24,7 +26,7 @@ export function initialize<T extends IWebWorkerServerRequestHandler>(factory: IW
 
 	const webWorkerServer = new WebWorkerServer<T>(
 		msg => globalThis.postMessage(msg),
-		(workerServer) => factory(workerServer)
+		workerServer => factory(workerServer)
 	);
 
 	globalThis.onmessage = (e: MessageEvent) => {

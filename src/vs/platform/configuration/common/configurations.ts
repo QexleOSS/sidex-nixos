@@ -19,8 +19,9 @@ import * as json from '../../../base/common/json.js';
 import { PolicyName } from '../../../base/common/policy.js';
 
 export class DefaultConfiguration extends Disposable {
-
-	private readonly _onDidChangeConfiguration = this._register(new Emitter<{ defaults: ConfigurationModel; properties: string[] }>());
+	private readonly _onDidChangeConfiguration = this._register(
+		new Emitter<{ defaults: ConfigurationModel; properties: string[] }>()
+	);
 	readonly onDidChangeConfiguration = this._onDidChangeConfiguration.event;
 
 	private _configurationModel: ConfigurationModel;
@@ -35,7 +36,11 @@ export class DefaultConfiguration extends Disposable {
 
 	async initialize(): Promise<ConfigurationModel> {
 		this.resetConfigurationModel();
-		this._register(Registry.as<IConfigurationRegistry>(Extensions.Configuration).onDidUpdateConfiguration(({ properties, defaultsOverrides }) => this.onDidUpdateConfiguration(Array.from(properties), defaultsOverrides)));
+		this._register(
+			Registry.as<IConfigurationRegistry>(Extensions.Configuration).onDidUpdateConfiguration(
+				({ properties, defaultsOverrides }) => this.onDidUpdateConfiguration(Array.from(properties), defaultsOverrides)
+			)
+		);
 		return this.configurationModel;
 	}
 
@@ -45,7 +50,10 @@ export class DefaultConfiguration extends Disposable {
 	}
 
 	protected onDidUpdateConfiguration(properties: string[], defaultsOverrides?: boolean): void {
-		this.updateConfigurationModel(properties, Registry.as<IConfigurationRegistry>(Extensions.Configuration).getConfigurationProperties());
+		this.updateConfigurationModel(
+			properties,
+			Registry.as<IConfigurationRegistry>(Extensions.Configuration).getConfigurationProperties()
+		);
 		this._onDidChangeConfiguration.fire({ defaults: this.configurationModel, properties });
 	}
 
@@ -59,7 +67,10 @@ export class DefaultConfiguration extends Disposable {
 		this.updateConfigurationModel(Object.keys(properties), properties);
 	}
 
-	private updateConfigurationModel(properties: string[], configurationProperties: IStringDictionary<IRegisteredConfigurationPropertySchema>): void {
+	private updateConfigurationModel(
+		properties: string[],
+		configurationProperties: IStringDictionary<IRegisteredConfigurationPropertySchema>
+	): void {
 		const configurationDefaultsOverrides = this.getConfigurationDefaultOverrides();
 		for (const key of properties) {
 			const defaultOverrideValue = configurationDefaultsOverrides[key];
@@ -73,7 +84,6 @@ export class DefaultConfiguration extends Disposable {
 			}
 		}
 	}
-
 }
 
 export interface IPolicyConfiguration {
@@ -85,20 +95,23 @@ export interface IPolicyConfiguration {
 export class NullPolicyConfiguration implements IPolicyConfiguration {
 	readonly onDidChangeConfiguration = Event.None;
 	readonly configurationModel = ConfigurationModel.createEmptyModel(new NullLogService());
-	async initialize() { return this.configurationModel; }
+	async initialize() {
+		return this.configurationModel;
+	}
 }
 
 type ParsedType = IStringDictionary<unknown> | Array<unknown>;
 
 export class PolicyConfiguration extends Disposable implements IPolicyConfiguration {
-
 	private readonly _onDidChangeConfiguration = this._register(new Emitter<ConfigurationModel>());
 	readonly onDidChangeConfiguration = this._onDidChangeConfiguration.event;
 
 	private readonly configurationRegistry: IConfigurationRegistry;
 
 	private _configurationModel: ConfigurationModel;
-	get configurationModel() { return this._configurationModel; }
+	get configurationModel() {
+		return this._configurationModel;
+	}
 
 	constructor(
 		private readonly defaultConfiguration: DefaultConfiguration,
@@ -114,9 +127,16 @@ export class PolicyConfiguration extends Disposable implements IPolicyConfigurat
 		this.logService.trace('PolicyConfiguration#initialize');
 
 		this.update(await this.updatePolicyDefinitions(this.defaultConfiguration.configurationModel.keys), false);
-		this.update(await this.updatePolicyDefinitions(Object.keys(this.configurationRegistry.getExcludedConfigurationProperties())), false);
+		this.update(
+			await this.updatePolicyDefinitions(Object.keys(this.configurationRegistry.getExcludedConfigurationProperties())),
+			false
+		);
 		this._register(this.policyService.onDidChange(policyNames => this.onDidChangePolicies(policyNames)));
-		this._register(this.defaultConfiguration.onDidChangeConfiguration(async ({ properties }) => this.update(await this.updatePolicyDefinitions(properties), true)));
+		this._register(
+			this.defaultConfiguration.onDidChangeConfiguration(async ({ properties }) =>
+				this.update(await this.updatePolicyDefinitions(properties), true)
+			)
+		);
 		return this._configurationModel;
 	}
 
@@ -135,7 +155,13 @@ export class PolicyConfiguration extends Disposable implements IPolicyConfigurat
 				continue;
 			}
 			if (config.policy) {
-				if (config.type !== 'string' && config.type !== 'number' && config.type !== 'array' && config.type !== 'object' && config.type !== 'boolean') {
+				if (
+					config.type !== 'string' &&
+					config.type !== 'number' &&
+					config.type !== 'array' &&
+					config.type !== 'object' &&
+					config.type !== 'boolean'
+				) {
 					this.logService.warn(`Policy ${config.policy.name} has unsupported type ${config.type}`);
 					continue;
 				}
@@ -143,7 +169,7 @@ export class PolicyConfiguration extends Disposable implements IPolicyConfigurat
 				keys.push(key);
 				policyDefinitions[config.policy.name] = {
 					type: config.type === 'number' ? 'number' : config.type === 'boolean' ? 'boolean' : 'string',
-					value,
+					value
 				};
 			}
 		}

@@ -10,7 +10,19 @@ import { EDITOR_FONT_DEFAULTS } from '../../../../editor/common/config/fontInfo.
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { ITerminalConfigurationService, LinuxDistro } from './terminal.js';
 import type { IXtermCore } from './xterm-private.js';
-import { DEFAULT_BOLD_FONT_WEIGHT, DEFAULT_FONT_WEIGHT, DEFAULT_LETTER_SPACING, DEFAULT_LINE_HEIGHT, FontWeight, ITerminalConfiguration, MAXIMUM_FONT_WEIGHT, MINIMUM_FONT_WEIGHT, MINIMUM_LETTER_SPACING, TERMINAL_CONFIG_SECTION, type ITerminalFont } from '../common/terminal.js';
+import {
+	DEFAULT_BOLD_FONT_WEIGHT,
+	DEFAULT_FONT_WEIGHT,
+	DEFAULT_LETTER_SPACING,
+	DEFAULT_LINE_HEIGHT,
+	FontWeight,
+	ITerminalConfiguration,
+	MAXIMUM_FONT_WEIGHT,
+	MINIMUM_FONT_WEIGHT,
+	MINIMUM_LETTER_SPACING,
+	TERMINAL_CONFIG_SECTION,
+	type ITerminalFont
+} from '../common/terminal.js';
 import { isMacintosh } from '../../../../base/common/platform.js';
 import { TerminalLocation, TerminalLocationConfigValue } from '../../../../platform/terminal/common/terminal.js';
 import { isString } from '../../../../base/common/types.js';
@@ -24,7 +36,9 @@ export class TerminalConfigurationService extends Disposable implements ITermina
 	protected _fontMetrics: TerminalFontMetrics;
 
 	protected _config!: Readonly<ITerminalConfiguration>;
-	get config() { return this._config; }
+	get config() {
+		return this._config;
+	}
 
 	get defaultLocation(): TerminalLocation {
 		if (this.config.defaultLocation === TerminalLocationConfigValue.Editor) {
@@ -34,25 +48,33 @@ export class TerminalConfigurationService extends Disposable implements ITermina
 	}
 
 	private readonly _onConfigChanged = this._register(new Emitter<void>());
-	get onConfigChanged(): Event<void> { return this._onConfigChanged.event; }
+	get onConfigChanged(): Event<void> {
+		return this._onConfigChanged.event;
+	}
 
-	constructor(
-		@IConfigurationService private readonly _configurationService: IConfigurationService,
-	) {
+	constructor(@IConfigurationService private readonly _configurationService: IConfigurationService) {
 		super();
 
 		this._fontMetrics = this._register(new TerminalFontMetrics(this, this._configurationService));
 
-		this._register(Event.runAndSubscribe(this._configurationService.onDidChangeConfiguration, e => {
-			if (!e || e.affectsConfiguration(TERMINAL_CONFIG_SECTION)) {
-				this._updateConfig();
-			}
-		}));
+		this._register(
+			Event.runAndSubscribe(this._configurationService.onDidChangeConfiguration, e => {
+				if (!e || e.affectsConfiguration(TERMINAL_CONFIG_SECTION)) {
+					this._updateConfig();
+				}
+			})
+		);
 	}
 
-	setPanelContainer(panelContainer: HTMLElement): void { return this._fontMetrics.setPanelContainer(panelContainer); }
-	configFontIsMonospace(): boolean { return this._fontMetrics.configFontIsMonospace(); }
-	getFont(w: Window, xtermCore?: IXtermCore, excludeDimensions?: boolean): ITerminalFont { return this._fontMetrics.getFont(w, xtermCore, excludeDimensions); }
+	setPanelContainer(panelContainer: HTMLElement): void {
+		return this._fontMetrics.setPanelContainer(panelContainer);
+	}
+	configFontIsMonospace(): boolean {
+		return this._fontMetrics.configFontIsMonospace();
+	}
+	getFont(w: Window, xtermCore?: IXtermCore, excludeDimensions?: boolean): ITerminalFont {
+		return this._fontMetrics.getFont(w, xtermCore, excludeDimensions);
+	}
 
 	private _updateConfig(): void {
 		const configValues = { ...this._configurationService.getValue<ITerminalConfiguration>(TERMINAL_CONFIG_SECTION) };
@@ -76,7 +98,7 @@ export class TerminalConfigurationService extends Disposable implements ITermina
 
 const enum FontConstants {
 	MinimumFontSize = 6,
-	MaximumFontSize = 100,
+	MaximumFontSize = 100
 }
 
 export class TerminalFontMetrics extends Disposable {
@@ -88,7 +110,7 @@ export class TerminalFontMetrics extends Disposable {
 
 	constructor(
 		private readonly _terminalConfigurationService: ITerminalConfigurationService,
-		private readonly _configurationService: IConfigurationService,
+		private readonly _configurationService: IConfigurationService
 	) {
 		super();
 		this._register(toDisposable(() => this._charMeasureElement?.remove()));
@@ -100,7 +122,10 @@ export class TerminalFontMetrics extends Disposable {
 
 	configFontIsMonospace(): boolean {
 		const fontSize = 15;
-		const fontFamily = this._terminalConfigurationService.config.fontFamily || this._configurationService.getValue<IEditorOptions>('editor').fontFamily || EDITOR_FONT_DEFAULTS.fontFamily;
+		const fontFamily =
+			this._terminalConfigurationService.config.fontFamily ||
+			this._configurationService.getValue<IEditorOptions>('editor').fontFamily ||
+			EDITOR_FONT_DEFAULTS.fontFamily;
 		const iRect = this._getBoundingRectFor('i', fontFamily, fontSize);
 		const wRect = this._getBoundingRectFor('w', fontFamily, fontSize);
 
@@ -119,19 +144,33 @@ export class TerminalFontMetrics extends Disposable {
 	getFont(w: Window, xtermCore?: IXtermCore, excludeDimensions?: boolean): ITerminalFont {
 		const editorConfig = this._configurationService.getValue<IEditorOptions>('editor');
 
-		let fontFamily = this._terminalConfigurationService.config.fontFamily || editorConfig.fontFamily || EDITOR_FONT_DEFAULTS.fontFamily || 'monospace';
-		let fontSize = clampInt(this._terminalConfigurationService.config.fontSize, FontConstants.MinimumFontSize, FontConstants.MaximumFontSize, EDITOR_FONT_DEFAULTS.fontSize);
+		let fontFamily =
+			this._terminalConfigurationService.config.fontFamily ||
+			editorConfig.fontFamily ||
+			EDITOR_FONT_DEFAULTS.fontFamily ||
+			'monospace';
+		let fontSize = clampInt(
+			this._terminalConfigurationService.config.fontSize,
+			FontConstants.MinimumFontSize,
+			FontConstants.MaximumFontSize,
+			EDITOR_FONT_DEFAULTS.fontSize
+		);
 
 		// Work around bad font on Fedora/Ubuntu
 		if (!this._terminalConfigurationService.config.fontFamily) {
 			if (this.linuxDistro === LinuxDistro.Fedora) {
-				fontFamily = '\'DejaVu Sans Mono\'';
+				fontFamily = "'DejaVu Sans Mono'";
 			}
 			if (this.linuxDistro === LinuxDistro.Ubuntu) {
-				fontFamily = '\'Ubuntu Mono\'';
+				fontFamily = "'Ubuntu Mono'";
 
 				// Ubuntu mono is somehow smaller, so set fontSize a bit larger to get the same perceived size.
-				fontSize = clampInt(fontSize + 2, FontConstants.MinimumFontSize, FontConstants.MaximumFontSize, EDITOR_FONT_DEFAULTS.fontSize);
+				fontSize = clampInt(
+					fontSize + 2,
+					FontConstants.MinimumFontSize,
+					FontConstants.MaximumFontSize,
+					EDITOR_FONT_DEFAULTS.fontSize
+				);
 			}
 		}
 
@@ -145,8 +184,12 @@ export class TerminalFontMetrics extends Disposable {
 			fontFamily += ', AppleBraille';
 		}
 
-		const letterSpacing = this._terminalConfigurationService.config.letterSpacing ? Math.max(Math.floor(this._terminalConfigurationService.config.letterSpacing), MINIMUM_LETTER_SPACING) : DEFAULT_LETTER_SPACING;
-		const lineHeight = this._terminalConfigurationService.config.lineHeight ? Math.max(this._terminalConfigurationService.config.lineHeight, 1) : DEFAULT_LINE_HEIGHT;
+		const letterSpacing = this._terminalConfigurationService.config.letterSpacing
+			? Math.max(Math.floor(this._terminalConfigurationService.config.letterSpacing), MINIMUM_LETTER_SPACING)
+			: DEFAULT_LETTER_SPACING;
+		const lineHeight = this._terminalConfigurationService.config.lineHeight
+			? Math.max(this._terminalConfigurationService.config.lineHeight, 1)
+			: DEFAULT_LINE_HEIGHT;
 
 		if (excludeDimensions) {
 			return {
@@ -207,7 +250,13 @@ export class TerminalFontMetrics extends Disposable {
 		return rect;
 	}
 
-	private _measureFont(w: Window, fontFamily: string, fontSize: number, letterSpacing: number, lineHeight: number): ITerminalFont {
+	private _measureFont(
+		w: Window,
+		fontFamily: string,
+		fontSize: number,
+		letterSpacing: number,
+		lineHeight: number
+	): ITerminalFont {
 		const rect = this._getBoundingRectFor('X', fontFamily, fontSize);
 
 		// Bounding client rect was invalid, use last font measurement if available.

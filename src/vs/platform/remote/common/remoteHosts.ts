@@ -52,7 +52,9 @@ export function getRemoteServerRootPath(authority: string | undefined): string |
 export function parseAuthorityWithPort(authority: string): { host: string; port: number } {
 	const { host, port } = parseAuthority(authority);
 	if (typeof port === 'undefined') {
-		throw new Error(`Invalid remote authority: ${authority}. It must either be a remote of form <remoteName>+<arg> or a remote host of form <host>:<port>.`);
+		throw new Error(
+			`Invalid remote authority: ${authority}. It must either be a remote of form <remoteName>+<arg> or a remote host of form <host>:<port>.`
+		);
 	}
 	return { host, port };
 }

@@ -11,9 +11,7 @@ import { InstantiationType, registerSingleton } from '../../instantiation/common
 import { ILogService } from '../../log/common/log.js';
 import { IImageResizeService } from '../common/imageResizeService.js';
 
-
 export class ImageResizeService implements IImageResizeService {
-
 	declare readonly _serviceBrand: undefined;
 
 	/**
@@ -72,7 +70,7 @@ export class ImageResizeService implements IImageResizeService {
 							reader.onload = () => {
 								resolve(new Uint8Array(reader.result as ArrayBuffer));
 							};
-							reader.onerror = (error) => reject(error);
+							reader.onerror = error => reject(error);
 							reader.readAsArrayBuffer(blob);
 						} else {
 							reject(new Error('Failed to create blob from canvas'));
@@ -82,7 +80,7 @@ export class ImageResizeService implements IImageResizeService {
 					reject(new Error('Failed to get canvas context'));
 				}
 			};
-			img.onerror = (error) => {
+			img.onerror = error => {
 				URL.revokeObjectURL(url);
 				reject(error);
 			};
@@ -117,7 +115,12 @@ export class ImageResizeService implements IImageResizeService {
 		}
 	}
 
-	async createFileForMedia(fileService: IFileService, imagesFolder: URI, dataTransfer: Uint8Array, mimeType: string): Promise<URI | undefined> {
+	async createFileForMedia(
+		fileService: IFileService,
+		imagesFolder: URI,
+		dataTransfer: Uint8Array,
+		mimeType: string
+	): Promise<URI | undefined> {
 		const exists = await fileService.exists(imagesFolder);
 		if (!exists) {
 			await fileService.createFolder(imagesFolder);
@@ -145,16 +148,18 @@ export class ImageResizeService implements IImageResizeService {
 			return;
 		}
 
-		await Promise.all(files.children.map(async (file) => {
-			try {
-				const timestamp = this.getTimestampFromFilename(file.name);
-				if (timestamp && (Date.now() - timestamp > duration)) {
-					await fileService.del(file.resource);
+		await Promise.all(
+			files.children.map(async file => {
+				try {
+					const timestamp = this.getTimestampFromFilename(file.name);
+					if (timestamp && Date.now() - timestamp > duration) {
+						await fileService.del(file.resource);
+					}
+				} catch (err) {
+					logService.error('Failed to clean up old images', err);
 				}
-			} catch (err) {
-				logService.error('Failed to clean up old images', err);
-			}
-		}));
+			})
+		);
 	}
 
 	getTimestampFromFilename(filename: string): number | undefined {
@@ -164,8 +169,6 @@ export class ImageResizeService implements IImageResizeService {
 		}
 		return undefined;
 	}
-
-
 }
 
 registerSingleton(IImageResizeService, ImageResizeService, InstantiationType.Delayed);

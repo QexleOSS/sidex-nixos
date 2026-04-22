@@ -24,12 +24,36 @@ type TelemetrySampleDataClassification = {
 	comment: 'A callstack that took a long time to execute';
 	selfTime: { classification: 'SystemMetaData'; purpose: 'PerformanceAndHealth'; comment: 'Self time of the sample' };
 	totalTime: { classification: 'SystemMetaData'; purpose: 'PerformanceAndHealth'; comment: 'Total time of the sample' };
-	percentage: { classification: 'SystemMetaData'; purpose: 'PerformanceAndHealth'; comment: 'Relative time (percentage) of the sample' };
-	perfBaseline: { classification: 'SystemMetaData'; purpose: 'PerformanceAndHealth'; comment: 'Performance baseline for the machine' };
-	functionName: { classification: 'SystemMetaData'; purpose: 'PerformanceAndHealth'; comment: 'The name of the sample' };
-	callers: { classification: 'CallstackOrException'; purpose: 'PerformanceAndHealth'; comment: 'The heaviest call trace into this sample' };
-	callersAnnotated: { classification: 'SystemMetaData'; purpose: 'PerformanceAndHealth'; comment: 'The heaviest call trace into this sample annotated with respective costs' };
-	source: { classification: 'SystemMetaData'; purpose: 'PerformanceAndHealth'; comment: 'The source - either renderer or an extension' };
+	percentage: {
+		classification: 'SystemMetaData';
+		purpose: 'PerformanceAndHealth';
+		comment: 'Relative time (percentage) of the sample';
+	};
+	perfBaseline: {
+		classification: 'SystemMetaData';
+		purpose: 'PerformanceAndHealth';
+		comment: 'Performance baseline for the machine';
+	};
+	functionName: {
+		classification: 'SystemMetaData';
+		purpose: 'PerformanceAndHealth';
+		comment: 'The name of the sample';
+	};
+	callers: {
+		classification: 'CallstackOrException';
+		purpose: 'PerformanceAndHealth';
+		comment: 'The heaviest call trace into this sample';
+	};
+	callersAnnotated: {
+		classification: 'SystemMetaData';
+		purpose: 'PerformanceAndHealth';
+		comment: 'The heaviest call trace into this sample annotated with respective costs';
+	};
+	source: {
+		classification: 'SystemMetaData';
+		purpose: 'PerformanceAndHealth';
+		comment: 'The source - either renderer or an extension';
+	};
 };
 
 export interface SampleData {
@@ -38,8 +62,12 @@ export interface SampleData {
 	source: string;
 }
 
-export function reportSample(data: SampleData, telemetryService: ITelemetryService, logService: ILogService, sendAsErrorTelemtry: boolean): void {
-
+export function reportSample(
+	data: SampleData,
+	telemetryService: ITelemetryService,
+	logService: ILogService,
+	sendAsErrorTelemtry: boolean
+): void {
 	const { sample, perfBaseline, source } = data;
 
 	// send telemetry event

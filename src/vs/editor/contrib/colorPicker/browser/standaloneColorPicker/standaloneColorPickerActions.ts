@@ -17,15 +17,19 @@ export class ShowOrFocusStandaloneColorPicker extends EditorAction2 {
 		super({
 			id: 'editor.action.showOrFocusStandaloneColorPicker',
 			title: {
-				...localize2('showOrFocusStandaloneColorPicker', "Show or Focus Standalone Color Picker"),
-				mnemonicTitle: localize({ key: 'mishowOrFocusStandaloneColorPicker', comment: ['&& denotes a mnemonic'] }, "&&Show or Focus Standalone Color Picker"),
+				...localize2('showOrFocusStandaloneColorPicker', 'Show or Focus Standalone Color Picker'),
+				mnemonicTitle: localize(
+					{ key: 'mishowOrFocusStandaloneColorPicker', comment: ['&& denotes a mnemonic'] },
+					'&&Show or Focus Standalone Color Picker'
+				)
 			},
 			precondition: undefined,
-			menu: [
-				{ id: MenuId.CommandPalette },
-			],
+			menu: [{ id: MenuId.CommandPalette }],
 			metadata: {
-				description: localize2('showOrFocusStandaloneColorPickerDescription', "Show or focus a standalone color picker which uses the default color provider. It displays hex/rgb/hsl colors."),
+				description: localize2(
+					'showOrFocusStandaloneColorPickerDescription',
+					'Show or focus a standalone color picker which uses the default color provider. It displays hex/rgb/hsl colors.'
+				)
 			}
 		});
 	}
@@ -38,19 +42,20 @@ export class HideStandaloneColorPicker extends EditorAction {
 	constructor() {
 		super({
 			id: 'editor.action.hideColorPicker',
-			label: localize2({
-				key: 'hideColorPicker',
-				comment: [
-					'Action that hides the color picker'
-				]
-			}, "Hide the Color Picker"),
+			label: localize2(
+				{
+					key: 'hideColorPicker',
+					comment: ['Action that hides the color picker']
+				},
+				'Hide the Color Picker'
+			),
 			precondition: EditorContextKeys.standaloneColorPickerVisible.isEqualTo(true),
 			kbOpts: {
 				primary: KeyCode.Escape,
 				weight: KeybindingWeight.EditorContrib
 			},
 			metadata: {
-				description: localize2('hideColorPickerDescription', "Hide the standalone color picker."),
+				description: localize2('hideColorPickerDescription', 'Hide the standalone color picker.')
 			}
 		});
 	}
@@ -63,19 +68,23 @@ export class InsertColorWithStandaloneColorPicker extends EditorAction {
 	constructor() {
 		super({
 			id: 'editor.action.insertColorWithStandaloneColorPicker',
-			label: localize2({
-				key: 'insertColorWithStandaloneColorPicker',
-				comment: [
-					'Action that inserts color with standalone color picker'
-				]
-			}, "Insert Color with Standalone Color Picker"),
+			label: localize2(
+				{
+					key: 'insertColorWithStandaloneColorPicker',
+					comment: ['Action that inserts color with standalone color picker']
+				},
+				'Insert Color with Standalone Color Picker'
+			),
 			precondition: EditorContextKeys.standaloneColorPickerFocused.isEqualTo(true),
 			kbOpts: {
 				primary: KeyCode.Enter,
 				weight: KeybindingWeight.EditorContrib
 			},
 			metadata: {
-				description: localize2('insertColorWithStandaloneColorPickerDescription', "Insert hex/rgb/hsl colors with the focused standalone color picker."),
+				description: localize2(
+					'insertColorWithStandaloneColorPickerDescription',
+					'Insert hex/rgb/hsl colors with the focused standalone color picker.'
+				)
 			}
 		});
 	}

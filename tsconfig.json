@@ -20,7 +20,7 @@
     "noEmit": true,
     "allowJs": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
+    "emitDecoratorMetadata": false,
     "baseUrl": "src",
     "paths": {
       "vs/*": ["vs/*"]

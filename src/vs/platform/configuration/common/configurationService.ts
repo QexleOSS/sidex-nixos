@@ -16,16 +16,32 @@ import { equals } from '../../../base/common/objects.js';
 import { OS, OperatingSystem } from '../../../base/common/platform.js';
 import { extUriBiasedIgnorePathCase } from '../../../base/common/resources.js';
 import { URI } from '../../../base/common/uri.js';
-import { ConfigurationTarget, IConfigurationChange, IConfigurationChangeEvent, IConfigurationData, IConfigurationOverrides, IConfigurationService, IConfigurationUpdateOptions, IConfigurationUpdateOverrides, IConfigurationValue, isConfigurationOverrides, isConfigurationUpdateOverrides } from './configuration.js';
+import {
+	ConfigurationTarget,
+	IConfigurationChange,
+	IConfigurationChangeEvent,
+	IConfigurationData,
+	IConfigurationOverrides,
+	IConfigurationService,
+	IConfigurationUpdateOptions,
+	IConfigurationUpdateOverrides,
+	IConfigurationValue,
+	isConfigurationOverrides,
+	isConfigurationUpdateOverrides
+} from './configuration.js';
 import { Configuration, ConfigurationChangeEvent, ConfigurationModel, UserSettings } from './configurationModels.js';
 import { keyFromOverrideIdentifiers } from './configurationRegistry.js';
-import { DefaultConfiguration, IPolicyConfiguration, NullPolicyConfiguration, PolicyConfiguration } from './configurations.js';
+import {
+	DefaultConfiguration,
+	IPolicyConfiguration,
+	NullPolicyConfiguration,
+	PolicyConfiguration
+} from './configurations.js';
 import { FileOperationError, FileOperationResult, IFileService } from '../../files/common/files.js';
 import { ILogService } from '../../log/common/log.js';
 import { IPolicyService, NullPolicyService } from '../../policy/common/policy.js';
 
 export class ConfigurationService extends Disposable implements IConfigurationService, IDisposable {
-
 	declare readonly _serviceBrand: undefined;
 
 	private configuration: Configuration;
@@ -34,7 +50,9 @@ export class ConfigurationService extends Disposable implements IConfigurationSe
 	private readonly userConfiguration: UserSettings;
 	private readonly reloadConfigurationScheduler: RunOnceScheduler;
 
-	private readonly _onDidChangeConfiguration: Emitter<IConfigurationChangeEvent> = this._register(new Emitter<IConfigurationChangeEvent>());
+	private readonly _onDidChangeConfiguration: Emitter<IConfigurationChangeEvent> = this._register(
+		new Emitter<IConfigurationChangeEvent>()
+	);
 	readonly onDidChangeConfiguration: Event<IConfigurationChangeEvent> = this._onDidChangeConfiguration.event;
 
 	private readonly configurationEditing: ConfigurationEditing;
@@ -43,12 +61,17 @@ export class ConfigurationService extends Disposable implements IConfigurationSe
 		private readonly settingsResource: URI,
 		fileService: IFileService,
 		policyService: IPolicyService,
-		private readonly logService: ILogService,
+		private readonly logService: ILogService
 	) {
 		super();
 		this.defaultConfiguration = this._register(new DefaultConfiguration(logService));
-		this.policyConfiguration = policyService instanceof NullPolicyService ? new NullPolicyConfiguration() : this._register(new PolicyConfiguration(this.defaultConfiguration, policyService, logService));
-		this.userConfiguration = this._register(new UserSettings(this.settingsResource, {}, extUriBiasedIgnorePathCase, fileService, logService));
+		this.policyConfiguration =
+			policyService instanceof NullPolicyService
+				? new NullPolicyConfiguration()
+				: this._register(new PolicyConfiguration(this.defaultConfiguration, policyService, logService));
+		this.userConfiguration = this._register(
+			new UserSettings(this.settingsResource, {}, extUriBiasedIgnorePathCase, fileService, logService)
+		);
 		this.configuration = new Configuration(
 			this.defaultConfiguration.configurationModel,
 			this.policyConfiguration.configurationModel,
@@ -64,13 +87,23 @@ export class ConfigurationService extends Disposable implements IConfigurationSe
 		this.configurationEditing = new ConfigurationEditing(settingsResource, fileService, this);
 
 		this.reloadConfigurationScheduler = this._register(new RunOnceScheduler(() => this.reloadConfiguration(), 50));
-		this._register(this.defaultConfiguration.onDidChangeConfiguration(({ defaults, properties }) => this.onDidDefaultConfigurationChange(defaults, properties)));
-		this._register(this.policyConfiguration.onDidChangeConfiguration(model => this.onDidPolicyConfigurationChange(model)));
+		this._register(
+			this.defaultConfiguration.onDidChangeConfiguration(({ defaults, properties }) =>
+				this.onDidDefaultConfigurationChange(defaults, properties)
+			)
+		);
+		this._register(
+			this.policyConfiguration.onDidChangeConfiguration(model => this.onDidPolicyConfigurationChange(model))
+		);
 		this._register(this.userConfiguration.onDidChange(() => this.reloadConfigurationScheduler.schedule()));
 	}
 
 	async initialize(): Promise<void> {
-		const [defaultModel, policyModel, userModel] = await Promise.all([this.defaultConfiguration.initialize(), this.policyConfiguration.initialize(), this.userConfiguration.loadConfiguration()]);
+		const [defaultModel, policyModel, userModel] = await Promise.all([
+			this.defaultConfiguration.initialize(),
+			this.policyConfiguration.initialize(),
+			this.userConfiguration.loadConfiguration()
+		]);
 		this.configuration = new Configuration(
 			defaultModel,
 			policyModel,
@@ -100,12 +133,34 @@ export class ConfigurationService extends Disposable implements IConfigurationSe
 	}
 
 	updateValue(key: string, value: unknown): Promise<void>;
-	updateValue(key: string, value: unknown, overrides: IConfigurationOverrides | IConfigurationUpdateOverrides): Promise<void>;
+	updateValue(
+		key: string,
+		value: unknown,
+		overrides: IConfigurationOverrides | IConfigurationUpdateOverrides
+	): Promise<void>;
 	updateValue(key: string, value: unknown, target: ConfigurationTarget): Promise<void>;
-	updateValue(key: string, value: unknown, overrides: IConfigurationOverrides | IConfigurationUpdateOverrides, target: ConfigurationTarget, options?: IConfigurationUpdateOptions): Promise<void>;
-	async updateValue(key: string, value: unknown, arg3?: unknown, arg4?: unknown, options?: IConfigurationUpdateOptions): Promise<void> {
-		const overrides: IConfigurationUpdateOverrides | undefined = isConfigurationUpdateOverrides(arg3) ? arg3
-			: isConfigurationOverrides(arg3) ? { resource: arg3.resource, overrideIdentifiers: arg3.overrideIdentifier ? [arg3.overrideIdentifier] : undefined } : undefined;
+	updateValue(
+		key: string,
+		value: unknown,
+		overrides: IConfigurationOverrides | IConfigurationUpdateOverrides,
+		target: ConfigurationTarget,
+		options?: IConfigurationUpdateOptions
+	): Promise<void>;
+	async updateValue(
+		key: string,
+		value: unknown,
+		arg3?: unknown,
+		arg4?: unknown,
+		options?: IConfigurationUpdateOptions
+	): Promise<void> {
+		const overrides: IConfigurationUpdateOverrides | undefined = isConfigurationUpdateOverrides(arg3)
+			? arg3
+			: isConfigurationOverrides(arg3)
+				? {
+						resource: arg3.resource,
+						overrideIdentifiers: arg3.overrideIdentifier ? [arg3.overrideIdentifier] : undefined
+					}
+				: undefined;
 
 		const target: ConfigurationTarget | undefined = (overrides ? arg4 : arg3) as ConfigurationTarget | undefined;
 		if (target !== undefined) {
@@ -119,7 +174,10 @@ export class ConfigurationService extends Disposable implements IConfigurationSe
 			overrides.overrideIdentifiers = overrides.overrideIdentifiers.length ? overrides.overrideIdentifiers : undefined;
 		}
 
-		const inspect = this.inspect(key, { resource: overrides?.resource, overrideIdentifier: overrides?.overrideIdentifiers ? overrides.overrideIdentifiers[0] : undefined });
+		const inspect = this.inspect(key, {
+			resource: overrides?.resource,
+			overrideIdentifier: overrides?.overrideIdentifiers ? overrides.overrideIdentifiers[0] : undefined
+		});
 		if (inspect.policyValue !== undefined) {
 			throw new Error(`Unable to write ${key} because it is configured in system policy.`);
 		}
@@ -131,13 +189,17 @@ export class ConfigurationService extends Disposable implements IConfigurationSe
 
 		if (overrides?.overrideIdentifiers?.length && overrides.overrideIdentifiers.length > 1) {
 			const overrideIdentifiers = overrides.overrideIdentifiers.sort();
-			const existingOverrides = this.configuration.localUserConfiguration.overrides.find(override => arrayEquals([...override.identifiers].sort(), overrideIdentifiers));
+			const existingOverrides = this.configuration.localUserConfiguration.overrides.find(override =>
+				arrayEquals([...override.identifiers].sort(), overrideIdentifiers)
+			);
 			if (existingOverrides) {
 				overrides.overrideIdentifiers = existingOverrides.identifiers;
 			}
 		}
 
-		const path = overrides?.overrideIdentifiers?.length ? [keyFromOverrideIdentifiers(overrides.overrideIdentifiers), key] : [key];
+		const path = overrides?.overrideIdentifiers?.length
+			? [keyFromOverrideIdentifiers(overrides.overrideIdentifiers), key]
+			: [key];
 
 		await this.configurationEditing.write(path, value);
 		await this.reloadConfiguration();
@@ -180,21 +242,30 @@ export class ConfigurationService extends Disposable implements IConfigurationSe
 		this.trigger(change, previous, ConfigurationTarget.DEFAULT);
 	}
 
-	private trigger(configurationChange: IConfigurationChange, previous: IConfigurationData, source: ConfigurationTarget): void {
-		const event = new ConfigurationChangeEvent(configurationChange, { data: previous }, this.configuration, undefined, this.logService);
+	private trigger(
+		configurationChange: IConfigurationChange,
+		previous: IConfigurationData,
+		source: ConfigurationTarget
+	): void {
+		const event = new ConfigurationChangeEvent(
+			configurationChange,
+			{ data: previous },
+			this.configuration,
+			undefined,
+			this.logService
+		);
 		event.source = source;
 		this._onDidChangeConfiguration.fire(event);
 	}
 }
 
 class ConfigurationEditing {
-
 	private readonly queue: Queue<void>;
 
 	constructor(
 		private readonly settingsResource: URI,
 		private readonly fileService: IFileService,
-		private readonly configurationService: IConfigurationService,
+		private readonly configurationService: IConfigurationService
 	) {
 		this.queue = new Queue<void>();
 	}
@@ -219,7 +290,9 @@ class ConfigurationEditing {
 		const parseErrors: ParseError[] = [];
 		parse(content, parseErrors, { allowTrailingComma: true, allowEmptyContent: true });
 		if (parseErrors.length > 0) {
-			throw new Error('Unable to write into the settings file. Please open the file to correct errors/warnings in the file and try again.');
+			throw new Error(
+				'Unable to write into the settings file. Please open the file to correct errors/warnings in the file and try again.'
+			);
 		}
 
 		const edits = this.getEdits(content, path, value);
@@ -234,11 +307,13 @@ class ConfigurationEditing {
 		// With empty path the entire file is being replaced, so we just use JSON.stringify
 		if (!path.length) {
 			const content = JSON.stringify(value, null, insertSpaces ? ' '.repeat(tabSize) : '\t');
-			return [{
-				content,
-				length: content.length,
-				offset: 0
-			}];
+			return [
+				{
+					content,
+					length: content.length,
+					offset: 0
+				}
+			];
 		}
 
 		return setProperty(content, path, value, { tabSize, insertSpaces, eol });

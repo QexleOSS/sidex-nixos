@@ -13,10 +13,19 @@ import { ExtensionIdentifier } from '../../../platform/extensions/common/extensi
 import { INotificationService, Severity } from '../../../platform/notification/common/notification.js';
 import { IOpenerService } from '../../../platform/opener/common/opener.js';
 import { IStorageService } from '../../../platform/storage/common/storage.js';
-import { ExtHostContext, ExtHostUriOpenersShape, MainContext, MainThreadUriOpenersShape } from '../common/extHost.protocol.js';
+import {
+	ExtHostContext,
+	ExtHostUriOpenersShape,
+	MainContext,
+	MainThreadUriOpenersShape
+} from '../common/extHost.protocol.js';
 import { defaultExternalUriOpenerId } from '../../contrib/externalUriOpener/common/configuration.js';
 import { ContributedExternalUriOpenersStore } from '../../contrib/externalUriOpener/common/contributedOpeners.js';
-import { IExternalOpenerProvider, IExternalUriOpener, IExternalUriOpenerService } from '../../contrib/externalUriOpener/common/externalUriOpenerService.js';
+import {
+	IExternalOpenerProvider,
+	IExternalUriOpener,
+	IExternalUriOpenerService
+} from '../../contrib/externalUriOpener/common/externalUriOpenerService.js';
 import { IExtensionService } from '../../services/extensions/common/extensions.js';
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
 
@@ -28,7 +37,6 @@ interface RegisteredOpenerMetadata {
 
 @extHostNamedCustomer(MainContext.MainThreadUriOpeners)
 export class MainThreadUriOpeners extends Disposable implements MainThreadUriOpenersShape, IExternalOpenerProvider {
-
 	private readonly proxy: ExtHostUriOpenersShape;
 	private readonly _registeredOpeners = new Map<string, RegisteredOpenerMetadata>();
 	private readonly _contributedExternalUriOpenersStore: ContributedExternalUriOpenersStore;
@@ -39,18 +47,19 @@ export class MainThreadUriOpeners extends Disposable implements MainThreadUriOpe
 		@IExternalUriOpenerService externalUriOpenerService: IExternalUriOpenerService,
 		@IExtensionService private readonly extensionService: IExtensionService,
 		@IOpenerService private readonly openerService: IOpenerService,
-		@INotificationService private readonly notificationService: INotificationService,
+		@INotificationService private readonly notificationService: INotificationService
 	) {
 		super();
 		this.proxy = context.getProxy(ExtHostContext.ExtHostUriOpeners);
 
 		this._register(externalUriOpenerService.registerExternalOpenerProvider(this));
 
-		this._contributedExternalUriOpenersStore = this._register(new ContributedExternalUriOpenersStore(storageService, extensionService));
+		this._contributedExternalUriOpenersStore = this._register(
+			new ContributedExternalUriOpenersStore(storageService, extensionService)
+		);
 	}
 
 	public async *getOpeners(targetUri: URI): AsyncIterable<IExternalUriOpener> {
-
 		// Currently we only allow openers for http and https urls
 		if (targetUri.scheme !== Schemas.http && targetUri.scheme !== Schemas.https) {
 			return;
@@ -77,30 +86,39 @@ export class MainThreadUriOpeners extends Disposable implements MainThreadUriOpe
 					await this.proxy.$openUri(id, { resolvedUri: uri, sourceUri: ctx.sourceUri }, token);
 				} catch (e) {
 					if (!isCancellationError(e)) {
-						const openDefaultAction = new Action('default', localize('openerFailedUseDefault', "Open using default opener"), undefined, undefined, async () => {
-							await this.openerService.open(uri, {
-								allowTunneling: false,
-								allowContributedOpeners: defaultExternalUriOpenerId,
-							});
-						});
+						const openDefaultAction = new Action(
+							'default',
+							localize('openerFailedUseDefault', 'Open using default opener'),
+							undefined,
+							undefined,
+							async () => {
+								await this.openerService.open(uri, {
+									allowTunneling: false,
+									allowContributedOpeners: defaultExternalUriOpenerId
+								});
+							}
+						);
 						openDefaultAction.tooltip = uri.toString();
 
 						this.notificationService.notify({
 							severity: Severity.Error,
-							message: localize({
-								key: 'openerFailedMessage',
-								comment: ['{0} is the id of the opener. {1} is the url being opened.'],
-							}, 'Could not open uri with \'{0}\': {1}', id, e.toString()),
+							message: localize(
+								{
+									key: 'openerFailedMessage',
+									comment: ['{0} is the id of the opener. {1} is the url being opened.']
+								},
+								"Could not open uri with '{0}': {1}",
+								id,
+								e.toString()
+							),
 							actions: {
-								primary: [
-									openDefaultAction
-								]
+								primary: [openDefaultAction]
 							}
 						});
 					}
 				}
 				return true;
-			},
+			}
 		};
 	}
 
@@ -108,7 +126,7 @@ export class MainThreadUriOpeners extends Disposable implements MainThreadUriOpe
 		id: string,
 		schemes: readonly string[],
 		extensionId: ExtensionIdentifier,
-		label: string,
+		label: string
 	): Promise<void> {
 		if (this._registeredOpeners.has(id)) {
 			throw new Error(`Opener with id '${id}' already registered`);
@@ -117,7 +135,7 @@ export class MainThreadUriOpeners extends Disposable implements MainThreadUriOpe
 		this._registeredOpeners.set(id, {
 			schemes: new Set(schemes),
 			label,
-			extensionId,
+			extensionId
 		});
 
 		this._contributedExternalUriOpenersStore.didRegisterOpener(id, extensionId.value);

@@ -13,13 +13,19 @@ import { createDecorator } from '../../../../platform/instantiation/common/insta
 export interface IWorkspaceStateFolder {
 	resourceUri: string;
 }
-import { EditSessionIdentityMatch, IEditSessionIdentityService } from '../../../../platform/workspace/common/editSessions.js';
+import {
+	EditSessionIdentityMatch,
+	IEditSessionIdentityService
+} from '../../../../platform/workspace/common/editSessions.js';
 import { IWorkspaceContextService, IWorkspaceFolder } from '../../../../platform/workspace/common/workspace.js';
 
 export const IWorkspaceIdentityService = createDecorator<IWorkspaceIdentityService>('IWorkspaceIdentityService');
 export interface IWorkspaceIdentityService {
 	_serviceBrand: undefined;
-	matches(folders: IWorkspaceStateFolder[], cancellationToken: CancellationToken): Promise<((obj: unknown) => unknown) | false>;
+	matches(
+		folders: IWorkspaceStateFolder[],
+		cancellationToken: CancellationToken
+	): Promise<((obj: unknown) => unknown) | false>;
 	getWorkspaceStateFolders(cancellationToken: CancellationToken): Promise<IWorkspaceStateFolder[]>;
 }
 
@@ -29,39 +35,55 @@ export class WorkspaceIdentityService implements IWorkspaceIdentityService {
 	constructor(
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
 		@IEditSessionIdentityService private readonly editSessionIdentityService: IEditSessionIdentityService
-	) { }
+	) {}
 
 	async getWorkspaceStateFolders(cancellationToken: CancellationToken): Promise<IWorkspaceStateFolder[]> {
 		const workspaceStateFolders: IWorkspaceStateFolder[] = [];
 
 		for (const workspaceFolder of this.workspaceContextService.getWorkspace().folders) {
-			const workspaceFolderIdentity = await this.editSessionIdentityService.getEditSessionIdentifier(workspaceFolder, cancellationToken);
-			if (!workspaceFolderIdentity) { continue; }
+			const workspaceFolderIdentity = await this.editSessionIdentityService.getEditSessionIdentifier(
+				workspaceFolder,
+				cancellationToken
+			);
+			if (!workspaceFolderIdentity) {
+				continue;
+			}
 			workspaceStateFolders.push({ resourceUri: workspaceFolder.uri.toString(), workspaceFolderIdentity });
 		}
 
 		return workspaceStateFolders;
 	}
 
-	async matches(incomingWorkspaceFolders: IWorkspaceStateFolder[], cancellationToken: CancellationToken): Promise<((value: unknown) => unknown) | false> {
+	async matches(
+		incomingWorkspaceFolders: IWorkspaceStateFolder[],
+		cancellationToken: CancellationToken
+	): Promise<((value: unknown) => unknown) | false> {
 		const incomingToCurrentWorkspaceFolderUris: { [key: string]: string } = {};
 
 		const incomingIdentitiesToIncomingWorkspaceFolders: { [key: string]: string } = {};
 		for (const workspaceFolder of incomingWorkspaceFolders) {
-			incomingIdentitiesToIncomingWorkspaceFolders[workspaceFolder.workspaceFolderIdentity] = workspaceFolder.resourceUri;
+			incomingIdentitiesToIncomingWorkspaceFolders[workspaceFolder.workspaceFolderIdentity] =
+				workspaceFolder.resourceUri;
 		}
 
 		// Precompute the identities of the current workspace folders
 		const currentWorkspaceFoldersToIdentities = new Map<IWorkspaceFolder, string>();
 		for (const workspaceFolder of this.workspaceContextService.getWorkspace().folders) {
-			const workspaceFolderIdentity = await this.editSessionIdentityService.getEditSessionIdentifier(workspaceFolder, cancellationToken);
-			if (!workspaceFolderIdentity) { continue; }
+			const workspaceFolderIdentity = await this.editSessionIdentityService.getEditSessionIdentifier(
+				workspaceFolder,
+				cancellationToken
+			);
+			if (!workspaceFolderIdentity) {
+				continue;
+			}
 			currentWorkspaceFoldersToIdentities.set(workspaceFolder, workspaceFolderIdentity);
 		}
 
 		// Match the current workspace folders to the incoming workspace folders
-		for (const [currentWorkspaceFolder, currentWorkspaceFolderIdentity] of currentWorkspaceFoldersToIdentities.entries()) {
-
+		for (const [
+			currentWorkspaceFolder,
+			currentWorkspaceFolderIdentity
+		] of currentWorkspaceFoldersToIdentities.entries()) {
 			// Happy case: identities do not need further disambiguation
 			const incomingWorkspaceFolder = incomingIdentitiesToIncomingWorkspaceFolders[currentWorkspaceFolderIdentity];
 			if (incomingWorkspaceFolder) {
@@ -73,7 +95,14 @@ export class WorkspaceIdentityService implements IWorkspaceIdentityService {
 			// Unhappy case: compare the identity of the current workspace folder to all incoming workspace folder identities
 			let hasCompleteMatch = false;
 			for (const [incomingIdentity, incomingFolder] of Object.entries(incomingIdentitiesToIncomingWorkspaceFolders)) {
-				if (await this.editSessionIdentityService.provideEditSessionIdentityMatch(currentWorkspaceFolder, currentWorkspaceFolderIdentity, incomingIdentity, cancellationToken) === EditSessionIdentityMatch.Complete) {
+				if (
+					(await this.editSessionIdentityService.provideEditSessionIdentityMatch(
+						currentWorkspaceFolder,
+						currentWorkspaceFolderIdentity,
+						incomingIdentity,
+						cancellationToken
+					)) === EditSessionIdentityMatch.Complete
+				) {
 					incomingToCurrentWorkspaceFolderUris[incomingFolder] = currentWorkspaceFolder.uri.toString();
 					hasCompleteMatch = true;
 					break;

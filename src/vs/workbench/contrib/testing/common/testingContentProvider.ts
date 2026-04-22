@@ -28,7 +28,7 @@ export class TestingContentProvider implements IWorkbenchContribution, ITextMode
 		@ITextModelService textModelResolverService: ITextModelService,
 		@ILanguageService private readonly languageService: ILanguageService,
 		@IModelService private readonly modelService: IModelService,
-		@ITestResultService private readonly resultService: ITestResultService,
+		@ITestResultService private readonly resultService: ITestResultService
 	) {
 		textModelResolverService.registerTextModelContentProvider(TEST_DATA_SCHEME, this);
 	}
@@ -55,20 +55,25 @@ export class TestingContentProvider implements IWorkbenchContribution, ITextMode
 		if (parsed.type === TestUriType.TaskOutput) {
 			const task = result.tasks[parsed.taskIndex];
 			const model = this.modelService.createModel('', null, resource, false);
-			const append = (text: string) => model.applyEdits([{
-				range: { startColumn: 1, endColumn: 1, startLineNumber: Infinity, endLineNumber: Infinity },
-				text,
-			}]);
+			const append = (text: string) =>
+				model.applyEdits([
+					{
+						range: { startColumn: 1, endColumn: 1, startLineNumber: Infinity, endLineNumber: Infinity },
+						text
+					}
+				]);
 
 			const init = VSBuffer.concat(task.output.buffers, task.output.length).toString();
 			append(removeAnsiEscapeCodes(init));
 
 			let hadContent = init.length > 0;
 			const dispose = new DisposableStore();
-			dispose.add(task.output.onDidWriteData(d => {
-				hadContent ||= d.byteLength > 0;
-				append(removeAnsiEscapeCodes(d.toString()));
-			}));
+			dispose.add(
+				task.output.onDidWriteData(d => {
+					hadContent ||= d.byteLength > 0;
+					append(removeAnsiEscapeCodes(d.toString()));
+				})
+			);
 			task.output.endPromise.then(() => {
 				if (dispose.isDisposed) {
 					return;
@@ -93,7 +98,9 @@ export class TestingContentProvider implements IWorkbenchContribution, ITextMode
 		switch (parsed.type) {
 			case TestUriType.ResultActualOutput: {
 				const message = test.tasks[parsed.taskIndex].messages[parsed.messageIndex];
-				if (message?.type === TestMessageType.Error) { text = message.actual; }
+				if (message?.type === TestMessageType.Error) {
+					text = message.actual;
+				}
 				break;
 			}
 			case TestUriType.TestOutput: {
@@ -108,7 +115,9 @@ export class TestingContentProvider implements IWorkbenchContribution, ITextMode
 			}
 			case TestUriType.ResultExpectedOutput: {
 				const message = test.tasks[parsed.taskIndex].messages[parsed.messageIndex];
-				if (message?.type === TestMessageType.Error) { text = message.expected; }
+				if (message?.type === TestMessageType.Error) {
+					text = message.expected;
+				}
 				break;
 			}
 			case TestUriType.ResultMessage: {

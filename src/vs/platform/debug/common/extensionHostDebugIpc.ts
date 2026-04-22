@@ -6,10 +6,16 @@
 import { Emitter, Event } from '../../../base/common/event.js';
 import { Disposable } from '../../../base/common/lifecycle.js';
 import { IChannel, IServerChannel } from '../../../base/parts/ipc/common/ipc.js';
-import { IAttachSessionEvent, ICloseSessionEvent, IExtensionHostDebugService, IOpenExtensionWindowResult, IReloadSessionEvent, ITerminateSessionEvent } from './extensionHostDebug.js';
+import {
+	IAttachSessionEvent,
+	ICloseSessionEvent,
+	IExtensionHostDebugService,
+	IOpenExtensionWindowResult,
+	IReloadSessionEvent,
+	ITerminateSessionEvent
+} from './extensionHostDebug.js';
 
 export class ExtensionHostDebugBroadcastChannel<TContext> extends Disposable implements IServerChannel<TContext> {
-
 	static readonly ChannelName = 'extensionhostdebugservice';
 
 	private readonly _onCloseEmitter = this._register(new Emitter<ICloseSessionEvent>());
@@ -47,7 +53,6 @@ export class ExtensionHostDebugBroadcastChannel<TContext> extends Disposable imp
 }
 
 export class ExtensionHostDebugChannelClient extends Disposable implements IExtensionHostDebugService {
-
 	declare readonly _serviceBrand: undefined;
 
 	constructor(private channel: IChannel) {

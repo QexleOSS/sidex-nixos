@@ -7,11 +7,25 @@ import { Event } from '../../../../base/common/event.js';
 import { parse } from '../../../../base/common/json.js';
 import { IDisposable } from '../../../../base/common/lifecycle.js';
 import { URI } from '../../../../base/common/uri.js';
-import { IFileDeleteOptions, IFileOverwriteOptions, FileSystemProviderCapabilities, FileType, IFileWriteOptions, IFileService, IStat, IWatchOptions, IFileSystemProviderWithFileReadWriteCapability } from '../../../../platform/files/common/files.js';
+import {
+	IFileDeleteOptions,
+	IFileOverwriteOptions,
+	FileSystemProviderCapabilities,
+	FileType,
+	IFileWriteOptions,
+	IFileService,
+	IStat,
+	IWatchOptions,
+	IFileSystemProviderWithFileReadWriteCapability
+} from '../../../../platform/files/common/files.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { IWorkbenchContribution } from '../../../common/contributions.js';
 import { VSBuffer } from '../../../../base/common/buffer.js';
-import { readTrustedDomains, TRUSTED_DOMAINS_CONTENT_STORAGE_KEY, TRUSTED_DOMAINS_STORAGE_KEY } from './trustedDomains.js';
+import {
+	readTrustedDomains,
+	TRUSTED_DOMAINS_CONTENT_STORAGE_KEY,
+	TRUSTED_DOMAINS_STORAGE_KEY
+} from './trustedDomains.js';
 import { assertReturnsDefined } from '../../../../base/common/types.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 
@@ -74,8 +88,9 @@ function computeTrustedDomainContent(defaultTrustedDomains: string[], trustedDom
 	return content;
 }
 
-export class TrustedDomainsFileSystemProvider implements IFileSystemProviderWithFileReadWriteCapability, IWorkbenchContribution {
-
+export class TrustedDomainsFileSystemProvider
+	implements IFileSystemProviderWithFileReadWriteCapability, IWorkbenchContribution
+{
 	static readonly ID = 'workbench.contrib.trustedDomainsFileSystemProvider';
 
 	readonly capabilities = FileSystemProviderCapabilities.FileReadWrite;
@@ -86,7 +101,7 @@ export class TrustedDomainsFileSystemProvider implements IFileSystemProviderWith
 	constructor(
 		@IFileService private readonly fileService: IFileService,
 		@IStorageService private readonly storageService: IStorageService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService
 	) {
 		this.fileService.registerProvider(TRUSTED_DOMAINS_SCHEMA, this);
 	}
@@ -96,14 +111,12 @@ export class TrustedDomainsFileSystemProvider implements IFileSystemProviderWith
 	}
 
 	async readFile(resource: URI): Promise<Uint8Array> {
-		let trustedDomainsContent = this.storageService.get(
-			TRUSTED_DOMAINS_CONTENT_STORAGE_KEY,
-			StorageScope.APPLICATION
-		);
+		let trustedDomainsContent = this.storageService.get(TRUSTED_DOMAINS_CONTENT_STORAGE_KEY, StorageScope.APPLICATION);
 
 		const configuring: string | undefined = resource.fragment;
 
-		const { defaultTrustedDomains, trustedDomains } = await this.instantiationService.invokeFunction(readTrustedDomains);
+		const { defaultTrustedDomains, trustedDomains } =
+			await this.instantiationService.invokeFunction(readTrustedDomains);
 		if (
 			!trustedDomainsContent ||
 			trustedDomainsContent.indexOf(CONFIG_HELP_TEXT_PRE) === -1 ||
@@ -123,14 +136,19 @@ export class TrustedDomainsFileSystemProvider implements IFileSystemProviderWith
 			const trustedDomainsContent = VSBuffer.wrap(content).toString();
 			const trustedDomains = parse(trustedDomainsContent);
 
-			this.storageService.store(TRUSTED_DOMAINS_CONTENT_STORAGE_KEY, trustedDomainsContent, StorageScope.APPLICATION, StorageTarget.USER);
+			this.storageService.store(
+				TRUSTED_DOMAINS_CONTENT_STORAGE_KEY,
+				trustedDomainsContent,
+				StorageScope.APPLICATION,
+				StorageTarget.USER
+			);
 			this.storageService.store(
 				TRUSTED_DOMAINS_STORAGE_KEY,
 				JSON.stringify(trustedDomains) || '',
 				StorageScope.APPLICATION,
 				StorageTarget.USER
 			);
-		} catch (err) { }
+		} catch (err) {}
 
 		return Promise.resolve();
 	}

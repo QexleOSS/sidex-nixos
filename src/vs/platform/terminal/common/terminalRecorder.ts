@@ -21,7 +21,6 @@ export interface IRemoteTerminalProcessReplayEvent {
 }
 
 export class TerminalRecorder {
-
 	private _entries: RecorderEntry[];
 	private _totalDataLength: number = 0;
 
@@ -81,7 +80,7 @@ export class TerminalRecorder {
 
 	generateReplayEventSync(): IPtyHostProcessReplayEvent {
 		// normalize entries to one element per data array
-		this._entries.forEach((entry) => {
+		this._entries.forEach(entry => {
 			if (entry.data.length > 0) {
 				entry.data = [entry.data.join('')];
 			}
@@ -93,7 +92,7 @@ export class TerminalRecorder {
 				isWindowsPty: false,
 				hasRichCommandDetection: false,
 				commands: [],
-				promptInputModel: undefined,
+				promptInputModel: undefined
 			}
 		};
 	}

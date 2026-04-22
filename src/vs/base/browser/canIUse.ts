@@ -18,15 +18,11 @@ export const enum KeyboardSupport {
  */
 export const BrowserFeatures = {
 	clipboard: {
-		writeText: (
-			platform.isNative
-			|| (document.queryCommandSupported && document.queryCommandSupported('copy'))
-			|| !!(navigator && navigator.clipboard && navigator.clipboard.writeText)
-		),
-		readText: (
-			platform.isNative
-			|| !!(navigator && navigator.clipboard && navigator.clipboard.readText)
-		)
+		writeText:
+			platform.isNative ||
+			(document.queryCommandSupported && document.queryCommandSupported('copy')) ||
+			!!(navigator && navigator.clipboard && navigator.clipboard.writeText),
+		readText: platform.isNative || !!(navigator && navigator.clipboard && navigator.clipboard.readText)
 	},
 	keyboard: (() => {
 		if (platform.isNative || browser.isStandalone()) {

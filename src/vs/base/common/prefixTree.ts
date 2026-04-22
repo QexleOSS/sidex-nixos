@@ -44,17 +44,21 @@ export class WellDefinedPrefixTree<V> {
 	 * including the insertion point itself.
 	 */
 	insert(key: Iterable<string>, value: V, onNode?: (n: IPrefixTreeNode<V>) => void): void {
-		this.opNode(key, n => n._value = value, onNode);
+		this.opNode(key, n => (n._value = value), onNode);
 	}
 
 	/** Mutates a value in the prefix tree. */
 	mutate(key: Iterable<string>, mutate: (value?: V) => V): void {
-		this.opNode(key, n => n._value = mutate(n._value === unset ? undefined : n._value));
+		this.opNode(key, n => (n._value = mutate(n._value === unset ? undefined : n._value)));
 	}
 
 	/** Mutates nodes along the path in the prefix tree. */
 	mutatePath(key: Iterable<string>, mutate: (node: IPrefixTreeNode<V>) => void): void {
-		this.opNode(key, () => { }, n => mutate(n));
+		this.opNode(
+			key,
+			() => {},
+			n => mutate(n)
+		);
 	}
 
 	/** Deletes a node from the prefix tree, returning the value it contained. */

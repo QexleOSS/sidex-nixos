@@ -13,7 +13,6 @@ import { IPickerDebugItem } from '../common/loadedScriptsPicker.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 
-
 export async function showDebugSessionMenu(accessor: ServicesAccessor, selectAndStartID: string) {
 	const quickInputService = accessor.get(IQuickInputService);
 	const debugService = accessor.get(IDebugService);
@@ -26,23 +25,45 @@ export async function showDebugSessionMenu(accessor: ServicesAccessor, selectAnd
 	quickPick.matchOnLabel = quickPick.matchOnDescription = quickPick.matchOnDetail = quickPick.sortByLabel = false;
 	quickPick.placeholder = nls.localize('moveFocusedView.selectView', 'Search debug sessions by name');
 
-	const pickItems = _getPicksAndActiveItem(quickPick.value, selectAndStartID, debugService, viewsService, commandService);
+	const pickItems = _getPicksAndActiveItem(
+		quickPick.value,
+		selectAndStartID,
+		debugService,
+		viewsService,
+		commandService
+	);
 	quickPick.items = pickItems.picks;
 	quickPick.activeItems = pickItems.activeItems;
 
-	localDisposableStore.add(quickPick.onDidChangeValue(async () => {
-		quickPick.items = _getPicksAndActiveItem(quickPick.value, selectAndStartID, debugService, viewsService, commandService).picks;
-	}));
-	localDisposableStore.add(quickPick.onDidAccept(() => {
-		const selectedItem = quickPick.selectedItems[0];
-		selectedItem.accept();
-		quickPick.hide();
-		localDisposableStore.dispose();
-	}));
+	localDisposableStore.add(
+		quickPick.onDidChangeValue(async () => {
+			quickPick.items = _getPicksAndActiveItem(
+				quickPick.value,
+				selectAndStartID,
+				debugService,
+				viewsService,
+				commandService
+			).picks;
+		})
+	);
+	localDisposableStore.add(
+		quickPick.onDidAccept(() => {
+			const selectedItem = quickPick.selectedItems[0];
+			selectedItem.accept();
+			quickPick.hide();
+			localDisposableStore.dispose();
+		})
+	);
 	quickPick.show();
 }
 
-function _getPicksAndActiveItem(filter: string, selectAndStartID: string, debugService: IDebugService, viewsService: IViewsService, commandService: ICommandService): { picks: Array<IPickerDebugItem | IQuickPickSeparator>; activeItems: Array<IPickerDebugItem> } {
+function _getPicksAndActiveItem(
+	filter: string,
+	selectAndStartID: string,
+	debugService: IDebugService,
+	viewsService: IViewsService,
+	commandService: ICommandService
+): { picks: Array<IPickerDebugItem | IQuickPickSeparator>; activeItems: Array<IPickerDebugItem> } {
 	const debugConsolePicks: Array<IPickerDebugItem | IQuickPickSeparator> = [];
 	const headerSessions: IDebugSession[] = [];
 
@@ -50,13 +71,13 @@ function _getPicksAndActiveItem(filter: string, selectAndStartID: string, debugS
 	const sessions = debugService.getModel().getSessions(false);
 	const activeItems: Array<IPickerDebugItem> = [];
 
-	sessions.forEach((session) => {
+	sessions.forEach(session => {
 		if (session.compact && session.parentSession) {
 			headerSessions.push(session.parentSession);
 		}
 	});
 
-	sessions.forEach((session) => {
+	sessions.forEach(session => {
 		const isHeader = headerSessions.includes(session);
 		if (!session.parentSession) {
 			debugConsolePicks.push({ type: 'separator', label: isHeader ? session.name : undefined });
@@ -87,9 +108,8 @@ function _getPicksAndActiveItem(filter: string, selectAndStartID: string, debugS
 	return { picks: debugConsolePicks, activeItems };
 }
 
-
 function _getSessionInfo(session: IDebugSession): { label: string; description: string; ariaLabel: string } {
-	const label = (!session.configuration.name.length) ? session.name : session.configuration.name;
+	const label = !session.configuration.name.length ? session.name : session.configuration.name;
 	const parentName = session.compact ? undefined : session.parentSession?.configuration.name;
 	let description = '';
 	let ariaLabel = '';
@@ -101,7 +121,13 @@ function _getSessionInfo(session: IDebugSession): { label: string; description: 
 	return { label, description, ariaLabel };
 }
 
-function _createPick(session: IDebugSession, filter: string, debugService: IDebugService, viewsService: IViewsService, commandService: ICommandService): IPickerDebugItem | undefined {
+function _createPick(
+	session: IDebugSession,
+	filter: string,
+	debugService: IDebugService,
+	viewsService: IViewsService,
+	commandService: ICommandService
+): IPickerDebugItem | undefined {
 	const pickInfo = _getSessionInfo(session);
 	const highlights = matchesFuzzy(filter, pickInfo.label, true);
 	if (highlights) {
@@ -120,5 +146,3 @@ function _createPick(session: IDebugSession, filter: string, debugService: IDebu
 	}
 	return undefined;
 }
-
-

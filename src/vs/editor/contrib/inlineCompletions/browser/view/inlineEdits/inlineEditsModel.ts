@@ -15,13 +15,11 @@ import { InlineEditWithChanges } from './inlineEditWithChanges.js';
 /**
  * Warning: This is not per inline edit id and gets created often.
  * @deprecated TODO@hediet remove
-*/
+ */
 export class ModelPerInlineEdit {
-
 	readonly editorType: InlineCompletionEditorType;
 
 	readonly displayLocation: InlineSuggestHint | undefined;
-
 
 	/** Determines if the inline suggestion is fully in the view port */
 	readonly inViewPort: IObservable<boolean>;
@@ -31,13 +29,15 @@ export class ModelPerInlineEdit {
 	constructor(
 		private readonly _model: InlineCompletionsModel,
 		readonly inlineEdit: InlineEditWithChanges,
-		readonly tabAction: IObservable<InlineEditTabAction>,
+		readonly tabAction: IObservable<InlineEditTabAction>
 	) {
 		this.editorType = this._model.editorType;
 
 		this.displayLocation = this.inlineEdit.inlineCompletion.hint;
 
-		this.inViewPort = derived(this, reader => isSuggestionInViewport(this._model.editor, this.inlineEdit.inlineCompletion, reader));
+		this.inViewPort = derived(this, reader =>
+			isSuggestionInViewport(this._model.editor, this.inlineEdit.inlineCompletion, reader)
+		);
 		this.onDidAccept = this._model.onDidAccept;
 	}
 

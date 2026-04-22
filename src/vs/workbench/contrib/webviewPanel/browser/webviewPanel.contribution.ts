@@ -10,25 +10,33 @@ import { SyncDescriptor } from '../../../../platform/instantiation/common/descri
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
 import { EditorPaneDescriptor, IEditorPaneRegistry } from '../../../browser/editor.js';
-import { IWorkbenchContribution, WorkbenchPhase, registerWorkbenchContribution2 } from '../../../common/contributions.js';
+import {
+	IWorkbenchContribution,
+	WorkbenchPhase,
+	registerWorkbenchContribution2
+} from '../../../common/contributions.js';
 import { EditorExtensions, IEditorFactoryRegistry } from '../../../common/editor.js';
 import { EditorInput } from '../../../common/editor/editorInput.js';
 import { IEditorGroup, IEditorGroupsService } from '../../../services/editor/common/editorGroupsService.js';
-import { HideWebViewEditorFindCommand, ReloadWebviewAction, ShowWebViewEditorFindWidgetAction, WebViewEditorFindNextCommand, WebViewEditorFindPreviousCommand } from './webviewCommands.js';
+import {
+	HideWebViewEditorFindCommand,
+	ReloadWebviewAction,
+	ShowWebViewEditorFindWidgetAction,
+	WebViewEditorFindNextCommand,
+	WebViewEditorFindPreviousCommand
+} from './webviewCommands.js';
 import { WebviewEditor } from './webviewEditor.js';
 import { WebviewInput } from './webviewEditorInput.js';
 import { WebviewEditorInputSerializer } from './webviewEditorInputSerializer.js';
 import { IWebviewWorkbenchService, WebviewEditorService } from './webviewWorkbenchService.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 
-(Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane)).registerEditorPane(EditorPaneDescriptor.create(
-	WebviewEditor,
-	WebviewEditor.ID,
-	localize('webview.editor.label', "webview editor")),
-	[new SyncDescriptor(WebviewInput)]);
+Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane(
+	EditorPaneDescriptor.create(WebviewEditor, WebviewEditor.ID, localize('webview.editor.label', 'webview editor')),
+	[new SyncDescriptor(WebviewInput)]
+);
 
 class WebviewPanelContribution extends Disposable implements IWorkbenchContribution {
-
 	static readonly ID = 'workbench.contrib.webviewPanel';
 
 	constructor(
@@ -37,18 +45,17 @@ class WebviewPanelContribution extends Disposable implements IWorkbenchContribut
 	) {
 		super();
 
-		this._register(editorService.onWillOpenEditor(e => {
-			const group = editorGroupService.getGroup(e.groupId);
-			if (group) {
-				this.onEditorOpening(e.editor, group);
-			}
-		}));
+		this._register(
+			editorService.onWillOpenEditor(e => {
+				const group = editorGroupService.getGroup(e.groupId);
+				if (group) {
+					this.onEditorOpening(e.editor, group);
+				}
+			})
+		);
 	}
 
-	private onEditorOpening(
-		editor: EditorInput,
-		group: IEditorGroup
-	): void {
+	private onEditorOpening(editor: EditorInput, group: IEditorGroup): void {
 		if (!(editor instanceof WebviewInput) || editor.typeId !== WebviewInput.typeId) {
 			return;
 		}
@@ -78,7 +85,8 @@ registerWorkbenchContribution2(WebviewPanelContribution.ID, WebviewPanelContribu
 
 Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).registerEditorSerializer(
 	WebviewEditorInputSerializer.ID,
-	WebviewEditorInputSerializer);
+	WebviewEditorInputSerializer
+);
 
 registerSingleton(IWebviewWorkbenchService, WebviewEditorService, InstantiationType.Delayed);
 

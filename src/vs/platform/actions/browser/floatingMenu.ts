@@ -12,10 +12,17 @@ import { getFlatActionBarActions } from './menuEntryActionViewItem.js';
 import { IMenu, IMenuService, MenuId } from '../common/actions.js';
 import { IContextKeyService } from '../../contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../instantiation/common/instantiation.js';
-import { asCssVariable, asCssVariableWithDefault, buttonBackground, buttonForeground, contrastBorder, editorBackground, editorForeground } from '../../theme/common/colorRegistry.js';
+import {
+	asCssVariable,
+	asCssVariableWithDefault,
+	buttonBackground,
+	buttonForeground,
+	contrastBorder,
+	editorBackground,
+	editorForeground
+} from '../../theme/common/colorRegistry.js';
 
 export class FloatingClickWidget extends Widget {
-
 	private readonly _onClick = this._register(new Emitter<void>());
 	readonly onClick = this._onClick.event;
 
@@ -49,7 +56,9 @@ export class FloatingClickWidget extends Widget {
 
 export abstract class AbstractFloatingClickMenu extends Disposable {
 	private readonly renderEmitter = this._register(new Emitter<FloatingClickWidget>());
-	protected get onDidRender() { return this.renderEmitter.event; }
+	protected get onDidRender() {
+		return this.renderEmitter.event;
+	}
 	private readonly menu: IMenu;
 
 	constructor(
@@ -69,7 +78,9 @@ export abstract class AbstractFloatingClickMenu extends Disposable {
 			if (!this.isVisible()) {
 				return;
 			}
-			const actions = getFlatActionBarActions(this.menu.getActions({ renderShortTitle: true, shouldForwardArgs: true }));
+			const actions = getFlatActionBarActions(
+				this.menu.getActions({ renderShortTitle: true, shouldForwardArgs: true })
+			);
 			if (actions.length === 0) {
 				return;
 			}
@@ -96,7 +107,6 @@ export abstract class AbstractFloatingClickMenu extends Disposable {
 }
 
 export class FloatingClickMenu extends AbstractFloatingClickMenu {
-
 	constructor(
 		private readonly options: {
 			/** Element the menu should be rendered into. */

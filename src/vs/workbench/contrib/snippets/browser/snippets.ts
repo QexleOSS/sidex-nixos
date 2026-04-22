@@ -17,7 +17,6 @@ export interface ISnippetGetOptions {
 }
 
 export interface ISnippetsService {
-
 	readonly _serviceBrand: undefined;
 
 	getSnippetFiles(): Promise<Iterable<SnippetFile>>;

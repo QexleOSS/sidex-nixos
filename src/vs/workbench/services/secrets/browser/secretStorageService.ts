@@ -1,85 +1,90 @@
 /*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *  SideX - Secret storage backed by the OS keyring.
+ *
+ *  All secret reads and writes flow through the `sidex-auth` crate, which
+ *  stores values in the platform keychain (macOS Keychain, Windows
+ *  Credential Manager, libsecret on Linux) and keeps a SQLite index of
+ *  known keys. OAuth tokens and extension secrets survive cache wipes and
+ *  are protected by the OS.
  *--------------------------------------------------------------------------------------------*/
 
-import { SequencerByKey } from '../../../../base/common/async.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
 import { IEncryptionService } from '../../../../platform/encryption/common/encryptionService.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
-import { ISecretStorageProvider, ISecretStorageService, BaseSecretStorageService } from '../../../../platform/secrets/common/secrets.js';
+import { BaseSecretStorageService, ISecretStorageService } from '../../../../platform/secrets/common/secrets.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
-import { IBrowserWorkbenchEnvironmentService } from '../../environment/browser/environmentService.js';
+
+interface TauriCore {
+	invoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T>;
+}
+
+async function loadInvoke(): Promise<TauriCore['invoke'] | undefined> {
+	try {
+		const mod = await import('@tauri-apps/api/core');
+		return mod.invoke;
+	} catch {
+		return undefined;
+	}
+}
 
 export class BrowserSecretStorageService extends BaseSecretStorageService {
-
-	private readonly _secretStorageProvider: ISecretStorageProvider | undefined;
-	private readonly _embedderSequencer: SequencerByKey<string> | undefined;
+	private readonly _invokePromise: Promise<TauriCore['invoke'] | undefined>;
+	private readonly _ownChange = new Emitter<string>();
 
 	constructor(
 		@IStorageService storageService: IStorageService,
 		@IEncryptionService encryptionService: IEncryptionService,
-		@IBrowserWorkbenchEnvironmentService environmentService: IBrowserWorkbenchEnvironmentService,
 		@ILogService logService: ILogService
 	) {
-		// We don't have encryption in the browser so instead we use the
-		// in-memory base class implementation instead.
+		// The base class handles the in-memory cache and the onDidChange emitter;
+		// we override the backing IO to persist through the OS keyring.
 		super(true, storageService, encryptionService, logService);
+		this._invokePromise = loadInvoke();
 
-		if (environmentService.options?.secretStorageProvider) {
-			this._secretStorageProvider = environmentService.options.secretStorageProvider;
-			this._embedderSequencer = new SequencerByKey<string>();
+		// Forward our own change events through the base class emitter so
+		// downstream extensions see writes as soon as the keyring ack lands.
+		this._register(this._ownChange.event(key => this.onDidChangeSecretEmitter.fire(key)));
+	}
+
+	override get type(): 'native' | 'unknown' {
+		return 'native';
+	}
+
+	private async invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T | undefined> {
+		const invoke = await this._invokePromise;
+		if (!invoke) {
+			return undefined;
+		}
+		try {
+			return await invoke<T>(cmd, args);
+		} catch (error) {
+			this.logService.warn(`[sidex-auth] ${cmd} failed`, error);
+			return undefined;
 		}
 	}
 
-	override get(key: string): Promise<string | undefined> {
-		if (this._secretStorageProvider) {
-			return this._embedderSequencer!.queue(key, () => this._secretStorageProvider!.get(key));
-		}
-
-		return super.get(key);
+	override async get(key: string): Promise<string | undefined> {
+		const value = await this.invoke<string | null>('secret_get', { key });
+		return value ?? undefined;
 	}
 
-	override set(key: string, value: string): Promise<void> {
-		if (this._secretStorageProvider) {
-			return this._embedderSequencer!.queue(key, async () => {
-				await this._secretStorageProvider!.set(key, value);
-				this.onDidChangeSecretEmitter.fire(key);
-			});
-		}
-
-		return super.set(key, value);
+	override async set(key: string, value: string): Promise<void> {
+		await this.invoke<void>('secret_set', { key, value });
+		this._ownChange.fire(key);
 	}
 
-	override delete(key: string): Promise<void> {
-		if (this._secretStorageProvider) {
-			return this._embedderSequencer!.queue(key, async () => {
-				await this._secretStorageProvider!.delete(key);
-				this.onDidChangeSecretEmitter.fire(key);
-			});
-		}
-
-		return super.delete(key);
+	override async delete(key: string): Promise<void> {
+		await this.invoke<void>('secret_delete', { key });
+		this._ownChange.fire(key);
 	}
 
-	override get type() {
-		if (this._secretStorageProvider) {
-			return this._secretStorageProvider.type;
-		}
-
-		return super.type;
+	override async keys(): Promise<string[]> {
+		return (await this.invoke<string[]>('secret_keys')) ?? [];
 	}
 
-	override keys(): Promise<string[]> {
-		if (this._secretStorageProvider) {
-			if (!this._secretStorageProvider.keys) {
-				throw new Error('Secret storage provider does not support keys() method');
-			}
-			return this._secretStorageProvider!.keys();
-		}
-
-		return super.keys();
-
+	get onDidChangeSecret(): Event<string> {
+		return this.onDidChangeSecretEmitter.event;
 	}
 }
 

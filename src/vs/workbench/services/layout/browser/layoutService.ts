@@ -11,7 +11,14 @@ import { IDimension } from '../../../../base/browser/dom.js';
 import { Direction, IViewSize } from '../../../../base/browser/ui/grid/grid.js';
 import { isMacintosh, isNative, isWeb } from '../../../../base/common/platform.js';
 import { isAuxiliaryWindow } from '../../../../base/browser/window.js';
-import { CustomTitleBarVisibility, TitleBarSetting, getMenuBarVisibility, hasCustomTitlebar, hasNativeMenu, hasNativeTitlebar } from '../../../../platform/window/common/window.js';
+import {
+	CustomTitleBarVisibility,
+	TitleBarSetting,
+	getMenuBarVisibility,
+	hasCustomTitlebar,
+	hasNativeMenu,
+	hasNativeTitlebar
+} from '../../../../platform/window/common/window.js';
 import { isFullscreen, isWCOEnabled } from '../../../../base/browser/browser.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IDisposable } from '../../../../base/common/lifecycle.js';
@@ -38,7 +45,7 @@ export const enum ZenModeSettings {
 	CENTER_LAYOUT = 'zenMode.centerLayout',
 	FULLSCREEN = 'zenMode.fullScreen',
 	RESTORE = 'zenMode.restore',
-	SILENT_NOTIFICATIONS = 'zenMode.silentNotifications',
+	SILENT_NOTIFICATIONS = 'zenMode.silentNotifications'
 }
 
 export const enum LayoutSettings {
@@ -92,11 +99,16 @@ export type PanelAlignment = 'left' | 'center' | 'right' | 'justify';
 
 export function positionToString(position: Position): string {
 	switch (position) {
-		case Position.LEFT: return 'left';
-		case Position.RIGHT: return 'right';
-		case Position.BOTTOM: return 'bottom';
-		case Position.TOP: return 'top';
-		default: return 'bottom';
+		case Position.LEFT:
+			return 'left';
+		case Position.RIGHT:
+			return 'right';
+		case Position.BOTTOM:
+			return 'bottom';
+		case Position.TOP:
+			return 'top';
+		default:
+			return 'bottom';
 	}
 }
 
@@ -113,10 +125,14 @@ export function positionFromString(str: string): Position {
 
 function partOpensMaximizedSettingToString(setting: PartOpensMaximizedOptions): string {
 	switch (setting) {
-		case PartOpensMaximizedOptions.ALWAYS: return 'always';
-		case PartOpensMaximizedOptions.NEVER: return 'never';
-		case PartOpensMaximizedOptions.REMEMBER_LAST: return 'preserve';
-		default: return 'preserve';
+		case PartOpensMaximizedOptions.ALWAYS:
+			return 'always';
+		case PartOpensMaximizedOptions.NEVER:
+			return 'never';
+		case PartOpensMaximizedOptions.REMEMBER_LAST:
+			return 'preserve';
+		default:
+			return 'preserve';
 	}
 }
 
@@ -134,9 +150,7 @@ export type MULTI_WINDOW_PARTS = Parts.EDITOR_PART | Parts.STATUSBAR_PART | Part
 export type SINGLE_WINDOW_PARTS = Exclude<Parts, MULTI_WINDOW_PARTS>;
 
 export function isMultiWindowPart(part: Parts): part is MULTI_WINDOW_PARTS {
-	return part === Parts.EDITOR_PART ||
-		part === Parts.STATUSBAR_PART ||
-		part === Parts.TITLEBAR_PART;
+	return part === Parts.EDITOR_PART || part === Parts.STATUSBAR_PART || part === Parts.TITLEBAR_PART;
 }
 
 export interface IPartVisibilityChangeEvent {
@@ -145,7 +159,6 @@ export interface IPartVisibilityChangeEvent {
 }
 
 export interface IWorkbenchLayoutService extends ILayoutService {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -364,7 +377,11 @@ export interface IWorkbenchLayoutService extends ILayoutService {
 	getVisibleNeighborPart(part: Parts, direction: Direction): Parts | undefined;
 }
 
-export function shouldShowCustomTitleBar(configurationService: IConfigurationService, window: Window, menuBarToggled?: boolean): boolean {
+export function shouldShowCustomTitleBar(
+	configurationService: IConfigurationService,
+	window: Window,
+	menuBarToggled?: boolean
+): boolean {
 	if (!hasCustomTitlebar(configurationService)) {
 		return false;
 	}
@@ -373,8 +390,13 @@ export function shouldShowCustomTitleBar(configurationService: IConfigurationSer
 	const nativeTitleBarEnabled = hasNativeTitlebar(configurationService);
 
 	if (!isWeb) {
-		const showCustomTitleBar = configurationService.getValue<CustomTitleBarVisibility>(TitleBarSetting.CUSTOM_TITLE_BAR_VISIBILITY);
-		if (showCustomTitleBar === CustomTitleBarVisibility.NEVER && nativeTitleBarEnabled || showCustomTitleBar === CustomTitleBarVisibility.WINDOWED && inFullscreen) {
+		const showCustomTitleBar = configurationService.getValue<CustomTitleBarVisibility>(
+			TitleBarSetting.CUSTOM_TITLE_BAR_VISIBILITY
+		);
+		if (
+			(showCustomTitleBar === CustomTitleBarVisibility.NEVER && nativeTitleBarEnabled) ||
+			(showCustomTitleBar === CustomTitleBarVisibility.WINDOWED && inFullscreen)
+		) {
 			return false;
 		}
 	}
@@ -421,7 +443,6 @@ export function shouldShowCustomTitleBar(configurationService: IConfigurationSer
 }
 
 function isTitleBarEmpty(configurationService: IConfigurationService): boolean {
-
 	// with the command center enabled, we should always show
 	if (configurationService.getValue<boolean>(LayoutSettings.COMMAND_CENTER)) {
 		return false;
@@ -434,9 +455,14 @@ function isTitleBarEmpty(configurationService: IConfigurationService): boolean {
 	}
 
 	// with the editor actions on top, we should always show
-	const editorActionsLocation = configurationService.getValue<EditorActionsLocation>(LayoutSettings.EDITOR_ACTIONS_LOCATION);
+	const editorActionsLocation = configurationService.getValue<EditorActionsLocation>(
+		LayoutSettings.EDITOR_ACTIONS_LOCATION
+	);
 	const editorTabsMode = configurationService.getValue<EditorTabsMode>(LayoutSettings.EDITOR_TABS_MODE);
-	if (editorActionsLocation === EditorActionsLocation.TITLEBAR || editorActionsLocation === EditorActionsLocation.DEFAULT && editorTabsMode === EditorTabsMode.NONE) {
+	if (
+		editorActionsLocation === EditorActionsLocation.TITLEBAR ||
+		(editorActionsLocation === EditorActionsLocation.DEFAULT && editorTabsMode === EditorTabsMode.NONE)
+	) {
 		return false;
 	}
 

@@ -8,7 +8,11 @@ import { alert, status } from '../../../base/browser/ui/aria/aria.js';
 import { mainWindow } from '../../../base/browser/window.js';
 import { Emitter, Event } from '../../../base/common/event.js';
 import { Disposable } from '../../../base/common/lifecycle.js';
-import { AccessibilitySupport, CONTEXT_ACCESSIBILITY_MODE_ENABLED, IAccessibilityService } from '../common/accessibility.js';
+import {
+	AccessibilitySupport,
+	CONTEXT_ACCESSIBILITY_MODE_ENABLED,
+	IAccessibilityService
+} from '../common/accessibility.js';
 import { IConfigurationService } from '../../configuration/common/configuration.js';
 import { IContextKey, IContextKeyService } from '../../contextkey/common/contextkey.js';
 import { ILayoutService } from '../../layout/browser/layoutService.js';
@@ -40,20 +44,22 @@ export class AccessibilityService extends Disposable implements IAccessibilitySe
 		this._accessibilityModeEnabledContext = CONTEXT_ACCESSIBILITY_MODE_ENABLED.bindTo(this._contextKeyService);
 
 		const updateContextKey = () => this._accessibilityModeEnabledContext.set(this.isScreenReaderOptimized());
-		this._register(this._configurationService.onDidChangeConfiguration(e => {
-			if (e.affectsConfiguration('editor.accessibilitySupport')) {
-				updateContextKey();
-				this._onDidChangeScreenReaderOptimized.fire();
-			}
-			if (e.affectsConfiguration('workbench.reduceMotion')) {
-				this._configMotionReduced = this._configurationService.getValue('workbench.reduceMotion');
-				this._onDidChangeReducedMotion.fire();
-			}
-			if (e.affectsConfiguration('workbench.reduceTransparency')) {
-				this._configTransparencyReduced = this._configurationService.getValue('workbench.reduceTransparency');
-				this._onDidChangeReducedTransparency.fire();
-			}
-		}));
+		this._register(
+			this._configurationService.onDidChangeConfiguration(e => {
+				if (e.affectsConfiguration('editor.accessibilitySupport')) {
+					updateContextKey();
+					this._onDidChangeScreenReaderOptimized.fire();
+				}
+				if (e.affectsConfiguration('workbench.reduceMotion')) {
+					this._configMotionReduced = this._configurationService.getValue('workbench.reduceMotion');
+					this._onDidChangeReducedMotion.fire();
+				}
+				if (e.affectsConfiguration('workbench.reduceTransparency')) {
+					this._configTransparencyReduced = this._configurationService.getValue('workbench.reduceTransparency');
+					this._onDidChangeReducedTransparency.fire();
+				}
+			})
+		);
 		updateContextKey();
 		this._register(this.onDidChangeScreenReaderOptimized(() => updateContextKey()));
 
@@ -63,7 +69,9 @@ export class AccessibilityService extends Disposable implements IAccessibilitySe
 
 		const reduceTransparencyMatcher = mainWindow.matchMedia(`(prefers-reduced-transparency: reduce)`);
 		this._systemTransparencyReduced = reduceTransparencyMatcher.matches;
-		this._configTransparencyReduced = this._configurationService.getValue<'auto' | 'on' | 'off'>('workbench.reduceTransparency');
+		this._configTransparencyReduced = this._configurationService.getValue<'auto' | 'on' | 'off'>(
+			'workbench.reduceTransparency'
+		);
 
 		this._linkUnderlinesEnabled = this._configurationService.getValue('accessibility.underlineLinks');
 
@@ -73,13 +81,14 @@ export class AccessibilityService extends Disposable implements IAccessibilitySe
 	}
 
 	private initReducedMotionListeners(reduceMotionMatcher: MediaQueryList) {
-
-		this._register(addDisposableListener(reduceMotionMatcher, 'change', () => {
-			this._systemMotionReduced = reduceMotionMatcher.matches;
-			if (this._configMotionReduced === 'auto') {
-				this._onDidChangeReducedMotion.fire();
-			}
-		}));
+		this._register(
+			addDisposableListener(reduceMotionMatcher, 'change', () => {
+				this._systemMotionReduced = reduceMotionMatcher.matches;
+				if (this._configMotionReduced === 'auto') {
+					this._onDidChangeReducedMotion.fire();
+				}
+			})
+		);
 
 		const updateRootClasses = () => {
 			const reduce = this.isMotionReduced();
@@ -92,13 +101,14 @@ export class AccessibilityService extends Disposable implements IAccessibilitySe
 	}
 
 	private initReducedTransparencyListeners(reduceTransparencyMatcher: MediaQueryList) {
-
-		this._register(addDisposableListener(reduceTransparencyMatcher, 'change', () => {
-			this._systemTransparencyReduced = reduceTransparencyMatcher.matches;
-			if (this._configTransparencyReduced === 'auto') {
-				this._onDidChangeReducedTransparency.fire();
-			}
-		}));
+		this._register(
+			addDisposableListener(reduceTransparencyMatcher, 'change', () => {
+				this._systemTransparencyReduced = reduceTransparencyMatcher.matches;
+				if (this._configTransparencyReduced === 'auto') {
+					this._onDidChangeReducedTransparency.fire();
+				}
+			})
+		);
 
 		const updateRootClasses = () => {
 			const reduce = this.isTransparencyReduced();
@@ -110,13 +120,15 @@ export class AccessibilityService extends Disposable implements IAccessibilitySe
 	}
 
 	private initLinkUnderlineListeners() {
-		this._register(this._configurationService.onDidChangeConfiguration(e => {
-			if (e.affectsConfiguration('accessibility.underlineLinks')) {
-				const linkUnderlinesEnabled = this._configurationService.getValue<boolean>('accessibility.underlineLinks');
-				this._linkUnderlinesEnabled = linkUnderlinesEnabled;
-				this._onDidChangeLinkUnderline.fire();
-			}
-		}));
+		this._register(
+			this._configurationService.onDidChangeConfiguration(e => {
+				if (e.affectsConfiguration('accessibility.underlineLinks')) {
+					const linkUnderlinesEnabled = this._configurationService.getValue<boolean>('accessibility.underlineLinks');
+					this._linkUnderlinesEnabled = linkUnderlinesEnabled;
+					this._onDidChangeLinkUnderline.fire();
+				}
+			})
+		);
 
 		const updateLinkUnderlineClasses = () => {
 			const underlineLinks = this._linkUnderlinesEnabled;
@@ -146,14 +158,16 @@ export class AccessibilityService extends Disposable implements IAccessibilitySe
 
 		// Resolve the setting explicitly in scope precedence order to avoid relying on
 		// resource-dependent resolution in this global service.
-		return inspectedValue.policyValue
-			?? inspectedValue.memoryValue
-			?? inspectedValue.workspaceFolderValue
-			?? inspectedValue.workspaceValue
-			?? inspectedValue.userValue
-			?? inspectedValue.applicationValue
-			?? inspectedValue.defaultValue
-			?? 'auto';
+		return (
+			inspectedValue.policyValue ??
+			inspectedValue.memoryValue ??
+			inspectedValue.workspaceFolderValue ??
+			inspectedValue.workspaceValue ??
+			inspectedValue.userValue ??
+			inspectedValue.applicationValue ??
+			inspectedValue.defaultValue ??
+			'auto'
+		);
 	}
 
 	get onDidChangeReducedMotion(): Event<void> {

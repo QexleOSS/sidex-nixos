@@ -9,5 +9,5 @@ import { ILinesDiffComputer } from './linesDiffComputer.js';
 
 export const linesDiffComputers = {
 	getLegacy: () => new LegacyLinesDiffComputer(),
-	getDefault: () => new DefaultLinesDiffComputer(),
+	getDefault: () => new DefaultLinesDiffComputer()
 } satisfies Record<string, () => ILinesDiffComputer>;

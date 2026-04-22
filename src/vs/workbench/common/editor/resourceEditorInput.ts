@@ -3,10 +3,20 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Verbosity, EditorInputWithPreferredResource, EditorInputCapabilities, IFileLimitedEditorInputOptions } from '../editor.js';
+import {
+	Verbosity,
+	EditorInputWithPreferredResource,
+	EditorInputCapabilities,
+	IFileLimitedEditorInputOptions
+} from '../editor.js';
 import { EditorInput } from './editorInput.js';
 import { URI } from '../../../base/common/uri.js';
-import { ByteSize, IFileReadLimits, IFileService, getLargeFileConfirmationLimit } from '../../../platform/files/common/files.js';
+import {
+	ByteSize,
+	IFileReadLimits,
+	IFileService,
+	getLargeFileConfirmationLimit
+} from '../../../platform/files/common/files.js';
 import { ILabelService } from '../../../platform/label/common/label.js';
 import { dirname, isEqual } from '../../../base/common/resources.js';
 import { IFilesConfigurationService } from '../../services/filesConfiguration/common/filesConfigurationService.js';
@@ -19,7 +29,6 @@ import { ICustomEditorLabelService } from '../../services/editor/common/customEd
  * The base class for all editor inputs that open resources.
  */
 export abstract class AbstractResourceEditorInput extends EditorInput implements EditorInputWithPreferredResource {
-
 	override get capabilities(): EditorInputCapabilities {
 		let capabilities = EditorInputCapabilities.CanSplitInGroup;
 
@@ -39,7 +48,9 @@ export abstract class AbstractResourceEditorInput extends EditorInput implements
 	}
 
 	private _preferredResource: URI;
-	get preferredResource(): URI { return this._preferredResource; }
+	get preferredResource(): URI {
+		return this._preferredResource;
+	}
 
 	constructor(
 		readonly resource: URI,
@@ -47,7 +58,8 @@ export abstract class AbstractResourceEditorInput extends EditorInput implements
 		@ILabelService protected readonly labelService: ILabelService,
 		@IFileService protected readonly fileService: IFileService,
 		@IFilesConfigurationService protected readonly filesConfigurationService: IFilesConfigurationService,
-		@ITextResourceConfigurationService protected readonly textResourceConfigurationService: ITextResourceConfigurationService,
+		@ITextResourceConfigurationService
+		protected readonly textResourceConfigurationService: ITextResourceConfigurationService,
 		@ICustomEditorLabelService protected readonly customEditorLabelService: ICustomEditorLabelService
 	) {
 		super();
@@ -58,7 +70,6 @@ export abstract class AbstractResourceEditorInput extends EditorInput implements
 	}
 
 	private registerListeners(): void {
-
 		// Clear our labels on certain label related events
 		this._register(this.labelService.onDidChangeFormatters(e => this.onLabelEvent(e.scheme)));
 		this._register(this.fileService.onDidChangeFileSystemProviderRegistrations(e => this.onLabelEvent(e.scheme)));
@@ -74,7 +85,6 @@ export abstract class AbstractResourceEditorInput extends EditorInput implements
 	}
 
 	private updateLabel(): void {
-
 		// Clear any cached labels from before
 		this._name = undefined;
 		this._shortDescription = undefined;
@@ -99,7 +109,9 @@ export abstract class AbstractResourceEditorInput extends EditorInput implements
 	private _name: string | undefined = undefined;
 	override getName(): string {
 		if (typeof this._name !== 'string') {
-			this._name = this.customEditorLabelService.getName(this._preferredResource) ?? this.labelService.getUriBasenameLabel(this._preferredResource);
+			this._name =
+				this.customEditorLabelService.getName(this._preferredResource) ??
+				this.labelService.getUriBasenameLabel(this._preferredResource);
 		}
 
 		return this._name;
@@ -200,7 +212,11 @@ export abstract class AbstractResourceEditorInput extends EditorInput implements
 		const defaultSizeLimit = getLargeFileConfirmationLimit(this.resource);
 		let configuredSizeLimit: number | undefined;
 
-		const configuredSizeLimitMb = this.textResourceConfigurationService.inspect<number>(this.resource, null, 'workbench.editorLargeFileConfirmation');
+		const configuredSizeLimitMb = this.textResourceConfigurationService.inspect<number>(
+			this.resource,
+			null,
+			'workbench.editorLargeFileConfirmation'
+		);
 		if (isConfigured(configuredSizeLimitMb)) {
 			configuredSizeLimit = configuredSizeLimitMb.value * ByteSize.MB; // normalize to MB
 		}

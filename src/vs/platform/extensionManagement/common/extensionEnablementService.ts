@@ -6,30 +6,49 @@
 import { Emitter, Event } from '../../../base/common/event.js';
 import { Disposable } from '../../../base/common/lifecycle.js';
 import { isUndefinedOrNull } from '../../../base/common/types.js';
-import { DISABLED_EXTENSIONS_STORAGE_PATH, IExtensionIdentifier, IExtensionManagementService, IGlobalExtensionEnablementService, InstallOperation } from './extensionManagement.js';
+import {
+	DISABLED_EXTENSIONS_STORAGE_PATH,
+	IExtensionIdentifier,
+	IExtensionManagementService,
+	IGlobalExtensionEnablementService,
+	InstallOperation
+} from './extensionManagement.js';
 import { areSameExtensions } from './extensionManagementUtil.js';
-import { IProfileStorageValueChangeEvent, IStorageService, StorageScope, StorageTarget } from '../../storage/common/storage.js';
+import {
+	IProfileStorageValueChangeEvent,
+	IStorageService,
+	StorageScope,
+	StorageTarget
+} from '../../storage/common/storage.js';
 
 export class GlobalExtensionEnablementService extends Disposable implements IGlobalExtensionEnablementService {
-
 	declare readonly _serviceBrand: undefined;
 
-	private _onDidChangeEnablement = this._register(new Emitter<{ readonly extensions: IExtensionIdentifier[]; readonly source?: string }>());
-	readonly onDidChangeEnablement: Event<{ readonly extensions: IExtensionIdentifier[]; readonly source?: string }> = this._onDidChangeEnablement.event;
+	private _onDidChangeEnablement = this._register(
+		new Emitter<{ readonly extensions: IExtensionIdentifier[]; readonly source?: string }>()
+	);
+	readonly onDidChangeEnablement: Event<{ readonly extensions: IExtensionIdentifier[]; readonly source?: string }> =
+		this._onDidChangeEnablement.event;
 	private readonly storageManager: StorageManager;
 
 	constructor(
 		@IStorageService storageService: IStorageService,
-		@IExtensionManagementService extensionManagementService: IExtensionManagementService,
+		@IExtensionManagementService extensionManagementService: IExtensionManagementService
 	) {
 		super();
 		this.storageManager = this._register(new StorageManager(storageService));
-		this._register(this.storageManager.onDidChange(extensions => this._onDidChangeEnablement.fire({ extensions, source: 'storage' })));
-		this._register(extensionManagementService.onDidInstallExtensions(e => e.forEach(({ local, operation }) => {
-			if (local && operation === InstallOperation.Migrate) {
-				this._removeFromDisabledExtensions(local.identifier); /* Reset migrated extensions */
-			}
-		})));
+		this._register(
+			this.storageManager.onDidChange(extensions => this._onDidChangeEnablement.fire({ extensions, source: 'storage' }))
+		);
+		this._register(
+			extensionManagementService.onDidInstallExtensions(e =>
+				e.forEach(({ local, operation }) => {
+					if (local && operation === InstallOperation.Migrate) {
+						this._removeFromDisabledExtensions(local.identifier); /* Reset migrated extensions */
+					}
+				})
+			)
+		);
 	}
 
 	async enableExtension(extension: IExtensionIdentifier, source?: string): Promise<boolean> {
@@ -90,11 +109,9 @@ export class GlobalExtensionEnablementService extends Disposable implements IGlo
 	private _setExtensions(storageId: string, extensions: IExtensionIdentifier[]): void {
 		this.storageManager.set(storageId, extensions, StorageScope.PROFILE);
 	}
-
 }
 
 export class StorageManager extends Disposable {
-
 	private storage: { [key: string]: string } = Object.create(null);
 
 	private _onDidChange: Emitter<IExtensionIdentifier[]> = this._register(new Emitter<IExtensionIdentifier[]>());
@@ -102,7 +119,9 @@ export class StorageManager extends Disposable {
 
 	constructor(private storageService: IStorageService) {
 		super();
-		this._register(storageService.onDidChangeValue(StorageScope.PROFILE, undefined, this._store)(e => this.onDidStorageChange(e)));
+		this._register(
+			storageService.onDidChangeValue(StorageScope.PROFILE, undefined, this._store)(e => this.onDidStorageChange(e))
+		);
 	}
 
 	get(key: string, scope: StorageScope): IExtensionIdentifier[] {
@@ -141,7 +160,9 @@ export class StorageManager extends Disposable {
 				delete this.storage[storageChangeEvent.key];
 				const newValues = this.get(storageChangeEvent.key, storageChangeEvent.scope);
 				const added = oldValues.filter(oldValue => !newValues.some(newValue => areSameExtensions(oldValue, newValue)));
-				const removed = newValues.filter(newValue => !oldValues.some(oldValue => areSameExtensions(oldValue, newValue)));
+				const removed = newValues.filter(
+					newValue => !oldValues.some(oldValue => areSameExtensions(oldValue, newValue))
+				);
 				if (added.length || removed.length) {
 					this._onDidChange.fire([...added, ...removed]);
 				}

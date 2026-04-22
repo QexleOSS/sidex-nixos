@@ -40,7 +40,6 @@ class InlayHintsHoverAnchor extends HoverForeignElementAnchor {
 }
 
 export class InlayHintsHover extends MarkdownHoverParticipant implements IEditorHoverParticipant<MarkdownHover> {
-
 	public override readonly hoverOrdinal: number = 6;
 
 	constructor(
@@ -51,9 +50,17 @@ export class InlayHintsHover extends MarkdownHoverParticipant implements IEditor
 		@IConfigurationService configurationService: IConfigurationService,
 		@ITextModelService private readonly _resolverService: ITextModelService,
 		@ILanguageFeaturesService languageFeaturesService: ILanguageFeaturesService,
-		@ICommandService commandService: ICommandService,
+		@ICommandService commandService: ICommandService
 	) {
-		super(editor, markdownRendererService, configurationService, languageFeaturesService, keybindingService, hoverService, commandService);
+		super(
+			editor,
+			markdownRendererService,
+			configurationService,
+			languageFeaturesService,
+			keybindingService,
+			hoverService,
+			commandService
+		);
 	}
 
 	suggestHoverAnchor(mouseEvent: IEditorMouseEvent): HoverAnchor | null {
@@ -65,7 +72,12 @@ export class InlayHintsHover extends MarkdownHoverParticipant implements IEditor
 			return null;
 		}
 		const options = mouseEvent.target.detail.injectedText?.options;
-		if (!(options instanceof ModelDecorationInjectedTextOptions && options.attachedData instanceof RenderedInlayHintLabelPart)) {
+		if (
+			!(
+				options instanceof ModelDecorationInjectedTextOptions &&
+				options.attachedData instanceof RenderedInlayHintLabelPart
+			)
+		) {
 			return null;
 		}
 		return new InlayHintsHoverAnchor(options.attachedData, this, mouseEvent.event.posx, mouseEvent.event.posy);
@@ -75,13 +87,17 @@ export class InlayHintsHover extends MarkdownHoverParticipant implements IEditor
 		return [];
 	}
 
-	override computeAsync(anchor: HoverAnchor, _lineDecorations: IModelDecoration[], source: HoverStartSource, token: CancellationToken): AsyncIterableProducer<MarkdownHover> {
+	override computeAsync(
+		anchor: HoverAnchor,
+		_lineDecorations: IModelDecoration[],
+		source: HoverStartSource,
+		token: CancellationToken
+	): AsyncIterableProducer<MarkdownHover> {
 		if (!(anchor instanceof InlayHintsHoverAnchor)) {
 			return AsyncIterableProducer.EMPTY;
 		}
 
 		return new AsyncIterableProducer<MarkdownHover>(async executor => {
-
 			const { part } = anchor;
 			await part.item.resolve(token);
 
@@ -101,7 +117,15 @@ export class InlayHintsHover extends MarkdownHoverParticipant implements IEditor
 			}
 			// (1.2) Inlay dbl-click gesture
 			if (isNonEmptyArray(part.item.hint.textEdits)) {
-				executor.emitOne(new MarkdownHover(this, anchor.range, [new MarkdownString().appendText(localize('hint.dbl', "Double-click to insert"))], false, 10001));
+				executor.emitOne(
+					new MarkdownHover(
+						this,
+						anchor.range,
+						[new MarkdownString().appendText(localize('hint.dbl', 'Double-click to insert'))],
+						false,
+						10001
+					)
+				);
 			}
 
 			// (2) Inlay Label Part Tooltip
@@ -121,24 +145,28 @@ export class InlayHintsHover extends MarkdownHoverParticipant implements IEditor
 				const useMetaKey = this._editor.getOption(EditorOption.multiCursorModifier) === 'altKey';
 				const kb = useMetaKey
 					? platform.isMacintosh
-						? localize('links.navigate.kb.meta.mac', "cmd + click")
-						: localize('links.navigate.kb.meta', "ctrl + click")
+						? localize('links.navigate.kb.meta.mac', 'cmd + click')
+						: localize('links.navigate.kb.meta', 'ctrl + click')
 					: platform.isMacintosh
-						? localize('links.navigate.kb.alt.mac', "option + click")
-						: localize('links.navigate.kb.alt', "alt + click");
+						? localize('links.navigate.kb.alt.mac', 'option + click')
+						: localize('links.navigate.kb.alt', 'alt + click');
 
 				if (part.part.location && part.part.command) {
-					linkHint = new MarkdownString().appendText(localize('hint.defAndCommand', 'Go to Definition ({0}), right click for more', kb));
+					linkHint = new MarkdownString().appendText(
+						localize('hint.defAndCommand', 'Go to Definition ({0}), right click for more', kb)
+					);
 				} else if (part.part.location) {
 					linkHint = new MarkdownString().appendText(localize('hint.def', 'Go to Definition ({0})', kb));
 				} else if (part.part.command) {
-					linkHint = new MarkdownString(`[${localize('hint.cmd', "Execute Command")}](${asCommandLink(part.part.command)} "${part.part.command.title}") (${kb})`, { isTrusted: true });
+					linkHint = new MarkdownString(
+						`[${localize('hint.cmd', 'Execute Command')}](${asCommandLink(part.part.command)} "${part.part.command.title}") (${kb})`,
+						{ isTrusted: true }
+					);
 				}
 				if (linkHint) {
 					executor.emitOne(new MarkdownHover(this, anchor.range, [linkHint], false, 10000));
 				}
 			}
-
 
 			// (3) Inlay Label Part Location tooltip
 			const iterable = this._resolveInlayHintLabelPartHover(part, token);
@@ -148,7 +176,10 @@ export class InlayHintsHover extends MarkdownHoverParticipant implements IEditor
 		});
 	}
 
-	private async *_resolveInlayHintLabelPartHover(part: RenderedInlayHintLabelPart, token: CancellationToken): AsyncIterable<MarkdownHover> {
+	private async *_resolveInlayHintLabelPartHover(
+		part: RenderedInlayHintLabelPart,
+		token: CancellationToken
+	): AsyncIterable<MarkdownHover> {
 		if (!part.part.location) {
 			return;
 		}
@@ -161,7 +192,12 @@ export class InlayHintsHover extends MarkdownHoverParticipant implements IEditor
 				return;
 			}
 
-			for await (const item of getHoverProviderResultsAsAsyncIterable(this._languageFeaturesService.hoverProvider, model, new Position(range.startLineNumber, range.startColumn), token)) {
+			for await (const item of getHoverProviderResultsAsAsyncIterable(
+				this._languageFeaturesService.hoverProvider,
+				model,
+				new Position(range.startLineNumber, range.startColumn),
+				token
+			)) {
 				if (!isEmptyMarkdownString(item.hover.contents)) {
 					yield new MarkdownHover(this, part.item.anchor.range, item.hover.contents, false, 2 + item.ordinal);
 				}

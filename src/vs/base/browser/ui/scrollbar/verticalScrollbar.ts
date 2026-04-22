@@ -11,10 +11,7 @@ import { ScrollbarState } from './scrollbarState.js';
 import { Codicon } from '../../../common/codicons.js';
 import { INewScrollPosition, Scrollable, ScrollbarVisibility, ScrollEvent } from '../../../common/scrollable.js';
 
-
-
 export class VerticalScrollbar extends AbstractScrollbar {
-
 	constructor(scrollable: Scrollable, options: ScrollableElementResolvedOptions, host: ScrollbarHost) {
 		const scrollDimensions = scrollable.getScrollDimensions();
 		const scrollPosition = scrollable.getCurrentScrollPosition();
@@ -22,8 +19,8 @@ export class VerticalScrollbar extends AbstractScrollbar {
 			lazyRender: options.lazyRender,
 			host: host,
 			scrollbarState: new ScrollbarState(
-				(options.verticalHasArrows ? options.arrowSize : 0),
-				(options.vertical === ScrollbarVisibility.Hidden ? 0 : options.verticalScrollbarSize),
+				options.verticalHasArrows ? options.arrowSize : 0,
+				options.vertical === ScrollbarVisibility.Hidden ? 0 : options.verticalScrollbarSize,
 				// give priority to vertical scroll bar over horizontal and let it scroll all the way to the bottom
 				0,
 				scrollDimensions.height,
@@ -49,7 +46,7 @@ export class VerticalScrollbar extends AbstractScrollbar {
 				right: undefined,
 				bgWidth: options.verticalScrollbarSize,
 				bgHeight: options.arrowSize,
-				onActivate: () => this._host.onMouseWheel(new StandardWheelEvent(null, 0, 1)),
+				onActivate: () => this._host.onMouseWheel(new StandardWheelEvent(null, 0, 1))
 			});
 
 			this._createArrow({
@@ -61,11 +58,16 @@ export class VerticalScrollbar extends AbstractScrollbar {
 				right: undefined,
 				bgWidth: options.verticalScrollbarSize,
 				bgHeight: options.arrowSize,
-				onActivate: () => this._host.onMouseWheel(new StandardWheelEvent(null, 0, -1)),
+				onActivate: () => this._host.onMouseWheel(new StandardWheelEvent(null, 0, -1))
 			});
 		}
 
-		this._createSlider(0, Math.floor((options.verticalScrollbarSize - options.verticalSliderSize) / 2), options.verticalSliderSize, undefined);
+		this._createSlider(
+			0,
+			Math.floor((options.verticalScrollbarSize - options.verticalSliderSize) / 2),
+			options.verticalSliderSize,
+			undefined
+		);
 	}
 
 	protected _updateSlider(sliderSize: number, sliderPosition: number): void {
@@ -114,5 +116,4 @@ export class VerticalScrollbar extends AbstractScrollbar {
 		this._visibilityController.setVisibility(options.vertical);
 		this._scrollByPage = options.scrollByPage;
 	}
-
 }

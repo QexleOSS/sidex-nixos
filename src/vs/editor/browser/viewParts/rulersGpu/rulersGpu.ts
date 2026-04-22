@@ -20,7 +20,6 @@ import { autorun, type IReader } from '../../../../base/common/observable.js';
  * at a time.
  */
 export class RulersGpu extends ViewPart {
-
 	private readonly _gpuShapes: IObjectCollectionBufferEntry<RectangleRendererEntrySpec>[] = [];
 
 	constructor(
@@ -56,7 +55,9 @@ export class RulersGpu extends ViewPart {
 		for (let i = 0, len = rulers.length; i < len; i++) {
 			const ruler = rulers[i];
 			const shape = this._gpuShapes[i];
-			const color = ruler.color ? Color.fromHex(ruler.color) : this._context.theme.getColor(editorRuler) ?? Color.white;
+			const color = ruler.color
+				? Color.fromHex(ruler.color)
+				: (this._context.theme.getColor(editorRuler) ?? Color.white);
 			const rulerData: Parameters<RectangleRenderer['register']> = [
 				ruler.column * typicalHalfwidthCharacterWidth * devicePixelRatio,
 				0,
@@ -65,7 +66,7 @@ export class RulersGpu extends ViewPart {
 				color.rgba.r / 255,
 				color.rgba.g / 255,
 				color.rgba.b / 255,
-				color.rgba.a,
+				color.rgba.a
 			];
 			if (!shape) {
 				this._gpuShapes[i] = this._viewGpuContext.rectangleRenderer.register(...rulerData);

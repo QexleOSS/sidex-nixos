@@ -33,7 +33,8 @@ export function toPosixPath(osPath: string) {
 	if (osPath.indexOf('/') === -1) {
 		osPath = toSlashes(osPath);
 	}
-	if (/^[a-zA-Z]:(\/|$)/.test(osPath)) { // starts with a drive letter
+	if (/^[a-zA-Z]:(\/|$)/.test(osPath)) {
+		// starts with a drive letter
 		osPath = '/' + osPath;
 	}
 	return osPath;
@@ -67,7 +68,8 @@ export function getRoot(path: string, sep: string = posix.sep): string {
 					pos += 1;
 					for (; pos < len; pos++) {
 						if (isPathSeparator(path.charCodeAt(pos))) {
-							return path.slice(0, pos + 1) // consume this separator
+							return path
+								.slice(0, pos + 1) // consume this separator
 								.replace(/[\\/]/g, sep);
 						}
 					}
@@ -78,7 +80,6 @@ export function getRoot(path: string, sep: string = posix.sep): string {
 		// /user/far
 		// ^
 		return sep;
-
 	} else if (isWindowsDriveLetter(firstLetter)) {
 		// check for windows drive letter c:\ or c:
 
@@ -207,7 +208,7 @@ export function isValidBasename(name: string | null | undefined, isWindowsOS: bo
  * or use `extUriBiasedIgnorePathCase` if you know what you are doing.
  */
 export function isEqual(pathA: string, pathB: string, ignoreCase?: boolean): boolean {
-	const identityEquals = (pathA === pathB);
+	const identityEquals = pathA === pathB;
 	if (!ignoreCase || identityEquals) {
 		return identityEquals;
 	}
@@ -263,11 +264,10 @@ export function isEqualOrParent(base: string, parentCandidate: string, ignoreCas
 }
 
 export function isWindowsDriveLetter(char0: number): boolean {
-	return char0 >= CharCode.A && char0 <= CharCode.Z || char0 >= CharCode.a && char0 <= CharCode.z;
+	return (char0 >= CharCode.A && char0 <= CharCode.Z) || (char0 >= CharCode.a && char0 <= CharCode.z);
 }
 
 export function sanitizeFilePath(candidate: string, cwd: string): string {
-
 	// Special case: allow to open a drive letter without trailing backslash
 	if (isWindows && candidate.endsWith(':')) {
 		candidate += sep;
@@ -293,7 +293,6 @@ export function removeTrailingPathSeparator(candidate: string): string {
 		if (candidate.endsWith(':')) {
 			candidate += sep;
 		}
-
 	} else {
 		candidate = rtrim(candidate, sep);
 
@@ -314,8 +313,7 @@ export function isRootOrDriveLetter(path: string): boolean {
 			return false;
 		}
 
-		return hasDriveLetter(pathNormalized) &&
-			(path.length === 2 || pathNormalized.charCodeAt(2) === CharCode.Backslash);
+		return hasDriveLetter(pathNormalized) && (path.length === 2 || pathNormalized.charCodeAt(2) === CharCode.Backslash);
 	}
 
 	return pathNormalized === posix.sep;
@@ -393,7 +391,6 @@ export function randomPath(parent?: string, prefix?: string, randomLength = 8): 
 	for (let i = 0; i < randomLength; i++) {
 		let pathCharsTouse: string;
 		if (i === 0 && isWindows && !prefix && (randomLength === 3 || randomLength === 4)) {
-
 			// Windows has certain reserved file names that cannot be used, such
 			// as AUX, CON, PRN, etc. We want to avoid generating a random name
 			// that matches that pattern, so we use a different set of characters

@@ -77,7 +77,6 @@ export interface ICpuProfileRaw extends IV8Profile {
 	nodes: IProfileNode[];
 }
 
-
 /**
  * Recursive function that computes and caches the aggregate time for the
  * children of the computed now.
@@ -97,7 +96,6 @@ const computeAggregateTime = (index: number, nodes: IComputedNode[]): number => 
 };
 
 const ensureSourceLocations = (profile: ICpuProfileRaw): ReadonlyArray<IAnnotationLocation> => {
-
 	let locationIdCounter = 0;
 	const locationsByRef = new Map<string, { id: number; callFrame: CdpCallFrame; location: ISourceLocation }>();
 
@@ -107,7 +105,7 @@ const ensureSourceLocations = (profile: ICpuProfileRaw): ReadonlyArray<IAnnotati
 			callFrame.url,
 			callFrame.scriptId,
 			callFrame.lineNumber,
-			callFrame.columnNumber,
+			callFrame.columnNumber
 		].join(':');
 
 		const existing = locationsByRef.get(ref);
@@ -120,13 +118,13 @@ const ensureSourceLocations = (profile: ICpuProfileRaw): ReadonlyArray<IAnnotati
 			callFrame,
 			location: {
 				lineNumber: callFrame.lineNumber + 1,
-				columnNumber: callFrame.columnNumber + 1,
+				columnNumber: callFrame.columnNumber + 1
 				// source: {
 				// 	name: maybeFileUrlToPath(callFrame.url),
 				// 	path: maybeFileUrlToPath(callFrame.url),
 				// 	sourceReference: 0,
 				// },
-			},
+			}
 		});
 
 		return id;
@@ -142,13 +140,13 @@ const ensureSourceLocations = (profile: ICpuProfileRaw): ReadonlyArray<IAnnotati
 			startLocationId: getLocationIdFor({
 				...node.callFrame,
 				lineNumber: tick.line - 1,
-				columnNumber: 0,
+				columnNumber: 0
 			}),
 			endLocationId: getLocationIdFor({
 				...node.callFrame,
 				lineNumber: tick.line,
-				columnNumber: 0,
-			}),
+				columnNumber: 0
+			})
 		}));
 	}
 
@@ -168,7 +166,7 @@ export const buildModel = (profile: ICpuProfileRaw): IProfileModel => {
 			samples: profile.samples || [],
 			timeDeltas: profile.timeDeltas || [],
 			// rootPath: profile.$vscode?.rootPath,
-			duration: profile.endTime - profile.startTime,
+			duration: profile.endTime - profile.startTime
 		};
 	}
 
@@ -184,7 +182,7 @@ export const buildModel = (profile: ICpuProfileRaw): IProfileModel => {
 			ticks: 0,
 			// category: categorize(l.callFrame, src),
 			callFrame: l.callFrame,
-			src,
+			src
 		};
 	});
 
@@ -212,7 +210,7 @@ export const buildModel = (profile: ICpuProfileRaw): IProfileModel => {
 			selfTime: 0,
 			aggregateTime: 0,
 			locationId: node.locationId as number,
-			children: node.children?.map(mapId) || [],
+			children: node.children?.map(mapId) || []
 		};
 
 		for (const child of node.positionTicks || []) {
@@ -261,7 +259,7 @@ export const buildModel = (profile: ICpuProfileRaw): IProfileModel => {
 		samples: samples.map(mapId),
 		timeDeltas,
 		// rootPath: profile.$vscode?.rootPath,
-		duration,
+		duration
 	};
 };
 
@@ -277,8 +275,8 @@ export class BottomUpNode {
 				lineNumber: -1,
 				columnNumber: -1,
 				scriptId: '0',
-				url: '',
-			},
+				url: ''
+			}
 		});
 	}
 
@@ -300,13 +298,15 @@ export class BottomUpNode {
 		return this.location.src;
 	}
 
-	constructor(public readonly location: ILocation, public readonly parent?: BottomUpNode) { }
+	constructor(
+		public readonly location: ILocation,
+		public readonly parent?: BottomUpNode
+	) {}
 
 	public addNode(node: IComputedNode) {
 		this.selfTime += node.selfTime;
 		this.aggregateTime += node.aggregateTime;
 	}
-
 }
 
 export const processNode = (aggregate: BottomUpNode, node: IComputedNode, model: IProfileModel, initialNode = node) => {
@@ -325,7 +325,6 @@ export const processNode = (aggregate: BottomUpNode, node: IComputedNode, model:
 };
 
 //#endregion
-
 
 export interface BottomUpSample {
 	selfTime: number;

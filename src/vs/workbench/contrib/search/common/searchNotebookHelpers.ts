@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-
 import { FindMatch, IReadonlyTextBuffer } from '../../../../editor/common/model.js';
 import { TextSearchMatch, IFileMatch, ITextSearchMatch } from '../../../services/search/common/search.js';
 import { Range } from '../../../../editor/common/core/range.js';
@@ -32,7 +31,7 @@ export function genericCellMatchesToTextSearchMatches(contentMatches: FindMatch[
 	const contextGroupings: FindMatch[][] = [];
 	let currentContextGrouping: FindMatch[] = [];
 
-	contentMatches.forEach((match) => {
+	contentMatches.forEach(match => {
 		if (match.range.startLineNumber !== previousEndLine) {
 			if (currentContextGrouping.length > 0) {
 				contextGroupings.push([...currentContextGrouping]);
@@ -48,7 +47,7 @@ export function genericCellMatchesToTextSearchMatches(contentMatches: FindMatch[
 		contextGroupings.push([...currentContextGrouping]);
 	}
 
-	const textSearchResults = contextGroupings.map((grouping) => {
+	const textSearchResults = contextGroupings.map(grouping => {
 		const lineTexts: string[] = [];
 		const firstLine = grouping[0].range.startLineNumber;
 		const lastLine = grouping[grouping.length - 1].range.endLineNumber;
@@ -57,10 +56,17 @@ export function genericCellMatchesToTextSearchMatches(contentMatches: FindMatch[
 		}
 		return new TextSearchMatch(
 			lineTexts.join('\n') + '\n',
-			grouping.map(m => new Range(m.range.startLineNumber - 1, m.range.startColumn - 1, m.range.endLineNumber - 1, m.range.endColumn - 1)),
+			grouping.map(
+				m =>
+					new Range(
+						m.range.startLineNumber - 1,
+						m.range.startColumn - 1,
+						m.range.endLineNumber - 1,
+						m.range.endColumn - 1
+					)
+			)
 		);
 	});
 
 	return textSearchResults;
 }
-

@@ -6,7 +6,11 @@
 import { EditorOption, EditorOptions } from './editorOptions.js';
 import { IValidatedEditorOptions, BareFontInfo } from './fontInfo.js';
 
-export function createBareFontInfoFromValidatedSettings(options: IValidatedEditorOptions, pixelRatio: number, ignoreEditorZoom: boolean): BareFontInfo {
+export function createBareFontInfoFromValidatedSettings(
+	options: IValidatedEditorOptions,
+	pixelRatio: number,
+	ignoreEditorZoom: boolean
+): BareFontInfo {
 	const fontFamily = options.get(EditorOption.fontFamily);
 	const fontWeight = options.get(EditorOption.fontWeight);
 	const fontSize = options.get(EditorOption.fontSize);
@@ -14,18 +18,32 @@ export function createBareFontInfoFromValidatedSettings(options: IValidatedEdito
 	const fontVariationSettings = options.get(EditorOption.fontVariations);
 	const lineHeight = options.get(EditorOption.lineHeight);
 	const letterSpacing = options.get(EditorOption.letterSpacing);
-	return BareFontInfo._create(fontFamily, fontWeight, fontSize, fontFeatureSettings, fontVariationSettings, lineHeight, letterSpacing, pixelRatio, ignoreEditorZoom);
+	return BareFontInfo._create(
+		fontFamily,
+		fontWeight,
+		fontSize,
+		fontFeatureSettings,
+		fontVariationSettings,
+		lineHeight,
+		letterSpacing,
+		pixelRatio,
+		ignoreEditorZoom
+	);
 }
 
-export function createBareFontInfoFromRawSettings(opts: {
-	fontFamily?: unknown;
-	fontWeight?: unknown;
-	fontSize?: unknown;
-	fontLigatures?: unknown;
-	fontVariations?: unknown;
-	lineHeight?: unknown;
-	letterSpacing?: unknown;
-}, pixelRatio: number, ignoreEditorZoom: boolean = false): BareFontInfo {
+export function createBareFontInfoFromRawSettings(
+	opts: {
+		fontFamily?: unknown;
+		fontWeight?: unknown;
+		fontSize?: unknown;
+		fontLigatures?: unknown;
+		fontVariations?: unknown;
+		lineHeight?: unknown;
+		letterSpacing?: unknown;
+	},
+	pixelRatio: number,
+	ignoreEditorZoom: boolean = false
+): BareFontInfo {
 	const fontFamily = EditorOptions.fontFamily.validate(opts.fontFamily);
 	const fontWeight = EditorOptions.fontWeight.validate(opts.fontWeight);
 	const fontSize = EditorOptions.fontSize.validate(opts.fontSize);
@@ -33,5 +51,15 @@ export function createBareFontInfoFromRawSettings(opts: {
 	const fontVariationSettings = EditorOptions.fontVariations.validate(opts.fontVariations);
 	const lineHeight = EditorOptions.lineHeight.validate(opts.lineHeight);
 	const letterSpacing = EditorOptions.letterSpacing.validate(opts.letterSpacing);
-	return BareFontInfo._create(fontFamily, fontWeight, fontSize, fontFeatureSettings, fontVariationSettings, lineHeight, letterSpacing, pixelRatio, ignoreEditorZoom);
+	return BareFontInfo._create(
+		fontFamily,
+		fontWeight,
+		fontSize,
+		fontFeatureSettings,
+		fontVariationSettings,
+		lineHeight,
+		letterSpacing,
+		pixelRatio,
+		ignoreEditorZoom
+	);
 }

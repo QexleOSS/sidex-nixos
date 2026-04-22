@@ -5,7 +5,17 @@
 
 import { Emitter, Event } from '../../../base/common/event.js';
 import { Disposable } from '../../../base/common/lifecycle.js';
-import { isAndroid, isChrome, isEdge, isFirefox, isSafari, isWeb, Platform, platform, PlatformToString } from '../../../base/common/platform.js';
+import {
+	isAndroid,
+	isChrome,
+	isEdge,
+	isFirefox,
+	isSafari,
+	isWeb,
+	Platform,
+	platform,
+	PlatformToString
+} from '../../../base/common/platform.js';
 import { escapeRegExpCharacters } from '../../../base/common/strings.js';
 import { localize } from '../../../nls.js';
 import { IEnvironmentService } from '../../environment/common/environment.js';
@@ -30,7 +40,8 @@ export interface IMachinesData {
 
 export type IUserDataSyncMachine = Readonly<IMachineData> & { readonly isCurrent: boolean };
 
-export const IUserDataSyncMachinesService = createDecorator<IUserDataSyncMachinesService>('IUserDataSyncMachinesService');
+export const IUserDataSyncMachinesService =
+	createDecorator<IUserDataSyncMachinesService>('IUserDataSyncMachinesService');
 export interface IUserDataSyncMachinesService {
 	_serviceBrand: undefined;
 
@@ -66,16 +77,25 @@ export function isWebPlatform(platform: string) {
 }
 
 function getPlatformName(): string {
-	if (isSafari) { return Safari; }
-	if (isChrome) { return Chrome; }
-	if (isEdge) { return Edge; }
-	if (isFirefox) { return Firefox; }
-	if (isAndroid) { return Android; }
+	if (isSafari) {
+		return Safari;
+	}
+	if (isChrome) {
+		return Chrome;
+	}
+	if (isEdge) {
+		return Edge;
+	}
+	if (isFirefox) {
+		return Firefox;
+	}
+	if (isAndroid) {
+		return Android;
+	}
 	return PlatformToString(isWeb ? Platform.Web : platform);
 }
 
 export class UserDataSyncMachinesService extends Disposable implements IUserDataSyncMachinesService {
-
 	private static readonly VERSION = 1;
 	private static readonly RESOURCE = 'machines';
 
@@ -93,7 +113,7 @@ export class UserDataSyncMachinesService extends Disposable implements IUserData
 		@IStorageService private readonly storageService: IStorageService,
 		@IUserDataSyncStoreService private readonly userDataSyncStoreService: IUserDataSyncStoreService,
 		@IUserDataSyncLogService private readonly logService: IUserDataSyncLogService,
-		@IProductService private readonly productService: IProductService,
+		@IProductService private readonly productService: IProductService
 	) {
 		super();
 		this.currentMachineIdPromise = getServiceMachineId(environmentService, fileService, storageService);
@@ -102,14 +122,21 @@ export class UserDataSyncMachinesService extends Disposable implements IUserData
 	async getMachines(manifest?: IUserDataManifest): Promise<IUserDataSyncMachine[]> {
 		const currentMachineId = await this.currentMachineIdPromise;
 		const machineData = await this.readMachinesData(manifest);
-		return machineData.machines.map<IUserDataSyncMachine>(machine => ({ ...machine, ...{ isCurrent: machine.id === currentMachineId } }));
+		return machineData.machines.map<IUserDataSyncMachine>(machine => ({
+			...machine,
+			...{ isCurrent: machine.id === currentMachineId }
+		}));
 	}
 
 	async addCurrentMachine(manifest?: IUserDataManifest): Promise<void> {
 		const currentMachineId = await this.currentMachineIdPromise;
 		const machineData = await this.readMachinesData(manifest);
 		if (!machineData.machines.some(({ id }) => id === currentMachineId)) {
-			machineData.machines.push({ id: currentMachineId, name: this.computeCurrentMachineName(machineData.machines), platform: getPlatformName() });
+			machineData.machines.push({
+				id: currentMachineId,
+				name: this.computeCurrentMachineName(machineData.machines),
+				platform: getPlatformName()
+			});
 			await this.writeMachinesData(machineData);
 		}
 	}
@@ -172,21 +199,30 @@ export class UserDataSyncMachinesService extends Disposable implements IUserData
 		this.userData = await this.readUserData(manifest);
 		const machinesData = this.parse(this.userData);
 		if (machinesData.version !== UserDataSyncMachinesService.VERSION) {
-			throw new Error(localize('error incompatible', "Cannot read machines data as the current version is incompatible. Please update {0} and try again.", this.productService.nameLong));
+			throw new Error(
+				localize(
+					'error incompatible',
+					'Cannot read machines data as the current version is incompatible. Please update {0} and try again.',
+					this.productService.nameLong
+				)
+			);
 		}
 		return machinesData;
 	}
 
 	private async writeMachinesData(machinesData: IMachinesData): Promise<void> {
 		const content = JSON.stringify(machinesData);
-		const ref = await this.userDataSyncStoreService.writeResource(UserDataSyncMachinesService.RESOURCE, content, this.userData?.ref || null);
+		const ref = await this.userDataSyncStoreService.writeResource(
+			UserDataSyncMachinesService.RESOURCE,
+			content,
+			this.userData?.ref || null
+		);
 		this.userData = { ref, content };
 		this._onDidChange.fire();
 	}
 
 	private async readUserData(manifest?: IUserDataManifest): Promise<IUserData> {
 		if (this.userData) {
-
 			const latestRef = manifest && manifest.latest ? manifest.latest[UserDataSyncMachinesService.RESOURCE] : undefined;
 
 			// Last time synced resource and latest resource on server are same

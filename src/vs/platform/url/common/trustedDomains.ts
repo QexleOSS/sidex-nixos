@@ -47,7 +47,9 @@ export function normalizeURL(url: string | URI): string {
 		} else {
 			return parsed.toString(true);
 		}
-	} catch { return url.toString(); }
+	} catch {
+		return url.toString();
+	}
 }
 
 const rLocalhost = /^(.+\.)?localhost(:\d+)?$/i;

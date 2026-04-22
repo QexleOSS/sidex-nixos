@@ -6,7 +6,12 @@
 import { parse as jsonParse, getNodeType } from '../../../../base/common/json.js';
 import { localize } from '../../../../nls.js';
 import { extname, basename } from '../../../../base/common/path.js';
-import { SnippetParser, Variable, Placeholder, Text } from '../../../../editor/contrib/snippet/browser/snippetParser.js';
+import {
+	SnippetParser,
+	Variable,
+	Placeholder,
+	Text
+} from '../../../../editor/contrib/snippet/browser/snippetParser.js';
 import { KnownSnippetVariableNames } from '../../../../editor/contrib/snippet/browser/snippetVariables.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
@@ -20,7 +25,6 @@ import { match as matchGlob } from '../../../../base/common/glob.js';
 import { Schemas } from '../../../../base/common/network.js';
 
 class SnippetBodyInsights {
-
 	readonly codeSnippet: string;
 
 	/** The snippet uses bad placeholders which collide with variable names */
@@ -33,7 +37,6 @@ class SnippetBodyInsights {
 	readonly usesSelectionVariable: boolean;
 
 	constructor(body: string) {
-
 		// init with defaults
 		this.isBogous = false;
 		this.isTrivial = false;
@@ -63,7 +66,6 @@ class SnippetBodyInsights {
 		while (stack.length > 0) {
 			const marker = stack.shift()!;
 			if (marker instanceof Variable) {
-
 				if (marker.children.length === 0 && !KnownSnippetVariableNames[marker.name]) {
 					// a 'variable' without a default value and not being one of our supported
 					// variables is automatically turned into a placeholder. This is to restore
@@ -85,7 +87,6 @@ class SnippetBodyInsights {
 						this.usesSelectionVariable = true;
 						break;
 				}
-
 			} else {
 				// recurse
 				stack.push(...marker.children);
@@ -95,12 +96,10 @@ class SnippetBodyInsights {
 		if (this.isBogous) {
 			this.codeSnippet = textmateSnippet.toTextmateString();
 		}
-
 	}
 }
 
 export class Snippet {
-
 	private readonly _bodyInsights: WindowIdleValue<SnippetBodyInsights>;
 
 	readonly prefixLow: string;
@@ -117,7 +116,7 @@ export class Snippet {
 		readonly snippetIdentifier: string,
 		readonly include?: string[],
 		readonly exclude?: string[],
-		readonly extensionId?: ExtensionIdentifier,
+		readonly extensionId?: ExtensionIdentifier
 	) {
 		this.prefixLow = prefix.toLowerCase();
 		this._bodyInsights = new WindowIdleValue(getActiveWindow(), () => new SnippetBodyInsights(this.body));
@@ -172,7 +171,6 @@ export class Snippet {
 	}
 }
 
-
 interface JsonSerializedSnippet {
 	isFileTemplate?: boolean;
 	body: string | string[];
@@ -194,11 +192,10 @@ interface JsonSerializedSnippets {
 export const enum SnippetSource {
 	User = 1,
 	Workspace = 2,
-	Extension = 3,
+	Extension = 3
 }
 
 export class SnippetFile {
-
 	readonly data: Snippet[] = [];
 	readonly isGlobalSnippets: boolean;
 	readonly isUserSnippets: boolean;
@@ -211,7 +208,7 @@ export class SnippetFile {
 		public defaultScopes: string[] | undefined,
 		private readonly _extension: IExtensionDescription | undefined,
 		private readonly _fileService: IFileService,
-		private readonly _extensionResourceLoaderService: IExtensionResourceLoaderService,
+		private readonly _extensionResourceLoaderService: IExtensionResourceLoaderService
 	) {
 		this.isGlobalSnippets = extname(location.path) === '.code-snippets';
 		this.isUserSnippets = !this._extension;
@@ -239,7 +236,6 @@ export class SnippetFile {
 			if (len === 0) {
 				// always accept
 				bucket.push(snippet);
-
 			} else {
 				for (let i = 0; i < len; i++) {
 					// match
@@ -293,7 +289,6 @@ export class SnippetFile {
 	}
 
 	private _parseSnippet(name: string, snippet: JsonSerializedSnippet, bucket: Snippet[]): void {
-
 		let { isFileTemplate, prefix, body, description } = snippet;
 
 		if (!prefix) {
@@ -315,7 +310,10 @@ export class SnippetFile {
 		if (this.defaultScopes) {
 			scopes = this.defaultScopes;
 		} else if (typeof snippet.scope === 'string') {
-			scopes = snippet.scope.split(',').map(s => s.trim()).filter(Boolean);
+			scopes = snippet.scope
+				.split(',')
+				.map(s => s.trim())
+				.filter(Boolean);
 		} else {
 			scopes = [];
 		}
@@ -342,34 +340,37 @@ export class SnippetFile {
 		if (this._extension) {
 			// extension snippet -> show the name of the extension
 			source = this._extension.displayName || this._extension.name;
-
 		} else if (this.source === SnippetSource.Workspace) {
 			// workspace -> only *.code-snippets files
-			source = localize('source.workspaceSnippetGlobal', "Workspace Snippet");
+			source = localize('source.workspaceSnippetGlobal', 'Workspace Snippet');
 		} else {
 			// user -> global (*.code-snippets) and language snippets
 			if (this.isGlobalSnippets) {
-				source = localize('source.userSnippetGlobal', "Global User Snippet");
+				source = localize('source.userSnippetGlobal', 'Global User Snippet');
 			} else {
-				source = localize('source.userSnippet', "User Snippet");
+				source = localize('source.userSnippet', 'User Snippet');
 			}
 		}
 
 		for (const _prefix of Iterable.wrap(prefix)) {
-			bucket.push(new Snippet(
-				Boolean(isFileTemplate),
-				scopes,
-				name,
-				_prefix,
-				description,
-				body,
-				source,
-				this.source,
-				this._extension ? `${relativePath(this._extension.extensionLocation, this.location)}/${name}` : `${basename(this.location.path)}/${name}`,
-				include,
-				exclude,
-				this._extension?.identifier,
-			));
+			bucket.push(
+				new Snippet(
+					Boolean(isFileTemplate),
+					scopes,
+					name,
+					_prefix,
+					description,
+					body,
+					source,
+					this.source,
+					this._extension
+						? `${relativePath(this._extension.extensionLocation, this.location)}/${name}`
+						: `${basename(this.location.path)}/${name}`,
+					include,
+					exclude,
+					this._extension?.identifier
+				)
+			);
 		}
 	}
 }

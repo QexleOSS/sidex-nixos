@@ -25,7 +25,7 @@ import {
 	ISearchService,
 	ITextQuery,
 	SearchProviderType,
-	SearchRange,
+	SearchRange
 } from '../common/search.js';
 import { SearchService } from '../common/searchService.js';
 
@@ -43,7 +43,6 @@ interface RustTextMatch {
 }
 
 class TauriSearchProvider extends Disposable implements ISearchResultProvider {
-
 	constructor(private readonly logService: ILogService) {
 		super();
 	}
@@ -55,13 +54,15 @@ class TauriSearchProvider extends Disposable implements ISearchResultProvider {
 	async textSearch(
 		query: ITextQuery,
 		onProgress?: (p: ISearchProgressItem) => void,
-		token?: CancellationToken,
+		token?: CancellationToken
 	): Promise<ISearchComplete> {
 		const results: IFileMatch[] = [];
 		let limitHit = false;
 
 		for (const fq of query.folderQueries) {
-			if (token?.isCancellationRequested) { break; }
+			if (token?.isCancellationRequested) {
+				break;
+			}
 
 			try {
 				const matches = await invoke<RustTextMatch[]>('search_text', {
@@ -72,14 +73,18 @@ class TauriSearchProvider extends Disposable implements ISearchResultProvider {
 						case_sensitive: query.contentPattern.isCaseSensitive ?? false,
 						is_regex: query.contentPattern.isRegExp ?? false,
 						include: query.includePattern ? Object.keys(query.includePattern) : [],
-						exclude: query.excludePattern ? Object.keys(query.excludePattern) : [],
-					},
+						exclude: query.excludePattern ? Object.keys(query.excludePattern) : []
+					}
 				});
 
 				const byFile = new Map<string, RustTextMatch[]>();
 				for (const m of matches) {
 					const arr = byFile.get(m.path);
-					if (arr) { arr.push(m); } else { byFile.set(m.path, [m]); }
+					if (arr) {
+						arr.push(m);
+					} else {
+						byFile.set(m.path, [m]);
+					}
 				}
 
 				for (const [filePath, fileMatches] of byFile) {
@@ -90,10 +95,12 @@ class TauriSearchProvider extends Disposable implements ISearchResultProvider {
 						const end = m.column + m.match_length;
 						return {
 							previewText: m.line_content,
-							rangeLocations: [{
-								source: new SearchRange(line, start, line, end),
-								preview: new SearchRange(0, start, 0, end),
-							}],
+							rangeLocations: [
+								{
+									source: new SearchRange(line, start, line, end),
+									preview: new SearchRange(0, start, 0, end)
+								}
+							]
 						};
 					});
 
@@ -113,15 +120,14 @@ class TauriSearchProvider extends Disposable implements ISearchResultProvider {
 		return { results, limitHit, messages: [] };
 	}
 
-	async fileSearch(
-		query: IFileQuery,
-		token?: CancellationToken,
-	): Promise<ISearchComplete> {
+	async fileSearch(query: IFileQuery, token?: CancellationToken): Promise<ISearchComplete> {
 		const results: IFileMatch[] = [];
 		let limitHit = false;
 
 		for (const fq of query.folderQueries) {
-			if (token?.isCancellationRequested) { break; }
+			if (token?.isCancellationRequested) {
+				break;
+			}
 
 			try {
 				const matches = await invoke<RustFileMatch[]>('search_files', {
@@ -130,8 +136,8 @@ class TauriSearchProvider extends Disposable implements ISearchResultProvider {
 					options: {
 						max_results: query.maxResults ?? 500,
 						include: query.includePattern ? Object.keys(query.includePattern) : [],
-						exclude: query.excludePattern ? Object.keys(query.excludePattern) : [],
-					},
+						exclude: query.excludePattern ? Object.keys(query.excludePattern) : []
+					}
 				});
 
 				for (const m of matches) {
@@ -162,7 +168,7 @@ export class TauriSearchService extends SearchService {
 		@ILogService logService: ILogService,
 		@IExtensionService extensionService: IExtensionService,
 		@IFileService fileService: IFileService,
-		@IUriIdentityService uriIdentityService: IUriIdentityService,
+		@IUriIdentityService uriIdentityService: IUriIdentityService
 	) {
 		super(modelService, editorService, telemetryService, logService, extensionService, fileService, uriIdentityService);
 

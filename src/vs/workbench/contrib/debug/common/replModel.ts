@@ -9,7 +9,15 @@ import { isObject, isString } from '../../../../base/common/types.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
 import * as nls from '../../../../nls.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
-import { IDebugConfiguration, IDebugSession, IExpression, INestingReplElement, IReplElement, IReplElementSource, IStackFrame } from './debug.js';
+import {
+	IDebugConfiguration,
+	IDebugSession,
+	IExpression,
+	INestingReplElement,
+	IReplElement,
+	IReplElementSource,
+	IStackFrame
+} from './debug.js';
 import { ExpressionContainer } from './debugModel.js';
 
 let topReplElementCounter = 0;
@@ -20,7 +28,6 @@ const getUniqueId = () => `topReplElement:${topReplElementCounter++}`;
  * is used instead only if there is a `variablesReference` with no `output` text.
  */
 export class ReplOutputElement implements INestingReplElement {
-
 	private _count = 1;
 	private _onDidChangeCount = new Emitter<void>();
 
@@ -30,16 +37,15 @@ export class ReplOutputElement implements INestingReplElement {
 		public value: string,
 		public severity: severity,
 		public sourceData?: IReplElementSource,
-		public readonly expression?: IExpression,
-	) {
-	}
+		public readonly expression?: IExpression
+	) {}
 
 	toString(includeSource = false): string {
 		let valueRespectCount = this.value;
 		for (let i = 1; i < this.count; i++) {
 			valueRespectCount += (valueRespectCount.endsWith('\n') ? '' : '\n') + this.value;
 		}
-		const sourceStr = (this.sourceData && includeSource) ? ` ${this.sourceData.source.name}` : '';
+		const sourceStr = this.sourceData && includeSource ? ` ${this.sourceData.source.name}` : '';
 		return valueRespectCount + sourceStr;
 	}
 
@@ -78,7 +84,7 @@ export class ReplVariableElement implements INestingReplElement {
 		private readonly session: IDebugSession,
 		public readonly expression: IExpression,
 		public readonly severity: severity,
-		public readonly sourceData?: IReplElementSource,
+		public readonly sourceData?: IReplElementSource
 	) {
 		this.hasChildren = expression.hasChildren;
 	}
@@ -101,10 +107,15 @@ export class ReplVariableElement implements INestingReplElement {
 }
 
 export class RawObjectReplElement implements IExpression, INestingReplElement {
-
 	private static readonly MAX_CHILDREN = 1000; // upper bound of children per value
 
-	constructor(private id: string, public name: string, public valueObj: any, public sourceData?: IReplElementSource, public annotation?: string) { }
+	constructor(
+		private id: string,
+		public name: string,
+		public valueObj: any,
+		public sourceData?: IReplElementSource,
+		public annotation?: string
+	) {}
 
 	getId(): string {
 		return this.id;
@@ -129,7 +140,10 @@ export class RawObjectReplElement implements IExpression, INestingReplElement {
 	}
 
 	get hasChildren(): boolean {
-		return (Array.isArray(this.valueObj) && this.valueObj.length > 0) || (isObject(this.valueObj) && Object.getOwnPropertyNames(this.valueObj).length > 0);
+		return (
+			(Array.isArray(this.valueObj) && this.valueObj.length > 0) ||
+			(isObject(this.valueObj) && Object.getOwnPropertyNames(this.valueObj).length > 0)
+		);
 	}
 
 	evaluateLazy(): Promise<void> {
@@ -139,10 +153,12 @@ export class RawObjectReplElement implements IExpression, INestingReplElement {
 	getChildren(): Promise<IExpression[]> {
 		let result: IExpression[] = [];
 		if (Array.isArray(this.valueObj)) {
-			result = (<any[]>this.valueObj).slice(0, RawObjectReplElement.MAX_CHILDREN)
+			result = (<any[]>this.valueObj)
+				.slice(0, RawObjectReplElement.MAX_CHILDREN)
 				.map((v, index) => new RawObjectReplElement(`${this.id}:${index}`, String(index), v));
 		} else if (isObject(this.valueObj)) {
-			result = Object.getOwnPropertyNames(this.valueObj).slice(0, RawObjectReplElement.MAX_CHILDREN)
+			result = Object.getOwnPropertyNames(this.valueObj)
+				.slice(0, RawObjectReplElement.MAX_CHILDREN)
 				.map((key, index) => new RawObjectReplElement(`${this.id}:${index}`, key, this.valueObj[key]));
 		}
 
@@ -181,7 +197,12 @@ export class ReplEvaluationResult extends ExpressionContainer implements IReplEl
 		super(undefined, undefined, 0, generateUuid());
 	}
 
-	override async evaluateExpression(expression: string, session: IDebugSession | undefined, stackFrame: IStackFrame | undefined, context: string): Promise<boolean> {
+	override async evaluateExpression(
+		expression: string,
+		session: IDebugSession | undefined,
+		stackFrame: IStackFrame | undefined,
+		context: string
+	): Promise<boolean> {
 		const result = await super.evaluateExpression(expression, session, stackFrame, context);
 		this._available = result;
 
@@ -194,7 +215,6 @@ export class ReplEvaluationResult extends ExpressionContainer implements IReplEl
 }
 
 export class ReplGroup implements INestingReplElement {
-
 	private children: IReplElement[] = [];
 	private id: string;
 	private ended = false;
@@ -218,7 +238,7 @@ export class ReplGroup implements INestingReplElement {
 	}
 
 	toString(includeSource = false): string {
-		const sourceStr = (includeSource && this.sourceData) ? ` ${this.sourceData.source.name}` : '';
+		const sourceStr = includeSource && this.sourceData ? ` ${this.sourceData.source.name}` : '';
 		return this.name + sourceStr;
 	}
 
@@ -254,7 +274,11 @@ function areSourcesEqual(first: IReplElementSource | undefined, second: IReplEle
 		return true;
 	}
 	if (first && second) {
-		return first.column === second.column && first.lineNumber === second.lineNumber && first.source.uri.toString() === second.source.uri.toString();
+		return (
+			first.column === second.column &&
+			first.lineNumber === second.lineNumber &&
+			first.source.uri.toString() === second.source.uri.toString()
+		);
 	}
 
 	return false;
@@ -272,13 +296,17 @@ export class ReplModel {
 	private readonly _onDidChangeElements = new Emitter<IReplElement | undefined>();
 	readonly onDidChangeElements = this._onDidChangeElements.event;
 
-	constructor(private readonly configurationService: IConfigurationService) { }
+	constructor(private readonly configurationService: IConfigurationService) {}
 
 	getReplElements(): IReplElement[] {
 		return this.replElements;
 	}
 
-	async addReplExpression(session: IDebugSession, stackFrame: IStackFrame | undefined, expression: string): Promise<void> {
+	async addReplExpression(
+		session: IDebugSession,
+		stackFrame: IStackFrame | undefined,
+		expression: string
+	): Promise<void> {
 		this.addReplElement(new ReplEvaluationInput(expression));
 		const result = new ReplEvaluationResult(expression);
 		await result.evaluateExpression(expression, session, stackFrame, 'repl');
@@ -291,16 +319,21 @@ export class ReplModel {
 		if (clearAnsiIndex !== -1) {
 			// [2J is the ansi escape sequence for clearing the display http://ascii-table.com/ansi-escape-sequences.php
 			this.removeReplExpressions();
-			this.appendToRepl(session, { output: nls.localize('consoleCleared', "Console was cleared"), sev: severity.Ignore });
+			this.appendToRepl(session, {
+				output: nls.localize('consoleCleared', 'Console was cleared'),
+				sev: severity.Ignore
+			});
 			output = output.substring(clearAnsiIndex + clearAnsiSequence.length);
 		}
 
 		if (expression) {
 			// if there is an output string, prefer to show that, since the DA could
 			// have formatted it nicely e.g. with ANSI color codes.
-			this.addReplElement(output
-				? new ReplOutputElement(session, getUniqueId(), output, sev, source, expression)
-				: new ReplVariableElement(session, expression, sev, source));
+			this.addReplElement(
+				output
+					? new ReplOutputElement(session, getUniqueId(), output, sev, source, expression)
+					: new ReplVariableElement(session, expression, sev, source)
+			);
 			return;
 		}
 
@@ -312,12 +345,25 @@ export class ReplModel {
 		const previousElement = this.replElements.length ? this.replElements[this.replElements.length - 1] : undefined;
 
 		// Handle concatenation of incomplete lines first
-		if (previousElement instanceof ReplOutputElement && previousElement.severity === sev && areSourcesEqual(previousElement.sourceData, source)) {
-			if (!previousElement.value.endsWith('\n') && !previousElement.value.endsWith('\r\n') && previousElement.count === 1) {
+		if (
+			previousElement instanceof ReplOutputElement &&
+			previousElement.severity === sev &&
+			areSourcesEqual(previousElement.sourceData, source)
+		) {
+			if (
+				!previousElement.value.endsWith('\n') &&
+				!previousElement.value.endsWith('\r\n') &&
+				previousElement.count === 1
+			) {
 				// Concatenate with previous incomplete line
 				const combinedOutput = previousElement.value + output;
 				this.replElements[this.replElements.length - 1] = new ReplOutputElement(
-					session, getUniqueId(), combinedOutput, sev, source);
+					session,
+					getUniqueId(),
+					combinedOutput,
+					sev,
+					source
+				);
 				this._onDidChangeElements.fire(undefined);
 
 				// If the combined output now forms a complete line and collapsing is enabled,
@@ -342,7 +388,11 @@ export class ReplModel {
 			this.processMultiLineOutput(session, output, sev, source);
 		} else {
 			// For simple output without line breaks, use the original logic
-			if (previousElement instanceof ReplOutputElement && previousElement.severity === sev && areSourcesEqual(previousElement.sourceData, source)) {
+			if (
+				previousElement instanceof ReplOutputElement &&
+				previousElement.severity === sev &&
+				areSourcesEqual(previousElement.sourceData, source)
+			) {
 				if (previousElement.value === output && config.console.collapseIdenticalLines) {
 					previousElement.count++;
 					// No need to fire an event, just the count updates and badge will adjust automatically
@@ -364,7 +414,8 @@ export class ReplModel {
 		const lastElement = this.replElements[this.replElements.length - 1];
 		const secondToLastElement = this.replElements[this.replElements.length - 2];
 
-		if (lastElement instanceof ReplOutputElement &&
+		if (
+			lastElement instanceof ReplOutputElement &&
 			secondToLastElement instanceof ReplOutputElement &&
 			lastElement.severity === sev &&
 			secondToLastElement.severity === sev &&
@@ -372,8 +423,8 @@ export class ReplModel {
 			areSourcesEqual(secondToLastElement.sourceData, source) &&
 			lastElement.value === secondToLastElement.value &&
 			lastElement.count === 1 &&
-			lastElement.value.endsWith('\n')) {
-
+			lastElement.value.endsWith('\n')
+		) {
 			// Collapse the last element into the second-to-last
 			secondToLastElement.count += lastElement.count;
 			this.replElements.pop();
@@ -381,20 +432,29 @@ export class ReplModel {
 		}
 	}
 
-	private processMultiLineOutput(session: IDebugSession, output: string, sev: severity, source?: IReplElementSource): void {
+	private processMultiLineOutput(
+		session: IDebugSession,
+		output: string,
+		sev: severity,
+		source?: IReplElementSource
+	): void {
 		// Split output into lines, preserving line endings
 		const lines = this.splitIntoLines(output);
 
 		for (const line of lines) {
-			if (line.length === 0) { continue; }
+			if (line.length === 0) {
+				continue;
+			}
 
 			const previousElement = this.replElements.length ? this.replElements[this.replElements.length - 1] : undefined;
 
 			// Check if this line can be collapsed with the previous one
-			if (previousElement instanceof ReplOutputElement &&
+			if (
+				previousElement instanceof ReplOutputElement &&
 				previousElement.severity === sev &&
 				areSourcesEqual(previousElement.sourceData, source) &&
-				previousElement.value === line) {
+				previousElement.value === line
+			) {
 				previousElement.count++;
 				// No need to fire an event, just the count updates and badge will adjust automatically
 			} else {
@@ -425,7 +485,11 @@ export class ReplModel {
 	private applyLineLevelCollapsing(session: IDebugSession, sev: severity, source?: IReplElementSource): void {
 		// Apply line-level collapsing to the last element if it contains multiple lines
 		const lastElement = this.replElements[this.replElements.length - 1];
-		if (!(lastElement instanceof ReplOutputElement) || lastElement.severity !== sev || !areSourcesEqual(lastElement.sourceData, source)) {
+		if (
+			!(lastElement instanceof ReplOutputElement) ||
+			lastElement.severity !== sev ||
+			!areSourcesEqual(lastElement.sourceData, source)
+		) {
 			return;
 		}
 
@@ -439,15 +503,19 @@ export class ReplModel {
 
 		// Process each line and try to collapse with existing elements
 		for (const line of lines) {
-			if (line.length === 0) { continue; }
+			if (line.length === 0) {
+				continue;
+			}
 
 			const previousElement = this.replElements.length ? this.replElements[this.replElements.length - 1] : undefined;
 
 			// Check if this line can be collapsed with the previous one
-			if (previousElement instanceof ReplOutputElement &&
+			if (
+				previousElement instanceof ReplOutputElement &&
 				previousElement.severity === sev &&
 				areSourcesEqual(previousElement.sourceData, source) &&
-				previousElement.value === line) {
+				previousElement.value === line
+			) {
 				previousElement.count++;
 			} else {
 				const element = new ReplOutputElement(session, getUniqueId(), line, sev, source);

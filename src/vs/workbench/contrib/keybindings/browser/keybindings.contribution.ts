@@ -12,7 +12,14 @@ import { ICommandService } from '../../../../platform/commands/common/commands.j
 import { showWindowLogActionId } from '../../../services/log/common/logConstants.js';
 import { DisposableStore, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
 import { ILayoutService } from '../../../../platform/layout/browser/layoutService.js';
-import { $, addDisposableListener, append, getDomNodePagePosition, getWindows, onDidRegisterWindow } from '../../../../base/browser/dom.js';
+import {
+	$,
+	addDisposableListener,
+	append,
+	getDomNodePagePosition,
+	getWindows,
+	onDidRegisterWindow
+} from '../../../../base/browser/dom.js';
 import { createCSSRule, createStyleSheet } from '../../../../base/browser/domStylesheets.js';
 import { Emitter } from '../../../../base/common/event.js';
 
@@ -22,7 +29,7 @@ class ToggleKeybindingsLogAction extends Action2 {
 	constructor() {
 		super({
 			id: 'workbench.action.toggleKeybindingsLog',
-			title: nls.localize2('toggleKeybindingsLog', "Toggle Keyboard Shortcuts Troubleshooting"),
+			title: nls.localize2('toggleKeybindingsLog', 'Toggle Keyboard Shortcuts Troubleshooting'),
 			category: Categories.Developer,
 			f1: true
 		});
@@ -50,7 +57,9 @@ class ToggleKeybindingsLogAction extends Action2 {
 
 		// Add CSS rule for focus marker
 		const stylesheet = createStyleSheet(undefined, undefined, disposables);
-		createCSSRule('.focus-troubleshooting-marker', `
+		createCSSRule(
+			'.focus-troubleshooting-marker',
+			`
 			position: fixed;
 			pointer-events: none;
 			z-index: 100000;
@@ -58,7 +67,9 @@ class ToggleKeybindingsLogAction extends Action2 {
 			border: 2px solid rgba(255, 0, 0, 0.8);
 			border-radius: 2px;
 			display: none;
-		`, stylesheet);
+		`,
+			stylesheet
+		);
 
 		const onKeyDown = disposables.add(new Emitter<KeyboardEvent>());
 
@@ -72,26 +83,30 @@ class ToggleKeybindingsLogAction extends Action2 {
 
 		disposables.add(onDidRegisterWindow(({ window, disposables }) => registerWindowListeners(window, disposables)));
 
-		disposables.add(layoutService.onDidChangeActiveContainer(() => {
-			layoutService.activeContainer.appendChild(focusMarker);
-		}));
+		disposables.add(
+			layoutService.onDidChangeActiveContainer(() => {
+				layoutService.activeContainer.appendChild(focusMarker);
+			})
+		);
 
-		disposables.add(onKeyDown.event(e => {
-			const target = e.target as HTMLElement;
-			if (target) {
-				const position = getDomNodePagePosition(target);
-				focusMarker.style.top = `${position.top}px`;
-				focusMarker.style.left = `${position.left}px`;
-				focusMarker.style.width = `${position.width}px`;
-				focusMarker.style.height = `${position.height}px`;
-				focusMarker.style.display = 'block';
+		disposables.add(
+			onKeyDown.event(e => {
+				const target = e.target as HTMLElement;
+				if (target) {
+					const position = getDomNodePagePosition(target);
+					focusMarker.style.top = `${position.top}px`;
+					focusMarker.style.left = `${position.left}px`;
+					focusMarker.style.width = `${position.width}px`;
+					focusMarker.style.height = `${position.height}px`;
+					focusMarker.style.display = 'block';
 
-				// Hide after timeout
-				setTimeout(() => {
-					focusMarker.style.display = 'none';
-				}, 800);
-			}
-		}));
+					// Hide after timeout
+					setTimeout(() => {
+						focusMarker.style.display = 'none';
+					}, 800);
+				}
+			})
+		);
 
 		ToggleKeybindingsLogAction.disposable = disposables;
 	}

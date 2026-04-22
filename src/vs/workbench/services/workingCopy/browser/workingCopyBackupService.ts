@@ -15,14 +15,17 @@ import { WorkbenchPhase, registerWorkbenchContribution2 } from '../../../common/
 import { BrowserWorkingCopyBackupTracker } from './workingCopyBackupTracker.js';
 
 export class BrowserWorkingCopyBackupService extends WorkingCopyBackupService {
-
 	constructor(
 		@IWorkspaceContextService contextService: IWorkspaceContextService,
 		@IWorkbenchEnvironmentService environmentService: IWorkbenchEnvironmentService,
 		@IFileService fileService: IFileService,
 		@ILogService logService: ILogService
 	) {
-		super(joinPath(environmentService.userRoamingDataHome, 'Backups', contextService.getWorkspace().id), fileService, logService);
+		super(
+			joinPath(environmentService.userRoamingDataHome, 'Backups', contextService.getWorkspace().id),
+			fileService,
+			logService
+		);
 	}
 }
 
@@ -30,4 +33,8 @@ export class BrowserWorkingCopyBackupService extends WorkingCopyBackupService {
 registerSingleton(IWorkingCopyBackupService, BrowserWorkingCopyBackupService, InstantiationType.Eager);
 
 // Register Backup Tracker
-registerWorkbenchContribution2(BrowserWorkingCopyBackupTracker.ID, BrowserWorkingCopyBackupTracker, WorkbenchPhase.BlockStartup);
+registerWorkbenchContribution2(
+	BrowserWorkingCopyBackupTracker.ID,
+	BrowserWorkingCopyBackupTracker,
+	WorkbenchPhase.BlockStartup
+);

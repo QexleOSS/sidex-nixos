@@ -14,7 +14,6 @@ import { IContextKey, IContextKeyService } from '../../../../platform/contextkey
 import { IMarkerService, MarkerSeverity } from '../../../../platform/markers/common/markers.js';
 
 class MarkerSelectionStatus extends Disposable implements IEditorContribution {
-
 	static readonly ID = 'editor.contrib.markerSelectionStatus';
 
 	private readonly _ctxHasDiagnostics: IContextKey<boolean>;
@@ -22,7 +21,7 @@ class MarkerSelectionStatus extends Disposable implements IEditorContribution {
 	constructor(
 		private readonly _editor: ICodeEditor,
 		@IContextKeyService contextKeyService: IContextKeyService,
-		@IMarkerService private readonly _markerService: IMarkerService,
+		@IMarkerService private readonly _markerService: IMarkerService
 	) {
 		super();
 
@@ -30,12 +29,14 @@ class MarkerSelectionStatus extends Disposable implements IEditorContribution {
 
 		this._store.add(this._editor.onDidChangeCursorSelection(() => this._update()));
 		this._store.add(this._editor.onDidChangeModel(() => this._update()));
-		this._store.add(this._markerService.onMarkerChanged(e => {
-			const model = this._editor.getModel();
-			if (model && e.some(uri => isEqual(uri, model.uri))) {
-				this._update();
-			}
-		}));
+		this._store.add(
+			this._markerService.onMarkerChanged(e => {
+				const model = this._editor.getModel();
+				if (model && e.some(uri => isEqual(uri, model.uri))) {
+					this._update();
+				}
+			})
+		);
 
 		this._update();
 	}
@@ -58,13 +59,24 @@ class MarkerSelectionStatus extends Disposable implements IEditorContribution {
 			severities: MarkerSeverity.Error | MarkerSeverity.Warning | MarkerSeverity.Info
 		});
 
-		const hasIntersecting = markers.some(marker => Range.areIntersecting(
-			{ startLineNumber: marker.startLineNumber, startColumn: marker.startColumn, endLineNumber: marker.endLineNumber, endColumn: marker.endColumn },
-			selection
-		));
+		const hasIntersecting = markers.some(marker =>
+			Range.areIntersecting(
+				{
+					startLineNumber: marker.startLineNumber,
+					startColumn: marker.startColumn,
+					endLineNumber: marker.endLineNumber,
+					endColumn: marker.endColumn
+				},
+				selection
+			)
+		);
 
 		this._ctxHasDiagnostics.set(hasIntersecting);
 	}
 }
 
-registerEditorContribution(MarkerSelectionStatus.ID, MarkerSelectionStatus, EditorContributionInstantiation.AfterFirstRender);
+registerEditorContribution(
+	MarkerSelectionStatus.ID,
+	MarkerSelectionStatus,
+	EditorContributionInstantiation.AfterFirstRender
+);

@@ -19,6 +19,7 @@ use tauri::State;
 
 const DEFAULT_MAX_FILE_SIZE: u64 = 1024 * 1024; // 1MB
 const DEFAULT_MAX_RESULTS: usize = 1000;
+#[allow(dead_code)]
 const BINARY_CHECK_BYTES: usize = 8192; // 8KB
 
 /// Options for building the index
@@ -112,13 +113,13 @@ struct FileInfo {
 
 /// Inverted index for fast text search
 pub struct InvertedIndex {
-    /// word -> list of (file_id, line, column)
+    /// word -> list of (`file_id`, line, column)
     word_index: DashMap<String, Vec<WordLocation>>,
     /// trigram -> list of words containing it (for fuzzy search)
     trigram_index: Option<DashMap<String, Vec<String>>>,
-    /// file_id -> file path mapping
+    /// `file_id` -> file path mapping
     files: DashMap<u32, FileInfo>,
-    /// path -> file_id reverse mapping
+    /// path -> `file_id` reverse mapping
     path_to_id: DashMap<String, u32>,
     /// Next available file ID
     next_file_id: AtomicU32,
@@ -159,9 +160,10 @@ impl InvertedIndex {
 
     /// Get or create file ID for a path
     fn get_or_create_file_id(&self, path: &str) -> u32 {
-        *self.path_to_id.entry(path.to_string()).or_insert_with(|| {
-            self.next_file_id.fetch_add(1, Ordering::SeqCst)
-        })
+        *self
+            .path_to_id
+            .entry(path.to_string())
+            .or_insert_with(|| self.next_file_id.fetch_add(1, Ordering::SeqCst))
     }
 
     /// Add a word to the trigram index
@@ -188,62 +190,45 @@ impl InvertedIndex {
     fn index_file(&self, file_path: &Path, max_file_size: u64) -> Result<(), String> {
         let path_str = file_path.to_string_lossy().to_string();
 
-        // Skip if file is too large
         let metadata = fs::metadata(file_path).map_err(|e| e.to_string())?;
         if metadata.len() > max_file_size {
             return Ok(());
         }
 
-        // Check if binary file
-        if is_binary_file(file_path)? {
+        let content = fs::read(file_path).map_err(|e| e.to_string())?;
+
+        if content[..content.len().min(8192)].contains(&0) {
             return Ok(());
         }
 
-        // Remove existing index for this file if present
+        let Ok(text) = String::from_utf8(content) else {
+            return Ok(());
+        };
+
         self.remove_file(&path_str);
 
-        // Read file content
-        let content = fs::read_to_string(file_path).map_err(|e| e.to_string())?;
-
-        // Get or create file ID
         let file_id = self.get_or_create_file_id(&path_str);
-
-        // Track words in this file
         let mut file_words: HashSet<String> = HashSet::new();
 
         // Index each line
-        for (line_idx, line) in content.lines().enumerate() {
+        for (line_idx, line) in text.lines().enumerate() {
             for mat in self.word_regex.find_iter(line) {
                 let word = mat.as_str();
                 let column = mat.start();
-
-                // Normalize word for indexing
                 let normalized_word = word.to_lowercase();
 
-                // Add to word index
                 self.word_index
                     .entry(normalized_word.clone())
-                    .and_modify(|v| {
-                        v.push(WordLocation {
-                            file_id,
-                            line: line_idx + 1,
-                            column: column + 1,
-                        });
-                    })
-                    .or_insert_with(|| {
-                        vec![WordLocation {
-                            file_id,
-                            line: line_idx + 1,
-                            column: column + 1,
-                        }]
+                    .or_default()
+                    .push(WordLocation {
+                        file_id,
+                        line: line_idx + 1,
+                        column: column + 1,
                     });
 
-                // Add to trigram index
                 self.add_trigrams(&normalized_word);
-
                 file_words.insert(normalized_word);
 
-                // Update memory estimate
                 self.memory_estimate.fetch_add(
                     std::mem::size_of::<WordLocation>() + word.len(),
                     Ordering::Relaxed,
@@ -365,9 +350,8 @@ impl InvertedIndex {
             }
         }
 
-        let candidates = match candidate_words {
-            Some(c) => c,
-            None => return self.search_exact(query, options),
+        let Some(candidates) = candidate_words else {
+            return self.search_exact(query, options);
         };
 
         // Score and filter candidates
@@ -441,7 +425,7 @@ impl InvertedIndex {
         let regex = if options.case_sensitive {
             Regex::new(pattern).map_err(|e| e.to_string())?
         } else {
-            Regex::new(&format!("(?i){}", pattern)).map_err(|e| e.to_string())?
+            Regex::new(&format!("(?i){pattern}")).map_err(|e| e.to_string())?
         };
 
         let max_results = options.max_results.unwrap_or(DEFAULT_MAX_RESULTS);
@@ -454,7 +438,7 @@ impl InvertedIndex {
             .and_then(|p| globset::Glob::new(p).ok().map(|g| g.compile_matcher()));
 
         // Scan all indexed files (this is slower but necessary for regex)
-        for entry in self.files.iter() {
+        for entry in &self.files {
             if results.len() >= max_results {
                 break;
             }
@@ -546,6 +530,7 @@ fn calculate_score(query: &str, word: &str) -> f32 {
         return 0.0;
     }
 
+    #[allow(clippy::cast_precision_loss)]
     let similarity = 1.0 - (distance as f32 / max_len as f32);
     similarity * 0.5 // Scale down fuzzy matches
 }
@@ -588,11 +573,7 @@ fn levenshtein_distance(a: &str, b: &str) -> usize {
     for i in 1..=a_len {
         curr_row[0] = i;
         for j in 1..=b_len {
-            let cost = if a_chars[i - 1] == b_chars[j - 1] {
-                0
-            } else {
-                1
-            };
+            let cost = usize::from(a_chars[i - 1] != b_chars[j - 1]);
             curr_row[j] = (curr_row[j - 1] + 1)
                 .min(prev_row[j] + 1)
                 .min(prev_row[j - 1] + cost);
@@ -604,6 +585,7 @@ fn levenshtein_distance(a: &str, b: &str) -> usize {
 }
 
 /// Check if a file is binary by looking for null bytes in the first N bytes
+#[allow(dead_code)]
 fn is_binary_file(path: &Path) -> Result<bool, String> {
     use std::io::Read;
     let mut file = fs::File::open(path).map_err(|e| e.to_string())?;
@@ -626,6 +608,7 @@ fn get_line_at(path: &str, line_number: usize) -> Result<String, String> {
 }
 
 /// Collect all files to index in a directory
+#[allow(clippy::unnecessary_wraps)]
 fn collect_files(root: &Path, options: &IndexOptions) -> Result<Vec<std::path::PathBuf>, String> {
     let max_file_size = options.max_file_size.unwrap_or(DEFAULT_MAX_FILE_SIZE);
     let exclude_dirs: HashSet<String> = options
@@ -651,9 +634,8 @@ fn collect_files(root: &Path, options: &IndexOptions) -> Result<Vec<std::path::P
             !exclude_dirs.contains(name.as_ref())
         })
     {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
+        let Ok(entry) = entry else {
+            continue;
         };
 
         if !entry.file_type().is_file() {
@@ -666,9 +648,9 @@ fn collect_files(root: &Path, options: &IndexOptions) -> Result<Vec<std::path::P
                 .path()
                 .extension()
                 .and_then(|e| e.to_str())
-                .map(|e| e.to_lowercase());
+                .map(str::to_lowercase);
 
-            if ext.map_or(true, |e| !extensions.contains(&e)) {
+            if ext.is_none_or(|e| !extensions.contains(&e)) {
                 continue;
             }
         }
@@ -701,6 +683,7 @@ impl IndexStore {
 
 /// Build index for a directory
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn index_build(
     state: State<'_, Arc<IndexStore>>,
     root: String,
@@ -710,7 +693,7 @@ pub fn index_build(
     let root_path = Path::new(&root);
 
     if !root_path.exists() {
-        return Err(format!("Root path does not exist: {}", root));
+        return Err(format!("Root path does not exist: {root}"));
     }
 
     // Clear existing index and set new root
@@ -732,6 +715,7 @@ pub fn index_build(
 
 /// Search the index
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn index_search(
     state: State<'_, Arc<IndexStore>>,
     query: String,
@@ -755,6 +739,7 @@ pub fn index_search(
 
 /// Update index for changed files
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn index_update(
     state: State<'_, Arc<IndexStore>>,
     changes: Vec<FileChange>,
@@ -781,12 +766,14 @@ pub fn index_update(
 
 /// Get index statistics
 #[tauri::command]
+#[allow(clippy::unnecessary_wraps, clippy::needless_pass_by_value)]
 pub fn index_stats(state: State<'_, Arc<IndexStore>>) -> Result<IndexStats, String> {
     Ok(state.index.stats())
 }
 
 /// Clear the index
 #[tauri::command]
+#[allow(clippy::unnecessary_wraps, clippy::needless_pass_by_value)]
 pub fn index_clear(state: State<'_, Arc<IndexStore>>) -> Result<(), String> {
     state.index.clear();
     Ok(())
@@ -798,8 +785,8 @@ mod tests {
 
     #[test]
     fn test_calculate_score() {
-        assert_eq!(calculate_score("hello", "hello"), 1.0);
-        assert_eq!(calculate_score("hel", "hello"), 0.9);
+        assert!((calculate_score("hello", "hello") - 1.0).abs() < f32::EPSILON);
+        assert!((calculate_score("hel", "hello") - 0.9).abs() < f32::EPSILON);
         assert!(calculate_score("ell", "hello") > 0.5);
     }
 

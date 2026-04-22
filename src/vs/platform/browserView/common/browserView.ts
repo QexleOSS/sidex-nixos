@@ -45,7 +45,7 @@ export enum BrowserViewCommandId {
 	ShowFind = `${commandPrefix}.showFind`,
 	HideFind = `${commandPrefix}.hideFind`,
 	FindNext = `${commandPrefix}.findNext`,
-	FindPrevious = `${commandPrefix}.findPrevious`,
+	FindPrevious = `${commandPrefix}.findPrevious`
 }
 
 export interface IBrowserViewBounds {
@@ -182,13 +182,31 @@ export const ipcBrowserViewChannelName = 'browserView';
  * Discrete zoom levels matching Edge/Chrome.
  * Note: When those browsers say "33%" and "67%" zoom, they really mean 33.33...% and 66.66...%
  */
-export const browserZoomFactors = [0.25, 1 / 3, 0.5, 2 / 3, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5] as const;
+export const browserZoomFactors = [
+	0.25,
+	1 / 3,
+	0.5,
+	2 / 3,
+	0.75,
+	0.8,
+	0.9,
+	1,
+	1.1,
+	1.25,
+	1.5,
+	1.75,
+	2,
+	2.5,
+	3,
+	4,
+	5
+] as const;
 export const browserZoomDefaultIndex = browserZoomFactors.indexOf(1);
 export function browserZoomLabel(zoomFactor: number): string {
-	return localize('browserZoomPercent', "{0}%", Math.round(zoomFactor * 100));
+	return localize('browserZoomPercent', '{0}%', Math.round(zoomFactor * 100));
 }
 export function browserZoomAccessibilityLabel(zoomFactor: number): string {
-	return localize('browserZoomAccessibilityLabel', "Page Zoom: {0}%", Math.round(zoomFactor * 100));
+	return localize('browserZoomAccessibilityLabel', 'Page Zoom: {0}%', Math.round(zoomFactor * 100));
 }
 
 /**

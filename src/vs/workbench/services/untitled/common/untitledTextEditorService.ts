@@ -16,7 +16,6 @@ import { InstantiationType, registerSingleton } from '../../../../platform/insta
 export const IUntitledTextEditorService = createDecorator<IUntitledTextEditorService>('untitledTextEditorService');
 
 export interface INewUntitledTextEditorOptions {
-
 	/**
 	 * Initial value of the untitled editor. An untitled editor with initial
 	 * value is dirty right from the beginning.
@@ -35,7 +34,6 @@ export interface INewUntitledTextEditorOptions {
 }
 
 export interface IExistingUntitledTextEditorOptions extends INewUntitledTextEditorOptions {
-
 	/**
 	 * A resource to identify the untitled editor to create or return
 	 * if already existing.
@@ -46,7 +44,6 @@ export interface IExistingUntitledTextEditorOptions extends INewUntitledTextEdit
 }
 
 export interface INewUntitledTextEditorWithAssociatedResourceOptions extends INewUntitledTextEditorOptions {
-
 	/**
 	 * Resource components to associate with the untitled editor. When saving
 	 * the untitled editor, the associated components will be used and the user
@@ -58,10 +55,10 @@ export interface INewUntitledTextEditorWithAssociatedResourceOptions extends INe
 	associatedResource?: { authority: string; path: string; query: string; fragment: string };
 }
 
-type IInternalUntitledTextEditorOptions = IExistingUntitledTextEditorOptions & INewUntitledTextEditorWithAssociatedResourceOptions;
+type IInternalUntitledTextEditorOptions = IExistingUntitledTextEditorOptions &
+	INewUntitledTextEditorWithAssociatedResourceOptions;
 
 export interface IUntitledTextEditorModelSaveEvent {
-
 	/**
 	 * The source untitled file that was saved. It is disposed at this point.
 	 */
@@ -74,7 +71,6 @@ export interface IUntitledTextEditorModelSaveEvent {
 }
 
 export interface IUntitledTextEditorService {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -153,7 +149,6 @@ export interface IUntitledTextEditorService {
 }
 
 export interface IUntitledTextEditorModelManager extends IUntitledTextEditorService {
-
 	/**
 	 * Internal method: triggers the onDidSave event.
 	 */
@@ -161,7 +156,6 @@ export interface IUntitledTextEditorModelManager extends IUntitledTextEditorServ
 }
 
 export class UntitledTextEditorService extends Disposable implements IUntitledTextEditorModelManager {
-
 	declare readonly _serviceBrand: undefined;
 
 	private static readonly UNTITLED_WITHOUT_ASSOCIATED_RESOURCE_REGEX = /Untitled-\d+/;
@@ -261,7 +255,6 @@ export class UntitledTextEditorService extends Disposable implements IUntitledTe
 	}
 
 	private doCreate(options: IInternalUntitledTextEditorOptions): UntitledTextEditorModel {
-
 		// Create a new untitled resource if none is provided
 		let untitledResource = options.untitledResource;
 		if (!untitledResource) {
@@ -273,7 +266,14 @@ export class UntitledTextEditorService extends Disposable implements IUntitledTe
 		}
 
 		// Create new model with provided options
-		const model = this.instantiationService.createInstance(UntitledTextEditorModel, untitledResource, !!options.associatedResource, options.initialValue, options.languageId, options.encoding);
+		const model = this.instantiationService.createInstance(
+			UntitledTextEditorModel,
+			untitledResource,
+			!!options.associatedResource,
+			options.initialValue,
+			options.languageId,
+			options.encoding
+		);
 
 		this.registerModel(model);
 
@@ -281,7 +281,6 @@ export class UntitledTextEditorService extends Disposable implements IUntitledTe
 	}
 
 	private registerModel(model: UntitledTextEditorModel): void {
-
 		// Install model listeners
 		const modelListeners = new DisposableStore();
 		modelListeners.add(model.onDidChangeDirty(() => this._onDidChangeDirty.fire(model)));
@@ -291,7 +290,6 @@ export class UntitledTextEditorService extends Disposable implements IUntitledTe
 
 		// Remove from cache on dispose
 		Event.once(model.onWillDispose)(() => {
-
 			// Registry
 			this.mapResourceToModel.deleteAndLeak(model.resource); // model is being disposed in this callback already
 
@@ -313,7 +311,11 @@ export class UntitledTextEditorService extends Disposable implements IUntitledTe
 	}
 
 	isUntitledWithAssociatedResource(resource: URI): boolean {
-		return resource.scheme === Schemas.untitled && resource.path.length > 1 && !UntitledTextEditorService.UNTITLED_WITHOUT_ASSOCIATED_RESOURCE_REGEX.test(resource.path);
+		return (
+			resource.scheme === Schemas.untitled &&
+			resource.path.length > 1 &&
+			!UntitledTextEditorService.UNTITLED_WITHOUT_ASSOCIATED_RESOURCE_REGEX.test(resource.path)
+		);
 	}
 
 	canDispose(model: UntitledTextEditorModel): true | Promise<true> {
@@ -326,7 +328,6 @@ export class UntitledTextEditorService extends Disposable implements IUntitledTe
 	}
 
 	private async doCanDispose(model: UntitledTextEditorModel): Promise<true> {
-
 		// dirty model: we do not allow to dispose dirty models to prevent
 		// data loss cases. dirty models can only be disposed when they are
 		// either saved or reverted

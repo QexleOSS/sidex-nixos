@@ -6,7 +6,12 @@
 import { toDisposable } from '../../../base/common/lifecycle.js';
 import { IConfigurationService } from '../../configuration/common/configuration.js';
 import { InstantiationType, registerSingleton } from '../../instantiation/common/extensions.js';
-import { AbstractMeteredConnectionService, getIsBrowserConnectionMetered, IMeteredConnectionService, NavigatorWithConnection } from '../common/meteredConnection.js';
+import {
+	AbstractMeteredConnectionService,
+	getIsBrowserConnectionMetered,
+	IMeteredConnectionService,
+	NavigatorWithConnection
+} from '../common/meteredConnection.js';
 
 /**
  * Browser implementation of the metered connection service.

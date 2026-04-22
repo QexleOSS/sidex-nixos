@@ -22,17 +22,26 @@ function extractKeyCode(e: KeyboardEvent): KeyCode {
 		return KeyCode.PauseBreak;
 	} else if (browser.isFirefox) {
 		switch (keyCode) {
-			case 59: return KeyCode.Semicolon;
+			case 59:
+				return KeyCode.Semicolon;
 			case 60:
-				if (platform.isLinux) { return KeyCode.IntlBackslash; }
+				if (platform.isLinux) {
+					return KeyCode.IntlBackslash;
+				}
 				break;
-			case 61: return KeyCode.Equal;
+			case 61:
+				return KeyCode.Equal;
 			// based on: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#numpad_keys
-			case 107: return KeyCode.NumpadAdd;
-			case 109: return KeyCode.NumpadSubtract;
-			case 173: return KeyCode.Minus;
+			case 107:
+				return KeyCode.NumpadAdd;
+			case 109:
+				return KeyCode.NumpadSubtract;
+			case 173:
+				return KeyCode.Minus;
 			case 224:
-				if (platform.isMacintosh) { return KeyCode.Meta; }
+				if (platform.isMacintosh) {
+					return KeyCode.Meta;
+				}
 				break;
 		}
 	} else if (browser.isWebKit) {
@@ -49,7 +58,6 @@ function extractKeyCode(e: KeyboardEvent): KeyCode {
 }
 
 export interface IKeyboardEvent {
-
 	readonly _standardKeyboardEventBrand: true;
 
 	readonly browserEvent: KeyboardEvent;
@@ -73,10 +81,10 @@ export interface IKeyboardEvent {
 	stopPropagation(): void;
 }
 
-const ctrlKeyMod = (platform.isMacintosh ? KeyMod.WinCtrl : KeyMod.CtrlCmd);
+const ctrlKeyMod = platform.isMacintosh ? KeyMod.WinCtrl : KeyMod.CtrlCmd;
 const altKeyMod = KeyMod.Alt;
 const shiftKeyMod = KeyMod.Shift;
-const metaKeyMod = (platform.isMacintosh ? KeyMod.CtrlCmd : KeyMod.WinCtrl);
+const metaKeyMod = platform.isMacintosh ? KeyMod.CtrlCmd : KeyMod.WinCtrl;
 
 export function printKeyboardEvent(e: KeyboardEvent): string {
 	const modifiers: string[] = [];
@@ -122,7 +130,6 @@ export function hasModifierKeys(keyStatus: {
 }
 
 export class StandardKeyboardEvent implements IKeyboardEvent {
-
 	readonly _standardKeyboardEventBrand = true;
 
 	public readonly browserEvent: KeyboardEvent;

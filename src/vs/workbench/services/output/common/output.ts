@@ -42,7 +42,10 @@ export const CONTEXT_ACTIVE_FILE_OUTPUT = new RawContextKey<boolean>('activeLogO
 export const CONTEXT_ACTIVE_LOG_FILE_OUTPUT = new RawContextKey<boolean>('activeLogOutput.isLog', false);
 export const CONTEXT_ACTIVE_OUTPUT_LEVEL_SETTABLE = new RawContextKey<boolean>('activeLogOutput.levelSettable', false);
 export const CONTEXT_ACTIVE_OUTPUT_LEVEL = new RawContextKey<string>('activeLogOutput.level', '');
-export const CONTEXT_ACTIVE_OUTPUT_LEVEL_IS_DEFAULT = new RawContextKey<boolean>('activeLogOutput.levelIsDefault', false);
+export const CONTEXT_ACTIVE_OUTPUT_LEVEL_IS_DEFAULT = new RawContextKey<boolean>(
+	'activeLogOutput.levelIsDefault',
+	false
+);
 export const CONTEXT_OUTPUT_SCROLL_LOCK = new RawContextKey<boolean>(`outputView.scrollLock`, false);
 export const ACTIVE_OUTPUT_CHANNEL_CONTEXT = new RawContextKey<string>('activeOutputChannel', '');
 export const SHOW_TRACE_FILTER_CONTEXT = new RawContextKey<boolean>('output.filter.trace', true);
@@ -159,7 +162,6 @@ export interface ILogEntry {
 }
 
 export interface IOutputChannel {
-
 	/**
 	 * Identifier of the output channel.
 	 */
@@ -229,11 +231,15 @@ export interface IMultiSourceOutputChannelDescriptor extends IOutputChannelDescr
 	source: ReadonlyArray<IOutputContentSource>;
 }
 
-export function isSingleSourceOutputChannelDescriptor(descriptor: IOutputChannelDescriptor): descriptor is ISingleSourceOutputChannelDescriptor {
+export function isSingleSourceOutputChannelDescriptor(
+	descriptor: IOutputChannelDescriptor
+): descriptor is ISingleSourceOutputChannelDescriptor {
 	return !!descriptor.source && !Array.isArray(descriptor.source);
 }
 
-export function isMultiSourceOutputChannelDescriptor(descriptor: IOutputChannelDescriptor): descriptor is IMultiSourceOutputChannelDescriptor {
+export function isMultiSourceOutputChannelDescriptor(
+	descriptor: IOutputChannelDescriptor
+): descriptor is IMultiSourceOutputChannelDescriptor {
 	return Array.isArray(descriptor.source);
 }
 
@@ -243,7 +249,6 @@ export interface IOutputContentSource {
 }
 
 export interface IOutputChannelRegistry {
-
 	readonly onDidRegisterChannel: Event<string>;
 	readonly onDidRemoveChannel: Event<IOutputChannelDescriptor>;
 	readonly onDidUpdateChannelSources: Event<IMultiSourceOutputChannelDescriptor>;

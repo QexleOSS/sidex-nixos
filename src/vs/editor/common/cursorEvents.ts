@@ -37,7 +37,7 @@ export const enum CursorChangeReason {
 	/**
 	 * There was a Redo.
 	 */
-	Redo = 6,
+	Redo = 6
 }
 /**
  * An event describing that the cursor position has changed.

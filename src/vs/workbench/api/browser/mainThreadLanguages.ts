@@ -6,7 +6,12 @@
 import { URI, UriComponents } from '../../../base/common/uri.js';
 import { ILanguageService } from '../../../editor/common/languages/language.js';
 import { IModelService } from '../../../editor/common/services/model.js';
-import { MainThreadLanguagesShape, MainContext, ExtHostContext, ExtHostLanguagesShape } from '../common/extHost.protocol.js';
+import {
+	MainThreadLanguagesShape,
+	MainContext,
+	ExtHostContext,
+	ExtHostLanguagesShape
+} from '../common/extHost.protocol.js';
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
 import { IPosition } from '../../../editor/common/core/position.js';
 import { IRange, Range } from '../../../editor/common/core/range.js';
@@ -17,7 +22,6 @@ import { Disposable, DisposableMap } from '../../../base/common/lifecycle.js';
 
 @extHostNamedCustomer(MainContext.MainThreadLanguages)
 export class MainThreadLanguages extends Disposable implements MainThreadLanguagesShape {
-
 	private readonly _proxy: ExtHostLanguagesShape;
 
 	private readonly _status = this._register(new DisposableMap<number>());
@@ -27,19 +31,20 @@ export class MainThreadLanguages extends Disposable implements MainThreadLanguag
 		@ILanguageService private readonly _languageService: ILanguageService,
 		@IModelService private readonly _modelService: IModelService,
 		@ITextModelService private _resolverService: ITextModelService,
-		@ILanguageStatusService private readonly _languageStatusService: ILanguageStatusService,
+		@ILanguageStatusService private readonly _languageStatusService: ILanguageStatusService
 	) {
 		super();
 		this._proxy = _extHostContext.getProxy(ExtHostContext.ExtHostLanguages);
 
 		this._proxy.$acceptLanguageIds(_languageService.getRegisteredLanguageIds());
-		this._register(_languageService.onDidChange(_ => {
-			this._proxy.$acceptLanguageIds(_languageService.getRegisteredLanguageIds());
-		}));
+		this._register(
+			_languageService.onDidChange(_ => {
+				this._proxy.$acceptLanguageIds(_languageService.getRegisteredLanguageIds());
+			})
+		);
 	}
 
 	async $changeLanguage(resource: UriComponents, languageId: string): Promise<void> {
-
 		if (!this._languageService.isRegisteredLanguageId(languageId)) {
 			return Promise.reject(new Error(`Unknown language id: ${languageId}`));
 		}
@@ -53,7 +58,10 @@ export class MainThreadLanguages extends Disposable implements MainThreadLanguag
 		}
 	}
 
-	async $tokensAtPosition(resource: UriComponents, position: IPosition): Promise<undefined | { type: StandardTokenType; range: IRange }> {
+	async $tokensAtPosition(
+		resource: UriComponents,
+		position: IPosition
+	): Promise<undefined | { type: StandardTokenType; range: IRange }> {
 		const uri = URI.revive(resource);
 		const model = this._modelService.getModel(uri);
 		if (!model) {
@@ -64,7 +72,12 @@ export class MainThreadLanguages extends Disposable implements MainThreadLanguag
 		const idx = tokens.findTokenIndexAtOffset(position.column - 1);
 		return {
 			type: tokens.getStandardTokenType(idx),
-			range: new Range(position.lineNumber, 1 + tokens.getStartOffset(idx), position.lineNumber, 1 + tokens.getEndOffset(idx))
+			range: new Range(
+				position.lineNumber,
+				1 + tokens.getStartOffset(idx),
+				position.lineNumber,
+				1 + tokens.getEndOffset(idx)
+			)
 		};
 	}
 

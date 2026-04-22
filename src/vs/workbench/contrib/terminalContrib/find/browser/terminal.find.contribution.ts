@@ -13,9 +13,20 @@ import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contex
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { findInFilesCommand } from '../../../search/browser/searchActionsFind.js';
-import { IDetachedTerminalInstance, ITerminalContribution, ITerminalInstance, ITerminalService, IXtermTerminal, isDetachedTerminalInstance } from '../../../terminal/browser/terminal.js';
+import {
+	IDetachedTerminalInstance,
+	ITerminalContribution,
+	ITerminalInstance,
+	ITerminalService,
+	IXtermTerminal,
+	isDetachedTerminalInstance
+} from '../../../terminal/browser/terminal.js';
 import { registerActiveInstanceAction, registerActiveXtermAction } from '../../../terminal/browser/terminalActions.js';
-import { registerTerminalContribution, type IDetachedCompatibleTerminalContributionContext, type ITerminalContributionContext } from '../../../terminal/browser/terminalExtensions.js';
+import {
+	registerTerminalContribution,
+	type IDetachedCompatibleTerminalContributionContext,
+	type ITerminalContributionContext
+} from '../../../terminal/browser/terminalExtensions.js';
 import { TerminalContextKeys } from '../../../terminal/common/terminalContextKey.js';
 import { TerminalFindCommandId } from '../common/terminal.find.js';
 import './media/terminalFind.css';
@@ -39,12 +50,14 @@ class TerminalFindContribution extends Disposable implements ITerminalContributi
 	private _findWidget: Lazy<TerminalFindWidget>;
 	private _lastLayoutDimensions: IDimension | undefined;
 
-	get findWidget(): TerminalFindWidget { return this._findWidget.value; }
+	get findWidget(): TerminalFindWidget {
+		return this._findWidget.value;
+	}
 
 	constructor(
 		ctx: ITerminalContributionContext | IDetachedCompatibleTerminalContributionContext,
 		@IInstantiationService instantiationService: IInstantiationService,
-		@ITerminalService terminalService: ITerminalService,
+		@ITerminalService terminalService: ITerminalService
 	) {
 		super();
 
@@ -93,7 +106,6 @@ class TerminalFindContribution extends Disposable implements ITerminalContributi
 		super.dispose();
 		this._findWidget.rawValue?.dispose();
 	}
-
 }
 registerTerminalContribution(TerminalFindContribution.ID, TerminalFindContribution, true);
 
@@ -244,7 +256,11 @@ registerActiveInstanceAction({
 	keybinding: [
 		{
 			primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyF,
-			when: ContextKeyExpr.and(TerminalContextKeys.processSupported, TerminalContextKeys.focus, TerminalContextKeys.textSelected),
+			when: ContextKeyExpr.and(
+				TerminalContextKeys.processSupported,
+				TerminalContextKeys.focus,
+				TerminalContextKeys.textSelected
+			),
 			weight: KeybindingWeight.WorkbenchContrib + 50
 		}
 	],

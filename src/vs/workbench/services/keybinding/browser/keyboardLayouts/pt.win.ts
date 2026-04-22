@@ -5,7 +5,6 @@
 
 import { KeyboardLayoutContribution } from './_.contribution.js';
 
-
 KeyboardLayoutContribution.INSTANCE.registerKeyboardLayout({
 	layout: { name: '00000816', id: '', text: 'Portuguese' },
 	secondaryLayouts: [],
@@ -53,7 +52,7 @@ KeyboardLayoutContribution.INSTANCE.registerKeyboardLayout({
 		Backspace: [],
 		Tab: [],
 		Space: [' ', ' ', '', '', 0, 'VK_SPACE'],
-		Minus: ['\'', '?', '', '', 0, 'VK_OEM_4'],
+		Minus: ["'", '?', '', '', 0, 'VK_OEM_4'],
 		Equal: ['«', '»', '', '', 0, 'VK_OEM_6'],
 		BracketLeft: ['+', '*', '¨', '', 0, 'VK_OEM_PLUS'],
 		BracketRight: ['´', '`', ']', '', 0, 'VK_OEM_1'],
@@ -166,5 +165,4 @@ KeyboardLayoutContribution.INSTANCE.registerKeyboardLayout({
 		BrowserRefresh: [],
 		BrowserFavorites: []
 	}
-
 });

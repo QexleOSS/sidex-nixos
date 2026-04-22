@@ -22,7 +22,11 @@ export function tokenizeToStringSync(languageService: ILanguageService, text: st
 	return _tokenizeToString(text, languageService.languageIdCodec, TokenizationRegistry.get(languageId) || fallback);
 }
 
-export async function tokenizeToString(languageService: ILanguageService, text: string, languageId: string | null): Promise<string> {
+export async function tokenizeToString(
+	languageService: ILanguageService,
+	text: string,
+	languageId: string | null
+): Promise<string> {
 	if (!languageId) {
 		return _tokenizeToString(text, languageService.languageIdCodec, fallback);
 	}
@@ -30,7 +34,15 @@ export async function tokenizeToString(languageService: ILanguageService, text: 
 	return _tokenizeToString(text, languageService.languageIdCodec, tokenizationSupport || fallback);
 }
 
-export function tokenizeLineToHTML(text: string, viewLineTokens: IViewLineTokens, colorMap: string[], startOffset: number, endOffset: number, tabSize: number, useNbsp: boolean): string {
+export function tokenizeLineToHTML(
+	text: string,
+	viewLineTokens: IViewLineTokens,
+	colorMap: string[],
+	startOffset: number,
+	endOffset: number,
+	tabSize: number,
+	useNbsp: boolean
+): string {
 	let result = `<div>`;
 	let charIndex = 0;
 	let width = 0;
@@ -45,7 +57,7 @@ export function tokenizeLineToHTML(text: string, viewLineTokens: IViewLineTokens
 			const charCode = text.charCodeAt(charIndex);
 			const isTab = charCode === CharCode.Tab;
 
-			width += strings.isFullWidthCharacter(charCode) ? 2 : (isTab ? 0 : 1);
+			width += strings.isFullWidthCharacter(charCode) ? 2 : isTab ? 0 : 1;
 
 			if (charIndex < startOffset) {
 				if (isTab) {
@@ -138,7 +150,11 @@ export function tokenizeLineToHTML(text: string, viewLineTokens: IViewLineTokens
 	return result;
 }
 
-export function _tokenizeToString(text: string, languageIdCodec: ILanguageIdCodec, tokenizationSupport: IReducedTokenizationSupport): string {
+export function _tokenizeToString(
+	text: string,
+	languageIdCodec: ILanguageIdCodec,
+	tokenizationSupport: IReducedTokenizationSupport
+): string {
 	let result = `<div class="monaco-tokenized-source">`;
 	const lines = strings.splitLines(text);
 	let currentState = tokenizationSupport.getInitialState();

@@ -15,11 +15,10 @@ import { INotificationSource } from '../../../platform/notification/common/notif
 import { createDecorator } from '../../../platform/instantiation/common/instantiation.js';
 import { IExtHostRpcService } from './extHostRpcService.js';
 
-export interface IExtHostProgress extends ExtHostProgress { }
+export interface IExtHostProgress extends ExtHostProgress {}
 export const IExtHostProgress = createDecorator<IExtHostProgress>('IExtHostProgress');
 
 export class ExtHostProgress implements ExtHostProgressShape {
-
 	declare readonly _serviceBrand: undefined;
 
 	private _proxy: MainThreadProgressShape;
@@ -30,24 +29,44 @@ export class ExtHostProgress implements ExtHostProgressShape {
 		this._proxy = extHostRpc.getProxy(MainContext.MainThreadProgress);
 	}
 
-	async withProgress<R>(extension: IExtensionDescription, options: ProgressOptions, task: (progress: Progress<IProgressStep>, token: CancellationToken) => Thenable<R>): Promise<R> {
+	async withProgress<R>(
+		extension: IExtensionDescription,
+		options: ProgressOptions,
+		task: (progress: Progress<IProgressStep>, token: CancellationToken) => Thenable<R>
+	): Promise<R> {
 		const handle = this._handles++;
 		const { title, location, cancellable } = options;
 		const source = { label: extension.displayName || extension.name, id: extension.identifier.value };
 
-		this._proxy.$startProgress(handle, { location: ProgressLocation.from(location), title, source, cancellable }, !extension.isUnderDevelopment ? extension.identifier.value : undefined).catch(onUnexpectedExternalError);
+		this._proxy
+			.$startProgress(
+				handle,
+				{ location: ProgressLocation.from(location), title, source, cancellable },
+				!extension.isUnderDevelopment ? extension.identifier.value : undefined
+			)
+			.catch(onUnexpectedExternalError);
 		return this._withProgress(handle, task, !!cancellable);
 	}
 
-	async withProgressFromSource<R>(source: string | INotificationSource, options: ProgressOptions, task: (progress: Progress<IProgressStep>, token: CancellationToken) => Thenable<R>): Promise<R> {
+	async withProgressFromSource<R>(
+		source: string | INotificationSource,
+		options: ProgressOptions,
+		task: (progress: Progress<IProgressStep>, token: CancellationToken) => Thenable<R>
+	): Promise<R> {
 		const handle = this._handles++;
 		const { title, location, cancellable } = options;
 
-		this._proxy.$startProgress(handle, { location: ProgressLocation.from(location), title, source, cancellable }, undefined).catch(onUnexpectedExternalError);
+		this._proxy
+			.$startProgress(handle, { location: ProgressLocation.from(location), title, source, cancellable }, undefined)
+			.catch(onUnexpectedExternalError);
 		return this._withProgress(handle, task, !!cancellable);
 	}
 
-	private _withProgress<R>(handle: number, task: (progress: Progress<IProgressStep>, token: CancellationToken) => Thenable<R>, cancellable: boolean): Thenable<R> {
+	private _withProgress<R>(
+		handle: number,
+		task: (progress: Progress<IProgressStep>, token: CancellationToken) => Thenable<R>,
+		cancellable: boolean
+	): Thenable<R> {
 		let source: CancellationTokenSource | undefined;
 		if (cancellable) {
 			source = new CancellationTokenSource();
@@ -63,13 +82,19 @@ export class ExtHostProgress implements ExtHostProgressShape {
 		let p: Thenable<R>;
 
 		try {
-			p = task(new ProgressCallback(this._proxy, handle), cancellable && source ? source.token : CancellationToken.None);
+			p = task(
+				new ProgressCallback(this._proxy, handle),
+				cancellable && source ? source.token : CancellationToken.None
+			);
 		} catch (err) {
 			progressEnd(handle);
 			throw err;
 		}
 
-		p.then(result => progressEnd(handle), err => progressEnd(handle));
+		p.then(
+			result => progressEnd(handle),
+			err => progressEnd(handle)
+		);
 		return p;
 	}
 
@@ -96,11 +121,18 @@ function mergeProgress(result: IProgressStep, currentValue: IProgressStep): IPro
 }
 
 class ProgressCallback extends Progress<IProgressStep> {
-	constructor(private _proxy: MainThreadProgressShape, private _handle: number) {
+	constructor(
+		private _proxy: MainThreadProgressShape,
+		private _handle: number
+	) {
 		super(p => this.throttledReport(p));
 	}
 
-	@throttle(100, (result: IProgressStep, currentValue: IProgressStep) => mergeProgress(result, currentValue), () => Object.create(null))
+	@throttle(
+		100,
+		(result: IProgressStep, currentValue: IProgressStep) => mergeProgress(result, currentValue),
+		() => Object.create(null)
+	)
 	throttledReport(p: IProgressStep): void {
 		this._proxy.$progressReport(this._handle, p);
 	}

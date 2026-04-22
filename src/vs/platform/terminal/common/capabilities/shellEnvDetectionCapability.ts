@@ -4,7 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Disposable } from '../../../../base/common/lifecycle.js';
-import { IShellEnvDetectionCapability, TerminalCapability, TerminalShellIntegrationEnvironment } from './capabilities.js';
+import {
+	IShellEnvDetectionCapability,
+	TerminalCapability,
+	TerminalShellIntegrationEnvironment
+} from './capabilities.js';
 import { Emitter } from '../../../../base/common/event.js';
 import { equals } from '../../../../base/common/objects.js';
 import { mapsStrictEqualIgnoreOrder } from '../../../../base/common/map.js';
@@ -55,7 +59,6 @@ export class ShellEnvDetectionCapability extends Disposable implements IShellEnv
 				isTrusted: this._env.isTrusted && isTrusted
 			};
 		}
-
 	}
 
 	setEnvironmentSingleVar(key: string, value: string | undefined, isTrusted: boolean): void {

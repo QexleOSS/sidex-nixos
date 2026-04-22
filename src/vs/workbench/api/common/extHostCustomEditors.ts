@@ -22,15 +22,13 @@ import { Cache } from './cache.js';
 import * as extHostProtocol from './extHost.protocol.js';
 import * as extHostTypes from './extHostTypes.js';
 
-
 class CustomDocumentStoreEntry {
-
 	private _backupCounter = 1;
 
 	constructor(
 		public readonly document: vscode.CustomDocument,
-		private readonly _storagePath: URI | undefined,
-	) { }
+		private readonly _storagePath: URI | undefined
+	) {}
 
 	private readonly _edits = new Cache<vscode.CustomDocumentEditEvent>('custom documents');
 
@@ -64,7 +62,7 @@ class CustomDocumentStoreEntry {
 		if (!this._storagePath) {
 			throw new Error('Backup requires a valid storage path');
 		}
-		const fileName = hashPath(this.document.uri) + (this._backupCounter++);
+		const fileName = hashPath(this.document.uri) + this._backupCounter++;
 		return joinPath(this._storagePath, fileName);
 	}
 
@@ -94,7 +92,11 @@ class CustomDocumentStore {
 		return this._documents.get(this.key(viewType, resource));
 	}
 
-	public add(viewType: string, document: vscode.CustomDocument, storagePath: URI | undefined): CustomDocumentStoreEntry {
+	public add(
+		viewType: string,
+		document: vscode.CustomDocument,
+		storagePath: URI | undefined
+	): CustomDocumentStoreEntry {
 		const key = this.key(viewType, document.uri);
 		if (this._documents.has(key)) {
 			throw new Error(`Document already exists for viewType:${viewType} resource:${document.uri}`);
@@ -121,24 +123,34 @@ const enum CustomEditorType {
 	Custom
 }
 
-type ProviderEntry = {
-	readonly extension: IExtensionDescription;
-	readonly type: CustomEditorType.Text;
-	readonly provider: vscode.CustomTextEditorProvider;
-} | {
-	readonly extension: IExtensionDescription;
-	readonly type: CustomEditorType.Custom;
-	readonly provider: vscode.CustomReadonlyEditorProvider;
-};
+type ProviderEntry =
+	| {
+			readonly extension: IExtensionDescription;
+			readonly type: CustomEditorType.Text;
+			readonly provider: vscode.CustomTextEditorProvider;
+	  }
+	| {
+			readonly extension: IExtensionDescription;
+			readonly type: CustomEditorType.Custom;
+			readonly provider: vscode.CustomReadonlyEditorProvider;
+	  };
 
 class EditorProviderStore {
 	private readonly _providers = new Map<string, ProviderEntry>();
 
-	public addTextProvider(viewType: string, extension: IExtensionDescription, provider: vscode.CustomTextEditorProvider): vscode.Disposable {
+	public addTextProvider(
+		viewType: string,
+		extension: IExtensionDescription,
+		provider: vscode.CustomTextEditorProvider
+	): vscode.Disposable {
 		return this.add(viewType, { type: CustomEditorType.Text, extension, provider });
 	}
 
-	public addCustomProvider(viewType: string, extension: IExtensionDescription, provider: vscode.CustomReadonlyEditorProvider): vscode.Disposable {
+	public addCustomProvider(
+		viewType: string,
+		extension: IExtensionDescription,
+		provider: vscode.CustomReadonlyEditorProvider
+	): vscode.Disposable {
 		return this.add(viewType, { type: CustomEditorType.Custom, extension, provider });
 	}
 
@@ -156,7 +168,6 @@ class EditorProviderStore {
 }
 
 export class ExtHostCustomEditors implements extHostProtocol.ExtHostCustomEditorsShape {
-
 	private readonly _proxy: extHostProtocol.MainThreadCustomEditorsShape;
 
 	private readonly _editorProviders = new EditorProviderStore();
@@ -168,7 +179,7 @@ export class ExtHostCustomEditors implements extHostProtocol.ExtHostCustomEditor
 		private readonly _extHostDocuments: ExtHostDocuments,
 		private readonly _extensionStoragePaths: IExtensionStoragePaths | undefined,
 		private readonly _extHostWebview: ExtHostWebviews,
-		private readonly _extHostWebviewPanels: ExtHostWebviewPanels,
+		private readonly _extHostWebviewPanels: ExtHostWebviewPanels
 	) {
 		this._proxy = mainContext.getProxy(extHostProtocol.MainContext.MainThreadCustomEditors);
 	}
@@ -177,40 +188,61 @@ export class ExtHostCustomEditors implements extHostProtocol.ExtHostCustomEditor
 		extension: IExtensionDescription,
 		viewType: string,
 		provider: vscode.CustomReadonlyEditorProvider | vscode.CustomTextEditorProvider,
-		options: { webviewOptions?: vscode.WebviewPanelOptions; supportsMultipleEditorsPerDocument?: boolean },
+		options: { webviewOptions?: vscode.WebviewPanelOptions; supportsMultipleEditorsPerDocument?: boolean }
 	): vscode.Disposable {
 		const disposables = new DisposableStore();
 		if (isCustomTextEditorProvider(provider)) {
 			disposables.add(this._editorProviders.addTextProvider(viewType, extension, provider));
-			this._proxy.$registerTextEditorProvider(toExtensionData(extension), viewType, options.webviewOptions || {}, {
-				supportsMove: !!provider.moveCustomTextEditor,
-			}, shouldSerializeBuffersForPostMessage(extension));
+			this._proxy.$registerTextEditorProvider(
+				toExtensionData(extension),
+				viewType,
+				options.webviewOptions || {},
+				{
+					supportsMove: !!provider.moveCustomTextEditor
+				},
+				shouldSerializeBuffersForPostMessage(extension)
+			);
 		} else {
 			disposables.add(this._editorProviders.addCustomProvider(viewType, extension, provider));
 
 			if (isCustomEditorProviderWithEditingCapability(provider)) {
-				disposables.add(provider.onDidChangeCustomDocument(e => {
-					const entry = this.getCustomDocumentEntry(viewType, e.document.uri);
-					if (isEditEvent(e)) {
-						const editId = entry.addEdit(e);
-						this._proxy.$onDidEdit(e.document.uri, viewType, editId, e.label);
-					} else {
-						this._proxy.$onContentChange(e.document.uri, viewType);
-					}
-				}));
+				disposables.add(
+					provider.onDidChangeCustomDocument(e => {
+						const entry = this.getCustomDocumentEntry(viewType, e.document.uri);
+						if (isEditEvent(e)) {
+							const editId = entry.addEdit(e);
+							this._proxy.$onDidEdit(e.document.uri, viewType, editId, e.label);
+						} else {
+							this._proxy.$onContentChange(e.document.uri, viewType);
+						}
+					})
+				);
 			}
 
-			this._proxy.$registerCustomEditorProvider(toExtensionData(extension), viewType, options.webviewOptions || {}, !!options.supportsMultipleEditorsPerDocument, shouldSerializeBuffersForPostMessage(extension));
+			this._proxy.$registerCustomEditorProvider(
+				toExtensionData(extension),
+				viewType,
+				options.webviewOptions || {},
+				!!options.supportsMultipleEditorsPerDocument,
+				shouldSerializeBuffersForPostMessage(extension)
+			);
 		}
 
 		return extHostTypes.Disposable.from(
 			disposables,
 			new extHostTypes.Disposable(() => {
 				this._proxy.$unregisterEditorProvider(viewType);
-			}));
+			})
+		);
 	}
 
-	async $createCustomDocument(resource: UriComponents, viewType: string, backupId: string | undefined, untitledDocumentData: VSBuffer | undefined, cancellation: CancellationToken) {
+	async $createCustomDocument(
+		resource: UriComponents,
+		viewType: string,
+		backupId: string | undefined,
+		untitledDocumentData: VSBuffer | undefined,
+		cancellation: CancellationToken
+	) {
 		const entry = this._editorProviders.get(viewType);
 		if (!entry) {
 			throw new Error(`No provider found for '${viewType}'`);
@@ -221,11 +253,17 @@ export class ExtHostCustomEditors implements extHostProtocol.ExtHostCustomEditor
 		}
 
 		const revivedResource = URI.revive(resource);
-		const document = await entry.provider.openCustomDocument(revivedResource, { backupId, untitledDocumentData: untitledDocumentData?.buffer }, cancellation);
+		const document = await entry.provider.openCustomDocument(
+			revivedResource,
+			{ backupId, untitledDocumentData: untitledDocumentData?.buffer },
+			cancellation
+		);
 
 		let storageRoot: URI | undefined;
 		if (isCustomEditorProviderWithEditingCapability(entry.provider) && this._extensionStoragePaths) {
-			storageRoot = this._extensionStoragePaths.workspaceValue(entry.extension) ?? this._extensionStoragePaths.globalValue(entry.extension);
+			storageRoot =
+				this._extensionStoragePaths.workspaceValue(entry.extension) ??
+				this._extensionStoragePaths.globalValue(entry.extension);
 		}
 		this._documents.add(viewType, document, storageRoot);
 
@@ -261,7 +299,7 @@ export class ExtHostCustomEditors implements extHostProtocol.ExtHostCustomEditor
 			active: boolean;
 		},
 		position: EditorGroupColumn,
-		cancellation: CancellationToken,
+		cancellation: CancellationToken
 	): Promise<void> {
 		const entry = this._editorProviders.get(viewType);
 		if (!entry) {
@@ -271,7 +309,15 @@ export class ExtHostCustomEditors implements extHostProtocol.ExtHostCustomEditor
 		const viewColumn = typeConverters.ViewColumn.to(position);
 
 		const webview = this._extHostWebview.createNewWebview(handle, initData.contentOptions, entry.extension);
-		const panel = this._extHostWebviewPanels.createNewWebviewPanel(handle, viewType, initData.title, viewColumn, initData.options, webview, initData.active);
+		const panel = this._extHostWebviewPanels.createNewWebviewPanel(
+			handle,
+			viewType,
+			initData.title,
+			viewColumn,
+			initData.options,
+			webview,
+			initData.active
+		);
 
 		const revivedResource = URI.revive(resource);
 
@@ -312,7 +358,11 @@ export class ExtHostCustomEditors implements extHostProtocol.ExtHostCustomEditor
 
 		const resource = URI.revive(newResourceComponents);
 		const document = this._extHostDocuments.getDocument(resource);
-		await (entry.provider as vscode.CustomTextEditorProvider).moveCustomTextEditor!(document, webview, CancellationToken.None);
+		await (entry.provider as vscode.CustomTextEditorProvider).moveCustomTextEditor!(
+			document,
+			webview,
+			CancellationToken.None
+		);
 	}
 
 	async $undo(resourceComponents: UriComponents, viewType: string, editId: number, isDirty: boolean): Promise<void> {
@@ -339,7 +389,12 @@ export class ExtHostCustomEditors implements extHostProtocol.ExtHostCustomEditor
 		entry.disposeBackup();
 	}
 
-	async $onSaveAs(resourceComponents: UriComponents, viewType: string, targetResource: UriComponents, cancellation: CancellationToken): Promise<void> {
+	async $onSaveAs(
+		resourceComponents: UriComponents,
+		viewType: string,
+		targetResource: UriComponents,
+		cancellation: CancellationToken
+	): Promise<void> {
 		const entry = this.getCustomDocumentEntry(viewType, resourceComponents);
 		const provider = this.getCustomEditorProvider(viewType);
 		return provider.saveCustomDocumentAs(entry.document, URI.revive(targetResource), cancellation);
@@ -349,9 +404,13 @@ export class ExtHostCustomEditors implements extHostProtocol.ExtHostCustomEditor
 		const entry = this.getCustomDocumentEntry(viewType, resourceComponents);
 		const provider = this.getCustomEditorProvider(viewType);
 
-		const backup = await provider.backupCustomDocument(entry.document, {
-			destination: entry.getNewBackupUri(),
-		}, cancellation);
+		const backup = await provider.backupCustomDocument(
+			entry.document,
+			{
+				destination: entry.getNewBackupUri()
+			},
+			cancellation
+		);
 		entry.updateBackup(backup);
 		return backup.id;
 	}
@@ -374,20 +433,29 @@ export class ExtHostCustomEditors implements extHostProtocol.ExtHostCustomEditor
 	}
 }
 
-function isCustomEditorProviderWithEditingCapability(provider: vscode.CustomTextEditorProvider | vscode.CustomEditorProvider | vscode.CustomReadonlyEditorProvider): provider is vscode.CustomEditorProvider {
+function isCustomEditorProviderWithEditingCapability(
+	provider: vscode.CustomTextEditorProvider | vscode.CustomEditorProvider | vscode.CustomReadonlyEditorProvider
+): provider is vscode.CustomEditorProvider {
 	return !!(provider as vscode.CustomEditorProvider).onDidChangeCustomDocument;
 }
 
-function isCustomTextEditorProvider(provider: vscode.CustomReadonlyEditorProvider<vscode.CustomDocument> | vscode.CustomTextEditorProvider): provider is vscode.CustomTextEditorProvider {
+function isCustomTextEditorProvider(
+	provider: vscode.CustomReadonlyEditorProvider<vscode.CustomDocument> | vscode.CustomTextEditorProvider
+): provider is vscode.CustomTextEditorProvider {
 	return typeof (provider as vscode.CustomTextEditorProvider).resolveCustomTextEditor === 'function';
 }
 
-function isEditEvent(e: vscode.CustomDocumentContentChangeEvent | vscode.CustomDocumentEditEvent): e is vscode.CustomDocumentEditEvent {
-	return typeof (e as vscode.CustomDocumentEditEvent).undo === 'function'
-		&& typeof (e as vscode.CustomDocumentEditEvent).redo === 'function';
+function isEditEvent(
+	e: vscode.CustomDocumentContentChangeEvent | vscode.CustomDocumentEditEvent
+): e is vscode.CustomDocumentEditEvent {
+	return (
+		typeof (e as vscode.CustomDocumentEditEvent).undo === 'function' &&
+		typeof (e as vscode.CustomDocumentEditEvent).redo === 'function'
+	);
 }
 
 function hashPath(resource: URI): string {
-	const str = resource.scheme === Schemas.file || resource.scheme === Schemas.untitled ? resource.fsPath : resource.toString();
+	const str =
+		resource.scheme === Schemas.file || resource.scheme === Schemas.untitled ? resource.fsPath : resource.toString();
 	return hash(str) + '';
 }

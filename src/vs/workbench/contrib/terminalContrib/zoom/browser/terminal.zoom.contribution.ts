@@ -10,8 +10,17 @@ import { MouseWheelClassifier } from '../../../../../base/browser/ui/scrollbar/s
 import { Disposable, MutableDisposable } from '../../../../../base/common/lifecycle.js';
 import { isMacintosh } from '../../../../../base/common/platform.js';
 import { TerminalSettingId } from '../../../../../platform/terminal/common/terminal.js';
-import { IDetachedTerminalInstance, ITerminalContribution, ITerminalInstance, IXtermTerminal } from '../../../terminal/browser/terminal.js';
-import { registerTerminalContribution, type IDetachedCompatibleTerminalContributionContext, type ITerminalContributionContext } from '../../../terminal/browser/terminalExtensions.js';
+import {
+	IDetachedTerminalInstance,
+	ITerminalContribution,
+	ITerminalInstance,
+	IXtermTerminal
+} from '../../../terminal/browser/terminal.js';
+import {
+	registerTerminalContribution,
+	type IDetachedCompatibleTerminalContributionContext,
+	type ITerminalContributionContext
+} from '../../../terminal/browser/terminalExtensions.js';
 import { IConfigurationService } from '../../../../../platform/configuration/common/configuration.js';
 import { registerTerminalAction } from '../../../terminal/browser/terminalActions.js';
 import { localize2 } from '../../../../../nls.js';
@@ -37,21 +46,23 @@ class TerminalMouseWheelZoomContribution extends Disposable implements ITerminal
 
 	constructor(
 		_ctx: ITerminalContributionContext | IDetachedCompatibleTerminalContributionContext,
-		@IConfigurationService private readonly _configurationService: IConfigurationService,
+		@IConfigurationService private readonly _configurationService: IConfigurationService
 	) {
 		super();
 	}
 
 	xtermOpen(xterm: IXtermTerminal & { raw: RawXtermTerminal }): void {
-		this._register(Event.runAndSubscribe(this._configurationService.onDidChangeConfiguration, e => {
-			if (!e || e.affectsConfiguration(TerminalZoomSettingId.MouseWheelZoom)) {
-				if (!!this._configurationService.getValue(TerminalZoomSettingId.MouseWheelZoom)) {
-					this._setupMouseWheelZoomListener(xterm.raw);
-				} else {
-					this._listener.clear();
+		this._register(
+			Event.runAndSubscribe(this._configurationService.onDidChangeConfiguration, e => {
+				if (!e || e.affectsConfiguration(TerminalZoomSettingId.MouseWheelZoom)) {
+					if (!!this._configurationService.getValue(TerminalZoomSettingId.MouseWheelZoom)) {
+						this._setupMouseWheelZoomListener(xterm.raw);
+					} else {
+						this._listener.clear();
+					}
 				}
-			}
-		}));
+			})
+		);
 	}
 
 	private _getConfigFontSize(): number {
@@ -110,17 +121,18 @@ class TerminalMouseWheelZoomContribution extends Disposable implements ITerminal
 		};
 
 		// Use the capture phase to ensure we catch the event before the terminal's scrollable element consumes it
-		this._listener.value = dom.addDisposableListener(raw.element!, dom.EventType.MOUSE_WHEEL, wheelListener, { capture: true, passive: false });
+		this._listener.value = dom.addDisposableListener(raw.element!, dom.EventType.MOUSE_WHEEL, wheelListener, {
+			capture: true,
+			passive: false
+		});
 	}
 
 	private _hasMouseWheelZoomModifiers(browserEvent: WheelEvent | IMouseWheelEvent): boolean {
-		return (
-			isMacintosh
-				// on macOS we support cmd + two fingers scroll (`metaKey` set)
+		return isMacintosh
+			? // on macOS we support cmd + two fingers scroll (`metaKey` set)
 				// and also the two fingers pinch gesture (`ctrKey` set)
-				? ((browserEvent.metaKey || browserEvent.ctrlKey) && !browserEvent.shiftKey && !browserEvent.altKey)
-				: (browserEvent.ctrlKey && !browserEvent.metaKey && !browserEvent.shiftKey && !browserEvent.altKey)
-		);
+				(browserEvent.metaKey || browserEvent.ctrlKey) && !browserEvent.shiftKey && !browserEvent.altKey
+			: browserEvent.ctrlKey && !browserEvent.metaKey && !browserEvent.shiftKey && !browserEvent.altKey;
 	}
 }
 

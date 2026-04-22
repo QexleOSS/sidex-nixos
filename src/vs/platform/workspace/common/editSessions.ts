@@ -11,7 +11,12 @@ import { IWorkspaceFolder } from './workspace.js';
 export interface IEditSessionIdentityProvider {
 	readonly scheme: string;
 	getEditSessionIdentifier(workspaceFolder: IWorkspaceFolder, token: CancellationToken): Promise<string | undefined>;
-	provideEditSessionIdentityMatch(workspaceFolder: IWorkspaceFolder, identity1: string, identity2: string, token: CancellationToken): Promise<EditSessionIdentityMatch | undefined>;
+	provideEditSessionIdentityMatch(
+		workspaceFolder: IWorkspaceFolder,
+		identity1: string,
+		identity2: string,
+		token: CancellationToken
+	): Promise<EditSessionIdentityMatch | undefined>;
 }
 
 export const IEditSessionIdentityService = createDecorator<IEditSessionIdentityService>('editSessionIdentityService');
@@ -20,10 +25,21 @@ export interface IEditSessionIdentityService {
 	readonly _serviceBrand: undefined;
 
 	registerEditSessionIdentityProvider(provider: IEditSessionIdentityProvider): IDisposable;
-	getEditSessionIdentifier(workspaceFolder: IWorkspaceFolder, cancellationToken: CancellationToken): Promise<string | undefined>;
-	provideEditSessionIdentityMatch(workspaceFolder: IWorkspaceFolder, identity1: string, identity2: string, cancellationToken: CancellationToken): Promise<EditSessionIdentityMatch | undefined>;
+	getEditSessionIdentifier(
+		workspaceFolder: IWorkspaceFolder,
+		cancellationToken: CancellationToken
+	): Promise<string | undefined>;
+	provideEditSessionIdentityMatch(
+		workspaceFolder: IWorkspaceFolder,
+		identity1: string,
+		identity2: string,
+		cancellationToken: CancellationToken
+	): Promise<EditSessionIdentityMatch | undefined>;
 	addEditSessionIdentityCreateParticipant(participants: IEditSessionIdentityCreateParticipant): IDisposable;
-	onWillCreateEditSessionIdentity(workspaceFolder: IWorkspaceFolder, cancellationToken: CancellationToken): Promise<void>;
+	onWillCreateEditSessionIdentity(
+		workspaceFolder: IWorkspaceFolder,
+		cancellationToken: CancellationToken
+	): Promise<void>;
 }
 
 export interface IEditSessionIdentityCreateParticipant {
@@ -33,5 +49,5 @@ export interface IEditSessionIdentityCreateParticipant {
 export enum EditSessionIdentityMatch {
 	Complete = 100,
 	Partial = 50,
-	None = 0,
+	None = 0
 }

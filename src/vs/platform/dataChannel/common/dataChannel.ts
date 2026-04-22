@@ -32,7 +32,7 @@ export class NullDataChannelService implements IDataChannelService {
 	}
 	getDataChannel<T>(_channelId: string): CoreDataChannel<T> {
 		return {
-			sendData: () => { },
+			sendData: () => {}
 		};
 	}
 }

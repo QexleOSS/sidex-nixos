@@ -109,7 +109,8 @@ function generateLinkSuffixRegex(eolOnly: boolean) {
 		// "foo", line 339, characters 12-789      [#171880]
 		// "foo", lines 339-341                    [#171880]
 		// "foo", lines 339-341, characters 12-789 [#178287]
-		`['"]?(?:,? |: ?| on )lines? ${r()}(?:-${re()})?(?:,? (?:col(?:umn)?|characters?) ${c()}(?:-${ce()})?)?` + eolSuffix,
+		`['"]?(?:,? |: ?| on )lines? ${r()}(?:-${re()})?(?:,? (?:col(?:umn)?|characters?) ${c()}(?:-${ce()})?)?` +
+			eolSuffix,
 		// () and [] are interchangeable
 		// foo(339)
 		// foo(339,12)
@@ -122,7 +123,7 @@ function generateLinkSuffixRegex(eolOnly: boolean) {
 		// foo: (339, 12)
 		// foo(339:12)                             [#229842]
 		// foo (339:12)                            [#229842]
-		`:? ?[\\[\\(]${r()}(?:(?:, ?|:)${c()})?[\\]\\)]` + eolSuffix,
+		`:? ?[\\[\\(]${r()}(?:(?:, ?|:)${c()})?[\\]\\)]` + eolSuffix
 	];
 
 	const suffixClause = lineAndColumnRegexClauses
@@ -248,7 +249,8 @@ function binaryInsert(list: IParsedLink[], newItem: IParsedLink, low: number, hi
 		// Check if it conflicts with an existing link before adding
 		if (
 			mid >= list.length ||
-			(newItem.path.index + newItem.path.text.length < list[mid].path.index && (mid === 0 || newItem.path.index > list[mid - 1].path.index + list[mid - 1].path.text.length))
+			(newItem.path.index + newItem.path.text.length < list[mid].path.index &&
+				(mid === 0 || newItem.path.index > list[mid - 1].path.index + list[mid - 1].path.text.length))
 		) {
 			list.splice(mid, 0, newItem);
 		}
@@ -298,7 +300,10 @@ function detectLinksViaSuffix(line: string): IParsedLink[] {
 				//
 				// If this fails on a multi-character prefix, just keep the original.
 				if (prefixMatch.groups.prefix.length > 1) {
-					if (suffix.suffix.text[0].match(/['"]/) && prefixMatch.groups.prefix[prefixMatch.groups.prefix.length - 1] === suffix.suffix.text[0]) {
+					if (
+						suffix.suffix.text[0].match(/['"]/) &&
+						prefixMatch.groups.prefix[prefixMatch.groups.prefix.length - 1] === suffix.suffix.text[0]
+					) {
 						const trimPrefixAmount = prefixMatch.groups.prefix.length - 1;
 						prefix.index += trimPrefixAmount;
 						prefix.text = prefixMatch.groups.prefix[prefixMatch.groups.prefix.length - 1];
@@ -348,14 +353,24 @@ enum RegexPathConstants {
 	WinOtherPathPrefix = '\\.\\.?|\\~',
 	WinPathSeparatorClause = '(?:\\\\|\\/)',
 	WinExcludedPathCharactersClause = '[^\\0<>\\?\\|\\/\\s!`&*()\'":;]',
-	WinExcludedStartPathCharactersClause = '[^\\0<>\\?\\|\\/\\s!`&*()\\[\\]\'":;]',
+	WinExcludedStartPathCharactersClause = '[^\\0<>\\?\\|\\/\\s!`&*()\\[\\]\'":;]'
 }
 
 /**
  * A regex that matches non-Windows paths, such as `/foo`, `~/foo`, `./foo`, `../foo` and
  * `foo/bar`.
  */
-const unixLocalLinkClause = '(?:(?:' + RegexPathConstants.PathPrefix + '|(?:' + RegexPathConstants.ExcludedStartPathCharactersClause + RegexPathConstants.ExcludedPathCharactersClause + '*))?(?:' + RegexPathConstants.PathSeparatorClause + '(?:' + RegexPathConstants.ExcludedPathCharactersClause + ')+)+)';
+const unixLocalLinkClause =
+	'(?:(?:' +
+	RegexPathConstants.PathPrefix +
+	'|(?:' +
+	RegexPathConstants.ExcludedStartPathCharactersClause +
+	RegexPathConstants.ExcludedPathCharactersClause +
+	'*))?(?:' +
+	RegexPathConstants.PathSeparatorClause +
+	'(?:' +
+	RegexPathConstants.ExcludedPathCharactersClause +
+	')+)+)';
 
 /**
  * A regex clause that matches the start of an absolute path on Windows, such as: `C:`, `c:`,
@@ -367,7 +382,17 @@ export const winDrivePrefix = '(?:\\\\\\\\\\?\\\\|file:\\/\\/\\/)?[a-zA-Z]:';
  * A regex that matches Windows paths, such as `\\?\c:\foo`, `c:\foo`, `~\foo`, `.\foo`, `..\foo`
  * and `foo\bar`.
  */
-const winLocalLinkClause = '(?:(?:' + `(?:${winDrivePrefix}|${RegexPathConstants.WinOtherPathPrefix})` + '|(?:' + RegexPathConstants.WinExcludedStartPathCharactersClause + RegexPathConstants.WinExcludedPathCharactersClause + '*))?(?:' + RegexPathConstants.WinPathSeparatorClause + '(?:' + RegexPathConstants.WinExcludedPathCharactersClause + ')+)+)';
+const winLocalLinkClause =
+	'(?:(?:' +
+	`(?:${winDrivePrefix}|${RegexPathConstants.WinOtherPathPrefix})` +
+	'|(?:' +
+	RegexPathConstants.WinExcludedStartPathCharactersClause +
+	RegexPathConstants.WinExcludedPathCharactersClause +
+	'*))?(?:' +
+	RegexPathConstants.WinPathSeparatorClause +
+	'(?:' +
+	RegexPathConstants.WinExcludedPathCharactersClause +
+	')+)+)';
 
 function detectPathsNoSuffix(line: string, os: OperatingSystem): IParsedLink[] {
 	const results: IParsedLink[] = [];

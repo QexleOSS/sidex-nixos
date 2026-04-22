@@ -56,7 +56,7 @@ class ManyRectVisualizer implements IVisualizationEffect {
 	constructor(
 		private readonly _rects: Record<string, Rect>,
 		private readonly _elem: HTMLElement
-	) { }
+	) {}
 
 	visualize(): IDisposable {
 		const d: IDisposable[] = [];
@@ -77,7 +77,7 @@ class ManyHorizontalOffsetRangeVisualizer implements IVisualizationEffect {
 	constructor(
 		private readonly _rects: Record<string, Rect>,
 		private readonly _elem: HTMLElement
-	) { }
+	) {}
 
 	visualize(): IDisposable {
 		const d: IDisposable[] = [];
@@ -104,7 +104,7 @@ class HtmlHorizontalOffsetRangeVisualizer implements IVisualizationEffect {
 		private readonly _name: string,
 		private readonly _verticalOffset: number = 0,
 		private readonly _labelPosition: 'above' | 'below' = 'above'
-	) { }
+	) {}
 
 	visualize(): IDisposable {
 		const container = document.createElement('div');
@@ -170,12 +170,12 @@ class HtmlHorizontalOffsetRangeVisualizer implements IVisualizationEffect {
 
 		const updatePosition = () => {
 			const elemRect = this._elem.getBoundingClientRect();
-			const centerY = this._rect.top + (this._rect.height / 2) + this._verticalOffset;
+			const centerY = this._rect.top + this._rect.height / 2 + this._verticalOffset;
 			const left = elemRect.left + this._rect.left;
 			const width = this._rect.width;
 
 			container.style.left = left + 'px';
-			container.style.top = (elemRect.top + centerY) + 'px';
+			container.style.top = elemRect.top + centerY + 'px';
 			container.style.width = width + 'px';
 			container.style.height = '8px';
 
@@ -183,7 +183,7 @@ class HtmlHorizontalOffsetRangeVisualizer implements IVisualizationEffect {
 		};
 
 		// This is for debugging only
-		// eslint-disable-next-line no-restricted-syntax
+
 		document.body.appendChild(container);
 		updatePosition();
 
@@ -204,7 +204,7 @@ class HtmlRectVisualizer implements IVisualizationEffect {
 		private readonly _rect: Rect,
 		private readonly _elem: HTMLElement,
 		private readonly _name: string
-	) { }
+	) {}
 
 	visualize(): IDisposable {
 		const div = document.createElement('div');
@@ -227,14 +227,14 @@ class HtmlRectVisualizer implements IVisualizationEffect {
 		const updatePosition = () => {
 			const elemRect = this._elem.getBoundingClientRect();
 			console.log(elemRect);
-			div.style.left = (elemRect.left + this._rect.left) + 'px';
-			div.style.top = (elemRect.top + this._rect.top) + 'px';
+			div.style.left = elemRect.left + this._rect.left + 'px';
+			div.style.top = elemRect.top + this._rect.top + 'px';
 			div.style.width = this._rect.width + 'px';
 			div.style.height = this._rect.height + 'px';
 		};
 
 		// This is for debugging only
-		// eslint-disable-next-line no-restricted-syntax
+
 		document.body.appendChild(div);
 		updatePosition();
 
@@ -258,7 +258,7 @@ export function debugView(value: unknown, reader: IReader): void {
 }
 
 function debugReadDisposable(d: IDisposable, reader: IReader): void {
-	derived({ name: 'debugReadDisposable' }, (_reader) => {
+	derived({ name: 'debugReadDisposable' }, _reader => {
 		_reader.store.add(d);
 		return undefined;
 	}).read(reader);

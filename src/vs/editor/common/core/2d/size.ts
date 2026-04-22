@@ -12,8 +12,8 @@ export class Size2D {
 
 	constructor(
 		public readonly width: number,
-		public readonly height: number,
-	) { }
+		public readonly height: number
+	) {}
 
 	public add(other: Size2D): Size2D {
 		return new Size2D(this.width + other.width, this.height + other.height);

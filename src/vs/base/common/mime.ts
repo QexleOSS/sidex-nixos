@@ -12,7 +12,7 @@ export const Mimes = Object.freeze({
 	markdown: 'text/markdown',
 	latex: 'text/latex',
 	uriList: 'text/uri-list',
-	html: 'text/html',
+	html: 'text/html'
 });
 
 interface MapExtToMediaMimes {
@@ -81,7 +81,7 @@ const mapExtToMediaMimes: MapExtToMediaMimes = {
 	'.webp': 'image/webp',
 	'.wma': 'audio/x-ms-wma',
 	'.wmv': 'video/x-ms-wmv',
-	'.woff': 'application/font-woff',
+	'.woff': 'application/font-woff'
 };
 
 export function getMediaOrTextMime(path: string): string | undefined {
@@ -116,12 +116,9 @@ const _simplePattern = /^(.+)\/(.+?)(;.+)?$/;
 export function normalizeMimeType(mimeType: string): string;
 export function normalizeMimeType(mimeType: string, strict: true): string | undefined;
 export function normalizeMimeType(mimeType: string, strict?: true): string | undefined {
-
 	const match = _simplePattern.exec(mimeType);
 	if (!match) {
-		return strict
-			? undefined
-			: mimeType;
+		return strict ? undefined : mimeType;
 	}
 	// https://datatracker.ietf.org/doc/html/rfc2045#section-5.1
 	// media and subtype must ALWAYS be lowercase, parameter not

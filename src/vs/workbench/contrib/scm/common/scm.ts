@@ -177,7 +177,6 @@ export interface ISCMRepository extends IDisposable {
 }
 
 export interface ISCMService {
-
 	readonly _serviceBrand: undefined;
 	readonly onDidAddRepository: Event<ISCMRepository>;
 	readonly onDidRemoveRepository: Event<ISCMRepository>;

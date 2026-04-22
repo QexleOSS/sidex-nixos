@@ -13,12 +13,9 @@ import { MessageController } from '../../message/browser/messageController.js';
 import * as nls from '../../../../nls.js';
 
 export class ReadOnlyMessageController extends Disposable implements IEditorContribution {
-
 	public static readonly ID = 'editor.contrib.readOnlyMessageController';
 
-	constructor(
-		private readonly editor: ICodeEditor
-	) {
+	constructor(private readonly editor: ICodeEditor) {
 		super();
 		this._register(this.editor.onDidAttemptReadOnlyEdit(() => this._onDidAttemptReadOnlyEdit()));
 	}
@@ -29,9 +26,9 @@ export class ReadOnlyMessageController extends Disposable implements IEditorCont
 			let message = this.editor.getOptions().get(EditorOption.readOnlyMessage);
 			if (!message) {
 				if (this.editor.isSimpleWidget) {
-					message = new MarkdownString(nls.localize('editor.simple.readonly', "Cannot edit in read-only input"));
+					message = new MarkdownString(nls.localize('editor.simple.readonly', 'Cannot edit in read-only input'));
 				} else {
-					message = new MarkdownString(nls.localize('editor.readonly', "Cannot edit in read-only editor"));
+					message = new MarkdownString(nls.localize('editor.readonly', 'Cannot edit in read-only editor'));
 				}
 			}
 
@@ -40,4 +37,8 @@ export class ReadOnlyMessageController extends Disposable implements IEditorCont
 	}
 }
 
-registerEditorContribution(ReadOnlyMessageController.ID, ReadOnlyMessageController, EditorContributionInstantiation.BeforeFirstInteraction);
+registerEditorContribution(
+	ReadOnlyMessageController.ID,
+	ReadOnlyMessageController,
+	EditorContributionInstantiation.BeforeFirstInteraction
+);

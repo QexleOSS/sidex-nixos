@@ -7,7 +7,15 @@ import type * as vscode from 'vscode';
 import { URI } from '../../../base/common/uri.js';
 import * as editorRange from '../../../editor/common/core/range.js';
 import { TestId, TestIdPathParts } from '../../contrib/testing/common/testId.js';
-import { createTestItemChildren, ExtHostTestItemEvent, ITestChildrenLike, ITestItemApi, ITestItemChildren, TestItemCollection, TestItemEventOp } from '../../contrib/testing/common/testItemCollection.js';
+import {
+	createTestItemChildren,
+	ExtHostTestItemEvent,
+	ITestChildrenLike,
+	ITestItemApi,
+	ITestItemChildren,
+	TestItemCollection,
+	TestItemEventOp
+} from '../../contrib/testing/common/testItemCollection.js';
 import { denamespaceTestTag, ITestItem, ITestItemContext } from '../../contrib/testing/common/testTypes.js';
 import { ExtHostDocumentsAndEditors } from './extHostDocumentsAndEditors.js';
 import { createPrivateApiFor, getPrivateApiFor, IExtHostTestItemApi } from './extHostTestingPrivateApi.js';
@@ -17,7 +25,7 @@ const testItemPropAccessor = <K extends keyof vscode.TestItem>(
 	api: IExtHostTestItemApi,
 	defaultValue: vscode.TestItem[K],
 	equals: (a: vscode.TestItem[K], b: vscode.TestItem[K]) => boolean,
-	toUpdate: (newValue: vscode.TestItem[K], oldValue: vscode.TestItem[K]) => ExtHostTestItemEvent,
+	toUpdate: (newValue: vscode.TestItem[K], oldValue: vscode.TestItem[K]) => ExtHostTestItemEvent
 ) => {
 	let value = defaultValue;
 	return {
@@ -32,18 +40,27 @@ const testItemPropAccessor = <K extends keyof vscode.TestItem>(
 				value = newValue;
 				api.listener?.(toUpdate(newValue, oldValue));
 			}
-		},
+		}
 	};
 };
 
-type WritableProps = Pick<vscode.TestItem, 'range' | 'label' | 'description' | 'sortText' | 'canResolveChildren' | 'busy' | 'error' | 'tags'>;
+type WritableProps = Pick<
+	vscode.TestItem,
+	'range' | 'label' | 'description' | 'sortText' | 'canResolveChildren' | 'busy' | 'error' | 'tags'
+>;
 
 const strictEqualComparator = <T>(a: T, b: T) => a === b;
 
-const propComparators: { [K in keyof Required<WritableProps>]: (a: vscode.TestItem[K], b: vscode.TestItem[K]) => boolean } = {
+const propComparators: {
+	[K in keyof Required<WritableProps>]: (a: vscode.TestItem[K], b: vscode.TestItem[K]) => boolean;
+} = {
 	range: (a, b) => {
-		if (a === b) { return true; }
-		if (!a || !b) { return false; }
+		if (a === b) {
+			return true;
+		}
+		if (!a || !b) {
+			return false;
+		}
 		return a.isEqual(b);
 	},
 	label: strictEqualComparator,
@@ -62,16 +79,22 @@ const propComparators: { [K in keyof Required<WritableProps>]: (a: vscode.TestIt
 		}
 
 		return true;
-	},
+	}
 };
 
-const evSetProps = <T>(fn: (newValue: T) => Partial<ITestItem>): (newValue: T) => ExtHostTestItemEvent =>
+const evSetProps =
+	<T>(fn: (newValue: T) => Partial<ITestItem>): ((newValue: T) => ExtHostTestItemEvent) =>
 	v => ({ op: TestItemEventOp.SetProp, update: fn(v) });
 
-const makePropDescriptors = (api: IExtHostTestItemApi, label: string): { [K in keyof Required<WritableProps>]: PropertyDescriptor } => ({
+const makePropDescriptors = (
+	api: IExtHostTestItemApi,
+	label: string
+): { [K in keyof Required<WritableProps>]: PropertyDescriptor } => ({
 	range: (() => {
 		let value: vscode.Range | undefined;
-		const updateProps = evSetProps<vscode.Range | undefined>(r => ({ range: editorRange.Range.lift(Convert.Range.from(r)) }));
+		const updateProps = evSetProps<vscode.Range | undefined>(r => ({
+			range: editorRange.Range.lift(Convert.Range.from(r))
+		}));
 		return {
 			enumerable: true,
 			configurable: false,
@@ -84,23 +107,53 @@ const makePropDescriptors = (api: IExtHostTestItemApi, label: string): { [K in k
 					value = newValue;
 					api.listener?.(updateProps(newValue));
 				}
-			},
+			}
 		};
 	})(),
-	label: testItemPropAccessor<'label'>(api, label, propComparators.label, evSetProps(label => ({ label }))),
-	description: testItemPropAccessor<'description'>(api, undefined, propComparators.description, evSetProps(description => ({ description }))),
-	sortText: testItemPropAccessor<'sortText'>(api, undefined, propComparators.sortText, evSetProps(sortText => ({ sortText }))),
-	canResolveChildren: testItemPropAccessor<'canResolveChildren'>(api, false, propComparators.canResolveChildren, state => ({
-		op: TestItemEventOp.UpdateCanResolveChildren,
-		state,
-	})),
-	busy: testItemPropAccessor<'busy'>(api, false, propComparators.busy, evSetProps(busy => ({ busy }))),
-	error: testItemPropAccessor<'error'>(api, undefined, propComparators.error, evSetProps(error => ({ error: Convert.MarkdownString.fromStrict(error) || null }))),
+	label: testItemPropAccessor<'label'>(
+		api,
+		label,
+		propComparators.label,
+		evSetProps(label => ({ label }))
+	),
+	description: testItemPropAccessor<'description'>(
+		api,
+		undefined,
+		propComparators.description,
+		evSetProps(description => ({ description }))
+	),
+	sortText: testItemPropAccessor<'sortText'>(
+		api,
+		undefined,
+		propComparators.sortText,
+		evSetProps(sortText => ({ sortText }))
+	),
+	canResolveChildren: testItemPropAccessor<'canResolveChildren'>(
+		api,
+		false,
+		propComparators.canResolveChildren,
+		state => ({
+			op: TestItemEventOp.UpdateCanResolveChildren,
+			state
+		})
+	),
+	busy: testItemPropAccessor<'busy'>(
+		api,
+		false,
+		propComparators.busy,
+		evSetProps(busy => ({ busy }))
+	),
+	error: testItemPropAccessor<'error'>(
+		api,
+		undefined,
+		propComparators.error,
+		evSetProps(error => ({ error: Convert.MarkdownString.fromStrict(error) || null }))
+	),
 	tags: testItemPropAccessor<'tags'>(api, [], propComparators.tags, (current, previous) => ({
 		op: TestItemEventOp.SetTags,
 		new: current.map(Convert.TestTag.from),
-		old: previous.map(Convert.TestTag.from),
-	})),
+		old: previous.map(Convert.TestTag.from)
+	}))
 });
 
 const toItemFromPlain = (item: ITestItem.Serialized): TestItemImpl => {
@@ -152,25 +205,25 @@ export class TestItemImpl implements vscode.TestItem {
 			id: {
 				value: id,
 				enumerable: true,
-				writable: false,
+				writable: false
 			},
 			uri: {
 				value: uri,
 				enumerable: true,
-				writable: false,
+				writable: false
 			},
 			parent: {
 				enumerable: false,
 				get() {
 					return api.parent instanceof TestItemRootImpl ? undefined : api.parent;
-				},
+				}
 			},
 			children: {
 				value: createTestItemChildren(api, getPrivateApiFor, TestItemImpl),
 				enumerable: true,
-				writable: false,
+				writable: false
 			},
-			...makePropDescriptors(api, label),
+			...makePropDescriptors(api, label)
 		});
 	}
 }
@@ -189,9 +242,9 @@ export class ExtHostTestItemCollection extends TestItemCollection<TestItemImpl> 
 			controllerId,
 			getDocumentVersion: uri => uri && editors.getDocument(uri)?.version,
 			getApiFor: getPrivateApiFor as (impl: TestItemImpl) => ITestItemApi<TestItemImpl>,
-			getChildren: (item) => item.children as ITestChildrenLike<TestItemImpl>,
+			getChildren: item => item.children as ITestChildrenLike<TestItemImpl>,
 			root: new TestItemRootImpl(controllerId, controllerLabel),
-			toITestItem: Convert.TestItem.from,
+			toITestItem: Convert.TestItem.from
 		});
 	}
 }

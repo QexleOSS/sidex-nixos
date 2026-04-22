@@ -49,12 +49,14 @@ export const IUserActivityService = createDecorator<IUserActivityService>('IUser
 
 export class UserActivityService extends Disposable implements IUserActivityService {
 	declare readonly _serviceBrand: undefined;
-	private readonly markInactive = this._register(new RunOnceScheduler(() => {
-		this.isActive = false;
-		this.changeEmitter.fire(false);
-	}, MARK_INACTIVE_DEBOUNCE));
+	private readonly markInactive = this._register(
+		new RunOnceScheduler(() => {
+			this.isActive = false;
+			this.changeEmitter.fire(false);
+		}, MARK_INACTIVE_DEBOUNCE)
+	);
 
-	private readonly changeEmitter = this._register(new Emitter<boolean>);
+	private readonly changeEmitter = this._register(new Emitter<boolean>());
 	private active = 0;
 
 	/**

@@ -13,46 +13,14 @@ import { IStorageService, StorageScope, StorageTarget } from '../../../../platfo
 import { IExtensionService } from '../../extensions/common/extensions.js';
 
 export enum ExtensionsFilter {
-
-	/**
-	 * Version of the github.copilot extension.
-	 */
 	CopilotExtensionVersion = 'X-Copilot-RelatedPluginVersion-githubcopilot',
-
-	/**
-	 * Version of the github.copilot-chat extension.
-	 */
 	CopilotChatExtensionVersion = 'X-Copilot-RelatedPluginVersion-githubcopilotchat',
-
-	/**
-	 * Version of the completions version.
-	 */
 	CompletionsVersionInCopilotChat = 'X-VSCode-CompletionsInChatExtensionVersion',
-
-	/**
-	 * SKU of the copilot entitlement.
-	 */
 	CopilotSku = 'X-GitHub-Copilot-SKU',
-
-	/**
-	 * The internal org of the user.
-	 */
 	MicrosoftInternalOrg = 'X-Microsoft-Internal-Org',
-
-	/**
-	 * The tracking ID of the user from Copilot entitlement API.
-	 */
 	CopilotTrackingId = 'X-Copilot-Tracking-Id',
-
-	/**
-	 * Whether the `sn` flag is set to `'1'` in the copilot token.
-	 */
 	CopilotIsSn = 'X-GitHub-Copilot-IsSn',
-
-	/**
-	 * Whether the `fcv1` flag is set to `'1'` in the copilot token.
-	 */
-	CopilotIsFcv1 = 'X-GitHub-Copilot-IsFcv1',
+	CopilotIsFcv1 = 'X-GitHub-Copilot-IsFcv1'
 }
 
 enum StorageVersionKeys {
@@ -63,13 +31,12 @@ enum StorageVersionKeys {
 	CopilotInternalOrg = 'extensionsAssignmentFilterProvider.copilotInternalOrg',
 	CopilotTrackingId = 'extensionsAssignmentFilterProvider.copilotTrackingId',
 	CopilotIsSn = 'extensionsAssignmentFilterProvider.copilotIsSn',
-	CopilotIsFcv1 = 'extensionsAssignmentFilterProvider.copilotIsFcv1',
+	CopilotIsFcv1 = 'extensionsAssignmentFilterProvider.copilotIsFcv1'
 }
 
 export class CopilotAssignmentFilterProvider extends Disposable implements IExperimentationFilterProvider {
 	private copilotChatExtensionVersion: string | undefined;
 	private copilotExtensionVersion: string | undefined;
-	// TODO@benibenj remove this when completions have been ported to chat
 	private copilotCompletionsVersion: string | undefined;
 
 	private copilotInternalOrg: string | undefined;
@@ -85,28 +52,47 @@ export class CopilotAssignmentFilterProvider extends Disposable implements IExpe
 		@IExtensionService private readonly _extensionService: IExtensionService,
 		@ILogService private readonly _logService: ILogService,
 		@IStorageService private readonly _storageService: IStorageService,
-		@IDefaultAccountService private readonly _defaultAccountService: IDefaultAccountService,
+		@IDefaultAccountService private readonly _defaultAccountService: IDefaultAccountService
 	) {
 		super();
 
-		this.copilotExtensionVersion = this._storageService.get(StorageVersionKeys.CopilotExtensionVersion, StorageScope.PROFILE);
-		this.copilotChatExtensionVersion = this._storageService.get(StorageVersionKeys.CopilotChatExtensionVersion, StorageScope.PROFILE);
-		this.copilotCompletionsVersion = this._storageService.get(StorageVersionKeys.CompletionsVersion, StorageScope.PROFILE);
+		this.copilotExtensionVersion = this._storageService.get(
+			StorageVersionKeys.CopilotExtensionVersion,
+			StorageScope.PROFILE
+		);
+		this.copilotChatExtensionVersion = this._storageService.get(
+			StorageVersionKeys.CopilotChatExtensionVersion,
+			StorageScope.PROFILE
+		);
+		this.copilotCompletionsVersion = this._storageService.get(
+			StorageVersionKeys.CompletionsVersion,
+			StorageScope.PROFILE
+		);
 		this.copilotSku = this._storageService.get(StorageVersionKeys.CopilotSku, StorageScope.PROFILE);
 		this.copilotInternalOrg = this._storageService.get(StorageVersionKeys.CopilotInternalOrg, StorageScope.PROFILE);
 		this.copilotTrackingId = this._storageService.get(StorageVersionKeys.CopilotTrackingId, StorageScope.PROFILE);
 		this.copilotIsSn = this._storageService.get(StorageVersionKeys.CopilotIsSn, StorageScope.PROFILE);
 		this.copilotIsFcv1 = this._storageService.get(StorageVersionKeys.CopilotIsFcv1, StorageScope.PROFILE);
 
-		this._register(this._extensionService.onDidChangeExtensionsStatus(extensionIdentifiers => {
-			if (extensionIdentifiers.some(identifier => ExtensionIdentifier.equals(identifier, 'github.copilot') || ExtensionIdentifier.equals(identifier, 'github.copilot-chat'))) {
-				this.updateExtensionVersions();
-			}
-		}));
+		this._register(
+			this._extensionService.onDidChangeExtensionsStatus(extensionIdentifiers => {
+				if (
+					extensionIdentifiers.some(
+						identifier =>
+							ExtensionIdentifier.equals(identifier, 'github.copilot') ||
+							ExtensionIdentifier.equals(identifier, 'github.copilot-chat')
+					)
+				) {
+					this.updateExtensionVersions();
+				}
+			})
+		);
 
-		this._register(this._defaultAccountService.onDidChangeCopilotTokenInfo(() => {
-			this.updateCopilotTokenInfo();
-		}));
+		this._register(
+			this._defaultAccountService.onDidChangeCopilotTokenInfo(() => {
+				this.updateCopilotTokenInfo();
+			})
+		);
 
 		this.updateExtensionVersions();
 		this.updateCopilotTokenInfo();
@@ -120,19 +106,23 @@ export class CopilotAssignmentFilterProvider extends Disposable implements IExpe
 		try {
 			const [copilotExtension, copilotChatExtension] = await Promise.all([
 				this._extensionService.getExtension('github.copilot'),
-				this._extensionService.getExtension('github.copilot-chat'),
+				this._extensionService.getExtension('github.copilot-chat')
 			]);
 
 			copilotExtensionVersion = copilotExtension?.version;
 			copilotChatExtensionVersion = copilotChatExtension?.version;
-			copilotCompletionsVersion = (copilotChatExtension as typeof copilotChatExtension & { completionsCoreVersion?: string })?.completionsCoreVersion;
+			copilotCompletionsVersion = (
+				copilotChatExtension as typeof copilotChatExtension & { completionsCoreVersion?: string }
+			)?.completionsCoreVersion;
 		} catch (error) {
 			this._logService.error('Failed to update extension version assignments', error);
 		}
 
-		if (this.copilotCompletionsVersion === copilotCompletionsVersion &&
+		if (
+			this.copilotCompletionsVersion === copilotCompletionsVersion &&
 			this.copilotExtensionVersion === copilotExtensionVersion &&
-			this.copilotChatExtensionVersion === copilotChatExtensionVersion) {
+			this.copilotChatExtensionVersion === copilotChatExtensionVersion
+		) {
 			return;
 		}
 
@@ -140,11 +130,25 @@ export class CopilotAssignmentFilterProvider extends Disposable implements IExpe
 		this.copilotChatExtensionVersion = copilotChatExtensionVersion;
 		this.copilotCompletionsVersion = copilotCompletionsVersion;
 
-		this._storageService.store(StorageVersionKeys.CopilotExtensionVersion, this.copilotExtensionVersion, StorageScope.PROFILE, StorageTarget.MACHINE);
-		this._storageService.store(StorageVersionKeys.CopilotChatExtensionVersion, this.copilotChatExtensionVersion, StorageScope.PROFILE, StorageTarget.MACHINE);
-		this._storageService.store(StorageVersionKeys.CompletionsVersion, this.copilotCompletionsVersion, StorageScope.PROFILE, StorageTarget.MACHINE);
+		this._storageService.store(
+			StorageVersionKeys.CopilotExtensionVersion,
+			this.copilotExtensionVersion,
+			StorageScope.PROFILE,
+			StorageTarget.MACHINE
+		);
+		this._storageService.store(
+			StorageVersionKeys.CopilotChatExtensionVersion,
+			this.copilotChatExtensionVersion,
+			StorageScope.PROFILE,
+			StorageTarget.MACHINE
+		);
+		this._storageService.store(
+			StorageVersionKeys.CompletionsVersion,
+			this.copilotCompletionsVersion,
+			StorageScope.PROFILE,
+			StorageTarget.MACHINE
+		);
 
-		// Notify that the filters have changed.
 		this._onDidChangeFilters.fire();
 	}
 
@@ -160,35 +164,42 @@ export class CopilotAssignmentFilterProvider extends Disposable implements IExpe
 		this.copilotIsSn = newIsSn;
 		this.copilotIsFcv1 = newIsFcv1;
 
-		this._storageService.store(StorageVersionKeys.CopilotIsSn, this.copilotIsSn, StorageScope.PROFILE, StorageTarget.MACHINE);
-		this._storageService.store(StorageVersionKeys.CopilotIsFcv1, this.copilotIsFcv1, StorageScope.PROFILE, StorageTarget.MACHINE);
+		this._storageService.store(
+			StorageVersionKeys.CopilotIsSn,
+			this.copilotIsSn,
+			StorageScope.PROFILE,
+			StorageTarget.MACHINE
+		);
+		this._storageService.store(
+			StorageVersionKeys.CopilotIsFcv1,
+			this.copilotIsFcv1,
+			StorageScope.PROFILE,
+			StorageTarget.MACHINE
+		);
 
-		// Notify that the filters have changed.
 		this._onDidChangeFilters.fire();
 	}
 
-	/**
-	 * Returns a version string that can be parsed by the TAS client.
-	 * The tas client cannot handle suffixes lke "-insider"
-	 * Ref: https://github.com/microsoft/tas-client/blob/30340d5e1da37c2789049fcf45928b954680606f/vscode-tas-client/src/vscode-tas-client/VSCodeFilterProvider.ts#L35
-	 *
-	 * @param version Version string to be trimmed.
-	*/
 	private static trimVersionSuffix(version: string): string {
 		const regex = /\-[a-zA-Z0-9]+$/;
 		const result = version.split(regex);
-
 		return result[0];
 	}
 
 	getFilterValue(filter: string): string | null {
 		switch (filter) {
 			case ExtensionsFilter.CopilotExtensionVersion:
-				return this.copilotExtensionVersion ? CopilotAssignmentFilterProvider.trimVersionSuffix(this.copilotExtensionVersion) : null;
+				return this.copilotExtensionVersion
+					? CopilotAssignmentFilterProvider.trimVersionSuffix(this.copilotExtensionVersion)
+					: null;
 			case ExtensionsFilter.CompletionsVersionInCopilotChat:
-				return this.copilotCompletionsVersion ? CopilotAssignmentFilterProvider.trimVersionSuffix(this.copilotCompletionsVersion) : null;
+				return this.copilotCompletionsVersion
+					? CopilotAssignmentFilterProvider.trimVersionSuffix(this.copilotCompletionsVersion)
+					: null;
 			case ExtensionsFilter.CopilotChatExtensionVersion:
-				return this.copilotChatExtensionVersion ? CopilotAssignmentFilterProvider.trimVersionSuffix(this.copilotChatExtensionVersion) : null;
+				return this.copilotChatExtensionVersion
+					? CopilotAssignmentFilterProvider.trimVersionSuffix(this.copilotChatExtensionVersion)
+					: null;
 			case ExtensionsFilter.CopilotSku:
 				return this.copilotSku ?? null;
 			case ExtensionsFilter.MicrosoftInternalOrg:
@@ -210,7 +221,6 @@ export class CopilotAssignmentFilterProvider extends Disposable implements IExpe
 		for (const value of filterValues) {
 			filters.set(value, this.getFilterValue(value));
 		}
-
 		return filters;
 	}
 }

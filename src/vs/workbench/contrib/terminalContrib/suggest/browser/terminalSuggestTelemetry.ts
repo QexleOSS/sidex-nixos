@@ -11,7 +11,9 @@ import { IPromptInputModel } from '../../../../../platform/terminal/common/capab
 import { ITerminalCompletion, TerminalCompletionItemKind } from './terminalCompletionItem.js';
 
 export class TerminalSuggestTelemetry extends Disposable {
-	private _acceptedCompletions: Array<{ label: string; kind?: string; sessionId: string; provider: string }> | undefined;
+	private _acceptedCompletions:
+		| Array<{ label: string; kind?: string; sessionId: string; provider: string }>
+		| undefined;
 
 	private _kindMap = new Map<number, string>([
 		[TerminalCompletionItemKind.File, 'File'],
@@ -23,23 +25,27 @@ export class TerminalSuggestTelemetry extends Disposable {
 		[TerminalCompletionItemKind.OptionValue, 'Option Value'],
 		[TerminalCompletionItemKind.Flag, 'Flag'],
 		[TerminalCompletionItemKind.InlineSuggestion, 'Inline Suggestion'],
-		[TerminalCompletionItemKind.InlineSuggestionAlwaysOnTop, 'Inline Suggestion'],
+		[TerminalCompletionItemKind.InlineSuggestionAlwaysOnTop, 'Inline Suggestion']
 	]);
 
 	constructor(
 		commandDetection: ICommandDetectionCapability,
 		private readonly _promptInputModel: IPromptInputModel,
-		@ITelemetryService private readonly _telemetryService: ITelemetryService,
+		@ITelemetryService private readonly _telemetryService: ITelemetryService
 	) {
 		super();
-		this._register(commandDetection.onCommandFinished((e) => {
-			this._sendTelemetryInfo(false, e.exitCode);
-			this._acceptedCompletions = undefined;
-		}));
-		this._register(this._promptInputModel.onDidInterrupt(() => {
-			this._sendTelemetryInfo(true);
-			this._acceptedCompletions = undefined;
-		}));
+		this._register(
+			commandDetection.onCommandFinished(e => {
+				this._sendTelemetryInfo(false, e.exitCode);
+				this._acceptedCompletions = undefined;
+			})
+		);
+		this._register(
+			this._promptInputModel.onDidInterrupt(() => {
+				this._sendTelemetryInfo(true);
+				this._acceptedCompletions = undefined;
+			})
+		);
 	}
 	acceptCompletion(sessionId: string, completion: ITerminalCompletion | undefined, commandLine?: string): void {
 		if (!completion || !commandLine) {
@@ -47,7 +53,12 @@ export class TerminalSuggestTelemetry extends Disposable {
 			return;
 		}
 		this._acceptedCompletions = this._acceptedCompletions || [];
-		this._acceptedCompletions.push({ label: isString(completion.label) ? completion.label : completion.label.label, kind: this._kindMap.get(completion.kind!), sessionId, provider: completion.provider });
+		this._acceptedCompletions.push({
+			label: isString(completion.label) ? completion.label : completion.label.label,
+			kind: this._kindMap.get(completion.kind!),
+			sessionId,
+			provider: completion.provider
+		});
 	}
 
 	/**
@@ -57,42 +68,44 @@ export class TerminalSuggestTelemetry extends Disposable {
 	 * @param firstShownFor Object indicating if completions have been shown for window/shell
 	 */
 	logCompletionLatency(sessionId: string, latency: number, firstShownFor: { window: boolean; shell: boolean }): void {
-		this._telemetryService.publicLog2<{
-			terminalSessionId: string;
-			latency: number;
-			firstWindow: boolean;
-			firstShell: boolean;
-		}, {
-			owner: 'meganrogge';
-			comment: 'Latency in ms from terminal completion request to completions shown.';
-			terminalSessionId: {
-				classification: 'SystemMetaData';
-				purpose: 'FeatureInsight';
-				comment: 'The session ID of the terminal session.';
-			};
-			latency: {
-				classification: 'SystemMetaData';
-				purpose: 'PerformanceAndHealth';
-				comment: 'The latency in milliseconds.';
-			};
-			firstWindow: {
-				classification: 'SystemMetaData';
-				purpose: 'FeatureInsight';
-				comment: 'Whether this is the first ever showing of completions in the window.';
-			};
-			firstShell: {
-				classification: 'SystemMetaData';
-				purpose: 'FeatureInsight';
-				comment: 'Whether this is the first ever showing of completions in the shell.';
-			};
-		}>('terminal.suggest.completionLatency', {
+		this._telemetryService.publicLog2<
+			{
+				terminalSessionId: string;
+				latency: number;
+				firstWindow: boolean;
+				firstShell: boolean;
+			},
+			{
+				owner: 'meganrogge';
+				comment: 'Latency in ms from terminal completion request to completions shown.';
+				terminalSessionId: {
+					classification: 'SystemMetaData';
+					purpose: 'FeatureInsight';
+					comment: 'The session ID of the terminal session.';
+				};
+				latency: {
+					classification: 'SystemMetaData';
+					purpose: 'PerformanceAndHealth';
+					comment: 'The latency in milliseconds.';
+				};
+				firstWindow: {
+					classification: 'SystemMetaData';
+					purpose: 'FeatureInsight';
+					comment: 'Whether this is the first ever showing of completions in the window.';
+				};
+				firstShell: {
+					classification: 'SystemMetaData';
+					purpose: 'FeatureInsight';
+					comment: 'Whether this is the first ever showing of completions in the shell.';
+				};
+			}
+		>('terminal.suggest.completionLatency', {
 			terminalSessionId: sessionId,
 			latency,
 			firstWindow: firstShownFor.window,
 			firstShell: firstShownFor.shell
 		});
 	}
-
 
 	private _sendTelemetryInfo(fromInterrupt?: boolean, exitCode?: number): void {
 		const commandLine = this._promptInputModel?.value;
@@ -115,41 +128,44 @@ export class TerminalSuggestTelemetry extends Disposable {
 			} else {
 				outcome = CompletionOutcome.Deleted;
 			}
-			this._telemetryService.publicLog2<{
-				kind: string | undefined;
-				outcome: string;
-				exitCode: number | undefined;
-				terminalSessionId: string;
-				provider: string | undefined;
-			}, {
-				owner: 'meganrogge';
-				comment: 'This data is collected to understand the outcome of a terminal completion acceptance.';
-				kind: {
-					classification: 'SystemMetaData';
-					purpose: 'FeatureInsight';
-					comment: 'The completion item\'s kind';
-				};
-				outcome: {
-					classification: 'SystemMetaData';
-					purpose: 'FeatureInsight';
-					comment: 'The outcome of the accepted completion';
-				};
-				exitCode: {
-					classification: 'SystemMetaData';
-					purpose: 'FeatureInsight';
-					comment: 'The exit code from the command';
-				};
-				terminalSessionId: {
-					classification: 'SystemMetaData';
-					purpose: 'FeatureInsight';
-					comment: 'The session ID of the terminal session where the completion was accepted';
-				};
-				provider: {
-					classification: 'SystemMetaData';
-					purpose: 'FeatureInsight';
-					comment: 'The ID of the provider that supplied the completion';
-				};
-			}>('terminal.suggest.acceptedCompletion', {
+			this._telemetryService.publicLog2<
+				{
+					kind: string | undefined;
+					outcome: string;
+					exitCode: number | undefined;
+					terminalSessionId: string;
+					provider: string | undefined;
+				},
+				{
+					owner: 'meganrogge';
+					comment: 'This data is collected to understand the outcome of a terminal completion acceptance.';
+					kind: {
+						classification: 'SystemMetaData';
+						purpose: 'FeatureInsight';
+						comment: "The completion item's kind";
+					};
+					outcome: {
+						classification: 'SystemMetaData';
+						purpose: 'FeatureInsight';
+						comment: 'The outcome of the accepted completion';
+					};
+					exitCode: {
+						classification: 'SystemMetaData';
+						purpose: 'FeatureInsight';
+						comment: 'The exit code from the command';
+					};
+					terminalSessionId: {
+						classification: 'SystemMetaData';
+						purpose: 'FeatureInsight';
+						comment: 'The session ID of the terminal session where the completion was accepted';
+					};
+					provider: {
+						classification: 'SystemMetaData';
+						purpose: 'FeatureInsight';
+						comment: 'The ID of the provider that supplied the completion';
+					};
+				}
+			>('terminal.suggest.acceptedCompletion', {
 				kind,
 				outcome,
 				exitCode,
@@ -170,4 +186,3 @@ const enum CompletionOutcome {
 function inputContainsFirstHalfOfLabel(commandLine: string, label: string): boolean {
 	return commandLine.includes(label.substring(0, Math.ceil(label.length / 2)));
 }
-

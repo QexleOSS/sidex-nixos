@@ -6,7 +6,39 @@ import { Position } from '../../../../common/core/position.js';
 import { StringEdit, StringReplacement } from '../../../../common/core/edits/stringEdit.js';
 import { ITextModel } from '../../../../common/model.js';
 
-const syntacticalChars = new Set([';', ',', '=', '+', '-', '*', '/', '{', '}', '(', ')', '[', ']', '<', '>', ':', '.', '!', '?', '&', '|', '^', '%', '@', '#', '~', '`', '\\', '\'', '"', '$']);
+const syntacticalChars = new Set([
+	';',
+	',',
+	'=',
+	'+',
+	'-',
+	'*',
+	'/',
+	'{',
+	'}',
+	'(',
+	')',
+	'[',
+	']',
+	'<',
+	'>',
+	':',
+	'.',
+	'!',
+	'?',
+	'&',
+	'|',
+	'^',
+	'%',
+	'@',
+	'#',
+	'~',
+	'`',
+	'\\',
+	"'",
+	'"',
+	'$'
+]);
 
 function isSyntacticalChar(char: string): boolean {
 	return syntacticalChars.has(char);
@@ -44,7 +76,7 @@ function analyzeTextShape(text: string): TextShape {
 	if (lines.length > 1) {
 		return {
 			kind: 'multiLine',
-			lineCount: lines.length,
+			lineCount: lines.length
 		};
 	}
 
@@ -63,9 +95,7 @@ function analyzeTextShape(text: string): TextShape {
 	// Analyze whitespace patterns
 	const whitespaceMatches = text.match(/[ \t]+/g) || [];
 	const isMultipleWhitespace = whitespaceMatches.some(ws => ws.length > 1);
-	const hasDuplicatedWhitespace = whitespaceMatches.some(ws =>
-		(ws.includes('  ') || ws.includes('\t\t'))
-	);
+	const hasDuplicatedWhitespace = whitespaceMatches.some(ws => ws.includes('  ') || ws.includes('\t\t'));
 
 	// Analyze word patterns
 	const words = text.split(/\s+/).filter(w => w.length > 0);
@@ -79,7 +109,7 @@ function analyzeTextShape(text: string): TextShape {
 		isWord,
 		isMultipleWords,
 		isMultipleWhitespace,
-		hasDuplicatedWhitespace,
+		hasDuplicatedWhitespace
 	};
 }
 
@@ -125,19 +155,25 @@ interface IInlineSuggestionEditKindEdit {
 	readonly linesDeleted: number;
 }
 export class InlineSuggestionEditKind {
-	constructor(readonly edits: IInlineSuggestionEditKindEdit[]) { }
+	constructor(readonly edits: IInlineSuggestionEditKindEdit[]) {}
 	toString(): string {
 		return JSON.stringify({ edits: this.edits });
 	}
 }
 
-export function computeEditKind(edit: StringEdit, textModel: ITextModel, cursorPosition?: Position): InlineSuggestionEditKind | undefined {
+export function computeEditKind(
+	edit: StringEdit,
+	textModel: ITextModel,
+	cursorPosition?: Position
+): InlineSuggestionEditKind | undefined {
 	if (edit.replacements.length === 0) {
 		// Empty edit - return undefined as there's no edit to classify
 		return undefined;
 	}
 
-	return new InlineSuggestionEditKind(edit.replacements.map(rep => computeSingleEditKind(rep, textModel, cursorPosition)));
+	return new InlineSuggestionEditKind(
+		edit.replacements.map(rep => computeSingleEditKind(rep, textModel, cursorPosition))
+	);
 }
 
 function countLines(text: string): number {
@@ -147,14 +183,18 @@ function countLines(text: string): number {
 	return text.split(/\r\n|\r|\n/).length - 1;
 }
 
-function computeSingleEditKind(replacement: StringReplacement, textModel: ITextModel, cursorPosition?: Position): IInlineSuggestionEditKindEdit {
+function computeSingleEditKind(
+	replacement: StringReplacement,
+	textModel: ITextModel,
+	cursorPosition?: Position
+): IInlineSuggestionEditKindEdit {
 	const replaceRange = replacement.replaceRange;
 	const newText = replacement.newText;
 	const deletedLength = replaceRange.length;
 	const insertedLength = newText.length;
 	const linesInserted = countLines(newText);
 
-	const kind = replaceRange.isEmpty ? 'insert' : (newText.length === 0 ? 'delete' : 'replace');
+	const kind = replaceRange.isEmpty ? 'insert' : newText.length === 0 ? 'delete' : 'replace';
 	switch (kind) {
 		case 'insert':
 			return {
@@ -163,7 +203,7 @@ function computeSingleEditKind(replacement: StringReplacement, textModel: ITextM
 				charactersInserted: insertedLength,
 				charactersDeleted: 0,
 				linesInserted,
-				linesDeleted: 0,
+				linesDeleted: 0
 			};
 		case 'delete': {
 			const deletedText = textModel.getValue().substring(replaceRange.start, replaceRange.endExclusive);
@@ -173,7 +213,7 @@ function computeSingleEditKind(replacement: StringReplacement, textModel: ITextM
 				charactersInserted: 0,
 				charactersDeleted: deletedLength,
 				linesInserted: 0,
-				linesDeleted: countLines(deletedText),
+				linesDeleted: countLines(deletedText)
 			};
 		}
 		case 'replace': {
@@ -184,13 +224,18 @@ function computeSingleEditKind(replacement: StringReplacement, textModel: ITextM
 				charactersInserted: insertedLength,
 				charactersDeleted: deletedLength,
 				linesInserted,
-				linesDeleted: countLines(oldText),
+				linesDeleted: countLines(oldText)
 			};
 		}
 	}
 }
 
-function computeInsertProperties(offset: number, newText: string, textModel: ITextModel, cursorPosition?: Position): InsertProperties {
+function computeInsertProperties(
+	offset: number,
+	newText: string,
+	textModel: ITextModel,
+	cursorPosition?: Position
+): InsertProperties {
 	const textShape = analyzeTextShape(newText);
 	const insertPosition = textModel.getPositionAt(offset);
 	const lineContent = textModel.getLineContent(insertPosition.lineNumber);
@@ -231,14 +276,14 @@ function computeInsertProperties(offset: number, newText: string, textModel: ITe
 			beforeCursorOnSameLine,
 			afterCursorOnSameLine,
 			linesAbove,
-			linesBelow,
+			linesBelow
 		};
 	}
 
 	return {
 		textShape,
 		locationShape,
-		relativeToCursor,
+		relativeToCursor
 	};
 }
 
@@ -262,7 +307,7 @@ function computeDeleteProperties(startOffset: number, endOffset: number, textMod
 	return {
 		textShape,
 		isAtEndOfLine,
-		deletesEntireLineContent,
+		deletesEntireLineContent
 	};
 }
 
@@ -287,6 +332,6 @@ function computeReplaceProperties(oldText: string, newText: string): ReplaceProp
 		isSubtractive,
 		isSingleLineToSingleLine,
 		isSingleLineToMultiLine,
-		isMultiLineToSingleLine,
+		isMultiLineToSingleLine
 	};
 }

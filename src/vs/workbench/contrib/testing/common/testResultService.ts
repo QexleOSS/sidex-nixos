@@ -16,7 +16,14 @@ import { TestingContextKeys } from './testingContextKeys.js';
 import { ITestProfileService } from './testProfileService.js';
 import { ITestResult, LiveTestResult, TestResultItemChange, TestResultItemChangeReason } from './testResult.js';
 import { ITestResultStorage, RETAIN_MAX_RESULTS } from './testResultStorage.js';
-import { ExtensionRunTestsRequest, ITestRunProfile, ResolvedTestRunRequest, TestResultItem, TestResultState, TestRunProfileBitset } from './testTypes.js';
+import {
+	ExtensionRunTestsRequest,
+	ITestRunProfile,
+	ResolvedTestRunRequest,
+	TestResultItem,
+	TestResultState,
+	TestRunProfileBitset
+} from './testTypes.js';
 
 export type ResultChangeEvent =
 	| { completed: LiveTestResult }
@@ -100,11 +107,13 @@ export class TestResultService extends Disposable implements ITestResultService 
 
 	private readonly isRunning: IContextKey<boolean>;
 	private readonly hasAnyResults: IContextKey<boolean>;
-	private readonly loadResults = createSingleCallFunction(() => this.storage.read().then(loaded => {
-		for (let i = loaded.length - 1; i >= 0; i--) {
-			this.push(loaded[i]);
-		}
-	}));
+	private readonly loadResults = createSingleCallFunction(() =>
+		this.storage.read().then(loaded => {
+			for (let i = loaded.length - 1; i >= 0; i--) {
+				this.push(loaded[i]);
+			}
+		})
+	);
 
 	protected readonly persistScheduler = this._register(new RunOnceScheduler(() => this.persistImmediately(), 500));
 
@@ -112,7 +121,7 @@ export class TestResultService extends Disposable implements ITestResultService 
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@ITestResultStorage private readonly storage: ITestResultStorage,
 		@ITestProfileService private readonly testProfiles: ITestProfileService,
-		@ITelemetryService private readonly telemetryService: ITelemetryService,
+		@ITelemetryService private readonly telemetryService: ITelemetryService
 	) {
 		super();
 		this._register(toDisposable(() => dispose(this._resultsDisposables)));
@@ -154,18 +163,20 @@ export class TestResultService extends Disposable implements ITestResultService 
 			targets: [],
 			exclude: req.exclude,
 			continuous: req.continuous,
-			group: profile?.group ?? TestRunProfileBitset.Run,
+			group: profile?.group ?? TestRunProfileBitset.Run
 		};
 
 		if (profile) {
 			resolved.targets.push({
 				profileId: profile.profileId,
 				controllerId: req.controllerId,
-				testIds: req.include,
+				testIds: req.include
 			});
 		}
 
-		return this.push(new LiveTestResult(req.id, req.persist, resolved, this.insertOrderCounter++, this.telemetryService));
+		return this.push(
+			new LiveTestResult(req.id, req.persist, resolved, this.insertOrderCounter++, this.telemetryService)
+		);
 	}
 
 	/**
@@ -175,7 +186,10 @@ export class TestResultService extends Disposable implements ITestResultService 
 		if (result.completedAt === undefined) {
 			this.results.unshift(result);
 		} else {
-			const index = findFirstIdxMonotonousOrArrLen(this.results, r => r.completedAt !== undefined && r.completedAt <= result.completedAt!);
+			const index = findFirstIdxMonotonousOrArrLen(
+				this.results,
+				r => r.completedAt !== undefined && r.completedAt <= result.completedAt!
+			);
 			this.results.splice(index, 0, result);
 			this.persistScheduler.schedule();
 		}

@@ -15,7 +15,6 @@ class SpacesDiffResult {
  * Compute the diff in spaces between two line's indentation.
  */
 function spacesDiff(a: string, aLength: number, b: string, bLength: number, result: SpacesDiffResult): void {
-
 	result.spacesDiff = 0;
 	result.looksLikeAlignment = false;
 
@@ -35,7 +34,8 @@ function spacesDiff(a: string, aLength: number, b: string, bLength: number, resu
 		}
 	}
 
-	let aSpacesCnt = 0, aTabsCount = 0;
+	let aSpacesCnt = 0,
+		aTabsCount = 0;
 	for (let j = i; j < aLength; j++) {
 		const aCharCode = a.charCodeAt(j);
 		if (aCharCode === CharCode.Space) {
@@ -45,7 +45,8 @@ function spacesDiff(a: string, aLength: number, b: string, bLength: number, resu
 		}
 	}
 
-	let bSpacesCnt = 0, bTabsCount = 0;
+	let bSpacesCnt = 0,
+		bTabsCount = 0;
 	for (let j = i; j < bLength; j++) {
 		const bCharCode = b.charCodeAt(j);
 		if (bCharCode === CharCode.Space) {
@@ -102,20 +103,24 @@ export interface IGuessedIndentation {
 	insertSpaces: boolean;
 }
 
-export function guessIndentation(source: ITextBuffer, defaultTabSize: number, defaultInsertSpaces: boolean): IGuessedIndentation {
+export function guessIndentation(
+	source: ITextBuffer,
+	defaultTabSize: number,
+	defaultInsertSpaces: boolean
+): IGuessedIndentation {
 	// Look at most at the first 10k lines
 	const linesCount = Math.min(source.getLineCount(), 10000);
 
-	let linesIndentedWithTabsCount = 0;				// number of lines that contain at least one tab in indentation
-	let linesIndentedWithSpacesCount = 0;			// number of lines that contain only spaces in indentation
+	let linesIndentedWithTabsCount = 0; // number of lines that contain at least one tab in indentation
+	let linesIndentedWithSpacesCount = 0; // number of lines that contain only spaces in indentation
 
-	let previousLineText = '';						// content of latest line that contained non-whitespace chars
-	let previousLineIndentation = 0;				// index at which latest line contained the first non-whitespace char
+	let previousLineText = ''; // content of latest line that contained non-whitespace chars
+	let previousLineIndentation = 0; // index at which latest line contained the first non-whitespace char
 
-	const ALLOWED_TAB_SIZE_GUESSES = [2, 4, 6, 8, 3, 5, 7];	// prefer even guesses for `tabSize`, limit to [2, 8].
-	const MAX_ALLOWED_TAB_SIZE_GUESS = 8;			// max(ALLOWED_TAB_SIZE_GUESSES) = 8
+	const ALLOWED_TAB_SIZE_GUESSES = [2, 4, 6, 8, 3, 5, 7]; // prefer even guesses for `tabSize`, limit to [2, 8].
+	const MAX_ALLOWED_TAB_SIZE_GUESS = 8; // max(ALLOWED_TAB_SIZE_GUESSES) = 8
 
-	const spacesDiffCount = [0, 0, 0, 0, 0, 0, 0, 0, 0];		// `tabSize` scores
+	const spacesDiffCount = [0, 0, 0, 0, 0, 0, 0, 0, 0]; // `tabSize` scores
 	const tmp = new SpacesDiffResult();
 
 	for (let lineNumber = 1; lineNumber <= linesCount; lineNumber++) {
@@ -124,14 +129,14 @@ export function guessIndentation(source: ITextBuffer, defaultTabSize: number, de
 
 		// if the text buffer is chunk based, so long lines are cons-string, v8 will flattern the string when we check charCode.
 		// checking charCode on chunks directly is cheaper.
-		const useCurrentLineText = (currentLineLength <= 65536);
+		const useCurrentLineText = currentLineLength <= 65536;
 
-		let currentLineHasContent = false;			// does `currentLineText` contain non-whitespace chars
-		let currentLineIndentation = 0;				// index at which `currentLineText` contains the first non-whitespace char
-		let currentLineSpacesCount = 0;				// count of spaces found in `currentLineText` indentation
-		let currentLineTabsCount = 0;				// count of tabs found in `currentLineText` indentation
+		let currentLineHasContent = false; // does `currentLineText` contain non-whitespace chars
+		let currentLineIndentation = 0; // index at which `currentLineText` contains the first non-whitespace char
+		let currentLineSpacesCount = 0; // count of spaces found in `currentLineText` indentation
+		let currentLineTabsCount = 0; // count of tabs found in `currentLineText` indentation
 		for (let j = 0, lenJ = currentLineLength; j < lenJ; j++) {
-			const charCode = (useCurrentLineText ? currentLineText.charCodeAt(j) : source.getLineCharCode(lineNumber, j));
+			const charCode = useCurrentLineText ? currentLineText.charCodeAt(j) : source.getLineCharCode(lineNumber, j);
 
 			if (charCode === CharCode.Tab) {
 				currentLineTabsCount++;
@@ -185,7 +190,7 @@ export function guessIndentation(source: ITextBuffer, defaultTabSize: number, de
 
 	let insertSpaces = defaultInsertSpaces;
 	if (linesIndentedWithTabsCount !== linesIndentedWithSpacesCount) {
-		insertSpaces = (linesIndentedWithTabsCount < linesIndentedWithSpacesCount);
+		insertSpaces = linesIndentedWithTabsCount < linesIndentedWithSpacesCount;
 	}
 
 	let tabSize = defaultTabSize;
@@ -193,7 +198,7 @@ export function guessIndentation(source: ITextBuffer, defaultTabSize: number, de
 	// Guess tabSize only if inserting spaces...
 	if (insertSpaces) {
 		let tabSizeScore = 0;
-		ALLOWED_TAB_SIZE_GUESSES.forEach((possibleTabSize) => {
+		ALLOWED_TAB_SIZE_GUESSES.forEach(possibleTabSize => {
 			const possibleTabSizeScore = spacesDiffCount[possibleTabSize];
 			if (possibleTabSizeScore > tabSizeScore) {
 				tabSizeScore = possibleTabSizeScore;
@@ -204,7 +209,12 @@ export function guessIndentation(source: ITextBuffer, defaultTabSize: number, de
 		// Let a tabSize of 2 win over 4 only if it has at least 2/3 of the occurrences of 4
 		// This helps detect 2-space indentation in cases like YAML files where there might be
 		// some 4-space diffs from deeper nesting, while still preferring 4 when it's clearly predominant
-		if (tabSize === 4 && spacesDiffCount[4] > 0 && spacesDiffCount[2] > 0 && spacesDiffCount[2] >= spacesDiffCount[4] * 2 / 3) {
+		if (
+			tabSize === 4 &&
+			spacesDiffCount[4] > 0 &&
+			spacesDiffCount[2] > 0 &&
+			spacesDiffCount[2] >= (spacesDiffCount[4] * 2) / 3
+		) {
 			tabSize = 2;
 		}
 	}

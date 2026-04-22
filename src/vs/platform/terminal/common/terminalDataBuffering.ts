@@ -16,8 +16,7 @@ interface TerminalDataBuffer extends IDisposable {
 export class TerminalDataBufferer implements IDisposable {
 	private readonly _terminalBufferMap = new Map<number, TerminalDataBuffer>();
 
-	constructor(private readonly _callback: (id: number, data: string) => void) {
-	}
+	constructor(private readonly _callback: (id: number, data: string) => void) {}
 
 	dispose() {
 		for (const buffer of this._terminalBufferMap.values()) {
@@ -26,7 +25,6 @@ export class TerminalDataBufferer implements IDisposable {
 	}
 
 	startBuffering(id: number, event: Event<string | IProcessDataEvent>, throttleBy: number = 5): IDisposable {
-
 		const disposable = event((e: string | IProcessDataEvent) => {
 			const data = isString(e) ? e : e.data;
 			let buffer = this._terminalBufferMap.get(id);

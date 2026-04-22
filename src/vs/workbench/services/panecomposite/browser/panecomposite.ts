@@ -14,7 +14,6 @@ import { SINGLE_WINDOW_PARTS } from '../../layout/browser/layoutService.js';
 export const IPaneCompositePartService = createDecorator<IPaneCompositePartService>('paneCompositePartService');
 
 export interface IPaneCompositePartService {
-
 	readonly _serviceBrand: undefined;
 
 	readonly onDidPaneCompositeOpen: Event<{ composite: IPaneComposite; viewContainerLocation: ViewContainerLocation }>;
@@ -27,7 +26,11 @@ export interface IPaneCompositePartService {
 	/**
 	 * Opens a viewlet with the given identifier and pass keyboard focus to it if specified.
 	 */
-	openPaneComposite(id: string | undefined, viewContainerLocation: ViewContainerLocation, focus?: boolean): Promise<IPaneComposite | undefined>;
+	openPaneComposite(
+		id: string | undefined,
+		viewContainerLocation: ViewContainerLocation,
+		focus?: boolean
+	): Promise<IPaneComposite | undefined>;
 
 	/**
 	 * Returns the current active viewlet if any.

@@ -15,7 +15,6 @@ import { IMessagePassingProtocol, IPCClient } from './ipc.js';
  */
 
 export interface MessageEvent {
-
 	/**
 	 * For our use we only consider `Uint8Array` a valid data transfer
 	 * via message ports because our protocol implementation is buffer based.
@@ -24,7 +23,6 @@ export interface MessageEvent {
 }
 
 export interface MessagePort {
-
 	addEventListener(type: 'message', listener: (this: MessagePort, e: MessageEvent) => unknown): void;
 	removeEventListener(type: 'message', listener: (this: MessagePort, e: MessageEvent) => unknown): void;
 
@@ -40,7 +38,6 @@ export interface MessagePort {
  * is a simple `onmessage` / `postMessage` pattern.
  */
 export class Protocol implements IMessagePassingProtocol {
-
 	readonly onMessage;
 
 	constructor(private port: MessagePort) {
@@ -67,7 +64,6 @@ export class Protocol implements IMessagePassingProtocol {
  * An implementation of a `IPCClient` on top of MessagePort style IPC communication.
  */
 export class Client extends IPCClient implements IDisposable {
-
 	private protocol: Protocol;
 
 	constructor(port: MessagePort, clientId: string) {

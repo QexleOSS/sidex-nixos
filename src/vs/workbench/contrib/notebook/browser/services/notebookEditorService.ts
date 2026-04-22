@@ -3,34 +3,21 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CodeWindow } from '../../../../../base/browser/window.js';
-import { createDecorator, ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
-import { INotebookEditor, INotebookEditorCreationOptions } from '../notebookBrowser.js';
-import { Event } from '../../../../../base/common/event.js';
-import { Dimension } from '../../../../../base/browser/dom.js';
-import { NotebookEditorWidget } from '../notebookEditorWidget.js';
+import { createDecorator } from '../../../../../platform/instantiation/common/instantiation.js';
+import { Event, Emitter } from '../../../../../base/common/event.js';
+import type { NotebookEditorWidget } from '../notebookEditorWidget.js';
 import { URI } from '../../../../../base/common/uri.js';
-import { ICodeEditor } from '../../../../../editor/browser/editorBrowser.js';
 
-export const INotebookEditorService = createDecorator<INotebookEditorService>('INotebookEditorWidgetService');
-
-export interface IBorrowValue<T> {
-	readonly value: T | undefined;
-}
+export const INotebookEditorService = createDecorator<INotebookEditorService>('notebookEditorService');
 
 export interface INotebookEditorService {
-	_serviceBrand: undefined;
+	readonly _serviceBrand: undefined;
 
-	retrieveWidget(accessor: ServicesAccessor, groupId: number, input: { resource: URI; typeId: string }, creationOptions?: INotebookEditorCreationOptions, dimension?: Dimension, codeWindow?: CodeWindow): IBorrowValue<INotebookEditor>;
+	readonly onDidAddNotebookEditor: Event<NotebookEditorWidget>;
+	readonly onDidRemoveNotebookEditor: Event<NotebookEditorWidget>;
 
-	retrieveExistingWidgetFromURI(resource: URI): IBorrowValue<NotebookEditorWidget> | undefined;
-	retrieveAllExistingWidgets(): IBorrowValue<NotebookEditorWidget>[];
-	readonly onDidAddNotebookEditor: Event<INotebookEditor>;
-	readonly onDidRemoveNotebookEditor: Event<INotebookEditor>;
-	addNotebookEditor(editor: INotebookEditor): void;
-	removeNotebookEditor(editor: INotebookEditor): void;
-	getNotebookEditor(editorId: string): INotebookEditor | undefined;
-	listNotebookEditors(): readonly INotebookEditor[];
-	getNotebookForPossibleCell(editor: ICodeEditor): INotebookEditor | undefined;
-	updateReplContextKey(uri: string): void;
+	retrieveWidget(accessor: any, group: any, input: any, creationOptions?: any, dimension?: any): any;
+	retrieveExistingWidgetFromURI(resource: URI): any | undefined;
+	retrieveAllExistingWidgets(): NotebookEditorWidget[];
+	listNotebookEditors(): readonly NotebookEditorWidget[];
 }

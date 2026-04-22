@@ -14,7 +14,15 @@ import { IUriIdentityService } from '../../uriIdentity/common/uriIdentity.js';
 import { IUserDataProfile, IUserDataProfilesService } from '../../userDataProfile/common/userDataProfile.js';
 import { AbstractJsonSynchronizer } from './abstractJsonSynchronizer.js';
 import { AbstractInitializer } from './abstractSynchronizer.js';
-import { IRemoteUserData, IUserDataSyncLocalStoreService, IUserDataSynchroniser, IUserDataSyncLogService, IUserDataSyncEnablementService, IUserDataSyncStoreService, SyncResource } from './userDataSync.js';
+import {
+	IRemoteUserData,
+	IUserDataSyncLocalStoreService,
+	IUserDataSynchroniser,
+	IUserDataSyncLogService,
+	IUserDataSyncEnablementService,
+	IUserDataSyncStoreService,
+	SyncResource
+} from './userDataSync.js';
 
 interface ITasksSyncContent {
 	tasks?: string;
@@ -31,7 +39,6 @@ export function getTasksContentFromSyncContent(syncContent: string, logService: 
 }
 
 export class TasksSynchroniser extends AbstractJsonSynchronizer implements IUserDataSynchroniser {
-
 	constructor(
 		profile: IUserDataProfile,
 		collection: string | undefined,
@@ -44,9 +51,24 @@ export class TasksSynchroniser extends AbstractJsonSynchronizer implements IUser
 		@IEnvironmentService environmentService: IEnvironmentService,
 		@IStorageService storageService: IStorageService,
 		@ITelemetryService telemetryService: ITelemetryService,
-		@IUriIdentityService uriIdentityService: IUriIdentityService,
+		@IUriIdentityService uriIdentityService: IUriIdentityService
 	) {
-		super(profile.tasksResource, { syncResource: SyncResource.Tasks, profile }, collection, 'tasks.json', fileService, environmentService, storageService, userDataSyncStoreService, userDataSyncLocalStoreService, userDataSyncEnablementService, telemetryService, logService, configurationService, uriIdentityService);
+		super(
+			profile.tasksResource,
+			{ syncResource: SyncResource.Tasks, profile },
+			collection,
+			'tasks.json',
+			fileService,
+			environmentService,
+			storageService,
+			userDataSyncStoreService,
+			userDataSyncLocalStoreService,
+			userDataSyncEnablementService,
+			telemetryService,
+			logService,
+			configurationService,
+			uriIdentityService
+		);
 	}
 
 	protected getContentFromSyncContent(syncContent: string): string | null {
@@ -59,7 +81,6 @@ export class TasksSynchroniser extends AbstractJsonSynchronizer implements IUser
 }
 
 export class TasksInitializer extends AbstractInitializer {
-
 	private tasksResource = this.userDataProfilesService.defaultProfile.tasksResource;
 
 	constructor(
@@ -68,13 +89,23 @@ export class TasksInitializer extends AbstractInitializer {
 		@IEnvironmentService environmentService: IEnvironmentService,
 		@IUserDataSyncLogService logService: IUserDataSyncLogService,
 		@IStorageService storageService: IStorageService,
-		@IUriIdentityService uriIdentityService: IUriIdentityService,
+		@IUriIdentityService uriIdentityService: IUriIdentityService
 	) {
-		super(SyncResource.Tasks, userDataProfilesService, environmentService, logService, fileService, storageService, uriIdentityService);
+		super(
+			SyncResource.Tasks,
+			userDataProfilesService,
+			environmentService,
+			logService,
+			fileService,
+			storageService,
+			uriIdentityService
+		);
 	}
 
 	protected async doInitialize(remoteUserData: IRemoteUserData): Promise<void> {
-		const tasksContent = remoteUserData.syncData ? getTasksContentFromSyncContent(remoteUserData.syncData.content, this.logService) : null;
+		const tasksContent = remoteUserData.syncData
+			? getTasksContentFromSyncContent(remoteUserData.syncData.content, this.logService)
+			: null;
 		if (!tasksContent) {
 			this.logService.info('Skipping initializing tasks because remote tasks does not exist.');
 			return;
@@ -94,5 +125,4 @@ export class TasksInitializer extends AbstractInitializer {
 	private async isEmpty(): Promise<boolean> {
 		return this.fileService.exists(this.tasksResource);
 	}
-
 }

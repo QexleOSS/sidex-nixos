@@ -16,7 +16,6 @@ export const INotificationService = createDecorator<INotificationService>('notif
 export type NotificationMessage = string | Error;
 
 export enum NotificationPriority {
-
 	/**
 	 * Default priority: notification will be visible unless do not disturb mode is enabled.
 	 */
@@ -39,7 +38,6 @@ export enum NotificationPriority {
 }
 
 export interface INotificationProperties {
-
 	/**
 	 * Sticky notifications are not automatically removed after a certain timeout.
 	 *
@@ -62,7 +60,6 @@ export interface INotificationProperties {
 }
 
 export enum NeverShowAgainScope {
-
 	/**
 	 * Will never show this notification on the current workspace again.
 	 */
@@ -82,7 +79,6 @@ export enum NeverShowAgainScope {
 }
 
 export interface INeverShowAgainOptions {
-
 	/**
 	 * The id is used to persist the selection of not showing the notification again.
 	 */
@@ -103,7 +99,6 @@ export interface INeverShowAgainOptions {
 }
 
 export interface INotificationSource {
-
 	/**
 	 * The id of the source.
 	 */
@@ -126,7 +121,6 @@ export function isNotificationSource(thing: unknown): thing is INotificationSour
 }
 
 export interface INotification extends INotificationProperties {
-
 	/**
 	 * The id of the notification. If provided, will be used to compare
 	 * notifications with others to decide whether a notification is
@@ -172,7 +166,6 @@ export interface INotification extends INotificationProperties {
 }
 
 export interface INotificationActions {
-
 	/**
 	 * Primary actions show up as buttons as part of the message and will close
 	 * the notification once clicked.
@@ -190,7 +183,6 @@ export interface INotificationActions {
 }
 
 export interface INotificationProgressProperties {
-
 	/**
 	 * Causes the progress bar to spin infinitley.
 	 */
@@ -208,7 +200,6 @@ export interface INotificationProgressProperties {
 }
 
 export interface INotificationProgress {
-
 	/**
 	 * Causes the progress bar to spin infinitley.
 	 */
@@ -231,7 +222,6 @@ export interface INotificationProgress {
 }
 
 export interface INotificationHandle {
-
 	/**
 	 * Will be fired once the notification is closed.
 	 */
@@ -274,7 +264,6 @@ export interface INotificationHandle {
 }
 
 export interface IStatusHandle {
-
 	/**
 	 * Hide the status message.
 	 */
@@ -282,7 +271,6 @@ export interface IStatusHandle {
 }
 
 interface IBasePromptChoice {
-
 	/**
 	 * Label to show for the choice to the user.
 	 */
@@ -301,7 +289,6 @@ interface IBasePromptChoice {
 }
 
 export interface IPromptChoice extends IBasePromptChoice {
-
 	/**
 	 * Primary choices show up as buttons in the notification below the message.
 	 * Secondary choices show up under the gear icon in the header of the notification.
@@ -310,7 +297,6 @@ export interface IPromptChoice extends IBasePromptChoice {
 }
 
 export interface IPromptChoiceWithMenu extends IPromptChoice {
-
 	/**
 	 * Additional choices those will be shown in the dropdown menu for this choice.
 	 */
@@ -323,7 +309,6 @@ export interface IPromptChoiceWithMenu extends IPromptChoice {
 }
 
 export interface IPromptOptions extends INotificationProperties {
-
 	/**
 	 * Will be called if the user closed the notification without picking
 	 * any of the provided choices.
@@ -332,7 +317,6 @@ export interface IPromptOptions extends INotificationProperties {
 }
 
 export interface IStatusMessageOptions {
-
 	/**
 	 * An optional timeout after which the status message should show. By default
 	 * the status message will show immediately.
@@ -347,7 +331,6 @@ export interface IStatusMessageOptions {
 }
 
 export enum NotificationsFilter {
-
 	/**
 	 * No filter is enabled.
 	 */
@@ -355,7 +338,7 @@ export enum NotificationsFilter {
 
 	/**
 	 * All notifications are silent except error notifications.
-	*/
+	 */
 	ERROR
 }
 
@@ -369,7 +352,6 @@ export interface INotificationSourceFilter extends INotificationSource {
  * Note: use the `IDialogService` for a modal way to ask the user for input.
  */
 export interface INotificationService {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -440,7 +422,12 @@ export interface INotificationService {
 	 *
 	 * @returns a handle on the notification to e.g. hide it or update message, buttons, etc.
 	 */
-	prompt(severity: Severity, message: string, choices: (IPromptChoice | IPromptChoiceWithMenu)[], options?: IPromptOptions): INotificationHandle;
+	prompt(
+		severity: Severity,
+		message: string,
+		choices: (IPromptChoice | IPromptChoiceWithMenu)[],
+		options?: IPromptOptions
+	): INotificationHandle;
 
 	/**
 	 * Shows a status message in the status area with the provided text.
@@ -454,38 +441,36 @@ export interface INotificationService {
 }
 
 export class NoOpNotification implements INotificationHandle {
-
 	readonly progress = new NoOpProgress();
 
 	readonly onDidClose = Event.None;
 	readonly onDidChangeVisibility = Event.None;
 
-	updateSeverity(severity: Severity): void { }
-	updateMessage(message: NotificationMessage): void { }
-	updateActions(actions?: INotificationActions): void { }
+	updateSeverity(severity: Severity): void {}
+	updateMessage(message: NotificationMessage): void {}
+	updateActions(actions?: INotificationActions): void {}
 
-	close(): void { }
+	close(): void {}
 }
 
 export class NoOpProgress implements INotificationProgress {
-	infinite(): void { }
-	done(): void { }
-	total(value: number): void { }
-	worked(value: number): void { }
+	infinite(): void {}
+	done(): void {}
+	total(value: number): void {}
+	worked(value: number): void {}
 }
 
 export function withSeverityPrefix(label: string, severity: Severity): string {
-
 	// Add severity prefix to match WCAG 4.1.3 Status
 	// Messages requirements.
 
 	if (severity === Severity.Error) {
-		return localize('severityPrefix.error', "Error: {0}", label);
+		return localize('severityPrefix.error', 'Error: {0}', label);
 	}
 
 	if (severity === Severity.Warning) {
-		return localize('severityPrefix.warning', "Warning: {0}", label);
+		return localize('severityPrefix.warning', 'Warning: {0}', label);
 	}
 
-	return localize('severityPrefix.info', "Info: {0}", label);
+	return localize('severityPrefix.info', 'Info: {0}', label);
 }

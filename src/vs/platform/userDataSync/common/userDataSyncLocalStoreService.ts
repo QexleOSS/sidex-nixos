@@ -13,10 +13,15 @@ import { IConfigurationService } from '../../configuration/common/configuration.
 import { IEnvironmentService } from '../../environment/common/environment.js';
 import { FileOperationResult, IFileService, IFileStat, toFileOperationResult } from '../../files/common/files.js';
 import { IUserDataProfilesService } from '../../userDataProfile/common/userDataProfile.js';
-import { ALL_SYNC_RESOURCES, IResourceRefHandle, IUserDataSyncLocalStoreService, IUserDataSyncLogService, SyncResource } from './userDataSync.js';
+import {
+	ALL_SYNC_RESOURCES,
+	IResourceRefHandle,
+	IUserDataSyncLocalStoreService,
+	IUserDataSyncLogService,
+	SyncResource
+} from './userDataSync.js';
 
 export class UserDataSyncLocalStoreService extends Disposable implements IUserDataSyncLocalStoreService {
-
 	_serviceBrand: undefined;
 
 	constructor(
@@ -24,7 +29,7 @@ export class UserDataSyncLocalStoreService extends Disposable implements IUserDa
 		@IFileService private readonly fileService: IFileService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IUserDataSyncLogService private readonly logService: IUserDataSyncLogService,
-		@IUserDataProfilesService private readonly userDataProfilesService: IUserDataProfilesService,
+		@IUserDataProfilesService private readonly userDataProfilesService: IUserDataProfilesService
 	) {
 		super();
 		this.cleanUp();
@@ -53,7 +58,11 @@ export class UserDataSyncLocalStoreService extends Disposable implements IUserDa
 
 		if (stat.children) {
 			for (const child of stat.children) {
-				if (child.isDirectory && !ALL_SYNC_RESOURCES.includes(<SyncResource>child.name) && !this.userDataProfilesService.profiles.some(profile => profile.id === child.name)) {
+				if (
+					child.isDirectory &&
+					!ALL_SYNC_RESOURCES.includes(<SyncResource>child.name) &&
+					!this.userDataProfilesService.profiles.some(profile => profile.id === child.name)
+				) {
 					try {
 						this.logService.info('Deleting non existing profile from backup', child.resource.path);
 						await this.fileService.del(child.resource, { recursive: true });
@@ -70,7 +79,10 @@ export class UserDataSyncLocalStoreService extends Disposable implements IUserDa
 		try {
 			const stat = await this.fileService.resolve(folder);
 			if (stat.children) {
-				const all = stat.children.filter(stat => stat.isFile && !stat.name.startsWith('lastSync')).sort().reverse();
+				const all = stat.children
+					.filter(stat => stat.isFile && !stat.name.startsWith('lastSync'))
+					.sort()
+					.reverse();
 				return all.map(stat => ({
 					ref: stat.name,
 					created: this.getCreationTime(stat)
@@ -84,7 +96,12 @@ export class UserDataSyncLocalStoreService extends Disposable implements IUserDa
 		return [];
 	}
 
-	async resolveResourceContent(resourceKey: SyncResource, ref: string, collection?: string, root?: URI): Promise<string | null> {
+	async resolveResourceContent(
+		resourceKey: SyncResource,
+		ref: string,
+		collection?: string,
+		root?: URI
+	): Promise<string | null> {
 		const folder = this.getResourceBackupHome(resourceKey, collection, root);
 		const file = joinPath(folder, ref);
 		try {
@@ -96,7 +113,13 @@ export class UserDataSyncLocalStoreService extends Disposable implements IUserDa
 		}
 	}
 
-	async writeResource(resourceKey: SyncResource, content: string, cTime: Date, collection?: string, root?: URI): Promise<void> {
+	async writeResource(
+		resourceKey: SyncResource,
+		content: string,
+		cTime: Date,
+		collection?: string,
+		root?: URI
+	): Promise<void> {
 		const folder = this.getResourceBackupHome(resourceKey, collection, root);
 		const resource = joinPath(folder, `${toLocalISOString(cTime).replace(/-|:|\.\d+Z$/g, '')}.json`);
 		try {
@@ -106,7 +129,11 @@ export class UserDataSyncLocalStoreService extends Disposable implements IUserDa
 		}
 	}
 
-	private getResourceBackupHome(resource: SyncResource, collection?: string, root: URI = this.environmentService.userDataSyncHome): URI {
+	private getResourceBackupHome(
+		resource: SyncResource,
+		collection?: string,
+		root: URI = this.environmentService.userDataSyncHome
+	): URI {
 		return joinPath(root, ...(collection ? [collection, resource] : [resource]));
 	}
 
@@ -122,16 +149,23 @@ export class UserDataSyncLocalStoreService extends Disposable implements IUserDa
 			const stat = await this.fileService.resolve(folder);
 			if (stat.children) {
 				const all = stat.children.filter(stat => stat.isFile && /^\d{8}T\d{6}(\.json)?$/.test(stat.name)).sort();
-				const backUpMaxAge = 1000 * 60 * 60 * 24 * (this.configurationService.getValue<number>('sync.localBackupDuration') || 30 /* Default 30 days */);
+				const backUpMaxAge =
+					1000 *
+					60 *
+					60 *
+					24 *
+					(this.configurationService.getValue<number>('sync.localBackupDuration') || 30); /* Default 30 days */
 				let toDelete = all.filter(stat => Date.now() - this.getCreationTime(stat) > backUpMaxAge);
 				const remaining = all.length - toDelete.length;
 				if (remaining < 10) {
 					toDelete = toDelete.slice(10 - remaining);
 				}
-				await Promises.settled(toDelete.map(async stat => {
-					this.logService.info('Deleting from backup', stat.resource.path);
-					await this.fileService.del(stat.resource);
-				}));
+				await Promises.settled(
+					toDelete.map(async stat => {
+						this.logService.info('Deleting from backup', stat.resource.path);
+						await this.fileService.del(stat.resource);
+					})
+				);
 			}
 		} catch (e) {
 			this.logService.error(e);

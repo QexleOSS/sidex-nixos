@@ -10,12 +10,16 @@ import { ITextModel } from '../../../model.js';
 export class ListNode implements IDisposable {
 	parent?: ListNode;
 	private readonly _children: Node[] = [];
-	get children(): ReadonlyArray<Node> { return this._children; }
+	get children(): ReadonlyArray<Node> {
+		return this._children;
+	}
 
 	private _length: number = 0;
-	get length(): number { return this._length; }
+	get length(): number {
+		return this._length;
+	}
 
-	constructor(public readonly height: number) { }
+	constructor(public readonly height: number) {}
 
 	static create(node1: Node, node2: Node) {
 		const list = new ListNode(node1.height + 1);
@@ -191,8 +195,7 @@ function prepend(list: Node, nodeToAppend: Node): Node {
 function concat(node1: Node, node2: Node): Node {
 	if (node1.height === node2.height) {
 		return ListNode.create(node1, node2);
-	}
-	else if (node1.height > node2.height) {
+	} else if (node1.height > node2.height) {
 		// node1 is the tree we want to insert into
 		return append(node1, node2);
 	} else {
@@ -280,13 +283,18 @@ export class TokenStore implements IDisposable {
 				}
 				precedingNodes.push(node.node);
 				continue;
-			} else if (isLeaf(node.node) && (currentOffset < updateOffsetStart)) {
+			} else if (isLeaf(node.node) && currentOffset < updateOffsetStart) {
 				// We have a partial preceding node
-				precedingNodes.push({ length: updateOffsetStart - currentOffset, token: node.node.token, height: 0, tokenQuality: node.node.tokenQuality });
+				precedingNodes.push({
+					length: updateOffsetStart - currentOffset,
+					token: node.node.token,
+					height: 0,
+					tokenQuality: node.node.tokenQuality
+				});
 				// Node could also be postceeding, so don't continue
 			}
 
-			if ((updateOffsetStart <= currentOffset) && (currentOffset + node.node.length <= firstUnchangedOffsetAfterUpdate)) {
+			if (updateOffsetStart <= currentOffset && currentOffset + node.node.length <= firstUnchangedOffsetAfterUpdate) {
 				continue;
 			}
 
@@ -296,9 +304,14 @@ export class TokenStore implements IDisposable {
 				}
 				postcedingNodes.push(node.node);
 				continue;
-			} else if (isLeaf(node.node) && (currentOffset + node.node.length > firstUnchangedOffsetAfterUpdate)) {
+			} else if (isLeaf(node.node) && currentOffset + node.node.length > firstUnchangedOffsetAfterUpdate) {
 				// we have a partial postceeding node
-				postcedingNodes.push({ length: currentOffset + node.node.length - firstUnchangedOffsetAfterUpdate, token: node.node.token, height: 0, tokenQuality: node.node.tokenQuality });
+				postcedingNodes.push({
+					length: currentOffset + node.node.length - firstUnchangedOffsetAfterUpdate,
+					token: node.node.token,
+					height: 0,
+					tokenQuality: node.node.tokenQuality
+				});
 				continue;
 			}
 
@@ -333,7 +346,11 @@ export class TokenStore implements IDisposable {
 	 * @param visitor Return true from visitor to exit early
 	 * @returns
 	 */
-	private traverseInOrderInRange(startOffsetInclusive: number, endOffsetExclusive: number, visitor: (node: Node, offset: number) => boolean): void {
+	private traverseInOrderInRange(
+		startOffsetInclusive: number,
+		endOffsetExclusive: number,
+		visitor: (node: Node, offset: number) => boolean
+	): void {
 		const stack: { node: Node; offset: number }[] = [{ node: this._root, offset: 0 }];
 
 		while (stack.length > 0) {
@@ -378,14 +395,14 @@ export class TokenStore implements IDisposable {
 			if (isLeaf(node)) {
 				let clippedLength = node.length;
 				let clippedOffset = offset;
-				if ((offset < startOffsetInclusive) && (offset + node.length > endOffsetExclusive)) {
+				if (offset < startOffsetInclusive && offset + node.length > endOffsetExclusive) {
 					clippedOffset = startOffsetInclusive;
 					clippedLength = endOffsetExclusive - startOffsetInclusive;
 				} else if (offset < startOffsetInclusive) {
-					clippedLength -= (startOffsetInclusive - offset);
+					clippedLength -= startOffsetInclusive - offset;
 					clippedOffset = startOffsetInclusive;
 				} else if (offset + node.length > endOffsetExclusive) {
-					clippedLength -= (offset + node.length - endOffsetExclusive);
+					clippedLength -= offset + node.length - endOffsetExclusive;
 				}
 				result.push({ token: node.token, startOffsetInclusive: clippedOffset, length: clippedLength });
 			}
@@ -395,7 +412,7 @@ export class TokenStore implements IDisposable {
 	}
 
 	markForRefresh(startOffsetInclusive: number, endOffsetExclusive: number): void {
-		this.traverseInOrderInRange(startOffsetInclusive, endOffsetExclusive, (node) => {
+		this.traverseInOrderInRange(startOffsetInclusive, endOffsetExclusive, node => {
 			if (isLeaf(node)) {
 				node.tokenQuality = TokenQuality.None;
 			}
@@ -405,8 +422,8 @@ export class TokenStore implements IDisposable {
 
 	rangeHasTokens(startOffsetInclusive: number, endOffsetExclusive: number, minimumTokenQuality: TokenQuality): boolean {
 		let hasAny = true;
-		this.traverseInOrderInRange(startOffsetInclusive, endOffsetExclusive, (node) => {
-			if (isLeaf(node) && (node.tokenQuality < minimumTokenQuality)) {
+		this.traverseInOrderInRange(startOffsetInclusive, endOffsetExclusive, node => {
+			if (isLeaf(node) && node.tokenQuality < minimumTokenQuality) {
 				hasAny = false;
 			}
 			return false;
@@ -416,8 +433,8 @@ export class TokenStore implements IDisposable {
 
 	rangeNeedsRefresh(startOffsetInclusive: number, endOffsetExclusive: number): boolean {
 		let needsRefresh = false;
-		this.traverseInOrderInRange(startOffsetInclusive, endOffsetExclusive, (node) => {
-			if (isLeaf(node) && (node.tokenQuality !== TokenQuality.Accurate)) {
+		this.traverseInOrderInRange(startOffsetInclusive, endOffsetExclusive, node => {
+			if (isLeaf(node) && node.tokenQuality !== TokenQuality.Accurate) {
 				needsRefresh = true;
 			}
 			return false;
@@ -429,8 +446,8 @@ export class TokenStore implements IDisposable {
 		const result: { startOffset: number; endOffset: number }[] = [];
 
 		this.traverseInOrderInRange(0, this._textModel.getValueLength(), (node, offset) => {
-			if (isLeaf(node) && (node.tokenQuality !== TokenQuality.Accurate)) {
-				if ((result.length > 0) && (result[result.length - 1].endOffset === offset)) {
+			if (isLeaf(node) && node.tokenQuality !== TokenQuality.Accurate) {
+				if (result.length > 0 && result[result.length - 1].endOffset === offset) {
 					result[result.length - 1].endOffset += node.length;
 				} else {
 					result.push({ startOffset: offset, endOffset: offset + node.length });

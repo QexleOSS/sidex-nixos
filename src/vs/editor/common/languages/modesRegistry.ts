@@ -9,7 +9,10 @@ import { ILanguageExtensionPoint } from './language.js';
 import { Registry } from '../../../platform/registry/common/platform.js';
 import { Disposable, IDisposable } from '../../../base/common/lifecycle.js';
 import { Mimes } from '../../../base/common/mime.js';
-import { IConfigurationRegistry, Extensions as ConfigurationExtensions } from '../../../platform/configuration/common/configurationRegistry.js';
+import {
+	IConfigurationRegistry,
+	Extensions as ConfigurationExtensions
+} from '../../../platform/configuration/common/configurationRegistry.js';
 
 // Define extension point ids
 export const Extensions = {
@@ -17,7 +20,6 @@ export const Extensions = {
 };
 
 export class EditorModesRegistry extends Disposable {
-
 	private readonly _languages: ILanguageExtensionPoint[];
 
 	private readonly _onDidChangeLanguages = this._register(new Emitter<void>());
@@ -57,12 +59,12 @@ export const PLAINTEXT_EXTENSION = '.txt';
 ModesRegistry.registerLanguage({
 	id: PLAINTEXT_LANGUAGE_ID,
 	extensions: [PLAINTEXT_EXTENSION],
-	aliases: [nls.localize('plainText.alias', "Plain Text"), 'text'],
+	aliases: [nls.localize('plainText.alias', 'Plain Text'), 'text'],
 	mimetypes: [Mimes.text]
 });
 
-Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
-	.registerDefaultConfigurations([{
+Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration).registerDefaultConfigurations([
+	{
 		overrides: {
 			'[plaintext]': {
 				'editor.unicodeHighlight.ambiguousCharacters': false,
@@ -73,7 +75,7 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
 				'editor.insertSpaces': false
 			},
 			'[makefile]': {
-				'editor.insertSpaces': false,
+				'editor.insertSpaces': false
 			},
 			'[shellscript]': {
 				'files.eol': '\n'
@@ -83,4 +85,5 @@ Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration)
 				'editor.tabSize': 2
 			}
 		}
-	}]);
+	}
+]);

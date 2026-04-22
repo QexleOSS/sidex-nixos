@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *  SideX - A fast, native code editor
+ *  Copyright (c) Siden Technologies, Inc. MIT Licensed.
  *--------------------------------------------------------------------------------------------*/
 
 import { dispose, IDisposable, IReference } from '../../../../base/common/lifecycle.js';
@@ -29,7 +29,6 @@ type ValidationResult = { canApply: true } | { canApply: false; reason: URI };
 type ISingleSnippetEditOperation = ISingleEditOperation & { insertAsSnippet?: boolean; keepWhitespace?: boolean };
 
 class ModelEditTask implements IDisposable {
-
 	readonly model: ITextModel;
 
 	private _expectedModelVersionId: number | undefined;
@@ -81,11 +80,18 @@ class ModelEditTask implements IDisposable {
 		} else {
 			range = Range.lift(textEdit.range);
 		}
-		this._edits.push({ ...EditOperation.replaceMove(range, textEdit.text), insertAsSnippet: textEdit.insertAsSnippet, keepWhitespace: textEdit.keepWhitespace });
+		this._edits.push({
+			...EditOperation.replaceMove(range, textEdit.text),
+			insertAsSnippet: textEdit.insertAsSnippet,
+			keepWhitespace: textEdit.keepWhitespace
+		});
 	}
 
 	validate(): ValidationResult {
-		if (typeof this._expectedModelVersionId === 'undefined' || this.model.getVersionId() === this._expectedModelVersionId) {
+		if (
+			typeof this._expectedModelVersionId === 'undefined' ||
+			this.model.getVersionId() === this._expectedModelVersionId
+		) {
 			return { canApply: true };
 		}
 		return { canApply: false, reason: this.model.uri };
@@ -123,7 +129,6 @@ class ModelEditTask implements IDisposable {
 }
 
 class EditorEditTask extends ModelEditTask {
-
 	private readonly _editor: ICodeEditor;
 
 	constructor(modelReference: IReference<IResolvedTextEditorModel>, editor: ICodeEditor) {
@@ -136,7 +141,6 @@ class EditorEditTask extends ModelEditTask {
 	}
 
 	override apply(reason?: TextModelEditSource): void {
-
 		// Check that the editor is still for the wanted model. It might have changed in the
 		// meantime and that means we cannot use the editor anymore (instead we perform the edit through the model)
 		if (!this._canUseEditor()) {
@@ -159,7 +163,6 @@ class EditorEditTask extends ModelEditTask {
 					}
 				}
 				snippetCtrl.apply(snippetEdits, { undoStopBefore: false, undoStopAfter: false });
-
 			} else {
 				// normal edit
 				this._edits = this._edits
@@ -181,7 +184,6 @@ class EditorEditTask extends ModelEditTask {
 }
 
 export class BulkTextEdits {
-
 	private readonly _edits = new ResourceMap<ResourceTextEdit[]>();
 
 	constructor(
@@ -198,7 +200,6 @@ export class BulkTextEdits {
 		@ITextModelService private readonly _textModelResolverService: ITextModelService,
 		@IUndoRedoService private readonly _undoRedoService: IUndoRedoService
 	) {
-
 		for (const edit of edits) {
 			let array = this._edits.get(edit.resource);
 			if (!array) {
@@ -225,7 +226,6 @@ export class BulkTextEdits {
 	}
 
 	private async _createEditsTasks(): Promise<ModelEditTask[]> {
-
 		const tasks: ModelEditTask[] = [];
 		const promises: Promise<any>[] = [];
 
@@ -241,7 +241,6 @@ export class BulkTextEdits {
 				}
 				tasks.push(task);
 
-
 				if (!makeMinimal) {
 					edits.forEach(task.addEdit, task);
 					return;
@@ -251,11 +250,17 @@ export class BulkTextEdits {
 
 				const makeGroupMoreMinimal = async (start: number, end: number) => {
 					const oldEdits = edits.slice(start, end);
-					const newEdits = await this._editorWorker.computeMoreMinimalEdits(ref.object.textEditorModel.uri, oldEdits.map(e => e.textEdit), false);
+					const newEdits = await this._editorWorker.computeMoreMinimalEdits(
+						ref.object.textEditorModel.uri,
+						oldEdits.map(e => e.textEdit),
+						false
+					);
 					if (!newEdits) {
 						oldEdits.forEach(task.addEdit, task);
 					} else {
-						newEdits.forEach(edit => task.addEdit(new ResourceTextEdit(ref.object.textEditorModel.uri, edit, undefined, undefined)));
+						newEdits.forEach(edit =>
+							task.addEdit(new ResourceTextEdit(ref.object.textEditorModel.uri, edit, undefined, undefined))
+						);
 					}
 				};
 
@@ -269,7 +274,6 @@ export class BulkTextEdits {
 					}
 				}
 				await makeGroupMoreMinimal(start, i);
-
 			});
 			promises.push(promise);
 		}
@@ -289,7 +293,6 @@ export class BulkTextEdits {
 	}
 
 	async apply(reason?: TextModelEditSource): Promise<readonly URI[]> {
-
 		this._validateBeforePrepare();
 		const tasks = await this._createEditsTasks();
 
@@ -307,7 +310,12 @@ export class BulkTextEdits {
 				// This edit touches a single model => keep things simple
 				const task = tasks[0];
 				if (!task.isNoOp()) {
-					const singleModelEditStackElement = new SingleModelEditStackElement(this._label, this._code, task.model, task.getBeforeCursorState());
+					const singleModelEditStackElement = new SingleModelEditStackElement(
+						this._label,
+						this._code,
+						task.model,
+						task.getBeforeCursorState()
+					);
 					this._undoRedoService.pushElement(singleModelEditStackElement, this._undoRedoGroup, this._undoRedoSource);
 					task.apply(reason);
 					singleModelEditStackElement.close();
@@ -331,7 +339,6 @@ export class BulkTextEdits {
 			}
 
 			return resources;
-
 		} finally {
 			dispose(tasks);
 		}

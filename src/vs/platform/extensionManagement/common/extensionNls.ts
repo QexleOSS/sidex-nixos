@@ -13,7 +13,12 @@ export interface ITranslations {
 	[key: string]: string | { message: string; comment: string[] } | undefined;
 }
 
-export function localizeManifest(logger: ILogger, extensionManifest: IExtensionManifest, translations: ITranslations, fallbackTranslations?: ITranslations): IExtensionManifest {
+export function localizeManifest(
+	logger: ILogger,
+	extensionManifest: IExtensionManifest,
+	translations: ITranslations,
+	fallbackTranslations?: ITranslations
+): IExtensionManifest {
 	try {
 		replaceNLStrings(logger, extensionManifest, translations, fallbackTranslations);
 	} catch (error) {
@@ -27,7 +32,12 @@ export function localizeManifest(logger: ILogger, extensionManifest: IExtensionM
  * This routine makes the following assumptions:
  * The root element is an object literal
  */
-function replaceNLStrings(logger: ILogger, extensionManifest: IExtensionManifest, messages: ITranslations, originalMessages?: ITranslations): void {
+function replaceNLStrings(
+	logger: ILogger,
+	extensionManifest: IExtensionManifest,
+	messages: ITranslations,
+	originalMessages?: ITranslations
+): void {
 	const processEntry = (obj: Record<string, unknown>, key: string | number, command?: boolean) => {
 		const value = obj[key];
 		if (isString(value)) {
@@ -49,16 +59,20 @@ function replaceNLStrings(logger: ILogger, extensionManifest: IExtensionManifest
 
 				if (!message) {
 					if (!originalMessage) {
-						logger.warn(`[${extensionManifest.name}]: ${localize('missingNLSKey', "Couldn't find message for key {0}.", messageKey)}`);
+						logger.warn(
+							`[${extensionManifest.name}]: ${localize('missingNLSKey', "Couldn't find message for key {0}.", messageKey)}`
+						);
 					}
 					return;
 				}
 
 				if (
 					// if we are translating the title or category of a command
-					command && (key === 'title' || key === 'category') &&
+					command &&
+					(key === 'title' || key === 'category') &&
 					// and the original value is not the same as the translated value
-					originalMessage && originalMessage !== message
+					originalMessage &&
+					originalMessage !== message
 				) {
 					const localizedString: ILocalizedString = {
 						value: message,
@@ -72,7 +86,9 @@ function replaceNLStrings(logger: ILogger, extensionManifest: IExtensionManifest
 		} else if (isObject(value)) {
 			for (const k in value) {
 				if (value.hasOwnProperty(k)) {
-					k === 'commands' ? processEntry(value as Record<string, unknown>, k, true) : processEntry(value as Record<string, unknown>, k, command);
+					k === 'commands'
+						? processEntry(value as Record<string, unknown>, k, true)
+						: processEntry(value as Record<string, unknown>, k, command);
 				}
 			}
 		} else if (Array.isArray(value)) {

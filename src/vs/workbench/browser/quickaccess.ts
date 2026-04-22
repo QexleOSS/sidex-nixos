@@ -18,11 +18,18 @@ import { IEditorGroup, IEditorGroupsService } from '../services/editor/common/ed
 import { PreferredGroup, IEditorService } from '../services/editor/common/editorService.js';
 
 export const inQuickPickContextKeyValue = 'inQuickOpen';
-export const InQuickPickContextKey = new RawContextKey<boolean>(inQuickPickContextKeyValue, false, localize('inQuickOpen', "Whether keyboard focus is inside the quick open control"));
+export const InQuickPickContextKey = new RawContextKey<boolean>(
+	inQuickPickContextKeyValue,
+	false,
+	localize('inQuickOpen', 'Whether keyboard focus is inside the quick open control')
+);
 export const inQuickPickContext = ContextKeyExpr.has(inQuickPickContextKeyValue);
 
 export const defaultQuickAccessContextKeyValue = 'inFilesPicker';
-export const defaultQuickAccessContext = ContextKeyExpr.and(inQuickPickContext, ContextKeyExpr.has(defaultQuickAccessContextKeyValue));
+export const defaultQuickAccessContext = ContextKeyExpr.and(
+	inQuickPickContext,
+	ContextKeyExpr.has(defaultQuickAccessContextKeyValue)
+);
 
 export interface IWorkbenchQuickAccessConfiguration {
 	readonly workbench: {
@@ -56,12 +63,13 @@ export function getQuickNavigateHandler(id: string, next?: boolean): ICommandHan
 }
 
 export class PickerEditorState extends Disposable {
-
-	private editorViewState: {
-		editor: EditorInput;
-		group: IEditorGroup;
-		state: ICodeEditorViewState | IDiffEditorViewState | undefined;
-	} | undefined = undefined;
+	private editorViewState:
+		| {
+				editor: EditorInput;
+				group: IEditorGroup;
+				state: ICodeEditorViewState | IDiffEditorViewState | undefined;
+		  }
+		| undefined = undefined;
 
 	private readonly openedTransientEditors = new Set<EditorInput>(); // editors that were opened between set and restore
 
@@ -82,7 +90,7 @@ export class PickerEditorState extends Disposable {
 			this.editorViewState = {
 				group: activeEditorPane.group,
 				editor: activeEditorPane.input,
-				state: getIEditor(activeEditorPane.getControl())?.saveViewState() ?? undefined,
+				state: getIEditor(activeEditorPane.getControl())?.saveViewState() ?? undefined
 			};
 		}
 	}
@@ -91,11 +99,18 @@ export class PickerEditorState extends Disposable {
 	 * Open a transient editor such that it may be closed when the state is restored.
 	 * Note that, when the state is restored, if the editor is no longer transient, it will not be closed.
 	 */
-	async openTransientEditor(editor: IResourceEditorInput | ITextResourceEditorInput | IUntitledTextResourceEditorInput | IUntypedEditorInput, group?: PreferredGroup): Promise<IEditorPane | undefined> {
+	async openTransientEditor(
+		editor: IResourceEditorInput | ITextResourceEditorInput | IUntitledTextResourceEditorInput | IUntypedEditorInput,
+		group?: PreferredGroup
+	): Promise<IEditorPane | undefined> {
 		editor.options = { ...editor.options, transient: true };
 
 		const editorPane = await this.editorService.openEditor(editor, group);
-		if (editorPane?.input && editorPane.input !== this.editorViewState?.editor && editorPane.group.isTransient(editorPane.input)) {
+		if (
+			editorPane?.input &&
+			editorPane.input !== this.editorViewState?.editor &&
+			editorPane.group.isTransient(editorPane.input)
+		) {
 			this.openedTransientEditors.add(editorPane.input);
 		}
 

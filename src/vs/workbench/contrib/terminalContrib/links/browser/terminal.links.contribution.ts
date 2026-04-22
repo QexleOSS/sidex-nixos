@@ -13,10 +13,22 @@ import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contex
 import { InstantiationType, registerSingleton } from '../../../../../platform/instantiation/common/extensions.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
-import { accessibleViewCurrentProviderId, accessibleViewIsShown } from '../../../accessibility/browser/accessibilityConfiguration.js';
-import { ITerminalContribution, ITerminalInstance, IXtermTerminal, isDetachedTerminalInstance } from '../../../terminal/browser/terminal.js';
+import {
+	accessibleViewCurrentProviderId,
+	accessibleViewIsShown
+} from '../../../accessibility/browser/accessibilityConfiguration.js';
+import {
+	ITerminalContribution,
+	ITerminalInstance,
+	IXtermTerminal,
+	isDetachedTerminalInstance
+} from '../../../terminal/browser/terminal.js';
 import { registerActiveInstanceAction } from '../../../terminal/browser/terminalActions.js';
-import { registerTerminalContribution, type IDetachedCompatibleTerminalContributionContext, type ITerminalContributionContext } from '../../../terminal/browser/terminalExtensions.js';
+import {
+	registerTerminalContribution,
+	type IDetachedCompatibleTerminalContributionContext,
+	type ITerminalContributionContext
+} from '../../../terminal/browser/terminalExtensions.js';
 import { isTerminalProcessManager } from '../../../terminal/common/terminal.js';
 import { TerminalContextKeys } from '../../../terminal/common/terminalContextKey.js';
 import { terminalStrings } from '../../../terminal/common/terminalStrings.js';
@@ -49,21 +61,31 @@ class TerminalLinkContribution extends DisposableStore implements ITerminalContr
 	constructor(
 		private readonly _ctx: ITerminalContributionContext | IDetachedCompatibleTerminalContributionContext,
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
-		@ITerminalLinkProviderService private readonly _terminalLinkProviderService: ITerminalLinkProviderService,
+		@ITerminalLinkProviderService private readonly _terminalLinkProviderService: ITerminalLinkProviderService
 	) {
 		super();
 		this._linkResolver = this._instantiationService.createInstance(TerminalLinkResolver);
 	}
 
 	xtermReady(xterm: IXtermTerminal & { raw: RawXtermTerminal }): void {
-		const linkManager = this._linkManager = this.add(this._instantiationService.createInstance(TerminalLinkManager, xterm.raw, this._ctx.processManager, this._ctx.instance.capabilities, this._linkResolver));
+		const linkManager = (this._linkManager = this.add(
+			this._instantiationService.createInstance(
+				TerminalLinkManager,
+				xterm.raw,
+				this._ctx.processManager,
+				this._ctx.instance.capabilities,
+				this._linkResolver
+			)
+		));
 
 		// Set widget manager
 		if (isTerminalProcessManager(this._ctx.processManager)) {
-			const disposable = linkManager.add(Event.once(this._ctx.processManager.onProcessReady)(() => {
-				linkManager.setWidgetManager(this._ctx.widgetManager);
-				this.delete(disposable);
-			}));
+			const disposable = linkManager.add(
+				Event.once(this._ctx.processManager.onProcessReady)(() => {
+					linkManager.setWidgetManager(this._ctx.widgetManager);
+					this.delete(disposable);
+				})
+			);
 		} else {
 			linkManager.setWidgetManager(this._ctx.widgetManager);
 		}
@@ -73,19 +95,25 @@ class TerminalLinkContribution extends DisposableStore implements ITerminalContr
 			for (const linkProvider of this._terminalLinkProviderService.linkProviders) {
 				linkManager.externalProvideLinksCb = linkProvider.provideLinks.bind(linkProvider, this._ctx.instance);
 			}
-			linkManager.add(this._terminalLinkProviderService.onDidAddLinkProvider(e => {
-				linkManager.externalProvideLinksCb = e.provideLinks.bind(e, this._ctx.instance as ITerminalInstance);
-			}));
+			linkManager.add(
+				this._terminalLinkProviderService.onDidAddLinkProvider(e => {
+					linkManager.externalProvideLinksCb = e.provideLinks.bind(e, this._ctx.instance as ITerminalInstance);
+				})
+			);
 		}
-		linkManager.add(this._terminalLinkProviderService.onDidRemoveLinkProvider(() => linkManager.externalProvideLinksCb = undefined));
+		linkManager.add(
+			this._terminalLinkProviderService.onDidRemoveLinkProvider(() => (linkManager.externalProvideLinksCb = undefined))
+		);
 	}
 
 	async showLinkQuickpick(extended?: boolean): Promise<void> {
 		if (!this._terminalLinkQuickpick) {
 			this._terminalLinkQuickpick = this.add(this._instantiationService.createInstance(TerminalLinkQuickpick));
-			this.add(this._terminalLinkQuickpick.onDidRequestMoreLinks(() => {
-				this.showLinkQuickpick(true);
-			}));
+			this.add(
+				this._terminalLinkQuickpick.onDidRequestMoreLinks(() => {
+					this.showLinkQuickpick(true);
+				})
+			);
 		}
 		const links = await this._getLinks();
 		return await this._terminalLinkQuickpick.show(this._ctx.instance, links);
@@ -120,28 +148,36 @@ registerActiveInstanceAction({
 	f1: true,
 	category,
 	precondition: TerminalContextKeys.terminalHasBeenCreated,
-	keybinding: [{
-		primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyO,
-		weight: KeybindingWeight.WorkbenchContrib + 1,
-		when: TerminalContextKeys.focus
-	}, {
-		primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyG,
-		weight: KeybindingWeight.WorkbenchContrib + 1,
-		when: ContextKeyExpr.and(accessibleViewIsShown, ContextKeyExpr.equals(accessibleViewCurrentProviderId.key, AccessibleViewProviderId.Terminal))
-	},
+	keybinding: [
+		{
+			primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyO,
+			weight: KeybindingWeight.WorkbenchContrib + 1,
+			when: TerminalContextKeys.focus
+		},
+		{
+			primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyG,
+			weight: KeybindingWeight.WorkbenchContrib + 1,
+			when: ContextKeyExpr.and(
+				accessibleViewIsShown,
+				ContextKeyExpr.equals(accessibleViewCurrentProviderId.key, AccessibleViewProviderId.Terminal)
+			)
+		}
 	],
-	run: (activeInstance) => TerminalLinkContribution.get(activeInstance)?.showLinkQuickpick()
+	run: activeInstance => TerminalLinkContribution.get(activeInstance)?.showLinkQuickpick()
 });
 registerActiveInstanceAction({
 	id: TerminalLinksCommandId.OpenWebLink,
 	title: localize2('workbench.action.terminal.openLastUrlLink', 'Open Last URL Link'),
 	metadata: {
-		description: localize2('workbench.action.terminal.openLastUrlLink.description', 'Opens the last detected URL/URI link in the terminal')
+		description: localize2(
+			'workbench.action.terminal.openLastUrlLink.description',
+			'Opens the last detected URL/URI link in the terminal'
+		)
 	},
 	f1: true,
 	category,
 	precondition: TerminalContextKeys.terminalHasBeenCreated,
-	run: (activeInstance) => TerminalLinkContribution.get(activeInstance)?.openRecentLink('url')
+	run: activeInstance => TerminalLinkContribution.get(activeInstance)?.openRecentLink('url')
 });
 registerActiveInstanceAction({
 	id: TerminalLinksCommandId.OpenFileLink,
@@ -149,7 +185,7 @@ registerActiveInstanceAction({
 	f1: true,
 	category,
 	precondition: TerminalContextKeys.terminalHasBeenCreated,
-	run: (activeInstance) => TerminalLinkContribution.get(activeInstance)?.openRecentLink('localFile')
+	run: activeInstance => TerminalLinkContribution.get(activeInstance)?.openRecentLink('localFile')
 });
 
 // #endregion

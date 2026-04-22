@@ -14,8 +14,8 @@ export class DecorationCssRuleExtractor extends Disposable {
 	private _container: HTMLElement;
 	private _dummyElement: HTMLSpanElement;
 
-	private _ruleCache: Map</* className */string, CSSStyleRule[]> = new Map();
-	private _cssVariableCache: Map</* variableName */string, /* value */string> = new Map();
+	private _ruleCache: Map</* className */ string, CSSStyleRule[]> = new Map();
+	private _cssVariableCache: Map</* variableName */ string, /* value */ string> = new Map();
 
 	constructor() {
 		super();
@@ -85,7 +85,10 @@ export class DecorationCssRuleExtractor extends Disposable {
 					const index = rule.selectorText.indexOf(searchTerm);
 					if (index !== -1) {
 						const endOfResult = index + searchTerm.length;
-						if (rule.selectorText.length === endOfResult || rule.selectorText.substring(endOfResult, endOfResult + 1).match(/[ :.]/)) {
+						if (
+							rule.selectorText.length === endOfResult ||
+							rule.selectorText.substring(endOfResult, endOfResult + 1).match(/[ :.]/)
+						) {
 							result.push(rule);
 							break; // Don't add the same rule multiple times
 						}

@@ -12,7 +12,6 @@ import { ICommand, ICursorStateComputerData, IEditOperationBuilder } from '../..
 import { ITextModel } from '../../../common/model.js';
 
 export class SortLinesCommand implements ICommand {
-
 	static _COLLATOR: Lazy<Intl.Collator> = safeIntl.Collator();
 
 	private readonly selection: Selection;

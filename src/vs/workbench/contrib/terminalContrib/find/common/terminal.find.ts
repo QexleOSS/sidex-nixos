@@ -11,7 +11,7 @@ export const enum TerminalFindCommandId {
 	ToggleFindRegex = 'workbench.action.terminal.toggleFindRegex',
 	ToggleFindWholeWord = 'workbench.action.terminal.toggleFindWholeWord',
 	ToggleFindCaseSensitive = 'workbench.action.terminal.toggleFindCaseSensitive',
-	SearchWorkspace = 'workbench.action.terminal.searchWorkspace',
+	SearchWorkspace = 'workbench.action.terminal.searchWorkspace'
 }
 
 export const defaultTerminalFindCommandToSkipShell = [
@@ -22,5 +22,5 @@ export const defaultTerminalFindCommandToSkipShell = [
 	TerminalFindCommandId.ToggleFindRegex,
 	TerminalFindCommandId.ToggleFindWholeWord,
 	TerminalFindCommandId.ToggleFindCaseSensitive,
-	TerminalFindCommandId.SearchWorkspace,
+	TerminalFindCommandId.SearchWorkspace
 ];

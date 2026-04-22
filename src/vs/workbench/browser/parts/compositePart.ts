@@ -6,7 +6,7 @@
 import './media/compositepart.css';
 import { localize } from '../../../nls.js';
 import { defaultGenerator } from '../../../base/common/idGenerator.js';
-import { IDisposable, dispose, DisposableStore, MutableDisposable, } from '../../../base/common/lifecycle.js';
+import { IDisposable, dispose, DisposableStore, MutableDisposable } from '../../../base/common/lifecycle.js';
 import { Emitter } from '../../../base/common/event.js';
 import { isCancellationError } from '../../../base/common/errors.js';
 import { ActionsOrientation, IActionViewItem, prepareActions } from '../../../base/browser/ui/actionbar/actionbar.js';
@@ -34,11 +34,13 @@ import { defaultProgressBarStyles } from '../../../platform/theme/browser/defaul
 import { IBoundarySashes } from '../../../base/browser/ui/sash/sash.js';
 import { IBaseActionViewItemOptions } from '../../../base/browser/ui/actionbar/actionViewItems.js';
 import { IHoverDelegate } from '../../../base/browser/ui/hover/hoverDelegate.js';
-import { createInstantHoverDelegate, getDefaultHoverDelegate } from '../../../base/browser/ui/hover/hoverDelegateFactory.js';
+import {
+	createInstantHoverDelegate,
+	getDefaultHoverDelegate
+} from '../../../base/browser/ui/hover/hoverDelegateFactory.js';
 import type { IHoverService } from '../../../platform/hover/browser/hover.js';
 
 export interface ICompositeTitleLabel {
-
 	/**
 	 * Asks to update the title for the composite with the given ID.
 	 */
@@ -60,8 +62,10 @@ export interface ICompositePartOptions extends IPartOptions {
 	readonly trailingSeparator?: boolean;
 }
 
-export abstract class CompositePart<T extends Composite, MementoType extends object = object> extends Part<MementoType> {
-
+export abstract class CompositePart<
+	T extends Composite,
+	MementoType extends object = object
+> extends Part<MementoType> {
 	protected readonly onDidCompositeOpen = this._register(new Emitter<{ composite: IComposite; focus: boolean }>());
 	protected readonly onDidCompositeClose = this._register(new Emitter<IComposite>());
 
@@ -103,13 +107,16 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 	) {
 		super(id, options, themeService, storageService, layoutService);
 
-		this.lastActiveCompositeId = storageService.get(activeCompositeSettingsKey, StorageScope.WORKSPACE, this.defaultCompositeId);
+		this.lastActiveCompositeId = storageService.get(
+			activeCompositeSettingsKey,
+			StorageScope.WORKSPACE,
+			this.defaultCompositeId
+		);
 		this.toolbarHoverDelegate = this._register(createInstantHoverDelegate());
 		this.trailingSeparator = options.trailingSeparator ?? false;
 	}
 
 	protected openComposite(id: string, focus?: boolean): Composite | undefined {
-
 		// Check if composite already visible and just focus in that case
 		if (this.activeComposite?.getId() === id) {
 			if (focus) {
@@ -130,7 +137,6 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 	}
 
 	private doOpenComposite(id: string, focus: boolean = false): Composite | undefined {
-
 		// Use a generated token to avoid race conditions from long running promises
 		const currentCompositeOpenToken = defaultGenerator.nextId();
 		this.currentCompositeOpenToken = currentCompositeOpenToken;
@@ -147,7 +153,10 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 		const composite = this.createComposite(id, true);
 
 		// Check if another composite opened meanwhile and return in that case
-		if ((this.currentCompositeOpenToken !== currentCompositeOpenToken) || (this.activeComposite && this.activeComposite.getId() !== composite.getId())) {
+		if (
+			this.currentCompositeOpenToken !== currentCompositeOpenToken ||
+			(this.activeComposite && this.activeComposite.getId() !== composite.getId())
+		) {
 			return undefined;
 		}
 
@@ -176,7 +185,6 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 	}
 
 	protected createComposite(id: string, isActive?: boolean): Composite {
-
 		// Check if composite is already created
 		const compositeItem = this.instantiatedCompositeItems.get(id);
 		if (compositeItem) {
@@ -187,16 +195,25 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 		const compositeDescriptor = this.registry.getComposite(id);
 		if (compositeDescriptor) {
 			const that = this;
-			const compositeProgressIndicator = new ScopedProgressIndicator(assertReturnsDefined(this.progressBar), this._register(new class extends AbstractProgressScope {
-				constructor() {
-					super(compositeDescriptor!.id, !!isActive);
-					this._register(that.onDidCompositeOpen.event(e => this.onScopeOpened(e.composite.getId())));
-					this._register(that.onDidCompositeClose.event(e => this.onScopeClosed(e.getId())));
-				}
-			}()));
-			const compositeInstantiationService = this._register(this.instantiationService.createChild(new ServiceCollection(
-				[IEditorProgressService, compositeProgressIndicator] // provide the editor progress service for any editors instantiated within the composite
-			)));
+			const compositeProgressIndicator = new ScopedProgressIndicator(
+				assertReturnsDefined(this.progressBar),
+				this._register(
+					new (class extends AbstractProgressScope {
+						constructor() {
+							super(compositeDescriptor!.id, !!isActive);
+							this._register(that.onDidCompositeOpen.event(e => this.onScopeOpened(e.composite.getId())));
+							this._register(that.onDidCompositeClose.event(e => this.onScopeClosed(e.getId())));
+						}
+					})()
+				)
+			);
+			const compositeInstantiationService = this._register(
+				this.instantiationService.createChild(
+					new ServiceCollection(
+						[IEditorProgressService, compositeProgressIndicator] // provide the editor progress service for any editors instantiated within the composite
+					)
+				)
+			);
 
 			const composite = compositeDescriptor.instantiate(compositeInstantiationService);
 			const disposable = new DisposableStore();
@@ -215,7 +232,6 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 	}
 
 	protected showComposite(composite: Composite): void {
-
 		// Remember Composite
 		this.activeComposite = composite;
 
@@ -233,7 +249,6 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 		// Composites created for the first time
 		let compositeContainer = this.mapCompositeToCompositeContainer.get(composite.getId());
 		if (!compositeContainer) {
-
 			// Build Container off-DOM
 			compositeContainer = $('.composite');
 			compositeContainer.classList.add(...this.compositeCSSClass.split(' '));
@@ -278,7 +293,6 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 		// Action Run Handling
 		if (this.toolBar) {
 			this.actionsListener.value = this.toolBar.actionRunner.onDidRun(e => {
-
 				// Check for Error
 				if (e.error && !isCancellationError(e.error)) {
 					this.notificationService.error(e.error);
@@ -306,7 +320,6 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 	}
 
 	protected onTitleAreaUpdate(compositeId: string): void {
-
 		// Title
 		const composite = this.instantiatedCompositeItems.get(compositeId);
 		if (composite) {
@@ -341,11 +354,10 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 
 		this.titleLabel.updateTitle(compositeId, compositeTitle, keybinding?.getLabel() ?? undefined);
 
-		this.toolBar?.setAriaLabel(localize('ariaCompositeToolbarLabel', "{0} actions", compositeTitle));
+		this.toolBar?.setAriaLabel(localize('ariaCompositeToolbarLabel', '{0} actions', compositeTitle));
 	}
 
 	private collectCompositeActions(composite?: Composite): () => void {
-
 		// From Composite
 		const menuIds = composite?.getMenuIds();
 		const primaryActions: IAction[] = composite?.getActions().slice(0) || [];
@@ -418,16 +430,18 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 		const titleActionsContainer = append(titleArea, $('.title-actions'));
 
 		// Toolbar
-		this.toolBar = this._register(this.instantiationService.createInstance(WorkbenchToolBar, titleActionsContainer, {
-			actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
-			orientation: ActionsOrientation.HORIZONTAL,
-			getKeyBinding: action => this.keybindingService.lookupKeybinding(action.id),
-			anchorAlignmentProvider: () => this.getTitleAreaDropDownAnchorAlignment(),
-			toggleMenuTitle: localize('viewsAndMoreActions', "Views and More Actions..."),
-			telemetrySource: this.nameForTelemetry,
-			hoverDelegate: this.toolbarHoverDelegate,
-			trailingSeparator: this.trailingSeparator,
-		}));
+		this.toolBar = this._register(
+			this.instantiationService.createInstance(WorkbenchToolBar, titleActionsContainer, {
+				actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
+				orientation: ActionsOrientation.HORIZONTAL,
+				getKeyBinding: action => this.keybindingService.lookupKeybinding(action.id),
+				anchorAlignmentProvider: () => this.getTitleAreaDropDownAnchorAlignment(),
+				toggleMenuTitle: localize('viewsAndMoreActions', 'Views and More Actions...'),
+				telemetrySource: this.nameForTelemetry,
+				hoverDelegate: this.toolbarHoverDelegate,
+				trailingSeparator: this.trailingSeparator
+			})
+		);
 
 		this.collectCompositeActions()();
 
@@ -446,7 +460,7 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 				// The title label is shared for all composites in the base CompositePart
 				if (!this.activeComposite || this.activeComposite.getId() === id) {
 					titleLabel.textContent = title;
-					hover.update(keybinding ? localize('titleTooltip', "{0} ({1})", title, keybinding) : title);
+					hover.update(keybinding ? localize('titleTooltip', '{0} ({1})', title, keybinding) : title);
 				}
 			},
 
@@ -474,7 +488,6 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 	}
 
 	protected actionViewItemProvider(action: IAction, options: IBaseActionViewItemOptions): IActionViewItem | undefined {
-
 		// Check Active Composite
 		if (this.activeComposite) {
 			return this.activeComposite.getActionViewItem(action, options);
@@ -484,7 +497,6 @@ export abstract class CompositePart<T extends Composite, MementoType extends obj
 	}
 
 	protected actionsContextProvider(): unknown {
-
 		// Check Active Composite
 		if (this.activeComposite) {
 			return this.activeComposite.getActionsContext();

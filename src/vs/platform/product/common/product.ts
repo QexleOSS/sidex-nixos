@@ -15,7 +15,8 @@ import { ISandboxConfiguration } from '../../../base/parts/sandbox/common/sandbo
 let product: IProductConfiguration;
 
 // Native sandbox environment
-const vscodeGlobal = (globalThis as { vscode?: { context?: { configuration(): ISandboxConfiguration | undefined } } }).vscode;
+const vscodeGlobal = (globalThis as { vscode?: { context?: { configuration(): ISandboxConfiguration | undefined } } })
+	.vscode;
 if (typeof vscodeGlobal !== 'undefined' && typeof vscodeGlobal.context !== 'undefined') {
 	const configuration: ISandboxConfiguration | undefined = vscodeGlobal.context.configuration();
 	if (configuration) {
@@ -53,10 +54,11 @@ else if (globalThis._VSCODE_PRODUCT_JSON && globalThis._VSCODE_PACKAGE_JSON) {
 
 // Web environment or unknown
 else {
-
 	// Built time configuration (do NOT modify)
 	// eslint-disable-next-line local/code-no-dangerous-type-assertions
-	product = { /*BUILD->INSERT_PRODUCT_CONFIGURATION*/ } as unknown as IProductConfiguration;
+	product = {
+		/*BUILD->INSERT_PRODUCT_CONFIGURATION*/
+	} as unknown as IProductConfiguration;
 
 	// Running out of sources
 	if (Object.keys(product).length === 0) {
@@ -71,6 +73,14 @@ else {
 			licenseName: 'MIT',
 			licenseUrl: 'https://github.com/Razshy/sidexvs/blob/main/LICENSE',
 			serverLicenseUrl: 'https://github.com/Razshy/sidexvs/blob/main/LICENSE',
+			extensionsGallery: {
+				serviceUrl: 'https://marketplace.siden.ai/api/gallery',
+				controlUrl: 'https://az764295.vo.msecnd.net/extensions/marketplace.json',
+				extensionUrlTemplate:
+					'https://marketplace.visualstudio.com/_apis/public/gallery/publishers/{publisher}/vsextensions/{name}/{version}/vspackage',
+				resourceUrlTemplate: 'https://{publisher}.vscode-unpkg.net/{publisher}/{name}/{version}/{path}',
+				nlsBaseUrl: 'https://az764295.vo.msecnd.net/extensions/{publisher}/{name}/{version}/{lang}.json'
+			}
 		});
 	}
 }

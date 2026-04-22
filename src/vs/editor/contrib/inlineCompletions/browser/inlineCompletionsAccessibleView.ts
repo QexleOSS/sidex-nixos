@@ -8,7 +8,11 @@ import { ICodeEditor } from '../../../browser/editorBrowser.js';
 import { ICodeEditorService } from '../../../browser/services/codeEditorService.js';
 import { InlineCompletionContextKeys } from './controller/inlineCompletionContextKeys.js';
 import { InlineCompletionsController } from './controller/inlineCompletionsController.js';
-import { AccessibleViewType, AccessibleViewProviderId, IAccessibleViewContentProvider } from '../../../../platform/accessibility/browser/accessibleView.js';
+import {
+	AccessibleViewType,
+	AccessibleViewProviderId,
+	IAccessibleViewContentProvider
+} from '../../../../platform/accessibility/browser/accessibleView.js';
 import { IAccessibleViewImplementation } from '../../../../platform/accessibility/browser/accessibleViewRegistry.js';
 import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
 import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
@@ -22,7 +26,10 @@ export class InlineCompletionsAccessibleView implements IAccessibleViewImplement
 	readonly type = AccessibleViewType.View;
 	readonly priority = 95;
 	readonly name = 'inline-completions';
-	readonly when = ContextKeyExpr.or(InlineCompletionContextKeys.inlineSuggestionVisible, InlineCompletionContextKeys.inlineEditVisible);
+	readonly when = ContextKeyExpr.or(
+		InlineCompletionContextKeys.inlineSuggestionVisible,
+		InlineCompletionContextKeys.inlineEditVisible
+	);
 	getProvider(accessor: ServicesAccessor) {
 		const codeEditorService = accessor.get(ICodeEditorService);
 		const editor = codeEditorService.getActiveCodeEditor() || codeEditorService.getFocusedCodeEditor();
@@ -45,7 +52,7 @@ class InlineCompletionsAccessibleViewContentProvider extends Disposable implemen
 	public readonly options: { language: string | undefined; type: AccessibleViewType.View };
 	constructor(
 		private readonly _editor: ICodeEditor,
-		private readonly _model: InlineCompletionsModel,
+		private readonly _model: InlineCompletionsModel
 	) {
 		super();
 		this.options = { language: this._editor.getModel()?.getLanguageId() ?? undefined, type: AccessibleViewType.View };
@@ -60,7 +67,6 @@ class InlineCompletionsAccessibleViewContentProvider extends Disposable implemen
 			throw new Error('Inline completion is visible but state is not available');
 		}
 		if (state.kind === 'ghostText') {
-
 			const lineText = this._model.textModel.getLineContent(state.primaryGhostText.lineNumber);
 			const ghostText = state.primaryGhostText.renderForScreenReader(lineText);
 			if (!ghostText) {
@@ -75,12 +81,12 @@ class InlineCompletionsAccessibleViewContentProvider extends Disposable implemen
 	}
 	public provideNextContent(): string | undefined {
 		// asynchronously update the model and fire the event
-		this._model.next().then((() => this._onDidChangeContent.fire()));
+		this._model.next().then(() => this._onDidChangeContent.fire());
 		return;
 	}
 	public providePreviousContent(): string | undefined {
 		// asynchronously update the model and fire the event
-		this._model.previous().then((() => this._onDidChangeContent.fire()));
+		this._model.previous().then(() => this._onDidChangeContent.fire());
 		return;
 	}
 	public onClose(): void {

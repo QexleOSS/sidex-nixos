@@ -40,7 +40,6 @@ export interface IResolvedProcessInformation {
 }
 
 export interface IProcessService {
-
 	readonly _serviceBrand: undefined;
 
 	resolveProcesses(): Promise<IResolvedProcessInformation>;

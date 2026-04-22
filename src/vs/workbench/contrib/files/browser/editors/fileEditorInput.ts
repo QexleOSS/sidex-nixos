@@ -4,13 +4,35 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { URI } from '../../../../../base/common/uri.js';
-import { IFileEditorInput, Verbosity, GroupIdentifier, IMoveResult, EditorInputCapabilities, IEditorDescriptor, IEditorPane, IUntypedEditorInput, DEFAULT_EDITOR_ASSOCIATION, IUntypedFileEditorInput, findViewStateForEditor, isResourceEditorInput, IFileEditorInputOptions } from '../../../../common/editor.js';
+import {
+	IFileEditorInput,
+	Verbosity,
+	GroupIdentifier,
+	IMoveResult,
+	EditorInputCapabilities,
+	IEditorDescriptor,
+	IEditorPane,
+	IUntypedEditorInput,
+	DEFAULT_EDITOR_ASSOCIATION,
+	IUntypedFileEditorInput,
+	findViewStateForEditor,
+	isResourceEditorInput,
+	IFileEditorInputOptions
+} from '../../../../common/editor.js';
 import { EditorInput, IUntypedEditorOptions } from '../../../../common/editor/editorInput.js';
 import { AbstractTextResourceEditorInput } from '../../../../common/editor/textResourceEditorInput.js';
 import { ITextResourceEditorInput } from '../../../../../platform/editor/common/editor.js';
 import { BinaryEditorModel } from '../../../../common/editor/binaryEditorModel.js';
 import { IFileService } from '../../../../../platform/files/common/files.js';
-import { ITextFileService, TextFileEditorModelState, TextFileResolveReason, TextFileOperationError, TextFileOperationResult, ITextFileEditorModel, EncodingMode } from '../../../../services/textfile/common/textfiles.js';
+import {
+	ITextFileService,
+	TextFileEditorModelState,
+	TextFileResolveReason,
+	TextFileOperationError,
+	TextFileOperationResult,
+	ITextFileEditorModel,
+	EncodingMode
+} from '../../../../services/textfile/common/textfiles.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IReference, dispose, DisposableStore } from '../../../../../base/common/lifecycle.js';
 import { ITextModelService } from '../../../../../editor/common/services/resolverService.js';
@@ -37,7 +59,6 @@ const enum ForceOpenAs {
  * A file editor input is the input type for the file editor of file system resources.
  */
 export class FileEditorInput extends AbstractTextResourceEditorInput implements IFileEditorInput {
-
 	override get typeId(): string {
 		return FILE_EDITOR_INPUT_ID;
 	}
@@ -102,7 +123,17 @@ export class FileEditorInput extends AbstractTextResourceEditorInput implements 
 		@ITextResourceConfigurationService textResourceConfigurationService: ITextResourceConfigurationService,
 		@ICustomEditorLabelService customEditorLabelService: ICustomEditorLabelService
 	) {
-		super(resource, preferredResource, editorService, textFileService, labelService, fileService, filesConfigurationService, textResourceConfigurationService, customEditorLabelService);
+		super(
+			resource,
+			preferredResource,
+			editorService,
+			textFileService,
+			labelService,
+			fileService,
+			filesConfigurationService,
+			textResourceConfigurationService,
+			customEditorLabelService
+		);
 
 		this.model = this.textFileService.files.get(resource);
 
@@ -136,7 +167,6 @@ export class FileEditorInput extends AbstractTextResourceEditorInput implements 
 	}
 
 	private onDidCreateTextFileModel(model: ITextFileEditorModel): void {
-
 		// Once the text file model is created, we keep it inside
 		// the input to be able to implement some methods properly
 		if (isEqual(model.resource, this.resource)) {
@@ -147,7 +177,6 @@ export class FileEditorInput extends AbstractTextResourceEditorInput implements 
 	}
 
 	private registerModelListeners(model: ITextFileEditorModel): void {
-
 		// Clear any old
 		this.modelListeners.clear();
 
@@ -161,10 +190,12 @@ export class FileEditorInput extends AbstractTextResourceEditorInput implements 
 		this.modelListeners.add(model.onDidSaveError(() => this._onDidChangeDirty.fire()));
 
 		// remove model association once it gets disposed
-		this.modelListeners.add(Event.once(model.onWillDispose)(() => {
-			this.modelListeners.clear();
-			this.model = undefined;
-		}));
+		this.modelListeners.add(
+			Event.once(model.onWillDispose)(() => {
+				this.modelListeners.clear();
+				this.model = undefined;
+			})
+		);
 	}
 
 	override getName(): string {
@@ -184,10 +215,12 @@ export class FileEditorInput extends AbstractTextResourceEditorInput implements 
 	}
 
 	private allowLabelOverride(): boolean {
-		return this.resource.scheme !== this.pathService.defaultUriScheme &&
+		return (
+			this.resource.scheme !== this.pathService.defaultUriScheme &&
 			this.resource.scheme !== Schemas.vscodeUserData &&
 			this.resource.scheme !== Schemas.file &&
-			this.resource.scheme !== Schemas.vscodeRemote;
+			this.resource.scheme !== Schemas.vscodeRemote
+		);
 	}
 
 	getPreferredName(): string | undefined {
@@ -307,11 +340,15 @@ export class FileEditorInput extends AbstractTextResourceEditorInput implements 
 	}
 
 	override isDirty(): boolean {
-		return !!(this.model?.isDirty());
+		return !!this.model?.isDirty();
 	}
 
 	override isSaving(): boolean {
-		if (this.model?.hasState(TextFileEditorModelState.SAVED) || this.model?.hasState(TextFileEditorModelState.CONFLICT) || this.model?.hasState(TextFileEditorModelState.ERROR)) {
+		if (
+			this.model?.hasState(TextFileEditorModelState.SAVED) ||
+			this.model?.hasState(TextFileEditorModelState.CONFLICT) ||
+			this.model?.hasState(TextFileEditorModelState.ERROR)
+		) {
 			return false; // require the model to be dirty and not in conflict or error state
 		}
 
@@ -336,7 +373,6 @@ export class FileEditorInput extends AbstractTextResourceEditorInput implements 
 	}
 
 	override resolve(options?: IFileEditorInputOptions): Promise<ITextFileEditorModel | BinaryEditorModel> {
-
 		// Resolve as binary
 		if (this.forceOpenAs === ForceOpenAs.Binary) {
 			return this.doResolveAsBinary();
@@ -348,7 +384,6 @@ export class FileEditorInput extends AbstractTextResourceEditorInput implements 
 
 	private async doResolveAsText(options?: IFileEditorInputOptions): Promise<ITextFileEditorModel | BinaryEditorModel> {
 		try {
-
 			// Unset preferred contents after having applied it once
 			// to prevent this property to stick. We still want future
 			// `resolve` calls to fetch the contents from disk.
@@ -372,7 +407,9 @@ export class FileEditorInput extends AbstractTextResourceEditorInput implements 
 			// resolve() ensures we are not creating model references for these kind of resources.
 			// In addition we have a bit of payload to take into account (encoding, reload) that the text resolver does not handle yet.
 			if (!this.cachedTextFileModelReference) {
-				this.cachedTextFileModelReference = await this.textModelService.createModelReference(this.resource) as IReference<ITextFileEditorModel>;
+				this.cachedTextFileModelReference = (await this.textModelService.createModelReference(
+					this.resource
+				)) as IReference<ITextFileEditorModel>;
 			}
 
 			const model = this.cachedTextFileModelReference.object;
@@ -386,7 +423,6 @@ export class FileEditorInput extends AbstractTextResourceEditorInput implements 
 
 			return model;
 		} catch (error) {
-
 			// Handle binary files with binary model
 			if ((<TextFileOperationError>error).textFileOperationResult === TextFileOperationResult.FILE_IS_BINARY) {
 				return this.doResolveAsBinary();
@@ -467,7 +503,6 @@ export class FileEditorInput extends AbstractTextResourceEditorInput implements 
 	}
 
 	override dispose(): void {
-
 		// Model
 		this.model = undefined;
 

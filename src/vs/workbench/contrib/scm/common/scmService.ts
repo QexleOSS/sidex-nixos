@@ -5,7 +5,17 @@
 
 import { Disposable, DisposableStore, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
 import { Event, Emitter } from '../../../../base/common/event.js';
-import { ISCMService, ISCMProvider, ISCMInput, ISCMRepository, IInputValidator, ISCMInputChangeEvent, SCMInputChangeReason, InputValidationType, IInputValidation } from './scm.js';
+import {
+	ISCMService,
+	ISCMProvider,
+	ISCMInput,
+	ISCMRepository,
+	IInputValidator,
+	ISCMInputChangeEvent,
+	SCMInputChangeReason,
+	InputValidationType,
+	IInputValidation
+} from './scm.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
@@ -20,7 +30,6 @@ import { IUriIdentityService } from '../../../../platform/uriIdentity/common/uri
 import { runOnChange } from '../../../../base/common/observable.js';
 
 class SCMInput extends Disposable implements ISCMInput {
-
 	private _value = '';
 
 	get value(): string {
@@ -118,18 +127,21 @@ class SCMInput extends Disposable implements ISCMInput {
 
 		if (this.repository.provider.rootUri) {
 			this.historyNavigator = history.getHistory(this.repository.provider.label, this.repository.provider.rootUri);
-			this._register(this.history.onWillSaveHistory(event => {
-				if (this.historyNavigator.isAtEnd()) {
-					this.saveValue();
-				}
+			this._register(
+				this.history.onWillSaveHistory(event => {
+					if (this.historyNavigator.isAtEnd()) {
+						this.saveValue();
+					}
 
-				if (this.didChangeHistory) {
-					event.historyDidIndeedChange();
-				}
+					if (this.didChangeHistory) {
+						event.historyDidIndeedChange();
+					}
 
-				this.didChangeHistory = false;
-			}));
-		} else { // in memory only
+					this.didChangeHistory = false;
+				})
+			);
+		} else {
+			// in memory only
 			this.historyNavigator = new HistoryNavigator2([''], 100);
 		}
 
@@ -177,12 +189,11 @@ class SCMInput extends Disposable implements ISCMInput {
 
 	private saveValue(): void {
 		const oldValue = this.historyNavigator.replaceLast(this._value);
-		this.didChangeHistory = this.didChangeHistory || (oldValue !== this._value);
+		this.didChangeHistory = this.didChangeHistory || oldValue !== this._value;
 	}
 }
 
 class SCMRepository implements ISCMRepository {
-
 	private _selected = false;
 	get selected(): boolean {
 		return this._selected;
@@ -221,12 +232,15 @@ class SCMRepository implements ISCMRepository {
 
 class WillSaveHistoryEvent {
 	private _didChangeHistory = false;
-	get didChangeHistory() { return this._didChangeHistory; }
-	historyDidIndeedChange() { this._didChangeHistory = true; }
+	get didChangeHistory() {
+		return this._didChangeHistory;
+	}
+	historyDidIndeedChange() {
+		this._didChangeHistory = true;
+	}
 }
 
 class SCMInputHistory {
-
 	private readonly disposables = new DisposableStore();
 	private readonly histories = new Map<string, ResourceMap<HistoryNavigator2<string>>>();
 
@@ -235,7 +249,7 @@ class SCMInputHistory {
 
 	constructor(
 		@IStorageService private storageService: IStorageService,
-		@IWorkspaceContextService private workspaceContextService: IWorkspaceContextService,
+		@IWorkspaceContextService private workspaceContextService: IWorkspaceContextService
 	) {
 		this.histories = new Map();
 
@@ -256,28 +270,40 @@ class SCMInputHistory {
 			this.saveToStorage();
 		}
 
-		this.disposables.add(this.storageService.onDidChangeValue(StorageScope.WORKSPACE, 'scm.history', this.disposables)(e => {
-			if (e.external && e.key === 'scm.history') {
-				const raw = this.storageService.getObject<[string, URI, string[]][]>('scm.history', StorageScope.WORKSPACE, []);
+		this.disposables.add(
+			this.storageService.onDidChangeValue(
+				StorageScope.WORKSPACE,
+				'scm.history',
+				this.disposables
+			)(e => {
+				if (e.external && e.key === 'scm.history') {
+					const raw = this.storageService.getObject<[string, URI, string[]][]>(
+						'scm.history',
+						StorageScope.WORKSPACE,
+						[]
+					);
 
-				for (const [providerLabel, uri, rawHistory] of raw) {
-					const history = this.getHistory(providerLabel, uri);
+					for (const [providerLabel, uri, rawHistory] of raw) {
+						const history = this.getHistory(providerLabel, uri);
 
-					for (const value of Iterable.reverse(rawHistory)) {
-						history.prepend(value);
+						for (const value of Iterable.reverse(rawHistory)) {
+							history.prepend(value);
+						}
 					}
 				}
-			}
-		}));
+			})
+		);
 
-		this.disposables.add(this.storageService.onWillSaveState(_ => {
-			const event = new WillSaveHistoryEvent();
-			this._onWillSaveHistory.fire(event);
+		this.disposables.add(
+			this.storageService.onWillSaveState(_ => {
+				const event = new WillSaveHistoryEvent();
+				this._onWillSaveHistory.fire(event);
 
-			if (event.didChangeHistory) {
-				this.saveToStorage();
-			}
-		}));
+				if (event.didChangeHistory) {
+					this.saveToStorage();
+				}
+			})
+		);
 	}
 
 	private saveToStorage(): void {
@@ -316,7 +342,10 @@ class SCMInputHistory {
 	// TODO@joaomoreno: Change from January 2024 onwards such that the only code is to remove all `scm/input:` storage keys
 	private migrateStorage(): boolean {
 		let didSomethingChange = false;
-		const machineKeys = Iterable.filter(this.storageService.keys(StorageScope.APPLICATION, StorageTarget.MACHINE), key => key.startsWith('scm/input:'));
+		const machineKeys = Iterable.filter(
+			this.storageService.keys(StorageScope.APPLICATION, StorageTarget.MACHINE),
+			key => key.startsWith('scm/input:')
+		);
 
 		for (const key of machineKeys) {
 			try {
@@ -354,14 +383,16 @@ class SCMInputHistory {
 	}
 }
 
-
 export class SCMService implements ISCMService {
-
 	declare readonly _serviceBrand: undefined;
 
-	_repositories = new Map<string, ISCMRepository>();  // used in tests
-	get repositories(): Iterable<ISCMRepository> { return this._repositories.values(); }
-	get repositoryCount(): number { return this._repositories.size; }
+	_repositories = new Map<string, ISCMRepository>(); // used in tests
+	get repositories(): Iterable<ISCMRepository> {
+		return this._repositories.values();
+	}
+	get repositoryCount(): number {
+		return this._repositories.size;
+	}
 
 	private inputHistory: SCMInputHistory;
 	private providerCount: IContextKey<number>;
@@ -396,24 +427,27 @@ export class SCMService implements ISCMService {
 		const disposables = new DisposableStore();
 
 		const historyProviderCount = () => {
-			return Array.from(this._repositories.values())
-				.filter(r => !!r.provider.historyProvider.get()).length;
+			return Array.from(this._repositories.values()).filter(r => !!r.provider.historyProvider.get()).length;
 		};
 
-		disposables.add(toDisposable(() => {
-			this._repositories.delete(provider.id);
-			this._onDidRemoveProvider.fire(repository);
+		disposables.add(
+			toDisposable(() => {
+				this._repositories.delete(provider.id);
+				this._onDidRemoveProvider.fire(repository);
 
-			this.providerCount.set(this._repositories.size);
-			this.historyProviderCount.set(historyProviderCount());
-		}));
+				this.providerCount.set(this._repositories.size);
+				this.historyProviderCount.set(historyProviderCount());
+			})
+		);
 
 		const repository = new SCMRepository(provider.id, provider, disposables, this.inputHistory);
 		this._repositories.set(provider.id, repository);
 
-		disposables.add(runOnChange(provider.historyProvider, () => {
-			this.historyProviderCount.set(historyProviderCount());
-		}));
+		disposables.add(
+			runOnChange(provider.historyProvider, () => {
+				this.historyProviderCount.set(historyProviderCount());
+			})
+		);
 
 		this.providerCount.set(this._repositories.size);
 		this.historyProviderCount.set(historyProviderCount());
@@ -430,8 +464,7 @@ export class SCMService implements ISCMService {
 			return this._repositories.get(idOrResource);
 		}
 
-		if (idOrResource.scheme !== Schemas.file &&
-			idOrResource.scheme !== Schemas.vscodeRemote) {
+		if (idOrResource.scheme !== Schemas.file && idOrResource.scheme !== Schemas.vscodeRemote) {
 			return undefined;
 		}
 

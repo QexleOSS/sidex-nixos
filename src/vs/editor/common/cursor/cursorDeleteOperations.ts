@@ -6,7 +6,13 @@
 import * as strings from '../../../base/common/strings.js';
 import { ReplaceCommand } from '../commands/replaceCommand.js';
 import { EditorAutoClosingEditStrategy, EditorAutoClosingStrategy } from '../config/editorOptions.js';
-import { CursorConfiguration, EditOperationResult, EditOperationType, ICursorSimpleModel, isQuote } from '../cursorCommon.js';
+import {
+	CursorConfiguration,
+	EditOperationResult,
+	EditOperationType,
+	ICursorSimpleModel,
+	isQuote
+} from '../cursorCommon.js';
 import { CursorColumns } from '../core/cursorColumns.js';
 import { MoveOperations } from './cursorMoveOperations.js';
 import { Range } from '../core/range.js';
@@ -16,10 +22,14 @@ import { StandardAutoClosingPairConditional } from '../languages/languageConfigu
 import { Position } from '../core/position.js';
 
 export class DeleteOperations {
-
-	public static deleteRight(prevEditOperationType: EditOperationType, config: CursorConfiguration, model: ICursorSimpleModel, selections: Selection[]): [boolean, Array<ICommand | null>] {
+	public static deleteRight(
+		prevEditOperationType: EditOperationType,
+		config: CursorConfiguration,
+		model: ICursorSimpleModel,
+		selections: Selection[]
+	): [boolean, Array<ICommand | null>] {
 		const commands: Array<ICommand | null> = [];
-		let shouldPushStackElementBefore = (prevEditOperationType !== EditOperationType.DeletingRight);
+		let shouldPushStackElementBefore = prevEditOperationType !== EditOperationType.DeletingRight;
 		for (let i = 0, len = selections.length; i < len; i++) {
 			const selection = selections[i];
 
@@ -40,7 +50,11 @@ export class DeleteOperations {
 		return [shouldPushStackElementBefore, commands];
 	}
 
-	private static getDeleteRightRange(selection: Selection, model: ICursorSimpleModel, config: CursorConfiguration): Range {
+	private static getDeleteRightRange(
+		selection: Selection,
+		model: ICursorSimpleModel,
+		config: CursorConfiguration
+	): Range {
 		if (!selection.isEmpty()) {
 			return selection;
 		}
@@ -51,25 +65,15 @@ export class DeleteOperations {
 		if (config.trimWhitespaceOnDelete && rightOfPosition.lineNumber !== position.lineNumber) {
 			// Smart line join (deleting leading whitespace) is on
 			// (and) Delete is happening at the end of a line
-			const currentLineHasContent = (model.getLineFirstNonWhitespaceColumn(position.lineNumber) > 0);
+			const currentLineHasContent = model.getLineFirstNonWhitespaceColumn(position.lineNumber) > 0;
 			const firstNonWhitespaceColumn = model.getLineFirstNonWhitespaceColumn(rightOfPosition.lineNumber);
 			if (currentLineHasContent && firstNonWhitespaceColumn > 0) {
 				// The next line has content
-				return new Range(
-					rightOfPosition.lineNumber,
-					firstNonWhitespaceColumn,
-					position.lineNumber,
-					position.column
-				);
+				return new Range(rightOfPosition.lineNumber, firstNonWhitespaceColumn, position.lineNumber, position.column);
 			}
 		}
 
-		return new Range(
-			rightOfPosition.lineNumber,
-			rightOfPosition.column,
-			position.lineNumber,
-			position.column
-		);
+		return new Range(rightOfPosition.lineNumber, rightOfPosition.column, position.lineNumber, position.column);
 	}
 
 	public static isAutoClosingPairDelete(
@@ -134,7 +138,10 @@ export class DeleteOperations {
 				let found = false;
 				for (let j = 0, lenJ = autoClosedCharacters.length; j < lenJ; j++) {
 					const autoClosedCharacter = autoClosedCharacters[j];
-					if (position.lineNumber === autoClosedCharacter.startLineNumber && position.column === autoClosedCharacter.startColumn) {
+					if (
+						position.lineNumber === autoClosedCharacter.startLineNumber &&
+						position.column === autoClosedCharacter.startColumn
+					) {
 						found = true;
 						break;
 					}
@@ -148,7 +155,11 @@ export class DeleteOperations {
 		return true;
 	}
 
-	private static _runAutoClosingPairDelete(config: CursorConfiguration, model: ICursorSimpleModel, selections: Selection[]): [boolean, ICommand[]] {
+	private static _runAutoClosingPairDelete(
+		config: CursorConfiguration,
+		model: ICursorSimpleModel,
+		selections: Selection[]
+	): [boolean, ICommand[]] {
 		const commands: ICommand[] = [];
 		for (let i = 0, len = selections.length; i < len; i++) {
 			const position = selections[i].getPosition();
@@ -163,13 +174,29 @@ export class DeleteOperations {
 		return [true, commands];
 	}
 
-	public static deleteLeft(prevEditOperationType: EditOperationType, config: CursorConfiguration, model: ICursorSimpleModel, selections: Selection[], autoClosedCharacters: Range[]): [boolean, Array<ICommand | null>] {
-		if (this.isAutoClosingPairDelete(config.autoClosingDelete, config.autoClosingBrackets, config.autoClosingQuotes, config.autoClosingPairs.autoClosingPairsOpenByEnd, model, selections, autoClosedCharacters)) {
+	public static deleteLeft(
+		prevEditOperationType: EditOperationType,
+		config: CursorConfiguration,
+		model: ICursorSimpleModel,
+		selections: Selection[],
+		autoClosedCharacters: Range[]
+	): [boolean, Array<ICommand | null>] {
+		if (
+			this.isAutoClosingPairDelete(
+				config.autoClosingDelete,
+				config.autoClosingBrackets,
+				config.autoClosingQuotes,
+				config.autoClosingPairs.autoClosingPairsOpenByEnd,
+				model,
+				selections,
+				autoClosedCharacters
+			)
+		) {
 			return this._runAutoClosingPairDelete(config, model, selections);
 		}
 
 		const commands: Array<ICommand | null> = [];
-		let shouldPushStackElementBefore = (prevEditOperationType !== EditOperationType.DeletingLeft);
+		let shouldPushStackElementBefore = prevEditOperationType !== EditOperationType.DeletingLeft;
 		for (let i = 0, len = selections.length; i < len; i++) {
 			const deleteRange = DeleteOperations.getDeleteLeftRange(selections[i], model, config);
 
@@ -187,10 +214,13 @@ export class DeleteOperations {
 			commands[i] = new ReplaceCommand(deleteRange, '');
 		}
 		return [shouldPushStackElementBefore, commands];
-
 	}
 
-	private static getDeleteLeftRange(selection: Selection, model: ICursorSimpleModel, config: CursorConfiguration): Range {
+	private static getDeleteLeftRange(
+		selection: Selection,
+		model: ICursorSimpleModel,
+		config: CursorConfiguration
+	): Range {
 		if (!selection.isEmpty()) {
 			return selection;
 		}
@@ -202,11 +232,10 @@ export class DeleteOperations {
 			const lineContent = model.getLineContent(position.lineNumber);
 
 			const firstNonWhitespaceIndex = strings.firstNonWhitespaceIndex(lineContent);
-			const lastIndentationColumn = (
+			const lastIndentationColumn =
 				firstNonWhitespaceIndex === -1
 					? /* entire string is whitespace */ lineContent.length + 1
-					: firstNonWhitespaceIndex + 1
-			);
+					: firstNonWhitespaceIndex + 1;
 
 			if (position.column <= lastIndentationColumn) {
 				const fromVisibleColumn = config.visibleColumnFromColumn(model, position);
@@ -232,7 +261,11 @@ export class DeleteOperations {
 		}
 	}
 
-	public static cut(config: CursorConfiguration, model: ICursorSimpleModel, selections: Selection[]): EditOperationResult {
+	public static cut(
+		config: CursorConfiguration,
+		model: ICursorSimpleModel,
+		selections: Selection[]
+	): EditOperationResult {
 		const commands: Array<ICommand | null> = [];
 		let lastCutRange: Range | null = null;
 		selections.sort((a, b) => Position.compare(a.getStartPosition(), b.getEndPosition()));
@@ -245,10 +278,7 @@ export class DeleteOperations {
 
 					const position = selection.getPosition();
 
-					let startLineNumber: number,
-						startColumn: number,
-						endLineNumber: number,
-						endColumn: number;
+					let startLineNumber: number, startColumn: number, endLineNumber: number, endColumn: number;
 
 					if (position.lineNumber < model.getLineCount()) {
 						// Cutting a line in the middle of the model
@@ -270,12 +300,7 @@ export class DeleteOperations {
 						endColumn = model.getLineMaxColumn(position.lineNumber);
 					}
 
-					const deleteSelection = new Range(
-						startLineNumber,
-						startColumn,
-						endLineNumber,
-						endColumn
-					);
+					const deleteSelection = new Range(startLineNumber, startColumn, endLineNumber, endColumn);
 					lastCutRange = deleteSelection;
 
 					if (!deleteSelection.isEmpty()) {

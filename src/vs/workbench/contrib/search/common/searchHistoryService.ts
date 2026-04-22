@@ -33,9 +33,7 @@ export class SearchHistoryService implements ISearchHistoryService {
 	private readonly _onDidClearHistory = new Emitter<void>();
 	readonly onDidClearHistory: Event<void> = this._onDidClearHistory.event;
 
-	constructor(
-		@IStorageService private readonly storageService: IStorageService
-	) { }
+	constructor(@IStorageService private readonly storageService: IStorageService) {}
 
 	clearHistory(): void {
 		this.storageService.remove(SearchHistoryService.SEARCH_HISTORY_KEY, StorageScope.WORKSPACE);
@@ -61,7 +59,12 @@ export class SearchHistoryService implements ISearchHistoryService {
 		if (isEmptyObject(history)) {
 			this.storageService.remove(SearchHistoryService.SEARCH_HISTORY_KEY, StorageScope.WORKSPACE);
 		} else {
-			this.storageService.store(SearchHistoryService.SEARCH_HISTORY_KEY, JSON.stringify(history), StorageScope.WORKSPACE, StorageTarget.USER);
+			this.storageService.store(
+				SearchHistoryService.SEARCH_HISTORY_KEY,
+				JSON.stringify(history),
+				StorageScope.WORKSPACE,
+				StorageTarget.USER
+			);
 		}
 	}
 }

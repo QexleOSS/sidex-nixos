@@ -14,17 +14,20 @@ import { IQuickTreeCheckboxEvent, IQuickTreeItem } from '../../common/quickInput
  * Accessibility provider for QuickTree.
  */
 export class QuickTreeAccessibilityProvider<T extends IQuickTreeItem> implements IListAccessibilityProvider<T> {
-	constructor(private readonly onCheckedEvent: Event<IQuickTreeCheckboxEvent<T>>) { }
+	constructor(private readonly onCheckedEvent: Event<IQuickTreeCheckboxEvent<T>>) {}
 
 	getWidgetAriaLabel(): string {
-		return localize('quickTree', "Quick Tree");
+		return localize('quickTree', 'Quick Tree');
 	}
 
 	getAriaLabel(element: T): string {
-		return element.ariaLabel || [element.label, element.description]
-			.map(s => getCodiconAriaLabel(s))
-			.filter(s => !!s)
-			.join(', ');
+		return (
+			element.ariaLabel ||
+			[element.label, element.description]
+				.map(s => getCodiconAriaLabel(s))
+				.filter(s => !!s)
+				.join(', ')
+		);
 	}
 
 	getWidgetRole(): AriaRole {
@@ -37,8 +40,10 @@ export class QuickTreeAccessibilityProvider<T extends IQuickTreeItem> implements
 
 	isChecked(element: T): IValueWithChangeEvent<CheckBoxAccessibleState> | undefined {
 		return {
-			get value() { return element.checked === 'mixed' ? 'mixed' : !!element.checked; },
-			onDidChange: e => Event.filter(this.onCheckedEvent, e => e.item === element)(_ => e()),
+			get value() {
+				return element.checked === 'mixed' ? 'mixed' : !!element.checked;
+			},
+			onDidChange: e => Event.filter(this.onCheckedEvent, e => e.item === element)(_ => e())
 		};
 	}
 }

@@ -24,7 +24,6 @@ import { configureOpenerTrustedDomainsHandler, readStaticTrustedDomains } from '
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 
 export class OpenerValidatorContributions implements IWorkbenchContribution {
-
 	constructor(
 		@IOpenerService private readonly _openerService: IOpenerService,
 		@IStorageService private readonly _storageService: IStorageService,
@@ -37,7 +36,7 @@ export class OpenerValidatorContributions implements IWorkbenchContribution {
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@IWorkspaceTrustManagementService private readonly _workspaceTrustService: IWorkspaceTrustManagementService,
-		@ITrustedDomainService private readonly _trustedDomainService: ITrustedDomainService,
+		@ITrustedDomainService private readonly _trustedDomainService: ITrustedDomainService
 	) {
 		this._openerService.registerValidator({ shouldOpen: (uri, options) => this.validateLink(uri, options) });
 	}
@@ -47,7 +46,11 @@ export class OpenerValidatorContributions implements IWorkbenchContribution {
 			return true;
 		}
 
-		if (openOptions?.fromWorkspace && this._workspaceTrustService.isWorkspaceTrusted() && !this._configurationService.getValue('workbench.trustedDomains.promptInTrustedWorkspace')) {
+		if (
+			openOptions?.fromWorkspace &&
+			this._workspaceTrustService.isWorkspaceTrusted() &&
+			!this._configurationService.getValue('workbench.trustedDomains.promptInTrustedWorkspace')
+		) {
 			return true;
 		}
 
@@ -66,7 +69,6 @@ export class OpenerValidatorContributions implements IWorkbenchContribution {
 			let formattedLink = `${scheme}://${authority}${path}`;
 
 			const linkTail = `${query ? '?' + query : ''}${fragment ? '#' + fragment : ''}`;
-
 
 			const remainingLength = Math.max(0, 60 - formattedLink.length);
 			const linkTailLengthToKeep = Math.min(Math.max(5, remainingLength), linkTail.length);
@@ -95,14 +97,19 @@ export class OpenerValidatorContributions implements IWorkbenchContribution {
 					{
 						label: localize({ key: 'copy', comment: ['&& denotes a mnemonic'] }, '&&Copy'),
 						run: () => {
-							this._clipboardService.writeText(typeof originalResource === 'string' ? originalResource : resourceUri.toString(true));
+							this._clipboardService.writeText(
+								typeof originalResource === 'string' ? originalResource : resourceUri.toString(true)
+							);
 							return false;
 						}
 					},
 					{
-						label: localize({ key: 'configureTrustedDomains', comment: ['&& denotes a mnemonic'] }, 'Configure &&Trusted Domains'),
+						label: localize(
+							{ key: 'configureTrustedDomains', comment: ['&& denotes a mnemonic'] },
+							'Configure &&Trusted Domains'
+						),
 						run: async () => {
-							const { trustedDomains, } = this._instantiationService.invokeFunction(readStaticTrustedDomains);
+							const { trustedDomains } = this._instantiationService.invokeFunction(readStaticTrustedDomains);
 							const domainToOpen = `${scheme}://${authority}`;
 							const pickedDomains = await configureOpenerTrustedDomainsHandler(
 								trustedDomains,
@@ -111,7 +118,7 @@ export class OpenerValidatorContributions implements IWorkbenchContribution {
 								this._quickInputService,
 								this._storageService,
 								this._editorService,
-								this._telemetryService,
+								this._telemetryService
 							);
 							// Trust all domains
 							if (pickedDomains.indexOf('*') !== -1) {

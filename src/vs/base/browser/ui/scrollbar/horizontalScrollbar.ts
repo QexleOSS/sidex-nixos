@@ -11,11 +11,7 @@ import { ScrollbarState } from './scrollbarState.js';
 import { Codicon } from '../../../common/codicons.js';
 import { INewScrollPosition, Scrollable, ScrollbarVisibility, ScrollEvent } from '../../../common/scrollable.js';
 
-
-
-
 export class HorizontalScrollbar extends AbstractScrollbar {
-
 	constructor(scrollable: Scrollable, options: ScrollableElementResolvedOptions, host: ScrollbarHost) {
 		const scrollDimensions = scrollable.getScrollDimensions();
 		const scrollPosition = scrollable.getCurrentScrollPosition();
@@ -23,9 +19,9 @@ export class HorizontalScrollbar extends AbstractScrollbar {
 			lazyRender: options.lazyRender,
 			host: host,
 			scrollbarState: new ScrollbarState(
-				(options.horizontalHasArrows ? options.arrowSize : 0),
-				(options.horizontal === ScrollbarVisibility.Hidden ? 0 : options.horizontalScrollbarSize),
-				(options.vertical === ScrollbarVisibility.Hidden ? 0 : options.verticalScrollbarSize),
+				options.horizontalHasArrows ? options.arrowSize : 0,
+				options.horizontal === ScrollbarVisibility.Hidden ? 0 : options.horizontalScrollbarSize,
+				options.vertical === ScrollbarVisibility.Hidden ? 0 : options.verticalScrollbarSize,
 				scrollDimensions.width,
 				scrollDimensions.scrollWidth,
 				scrollPosition.scrollLeft
@@ -49,7 +45,7 @@ export class HorizontalScrollbar extends AbstractScrollbar {
 				right: undefined,
 				bgWidth: options.arrowSize,
 				bgHeight: options.horizontalScrollbarSize,
-				onActivate: () => this._host.onMouseWheel(new StandardWheelEvent(null, 1, 0)),
+				onActivate: () => this._host.onMouseWheel(new StandardWheelEvent(null, 1, 0))
 			});
 
 			this._createArrow({
@@ -61,11 +57,16 @@ export class HorizontalScrollbar extends AbstractScrollbar {
 				right: arrowDelta,
 				bgWidth: options.arrowSize,
 				bgHeight: options.horizontalScrollbarSize,
-				onActivate: () => this._host.onMouseWheel(new StandardWheelEvent(null, -1, 0)),
+				onActivate: () => this._host.onMouseWheel(new StandardWheelEvent(null, -1, 0))
 			});
 		}
 
-		this._createSlider(Math.floor((options.horizontalScrollbarSize - options.horizontalSliderSize) / 2), 0, undefined, options.horizontalSliderSize);
+		this._createSlider(
+			Math.floor((options.horizontalScrollbarSize - options.horizontalSliderSize) / 2),
+			0,
+			undefined,
+			options.horizontalSliderSize
+		);
 	}
 
 	protected _updateSlider(sliderSize: number, sliderPosition: number): void {
@@ -109,7 +110,9 @@ export class HorizontalScrollbar extends AbstractScrollbar {
 
 	public updateOptions(options: ScrollableElementResolvedOptions): void {
 		this.updateScrollbarSize(options.horizontal === ScrollbarVisibility.Hidden ? 0 : options.horizontalScrollbarSize);
-		this._scrollbarState.setOppositeScrollbarSize(options.vertical === ScrollbarVisibility.Hidden ? 0 : options.verticalScrollbarSize);
+		this._scrollbarState.setOppositeScrollbarSize(
+			options.vertical === ScrollbarVisibility.Hidden ? 0 : options.verticalScrollbarSize
+		);
 		this._visibilityController.setVisibility(options.horizontal);
 		this._scrollByPage = options.scrollByPage;
 	}

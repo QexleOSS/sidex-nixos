@@ -15,7 +15,6 @@ export const IWorkingCopyBackupService = createDecorator<IWorkingCopyBackupServi
  * as well as associated metadata with it.
  */
 export interface IResolvedWorkingCopyBackup<T extends IWorkingCopyBackupMeta> {
-
 	/**
 	 * The content of the working copy backup.
 	 */
@@ -35,7 +34,6 @@ export interface IResolvedWorkingCopyBackup<T extends IWorkingCopyBackupMeta> {
  * system.
  */
 export interface IWorkingCopyBackupService {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -56,12 +54,20 @@ export interface IWorkingCopyBackupService {
 	/**
 	 * Resolves the working copy backup for the given identifier if that exists.
 	 */
-	resolve<T extends IWorkingCopyBackupMeta>(identifier: IWorkingCopyIdentifier): Promise<IResolvedWorkingCopyBackup<T> | undefined>;
+	resolve<T extends IWorkingCopyBackupMeta>(
+		identifier: IWorkingCopyIdentifier
+	): Promise<IResolvedWorkingCopyBackup<T> | undefined>;
 
 	/**
 	 * Stores a new working copy backup for the given identifier.
 	 */
-	backup(identifier: IWorkingCopyIdentifier, content?: VSBufferReadable | VSBufferReadableStream, versionId?: number, meta?: IWorkingCopyBackupMeta, token?: CancellationToken): Promise<void>;
+	backup(
+		identifier: IWorkingCopyIdentifier,
+		content?: VSBufferReadable | VSBufferReadableStream,
+		versionId?: number,
+		meta?: IWorkingCopyBackupMeta,
+		token?: CancellationToken
+	): Promise<void>;
 
 	/**
 	 * Discards the working copy backup associated with the identifier if it exists.

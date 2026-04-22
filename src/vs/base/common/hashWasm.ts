@@ -19,7 +19,9 @@ async function ensureWasm(): Promise<any> {
 			try {
 				const wasmPath = '/wasm/hash/sidex_hash_wasm.js';
 				const resp = await fetch(wasmPath);
-				if (!resp.ok) { throw new Error(`HTTP ${resp.status}`); }
+				if (!resp.ok) {
+					throw new Error(`HTTP ${resp.status}`);
+				}
 				const code = await resp.text();
 				const blob = new Blob([code], { type: 'application/javascript' });
 				const url = URL.createObjectURL(blob);
@@ -56,7 +58,7 @@ export function wasmSha1Streaming(): WasmSha1Handle | null {
 		},
 		digest(): string {
 			return instance.digest();
-		},
+		}
 	};
 }
 

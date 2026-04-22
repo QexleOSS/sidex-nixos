@@ -53,11 +53,16 @@ async function doGetLogs(fileService: IFileService, logs: ILogFile[], curFolder:
 
 function logLevelToString(level: LogLevel): string {
 	switch (level) {
-		case LogLevel.Trace: return 'trace';
-		case LogLevel.Debug: return 'debug';
-		case LogLevel.Info: return 'info';
-		case LogLevel.Warning: return 'warn';
-		case LogLevel.Error: return 'error';
+		case LogLevel.Trace:
+			return 'trace';
+		case LogLevel.Debug:
+			return 'debug';
+		case LogLevel.Info:
+			return 'info';
+		case LogLevel.Warning:
+			return 'warn';
+		case LogLevel.Error:
+			return 'error';
 	}
 	return 'info';
 }
@@ -68,7 +73,6 @@ function logLevelToString(level: LogLevel): string {
  * to be defined that we can use to log to.
  */
 export class ConsoleLogInAutomationLogger extends AdapterLogger implements ILogger {
-
 	declare codeAutomationLog: any;
 
 	constructor(logLevel: LogLevel = DEFAULT_LOG_LEVEL) {

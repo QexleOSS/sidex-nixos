@@ -14,7 +14,7 @@ export const enum ExtensionGalleryResourceType {
 	ExtensionDetailsViewUri = 'ExtensionDetailsViewUriTemplate',
 	ExtensionRatingViewUri = 'ExtensionRatingViewUriTemplate',
 	ExtensionResourceUri = 'ExtensionResourceUriTemplate',
-	ContactSupportUri = 'ContactSupportUri',
+	ContactSupportUri = 'ContactSupportUri'
 }
 
 export const enum Flag {
@@ -31,7 +31,7 @@ export const enum Flag {
 	IncludeLatestVersionOnly = 'IncludeLatestVersionOnly',
 	Unpublished = 'Unpublished',
 	IncludeNameConflictInfo = 'IncludeNameConflictInfo',
-	IncludeLatestPrereleaseAndStableVersionOnly = 'IncludeLatestPrereleaseAndStableVersionOnly',
+	IncludeLatestPrereleaseAndStableVersionOnly = 'IncludeLatestPrereleaseAndStableVersionOnly'
 }
 
 export type ExtensionGalleryManifestResource = {
@@ -71,7 +71,9 @@ export const enum ExtensionGalleryManifestStatus {
 	Unavailable = 'unavailable'
 }
 
-export const IExtensionGalleryManifestService = createDecorator<IExtensionGalleryManifestService>('IExtensionGalleryManifestService');
+export const IExtensionGalleryManifestService = createDecorator<IExtensionGalleryManifestService>(
+	'IExtensionGalleryManifestService'
+);
 
 export interface IExtensionGalleryManifestService {
 	readonly _serviceBrand: undefined;
@@ -82,7 +84,10 @@ export interface IExtensionGalleryManifestService {
 	getExtensionGalleryManifest(): Promise<IExtensionGalleryManifest | null>;
 }
 
-export function getExtensionGalleryManifestResourceUri(manifest: IExtensionGalleryManifest, type: string): string | undefined {
+export function getExtensionGalleryManifestResourceUri(
+	manifest: IExtensionGalleryManifest,
+	type: string
+): string | undefined {
 	const [name, version] = type.split('/');
 	for (const resource of manifest.resources) {
 		const [r, v] = resource.type.split('/');

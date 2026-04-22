@@ -15,12 +15,11 @@ import { IExtHostInitDataService } from './extHostInitDataService.js';
 import { decodeBase64 } from '../../../base/common/buffer.js';
 
 export class ExtHostWindow implements ExtHostWindowShape {
-
 	declare _serviceBrand: undefined;
 
 	private static InitialState: WindowState = {
 		focused: true,
-		active: true,
+		active: true
 	};
 
 	private _proxy: MainThreadWindowShape;
@@ -41,7 +40,7 @@ export class ExtHostWindow implements ExtHostWindowShape {
 			},
 			get active() {
 				return state.active;
-			},
+			}
 		};
 	}
 
@@ -113,4 +112,4 @@ export class ExtHostWindow implements ExtHostWindowShape {
 }
 
 export const IExtHostWindow = createDecorator<IExtHostWindow>('IExtHostWindow');
-export interface IExtHostWindow extends ExtHostWindow, ExtHostWindowShape { }
+export interface IExtHostWindow extends ExtHostWindow, ExtHostWindowShape {}

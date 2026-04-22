@@ -21,12 +21,11 @@ const enum Classes {
 	Bold = Classes.Prefix + '1',
 	Faint = Classes.Prefix + '2',
 	Italic = Classes.Prefix + '3',
-	Underline = Classes.Prefix + '4',
+	Underline = Classes.Prefix + '4'
 }
 
 export const renderTestMessageAsText = (tm: string | IMarkdownString) =>
 	typeof tm === 'string' ? removeAnsiEscapeCodes(tm) : renderAsPlaintext(tm);
-
 
 /**
  * Applies decorations based on ANSI styles from the test message in the editor.
@@ -86,10 +85,12 @@ export const colorizeTestMessageInEditor = (message: string, editor: CodeEditorW
 
 				const end = new Position(line, col);
 				if (cls.length) {
-					decos.push(changeAccessor.addDecoration(Range.fromPositions(start, end), {
-						inlineClassName: cls.join(' '),
-						description: 'test-message-colorized',
-					}));
+					decos.push(
+						changeAccessor.addDecoration(Range.fromPositions(start, end), {
+							inlineClassName: cls.join(' '),
+							description: 'test-message-colorized'
+						})
+					);
 				}
 				start = end;
 			}

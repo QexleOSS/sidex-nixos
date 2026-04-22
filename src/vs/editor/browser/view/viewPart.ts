@@ -10,7 +10,6 @@ import { ViewEventHandler } from '../../common/viewEventHandler.js';
 import { ViewportData } from '../../common/viewLayout/viewLinesViewportData.js';
 
 export abstract class ViewPart extends ViewEventHandler {
-
 	_context: ViewContext;
 
 	constructor(context: ViewContext) {
@@ -24,8 +23,7 @@ export abstract class ViewPart extends ViewEventHandler {
 		super.dispose();
 	}
 
-	public onBeforeRender(viewportData: ViewportData): void {
-	}
+	public onBeforeRender(viewportData: ViewportData): void {}
 
 	public abstract prepareRender(ctx: RenderingContext): void;
 	public abstract render(ctx: RestrictedRenderingContext): void;
@@ -46,7 +44,6 @@ export const enum PartFingerprint {
 }
 
 export class PartFingerprints {
-
 	public static write(target: Element | FastDomNode<HTMLElement>, partId: PartFingerprint) {
 		target.setAttribute('data-mprt', String(partId));
 	}

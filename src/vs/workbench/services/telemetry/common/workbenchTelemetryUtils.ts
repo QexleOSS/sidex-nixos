@@ -5,23 +5,13 @@
 
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IProductService } from '../../../../platform/product/common/productService.js';
-import { TelemetryLevel } from '../../../../platform/telemetry/common/telemetry.js';
-import { getTelemetryLevel } from '../../../../platform/telemetry/common/telemetryUtils.js';
 import { IWorkbenchEnvironmentService } from '../../environment/common/environmentService.js';
 
-/**
- * Determines if experiment properties will be set on telemetry events.
- * When true, TelemetryService should buffer events until setExperimentProperty is called.
- */
+// Stub: telemetry experiments now handled by Rust telemetry crate
 export function experimentsEnabled(
-	configurationService: IConfigurationService,
-	productService: IProductService,
-	environmentService: IWorkbenchEnvironmentService
+	_configurationService: IConfigurationService,
+	_productService: IProductService,
+	_environmentService: IWorkbenchEnvironmentService
 ): boolean {
-	return getTelemetryLevel(configurationService) === TelemetryLevel.USAGE &&
-		!!productService.tasConfig &&
-		!environmentService.disableExperiments &&
-		!environmentService.extensionTestsLocationURI &&
-		!environmentService.enableSmokeTestDriver &&
-		configurationService.getValue('workbench.enableExperiments') === true;
+	return false;
 }

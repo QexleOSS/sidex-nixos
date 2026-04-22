@@ -45,8 +45,10 @@ export class RemoteSocketFactoryService implements IRemoteSocketFactoryService {
 		});
 	}
 
-	private getSocketFactory<T extends RemoteConnectionType>(messagePassing: RemoteConnectionOfType<T>): ISocketFactory<T> | undefined {
-		const factories = (this.factories[messagePassing.type] || []);
+	private getSocketFactory<T extends RemoteConnectionType>(
+		messagePassing: RemoteConnectionOfType<T>
+	): ISocketFactory<T> | undefined {
+		const factories = this.factories[messagePassing.type] || [];
 		return factories.find(factory => factory.supports(messagePassing));
 	}
 

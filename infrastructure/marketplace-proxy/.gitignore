@@ -1,0 +1,9 @@
+# Wrangler local dev state (SQLite, cache, KV snapshots)
+.wrangler/
+
+# npm dependencies
+node_modules/
+
+# TypeScript output (if any)
+dist/
+*.js.map

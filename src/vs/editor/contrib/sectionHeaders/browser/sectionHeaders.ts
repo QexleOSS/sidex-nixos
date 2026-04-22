@@ -11,13 +11,17 @@ import { EditorOption, IEditorMinimapOptions } from '../../../common/config/edit
 import { IEditorContribution, IEditorDecorationsCollection } from '../../../common/editorCommon.js';
 import { StandardTokenType } from '../../../common/encodedTokenAttributes.js';
 import { ILanguageConfigurationService } from '../../../common/languages/languageConfigurationRegistry.js';
-import { IModelDeltaDecoration, MinimapPosition, MinimapSectionHeaderStyle, TrackedRangeStickiness } from '../../../common/model.js';
+import {
+	IModelDeltaDecoration,
+	MinimapPosition,
+	MinimapSectionHeaderStyle,
+	TrackedRangeStickiness
+} from '../../../common/model.js';
 import { ModelDecorationOptions } from '../../../common/model/textModel.js';
 import { IEditorWorkerService } from '../../../common/services/editorWorker.js';
 import { FindSectionHeaderOptions, SectionHeader } from '../../../common/services/findSectionHeaders.js';
 
 export class SectionHeaderDetector extends Disposable implements IEditorContribution {
-
 	public static readonly ID: string = 'editor.sectionHeaderDetector';
 
 	private options: FindSectionHeaderOptions | undefined;
@@ -29,7 +33,7 @@ export class SectionHeaderDetector extends Disposable implements IEditorContribu
 	constructor(
 		private readonly editor: ICodeEditor,
 		@ILanguageConfigurationService private readonly languageConfigurationService: ILanguageConfigurationService,
-		@IEditorWorkerService private readonly editorWorkerService: IEditorWorkerService,
+		@IEditorWorkerService private readonly editorWorkerService: IEditorWorkerService
 	) {
 		super();
 		this.decorations = this.editor.createDecorationsCollection();
@@ -38,60 +42,74 @@ export class SectionHeaderDetector extends Disposable implements IEditorContribu
 		this.computePromise = null;
 		this.currentOccurrences = {};
 
-		this._register(editor.onDidChangeModel((e) => {
-			this.currentOccurrences = {};
-			this.options = this.createOptions(editor.getOption(EditorOption.minimap));
-			this.stop();
-			this.computeSectionHeaders.schedule(0);
-		}));
-
-		this._register(editor.onDidChangeModelLanguage((e) => {
-			this.currentOccurrences = {};
-			this.options = this.createOptions(editor.getOption(EditorOption.minimap));
-			this.stop();
-			this.computeSectionHeaders.schedule(0);
-		}));
-
-		this._register(languageConfigurationService.onDidChange((e) => {
-			const editorLanguageId = this.editor.getModel()?.getLanguageId();
-			if (editorLanguageId && e.affects(editorLanguageId)) {
+		this._register(
+			editor.onDidChangeModel(e => {
 				this.currentOccurrences = {};
 				this.options = this.createOptions(editor.getOption(EditorOption.minimap));
 				this.stop();
 				this.computeSectionHeaders.schedule(0);
-			}
-		}));
+			})
+		);
 
-		this._register(editor.onDidChangeConfiguration(e => {
-			if (this.options && !e.hasChanged(EditorOption.minimap)) {
-				return;
-			}
+		this._register(
+			editor.onDidChangeModelLanguage(e => {
+				this.currentOccurrences = {};
+				this.options = this.createOptions(editor.getOption(EditorOption.minimap));
+				this.stop();
+				this.computeSectionHeaders.schedule(0);
+			})
+		);
 
-			this.options = this.createOptions(editor.getOption(EditorOption.minimap));
+		this._register(
+			languageConfigurationService.onDidChange(e => {
+				const editorLanguageId = this.editor.getModel()?.getLanguageId();
+				if (editorLanguageId && e.affects(editorLanguageId)) {
+					this.currentOccurrences = {};
+					this.options = this.createOptions(editor.getOption(EditorOption.minimap));
+					this.stop();
+					this.computeSectionHeaders.schedule(0);
+				}
+			})
+		);
 
-			// Remove any links (for the getting disabled case)
-			this.updateDecorations([]);
+		this._register(
+			editor.onDidChangeConfiguration(e => {
+				if (this.options && !e.hasChanged(EditorOption.minimap)) {
+					return;
+				}
 
-			// Stop any computation (for the getting disabled case)
-			this.stop();
+				this.options = this.createOptions(editor.getOption(EditorOption.minimap));
 
-			// Start computing (for the getting enabled case)
-			this.computeSectionHeaders.schedule(0);
-		}));
+				// Remove any links (for the getting disabled case)
+				this.updateDecorations([]);
 
-		this._register(this.editor.onDidChangeModelContent(e => {
-			this.computeSectionHeaders.schedule();
-		}));
+				// Stop any computation (for the getting disabled case)
+				this.stop();
 
-		this._register(editor.onDidChangeModelTokens((e) => {
-			if (!this.computeSectionHeaders.isScheduled()) {
-				this.computeSectionHeaders.schedule(1000);
-			}
-		}));
+				// Start computing (for the getting enabled case)
+				this.computeSectionHeaders.schedule(0);
+			})
+		);
 
-		this.computeSectionHeaders = this._register(new RunOnceScheduler(() => {
-			this.findSectionHeaders();
-		}, 250));
+		this._register(
+			this.editor.onDidChangeModelContent(e => {
+				this.computeSectionHeaders.schedule();
+			})
+		);
+
+		this._register(
+			editor.onDidChangeModelTokens(e => {
+				if (!this.computeSectionHeaders.isScheduled()) {
+					this.computeSectionHeaders.schedule(1000);
+				}
+			})
+		);
+
+		this.computeSectionHeaders = this._register(
+			new RunOnceScheduler(() => {
+				this.findSectionHeaders();
+			}, 250)
+		);
 
 		this.computeSectionHeaders.schedule(0);
 	}
@@ -117,13 +135,12 @@ export class SectionHeaderDetector extends Disposable implements IEditorContribu
 			foldingRules,
 			markSectionHeaderRegex: minimap.markSectionHeaderRegex,
 			findMarkSectionHeaders: minimap.showMarkSectionHeaders,
-			findRegionSectionHeaders: minimap.showRegionSectionHeaders,
+			findRegionSectionHeaders: minimap.showRegionSectionHeaders
 		};
 	}
 
 	private findSectionHeaders() {
-		if (!this.editor.hasModel()
-			|| (!this.options?.findMarkSectionHeaders && !this.options?.findRegionSectionHeaders)) {
+		if (!this.editor.hasModel() || (!this.options?.findMarkSectionHeaders && !this.options?.findRegionSectionHeaders)) {
 			return;
 		}
 
@@ -133,22 +150,20 @@ export class SectionHeaderDetector extends Disposable implements IEditorContribu
 		}
 
 		const modelVersionId = model.getVersionId();
-		this.editorWorkerService.findSectionHeaders(model.uri, this.options)
-			.then((sectionHeaders) => {
-				if (model.isDisposed() || model.getVersionId() !== modelVersionId) {
-					// model changed in the meantime
-					return;
-				}
-				this.updateDecorations(sectionHeaders);
-			});
+		this.editorWorkerService.findSectionHeaders(model.uri, this.options).then(sectionHeaders => {
+			if (model.isDisposed() || model.getVersionId() !== modelVersionId) {
+				// model changed in the meantime
+				return;
+			}
+			this.updateDecorations(sectionHeaders);
+		});
 	}
 
 	private updateDecorations(sectionHeaders: SectionHeader[]): void {
-
 		const model = this.editor.getModel();
 		if (model) {
 			// Remove all section headers that should be in comments and are not in comments
-			sectionHeaders = sectionHeaders.filter((sectionHeader) => {
+			sectionHeaders = sectionHeaders.filter(sectionHeader => {
 				if (!sectionHeader.shouldBeInComments) {
 					return true;
 				}
@@ -159,14 +174,14 @@ export class SectionHeaderDetector extends Disposable implements IEditorContribu
 
 				const languageIdAtPosition = model.getLanguageIdAtPosition(validRange.startLineNumber, validRange.startColumn);
 				const tokenLanguageId = tokens.getLanguageId(idx);
-				return (tokenLanguageId === languageIdAtPosition && tokenType === StandardTokenType.Comment);
+				return tokenLanguageId === languageIdAtPosition && tokenType === StandardTokenType.Comment;
 			});
 		}
 
 		const oldDecorations = Object.values(this.currentOccurrences).map(occurrence => occurrence.decorationId);
 		const newDecorations = sectionHeaders.map(sectionHeader => decoration(sectionHeader));
 
-		this.editor.changeDecorations((changeAccessor) => {
+		this.editor.changeDecorations(changeAccessor => {
 			const decorations = changeAccessor.deltaDecorations(oldDecorations, newDecorations);
 
 			this.currentOccurrences = {};
@@ -190,7 +205,6 @@ export class SectionHeaderDetector extends Disposable implements IEditorContribu
 		this.stop();
 		this.decorations.clear();
 	}
-
 }
 
 interface SectionHeaderOccurrence {
@@ -208,11 +222,17 @@ function decoration(sectionHeader: SectionHeader): IModelDeltaDecoration {
 			minimap: {
 				color: undefined,
 				position: MinimapPosition.Inline,
-				sectionHeaderStyle: sectionHeader.hasSeparatorLine ? MinimapSectionHeaderStyle.Underlined : MinimapSectionHeaderStyle.Normal,
-				sectionHeaderText: sectionHeader.text,
-			},
+				sectionHeaderStyle: sectionHeader.hasSeparatorLine
+					? MinimapSectionHeaderStyle.Underlined
+					: MinimapSectionHeaderStyle.Normal,
+				sectionHeaderText: sectionHeader.text
+			}
 		})
 	};
 }
 
-registerEditorContribution(SectionHeaderDetector.ID, SectionHeaderDetector, EditorContributionInstantiation.AfterFirstRender);
+registerEditorContribution(
+	SectionHeaderDetector.ID,
+	SectionHeaderDetector,
+	EditorContributionInstantiation.AfterFirstRender
+);

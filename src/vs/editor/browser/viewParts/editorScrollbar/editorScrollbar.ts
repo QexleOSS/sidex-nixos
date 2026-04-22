@@ -5,8 +5,14 @@
 
 import * as dom from '../../../../base/browser/dom.js';
 import { FastDomNode, createFastDomNode } from '../../../../base/browser/fastDomNode.js';
-import { IOverviewRulerLayoutInfo, SmoothScrollableElement } from '../../../../base/browser/ui/scrollbar/scrollableElement.js';
-import { ScrollableElementChangeOptions, ScrollableElementCreationOptions } from '../../../../base/browser/ui/scrollbar/scrollableElementOptions.js';
+import {
+	IOverviewRulerLayoutInfo,
+	SmoothScrollableElement
+} from '../../../../base/browser/ui/scrollbar/scrollableElement.js';
+import {
+	ScrollableElementChangeOptions,
+	ScrollableElementCreationOptions
+} from '../../../../base/browser/ui/scrollbar/scrollableElementOptions.js';
 import { PartFingerprint, PartFingerprints, ViewPart } from '../../view/viewPart.js';
 import { INewScrollPosition, ScrollType } from '../../../common/editorCommon.js';
 import { RenderingContext, RestrictedRenderingContext } from '../../view/renderingContext.js';
@@ -21,7 +27,6 @@ import { IMouseWheelEvent } from '../../../../base/browser/mouseEvent.js';
  * the minimap.
  */
 export class EditorScrollbar extends ViewPart {
-
 	private readonly scrollbar: SmoothScrollableElement;
 	private readonly scrollbarDomNode: FastDomNode<HTMLElement>;
 
@@ -32,7 +37,6 @@ export class EditorScrollbar extends ViewPart {
 		overflowGuardDomNode: FastDomNode<HTMLElement>
 	) {
 		super(context);
-
 
 		const options = this._context.configuration.options;
 		const scrollbar = options.get(EditorOption.scrollbar);
@@ -63,10 +67,12 @@ export class EditorScrollbar extends ViewPart {
 			scrollPredominantAxis: scrollPredominantAxis,
 			scrollByPage: scrollbar.scrollByPage,
 			inertialScroll: inertialScroll,
-			mouseWheelSmoothScroll: false, // DISABLED - prevents scrollLeft errors
+			mouseWheelSmoothScroll: false // DISABLED - prevents scrollLeft errors
 		};
 
-		this.scrollbar = this._register(new SmoothScrollableElement(linesContent.domNode, scrollbarOptions, this._context.viewLayout.getScrollable()));
+		this.scrollbar = this._register(
+			new SmoothScrollableElement(linesContent.domNode, scrollbarOptions, this._context.viewLayout.getScrollable())
+		);
 		PartFingerprints.write(this.scrollbar.getDomNode(), PartFingerprint.ScrollableElement);
 
 		this.scrollbarDomNode = createFastDomNode(this.scrollbar.getDomNode());
@@ -100,10 +106,26 @@ export class EditorScrollbar extends ViewPart {
 		};
 
 		// I've seen this happen both on the view dom node & on the lines content dom node.
-		this._register(dom.addDisposableListener(viewDomNode.domNode, 'scroll', (e: Event) => onBrowserDesperateReveal(viewDomNode.domNode, true, true)));
-		this._register(dom.addDisposableListener(linesContent.domNode, 'scroll', (e: Event) => onBrowserDesperateReveal(linesContent.domNode, true, false)));
-		this._register(dom.addDisposableListener(overflowGuardDomNode.domNode, 'scroll', (e: Event) => onBrowserDesperateReveal(overflowGuardDomNode.domNode, true, false)));
-		this._register(dom.addDisposableListener(this.scrollbarDomNode.domNode, 'scroll', (e: Event) => onBrowserDesperateReveal(this.scrollbarDomNode.domNode, true, false)));
+		this._register(
+			dom.addDisposableListener(viewDomNode.domNode, 'scroll', (e: Event) =>
+				onBrowserDesperateReveal(viewDomNode.domNode, true, true)
+			)
+		);
+		this._register(
+			dom.addDisposableListener(linesContent.domNode, 'scroll', (e: Event) =>
+				onBrowserDesperateReveal(linesContent.domNode, true, false)
+			)
+		);
+		this._register(
+			dom.addDisposableListener(overflowGuardDomNode.domNode, 'scroll', (e: Event) =>
+				onBrowserDesperateReveal(overflowGuardDomNode.domNode, true, false)
+			)
+		);
+		this._register(
+			dom.addDisposableListener(this.scrollbarDomNode.domNode, 'scroll', (e: Event) =>
+				onBrowserDesperateReveal(this.scrollbarDomNode.domNode, true, false)
+			)
+		);
 	}
 
 	public override dispose(): void {
@@ -146,9 +168,9 @@ export class EditorScrollbar extends ViewPart {
 
 	public override onConfigurationChanged(e: viewEvents.ViewConfigurationChangedEvent): boolean {
 		if (
-			e.hasChanged(EditorOption.scrollbar)
-			|| e.hasChanged(EditorOption.mouseWheelScrollSensitivity)
-			|| e.hasChanged(EditorOption.fastScrollSensitivity)
+			e.hasChanged(EditorOption.scrollbar) ||
+			e.hasChanged(EditorOption.mouseWheelScrollSensitivity) ||
+			e.hasChanged(EditorOption.fastScrollSensitivity)
 		) {
 			const options = this._context.configuration.options;
 			const scrollbar = options.get(EditorOption.scrollbar);

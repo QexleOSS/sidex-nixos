@@ -8,17 +8,20 @@ import { CancellationToken } from '../../../common/cancellation.js';
 import { canceled } from '../../../common/errors.js';
 import { IHeaders, IRequestContext, IRequestOptions, OfflineError } from './request.js';
 
-export async function request(options: IRequestOptions, token: CancellationToken, isOnline?: () => boolean): Promise<IRequestContext> {
+export async function request(
+	options: IRequestOptions,
+	token: CancellationToken,
+	isOnline?: () => boolean
+): Promise<IRequestContext> {
 	if (token.isCancellationRequested) {
 		throw canceled();
 	}
 
 	const cancellation = new AbortController();
 	const disposable = token.onCancellationRequested(() => cancellation.abort());
-	const signal = options.timeout ? AbortSignal.any([
-		cancellation.signal,
-		AbortSignal.timeout(options.timeout),
-	]) : cancellation.signal;
+	const signal = options.timeout
+		? AbortSignal.any([cancellation.signal, AbortSignal.timeout(options.timeout)])
+		: cancellation.signal;
 
 	try {
 		const fetchInit: RequestInit = {
@@ -34,9 +37,9 @@ export async function request(options: IRequestOptions, token: CancellationToken
 		return {
 			res: {
 				statusCode: res.status,
-				headers: getResponseHeaders(res),
+				headers: getResponseHeaders(res)
 			},
-			stream: bufferToStream(VSBuffer.wrap(new Uint8Array(await res.arrayBuffer()))),
+			stream: bufferToStream(VSBuffer.wrap(new Uint8Array(await res.arrayBuffer())))
 		};
 	} catch (err) {
 		if (isOnline && !isOnline()) {

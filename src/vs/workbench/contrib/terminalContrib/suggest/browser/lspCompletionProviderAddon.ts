@@ -10,7 +10,11 @@ import type { CancellationToken } from '../../../../../base/common/cancellation.
 import { ITerminalCompletion, mapLspKindToTerminalKind, TerminalCompletionItemKind } from './terminalCompletionItem.js';
 import { IResolvedTextEditorModel } from '../../../../../editor/common/services/resolverService.js';
 import { Position } from '../../../../../editor/common/core/position.js';
-import { CompletionItemLabel, CompletionItemProvider, CompletionTriggerKind } from '../../../../../editor/common/languages.js';
+import {
+	CompletionItemLabel,
+	CompletionItemProvider,
+	CompletionTriggerKind
+} from '../../../../../editor/common/languages.js';
 import { LspTerminalModelContentProvider } from './lspTerminalModelContentProvider.js';
 import { MarkdownString } from '../../../../../base/common/htmlContent.js';
 import { GeneralShellType, TerminalShellType } from '../../../../../platform/terminal/common/terminal.js';
@@ -27,7 +31,7 @@ export class LspCompletionProviderAddon extends Disposable implements ITerminalA
 	constructor(
 		provider: CompletionItemProvider,
 		textVirtualModel: IReference<IResolvedTextEditorModel>,
-		lspTerminalModelContentProvider: LspTerminalModelContentProvider,
+		lspTerminalModelContentProvider: LspTerminalModelContentProvider
 	) {
 		super();
 		this._provider = provider;
@@ -40,8 +44,11 @@ export class LspCompletionProviderAddon extends Disposable implements ITerminalA
 		// console.log('activate');
 	}
 
-	async provideCompletions(value: string, cursorPosition: number, token: CancellationToken): Promise<ITerminalCompletion[] | TerminalCompletionList<ITerminalCompletion> | undefined> {
-
+	async provideCompletions(
+		value: string,
+		cursorPosition: number,
+		token: CancellationToken
+	): Promise<ITerminalCompletion[] | TerminalCompletionList<ITerminalCompletion> | undefined> {
 		// Apply edit for non-executed current commandline --> Pretend we are typing in the real-document.
 		this._lspTerminalModelContentProvider.trackPromptInputToVirtualFile(value);
 
@@ -55,19 +62,29 @@ export class LspCompletionProviderAddon extends Disposable implements ITerminalA
 
 		const completions: ITerminalCompletion[] = [];
 		if (this._provider && this._provider._debugDisplayName !== 'wordbasedCompletions') {
-
-			const result = await this._provider.provideCompletionItems(this._textVirtualModel.object.textEditorModel, positionVirtualDocument, { triggerKind: CompletionTriggerKind.TriggerCharacter }, token);
-			for (const item of (result?.suggestions || [])) {
+			const result = await this._provider.provideCompletionItems(
+				this._textVirtualModel.object.textEditorModel,
+				positionVirtualDocument,
+				{ triggerKind: CompletionTriggerKind.TriggerCharacter },
+				token
+			);
+			for (const item of result?.suggestions || []) {
 				// TODO: Support more terminalCompletionItemKind for [different LSP providers](https://github.com/microsoft/vscode/issues/249479)
 				const convertedKind = item.kind ? mapLspKindToTerminalKind(item.kind) : TerminalCompletionItemKind.Method;
-				const completionItemTemp = createCompletionItemPython(cursorPosition, textBeforeCursor, convertedKind, 'lspCompletionItem', undefined);
+				const completionItemTemp = createCompletionItemPython(
+					cursorPosition,
+					textBeforeCursor,
+					convertedKind,
+					'lspCompletionItem',
+					undefined
+				);
 				const terminalCompletion: ITerminalCompletion = {
 					label: item.label,
 					provider: `lsp:${item.extensionId?.value}`,
 					detail: item.detail,
 					documentation: item.documentation,
 					kind: convertedKind,
-					replacementRange: completionItemTemp.replacementRange,
+					replacementRange: completionItemTemp.replacementRange
 				};
 
 				// Store unresolved item and provider for lazy resolution if needed

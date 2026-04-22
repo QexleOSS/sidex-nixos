@@ -1,9 +1,8 @@
 use serde::Serialize;
-use std::fs;
 use std::path::Path;
-use std::time::UNIX_EPOCH;
 
-// SECURITY: Use centralized validation to prevent path traversal (CWE-22)
+use sidex_workspace::file_ops as ws;
+
 use super::validation::validate_path;
 
 #[derive(Debug, Serialize)]
@@ -18,6 +17,7 @@ pub struct DirEntry {
 }
 
 #[derive(Debug, Serialize)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct FileStat {
     pub size: u64,
     pub is_dir: bool,
@@ -28,149 +28,100 @@ pub struct FileStat {
     pub readonly: bool,
 }
 
+fn io_err(path: &str, e: &sidex_workspace::WorkspaceError) -> String {
+    format!("{path}: {e}")
+}
+
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn read_file(path: String) -> Result<String, String> {
     validate_path(&path)?;
-    fs::read_to_string(&path).map_err(|e| format!("Failed to read file '{}': {}", path, e))
+    ws::read_file(Path::new(&path)).map_err(|e| io_err(&path, &e))
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn read_file_bytes(path: String) -> Result<Vec<u8>, String> {
     validate_path(&path)?;
-    fs::read(&path).map_err(|e| format!("Failed to read file '{}': {}", path, e))
+    ws::read_file_bytes(Path::new(&path)).map_err(|e| io_err(&path, &e))
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn write_file(path: String, content: String) -> Result<(), String> {
     validate_path(&path)?;
-    if let Some(parent) = Path::new(&path).parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create parent dirs for '{}': {}", path, e))?;
-    }
-    fs::write(&path, content).map_err(|e| format!("Failed to write file '{}': {}", path, e))
+    ws::write_file(Path::new(&path), &content).map_err(|e| io_err(&path, &e))
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn write_file_bytes(path: String, content: Vec<u8>) -> Result<(), String> {
     validate_path(&path)?;
-    if let Some(parent) = Path::new(&path).parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create parent dirs for '{}': {}", path, e))?;
-    }
-    fs::write(&path, content).map_err(|e| format!("Failed to write file '{}': {}", path, e))
+    ws::write_file_bytes(Path::new(&path), &content).map_err(|e| io_err(&path, &e))
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn read_dir(path: String) -> Result<Vec<DirEntry>, String> {
     validate_path(&path)?;
-    let entries =
-        fs::read_dir(&path).map_err(|e| format!("Failed to read dir '{}': {}", path, e))?;
+    let entries = ws::read_dir(Path::new(&path)).map_err(|e| io_err(&path, &e))?;
 
-    let mut result = Vec::new();
-    for entry in entries {
-        let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
-        let metadata = entry
-            .metadata()
-            .map_err(|e| format!("Failed to get metadata: {}", e))?;
-        let file_type = entry
-            .file_type()
-            .map_err(|e| format!("Failed to get file type: {}", e))?;
-
-        let modified = metadata
-            .modified()
-            .ok()
-            .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
-
-        result.push(DirEntry {
-            name: entry.file_name().to_string_lossy().to_string(),
-            path: entry.path().to_string_lossy().to_string(),
-            is_dir: file_type.is_dir(),
-            is_file: file_type.is_file(),
-            is_symlink: file_type.is_symlink(),
-            size: metadata.len(),
-            modified,
-        });
-    }
-
-    result.sort_by(|a, b| {
-        b.is_dir
-            .cmp(&a.is_dir)
-            .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
-    });
-
-    Ok(result)
+    Ok(entries
+        .into_iter()
+        .map(|e| DirEntry {
+            name: e.name,
+            path: e.path,
+            is_dir: e.is_dir,
+            is_file: e.is_file,
+            is_symlink: e.is_symlink,
+            size: e.size,
+            modified: e.modified,
+        })
+        .collect())
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn stat(path: String) -> Result<FileStat, String> {
     validate_path(&path)?;
-    let metadata = fs::symlink_metadata(&path).map_err(|e| format!("Failed to stat '{}': {}", path, e))?;
-
-    let modified = metadata
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-
-    let created = metadata
-        .created()
-        .ok()
-        .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
-
+    let s = ws::stat(Path::new(&path)).map_err(|e| io_err(&path, &e))?;
     Ok(FileStat {
-        size: metadata.len(),
-        is_dir: metadata.is_dir(),
-        is_file: metadata.file_type().is_file(),
-        is_symlink: metadata.file_type().is_symlink(),
-        modified,
-        created,
-        readonly: metadata.permissions().readonly(),
+        size: s.size,
+        is_dir: s.is_dir,
+        is_file: s.is_file,
+        is_symlink: s.is_symlink,
+        modified: s.modified,
+        created: s.created,
+        readonly: s.readonly,
     })
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn mkdir(path: String, recursive: bool) -> Result<(), String> {
     validate_path(&path)?;
-    if recursive {
-        fs::create_dir_all(&path)
-    } else {
-        fs::create_dir(&path)
-    }
-    .map_err(|e| format!("Failed to create dir '{}': {}", path, e))
+    ws::mkdir(Path::new(&path), recursive).map_err(|e| io_err(&path, &e))
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn remove(path: String, recursive: bool) -> Result<(), String> {
     validate_path(&path)?;
-    let meta = fs::metadata(&path).map_err(|e| format!("Failed to stat '{}': {}", path, e))?;
-
-    if meta.is_dir() {
-        if recursive {
-            fs::remove_dir_all(&path)
-        } else {
-            fs::remove_dir(&path)
-        }
-    } else {
-        fs::remove_file(&path)
-    }
-    .map_err(|e| format!("Failed to remove '{}': {}", path, e))
+    ws::remove(Path::new(&path), recursive).map_err(|e| io_err(&path, &e))
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn rename(old_path: String, new_path: String) -> Result<(), String> {
     validate_path(&old_path)?;
     validate_path(&new_path)?;
-    fs::rename(&old_path, &new_path)
-        .map_err(|e| format!("Failed to rename '{}' -> '{}': {}", old_path, new_path, e))
+    ws::rename(Path::new(&old_path), Path::new(&new_path))
+        .map_err(|e| format!("{old_path} -> {new_path}: {e}"))
 }
 
+#[allow(clippy::needless_pass_by_value, clippy::unnecessary_wraps)]
 #[tauri::command]
 pub fn exists(path: String) -> Result<bool, String> {
     validate_path(&path)?;
-    Ok(Path::new(&path).exists())
+    Ok(ws::exists(Path::new(&path)))
 }

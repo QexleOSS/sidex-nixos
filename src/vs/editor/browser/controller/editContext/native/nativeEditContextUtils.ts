@@ -21,26 +21,30 @@ export class FocusTracker extends Disposable {
 	constructor(
 		@ILogService _logService: ILogService,
 		private readonly _domNode: HTMLElement,
-		private readonly _onFocusChange: (newFocusValue: boolean) => void,
+		private readonly _onFocusChange: (newFocusValue: boolean) => void
 	) {
 		super();
-		this._register(addDisposableListener(this._domNode, 'focus', () => {
-			_logService.trace('NativeEditContext.focus');
-			if (this._isPaused) {
-				return;
-			}
-			// Here we don't trust the browser and instead we check
-			// that the active element is the one we are tracking
-			// (this happens when cmd+tab is used to switch apps)
-			this.refreshFocusState();
-		}));
-		this._register(addDisposableListener(this._domNode, 'blur', () => {
-			_logService.trace('NativeEditContext.blur');
-			if (this._isPaused) {
-				return;
-			}
-			this._handleFocusedChanged(false);
-		}));
+		this._register(
+			addDisposableListener(this._domNode, 'focus', () => {
+				_logService.trace('NativeEditContext.focus');
+				if (this._isPaused) {
+					return;
+				}
+				// Here we don't trust the browser and instead we check
+				// that the active element is the one we are tracking
+				// (this happens when cmd+tab is used to switch apps)
+				this.refreshFocusState();
+			})
+		);
+		this._register(
+			addDisposableListener(this._domNode, 'blur', () => {
+				_logService.trace('NativeEditContext.blur');
+				if (this._isPaused) {
+					return;
+				}
+				this._handleFocusedChanged(false);
+			})
+		);
 	}
 
 	public pause(): void {
@@ -77,12 +81,17 @@ export class FocusTracker extends Disposable {
 	}
 }
 
-export function editContextAddDisposableListener<K extends keyof EditContextEventHandlersEventMap>(target: EventTarget, type: K, listener: (this: GlobalEventHandlers, ev: EditContextEventHandlersEventMap[K]) => void, options?: boolean | AddEventListenerOptions): IDisposable {
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+export function editContextAddDisposableListener<K extends keyof EditContextEventHandlersEventMap>(
+	target: EventTarget,
+	type: K,
+	listener: (this: GlobalEventHandlers, ev: EditContextEventHandlersEventMap[K]) => void,
+	options?: boolean | AddEventListenerOptions
+): IDisposable {
+	// eslint-disable-next-line local/code-no-any-casts
 	target.addEventListener(type, listener as any, options);
 	return {
 		dispose() {
-			// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+			// eslint-disable-next-line local/code-no-any-casts
 			target.removeEventListener(type, listener as any);
 		}
 	};

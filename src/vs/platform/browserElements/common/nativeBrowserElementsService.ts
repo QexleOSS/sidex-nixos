@@ -9,7 +9,6 @@ import { INativeBrowserElementsService } from './browserElements.js';
 
 // @ts-ignore: interface is implemented via proxy
 export class NativeBrowserElementsService implements INativeBrowserElementsService {
-
 	declare readonly _serviceBrand: undefined;
 
 	constructor(
@@ -27,4 +26,3 @@ export class NativeBrowserElementsService implements INativeBrowserElementsServi
 		});
 	}
 }
-

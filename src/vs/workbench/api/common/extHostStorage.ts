@@ -17,7 +17,6 @@ export interface IStorageChangeEvent {
 }
 
 export class ExtHostStorage implements ExtHostStorageShape {
-
 	readonly _serviceBrand: undefined;
 
 	private _proxy: MainThreadStorageShape;
@@ -64,12 +63,14 @@ export class ExtHostStorage implements ExtHostStorageShape {
 		} catch (error) {
 			// Do not fail this call but log it for diagnostics
 			// https://github.com/microsoft/vscode/issues/132777
-			this._logService.error(`[extHostStorage] unexpected error parsing storage contents (extensionId: ${key}, global: ${shared}): ${error}`);
+			this._logService.error(
+				`[extHostStorage] unexpected error parsing storage contents (extensionId: ${key}, global: ${shared}): ${error}`
+			);
 		}
 
 		return undefined;
 	}
 }
 
-export interface IExtHostStorage extends ExtHostStorage { }
+export interface IExtHostStorage extends ExtHostStorage {}
 export const IExtHostStorage = createDecorator<IExtHostStorage>('IExtHostStorage');

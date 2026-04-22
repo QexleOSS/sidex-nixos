@@ -49,8 +49,11 @@ export function registerConfiguredLanguageAssociation(association: ILanguageAsso
 	_registerLanguageAssociation(association, true, false);
 }
 
-function _registerLanguageAssociation(association: ILanguageAssociation, userConfigured: boolean, warnOnOverwrite: boolean): void {
-
+function _registerLanguageAssociation(
+	association: ILanguageAssociation,
+	userConfigured: boolean,
+	warnOnOverwrite: boolean
+): void {
 	// Register
 	const associationItem = toLanguageAssociationItem(association, userConfigured);
 	registeredAssociations.push(associationItem);
@@ -68,25 +71,36 @@ function _registerLanguageAssociation(association: ILanguageAssociation, userCon
 			}
 
 			if (associationItem.extension && a.extension === associationItem.extension) {
-				console.warn(`Overwriting extension <<${associationItem.extension}>> to now point to mime <<${associationItem.mime}>>`);
+				console.warn(
+					`Overwriting extension <<${associationItem.extension}>> to now point to mime <<${associationItem.mime}>>`
+				);
 			}
 
 			if (associationItem.filename && a.filename === associationItem.filename) {
-				console.warn(`Overwriting filename <<${associationItem.filename}>> to now point to mime <<${associationItem.mime}>>`);
+				console.warn(
+					`Overwriting filename <<${associationItem.filename}>> to now point to mime <<${associationItem.mime}>>`
+				);
 			}
 
 			if (associationItem.filepattern && a.filepattern === associationItem.filepattern) {
-				console.warn(`Overwriting filepattern <<${associationItem.filepattern}>> to now point to mime <<${associationItem.mime}>>`);
+				console.warn(
+					`Overwriting filepattern <<${associationItem.filepattern}>> to now point to mime <<${associationItem.mime}>>`
+				);
 			}
 
 			if (associationItem.firstline && a.firstline === associationItem.firstline) {
-				console.warn(`Overwriting firstline <<${associationItem.firstline}>> to now point to mime <<${associationItem.mime}>>`);
+				console.warn(
+					`Overwriting firstline <<${associationItem.firstline}>> to now point to mime <<${associationItem.mime}>>`
+				);
 			}
 		});
 	}
 }
 
-function toLanguageAssociationItem(association: ILanguageAssociation, userConfigured: boolean): ILanguageAssociationItem {
+function toLanguageAssociationItem(
+	association: ILanguageAssociation,
+	userConfigured: boolean
+): ILanguageAssociationItem {
 	return {
 		id: association.id,
 		mime: association.mime,
@@ -188,7 +202,11 @@ function getAssociations(resource: URI | null, firstLine?: string): IdAndMime[] 
 	return [{ id: 'unknown', mime: Mimes.unknown }];
 }
 
-function getAssociationByPath(path: string, filename: string, associations: ILanguageAssociationItem[]): ILanguageAssociationItem | undefined {
+function getAssociationByPath(
+	path: string,
+	filename: string,
+	associations: ILanguageAssociationItem[]
+): ILanguageAssociationItem | undefined {
 	let filenameMatch: ILanguageAssociationItem | undefined = undefined;
 	let patternMatch: ILanguageAssociationItem | undefined = undefined;
 	let extensionMatch: ILanguageAssociationItem | undefined = undefined;
@@ -248,7 +266,6 @@ function getAssociationByFirstline(firstLine: string): ILanguageAssociationItem 
 	}
 
 	if (firstLine.length > 0) {
-
 		// We want to prioritize associations based on the order they are registered so that the last registered
 		// association wins over all other. This is for https://github.com/microsoft/vscode/issues/20074
 		for (let i = registeredAssociations.length - 1; i >= 0; i--) {

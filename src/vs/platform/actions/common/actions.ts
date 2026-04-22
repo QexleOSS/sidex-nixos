@@ -5,7 +5,13 @@
 
 import { IAction, SubmenuAction } from '../../../base/common/actions.js';
 import { Event, MicrotaskEmitter } from '../../../base/common/event.js';
-import { DisposableStore, dispose, IDisposable, markAsSingleton, toDisposable } from '../../../base/common/lifecycle.js';
+import {
+	DisposableStore,
+	dispose,
+	IDisposable,
+	markAsSingleton,
+	toDisposable
+} from '../../../base/common/lifecycle.js';
 import { LinkedList } from '../../../base/common/linkedList.js';
 import { ThemeIcon } from '../../../base/common/themables.js';
 import { ICommandAction, ICommandActionTitle, Icon, ILocalizedString } from '../../action/common/action.js';
@@ -45,13 +51,15 @@ export interface ISubmenuItem {
 	 * the primary action and remember that
 	 * choice.
 	 */
-	isSplitButton?: boolean | {
-		/**
-		 * Will update the primary action based
-		 * on the action that was last run.
-		 */
-		togglePrimaryAction: true;
-	};
+	isSplitButton?:
+		| boolean
+		| {
+				/**
+				 * Will update the primary action based
+				 * on the action that was last run.
+				 */
+				togglePrimaryAction: true;
+		  };
 }
 
 export function isIMenuItem(item: unknown): item is IMenuItem {
@@ -63,7 +71,6 @@ export function isISubmenuItem(item: unknown): item is ISubmenuItem {
 }
 
 export class MenuId {
-
 	private static readonly _instances = new Map<string, MenuId>();
 
 	static readonly CommandPalette = new MenuId('CommandPalette');
@@ -274,7 +281,9 @@ export class MenuId {
 	 */
 	constructor(identifier: string) {
 		if (MenuId._instances.has(identifier)) {
-			throw new TypeError(`MenuId with identifier '${identifier}' already exists. Use MenuId.for(ident) or a unique identifier`);
+			throw new TypeError(
+				`MenuId with identifier '${identifier}' already exists. Use MenuId.for(ident) or a unique identifier`
+			);
 		}
 		MenuId._instances.set(identifier, this);
 		this.id = identifier;
@@ -313,7 +322,6 @@ export interface IMenuCreateOptions {
 }
 
 export interface IMenuService {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -329,7 +337,11 @@ export interface IMenuService {
 	/**
 	 * Creates a new menu, gets the actions, and then disposes of the menu.
 	 */
-	getMenuActions(id: MenuId, contextKeyService: IContextKeyService, options?: IMenuActionOptions): [string, Array<MenuItemAction | SubmenuItemAction>][];
+	getMenuActions(
+		id: MenuId,
+		contextKeyService: IContextKeyService,
+		options?: IMenuActionOptions
+	): [string, Array<MenuItemAction | SubmenuItemAction>][];
 
 	/**
 	 * Gets the names of the contexts that this menu listens on.
@@ -354,7 +366,6 @@ export interface IMenuRegistryChangeEvent {
 }
 
 class MenuRegistryChangeEvent {
-
 	private static _all = new Map<MenuId, MenuRegistryChangeEvent>();
 
 	static for(id: MenuId): MenuRegistryChangeEvent {
@@ -398,8 +409,7 @@ export interface IMenuRegistry {
 	getMenuItems(loc: MenuId): Array<IMenuItem | ISubmenuItem>;
 }
 
-export const MenuRegistry: IMenuRegistry = new class implements IMenuRegistry {
-
+export const MenuRegistry: IMenuRegistry = new (class implements IMenuRegistry {
 	private readonly _commands = new Map<string, ICommandAction>();
 	private readonly _menuItems = new Map<MenuId, LinkedList<IMenuItem | ISubmenuItem>>();
 	private readonly _onDidChangeMenu = new MicrotaskEmitter<IMenuRegistryChangeEvent>({
@@ -412,11 +422,13 @@ export const MenuRegistry: IMenuRegistry = new class implements IMenuRegistry {
 		this._commands.set(command.id, command);
 		this._onDidChangeMenu.fire(MenuRegistryChangeEvent.for(MenuId.CommandPalette));
 
-		return markAsSingleton(toDisposable(() => {
-			if (this._commands.delete(command.id)) {
-				this._onDidChangeMenu.fire(MenuRegistryChangeEvent.for(MenuId.CommandPalette));
-			}
-		}));
+		return markAsSingleton(
+			toDisposable(() => {
+				if (this._commands.delete(command.id)) {
+					this._onDidChangeMenu.fire(MenuRegistryChangeEvent.for(MenuId.CommandPalette));
+				}
+			})
+		);
 	}
 
 	getCommand(id: string): ICommandAction | undefined {
@@ -437,10 +449,12 @@ export const MenuRegistry: IMenuRegistry = new class implements IMenuRegistry {
 		}
 		const rm = list.push(item);
 		this._onDidChangeMenu.fire(MenuRegistryChangeEvent.for(id));
-		return markAsSingleton(toDisposable(() => {
-			rm();
-			this._onDidChangeMenu.fire(MenuRegistryChangeEvent.for(id));
-		}));
+		return markAsSingleton(
+			toDisposable(() => {
+				rm();
+				this._onDidChangeMenu.fire(MenuRegistryChangeEvent.for(id));
+			})
+		);
 	}
 
 	appendMenuItems(items: Iterable<{ id: MenuId; item: IMenuItem | ISubmenuItem }>): IDisposable {
@@ -483,16 +497,20 @@ export const MenuRegistry: IMenuRegistry = new class implements IMenuRegistry {
 			}
 		});
 	}
-};
+})();
 
 export class SubmenuItemAction extends SubmenuAction {
-
 	constructor(
 		readonly item: ISubmenuItem,
 		readonly hideActions: IMenuItemHide | undefined,
-		actions: readonly IAction[],
+		actions: readonly IAction[]
 	) {
-		super(`submenuitem.${item.submenu.id}`, typeof item.title === 'string' ? item.title : item.title.value, actions, 'submenu');
+		super(
+			`submenuitem.${item.submenu.id}`,
+			typeof item.title === 'string' ? item.title : item.title.value,
+			actions,
+			'submenu'
+		);
 	}
 }
 
@@ -505,11 +523,14 @@ export interface IMenuItemHide {
 // implements IAction, does NOT extend Action, so that no one
 // subscribes to events of Action or modified properties
 export class MenuItemAction implements IAction {
-
 	static label(action: ICommandAction, options?: IMenuActionOptions): string {
 		return options?.renderShortTitle && action.shortTitle
-			? (typeof action.shortTitle === 'string' ? action.shortTitle : action.shortTitle.value)
-			: (typeof action.title === 'string' ? action.title : action.title.value);
+			? typeof action.shortTitle === 'string'
+				? action.shortTitle
+				: action.shortTitle.value
+			: typeof action.title === 'string'
+				? action.title
+				: action.title.value;
 	}
 
 	readonly item: ICommandAction;
@@ -542,8 +563,13 @@ export class MenuItemAction implements IAction {
 		let icon: ThemeIcon | undefined;
 
 		if (item.toggled) {
-			const toggled = ((item.toggled as { condition: ContextKeyExpression }).condition ? item.toggled : { condition: item.toggled }) as {
-				condition: ContextKeyExpression; icon?: Icon; tooltip?: string | ILocalizedString; title?: string | ILocalizedString;
+			const toggled = (
+				(item.toggled as { condition: ContextKeyExpression }).condition ? item.toggled : { condition: item.toggled }
+			) as {
+				condition: ContextKeyExpression;
+				icon?: Icon;
+				tooltip?: string | ILocalizedString;
+				title?: string | ILocalizedString;
 			};
 			this.checked = contextKeyService.contextMatchesRules(toggled.condition);
 			if (this.checked && toggled.tooltip) {
@@ -564,10 +590,11 @@ export class MenuItemAction implements IAction {
 		}
 
 		this.item = item;
-		this.alt = alt ? new MenuItemAction(alt, undefined, options, hideActions, undefined, contextKeyService, _commandService) : undefined;
+		this.alt = alt
+			? new MenuItemAction(alt, undefined, options, hideActions, undefined, contextKeyService, _commandService)
+			: undefined;
 		this._options = options;
 		this.class = icon && ThemeIcon.asClassName(icon);
-
 	}
 
 	run(...args: unknown[]): Promise<void> {
@@ -604,7 +631,6 @@ interface IAction2CommonOptions extends ICommandAction {
 }
 
 interface IBaseAction2Options extends IAction2CommonOptions {
-
 	/**
 	 * This type is used when an action is not going to show up in the command palette.
 	 * In that case, it's able to use a string for the `title` and `category` properties.
@@ -613,7 +639,6 @@ interface IBaseAction2Options extends IAction2CommonOptions {
 }
 
 export interface ICommandPaletteOptions extends IAction2CommonOptions {
-
 	/**
 	 * The title of the command that will be displayed in the command palette after the category.
 	 *  This overrides {@link ICommandAction.title} to ensure a string isn't used so that the title
@@ -644,11 +669,11 @@ export interface IAction2F1RequiredOptions {
 }
 
 export abstract class Action2 {
-	constructor(readonly desc: Readonly<IAction2Options>) { }
+	constructor(readonly desc: Readonly<IAction2Options>) {}
 	abstract run(accessor: ServicesAccessor, ...args: unknown[]): void;
 }
 
-export function registerAction2(ctor: { new(): Action2 }): IDisposable {
+export function registerAction2(ctor: { new (): Action2 }): IDisposable {
 	const disposables: IDisposable[] = []; // not using `DisposableStore` to reduce startup perf cost
 	const action = new ctor();
 
@@ -659,20 +684,31 @@ export function registerAction2(ctor: { new(): Action2 }): IDisposable {
 	}
 
 	// command
-	disposables.push(CommandsRegistry.registerCommand({
-		id: command.id,
-		handler: (accessor, ...args) => action.run(accessor, ...args),
-		metadata: command.metadata ?? { description: action.desc.title }
-	}));
+	disposables.push(
+		CommandsRegistry.registerCommand({
+			id: command.id,
+			handler: (accessor, ...args) => action.run(accessor, ...args),
+			metadata: command.metadata ?? { description: action.desc.title }
+		})
+	);
 
 	// menu
 	if (Array.isArray(menu)) {
 		for (const item of menu) {
-			disposables.push(MenuRegistry.appendMenuItem(item.id, { command: { ...command, precondition: item.precondition === null ? undefined : command.precondition }, ...item }));
+			disposables.push(
+				MenuRegistry.appendMenuItem(item.id, {
+					command: { ...command, precondition: item.precondition === null ? undefined : command.precondition },
+					...item
+				})
+			);
 		}
-
 	} else if (menu) {
-		disposables.push(MenuRegistry.appendMenuItem(menu.id, { command: { ...command, precondition: menu.precondition === null ? undefined : command.precondition }, ...menu }));
+		disposables.push(
+			MenuRegistry.appendMenuItem(menu.id, {
+				command: { ...command, precondition: menu.precondition === null ? undefined : command.precondition },
+				...menu
+			})
+		);
 	}
 	if (f1) {
 		disposables.push(MenuRegistry.appendMenuItem(MenuId.CommandPalette, { command, when: command.precondition }));
@@ -682,18 +718,22 @@ export function registerAction2(ctor: { new(): Action2 }): IDisposable {
 	// keybinding
 	if (Array.isArray(keybinding)) {
 		for (const item of keybinding) {
-			disposables.push(KeybindingsRegistry.registerKeybindingRule({
-				...item,
-				id: command.id,
-				when: command.precondition ? ContextKeyExpr.and(command.precondition, item.when) : item.when
-			}));
+			disposables.push(
+				KeybindingsRegistry.registerKeybindingRule({
+					...item,
+					id: command.id,
+					when: command.precondition ? ContextKeyExpr.and(command.precondition, item.when) : item.when
+				})
+			);
 		}
 	} else if (keybinding) {
-		disposables.push(KeybindingsRegistry.registerKeybindingRule({
-			...keybinding,
-			id: command.id,
-			when: command.precondition ? ContextKeyExpr.and(command.precondition, keybinding.when) : keybinding.when
-		}));
+		disposables.push(
+			KeybindingsRegistry.registerKeybindingRule({
+				...keybinding,
+				id: command.id,
+				when: command.precondition ? ContextKeyExpr.and(command.precondition, keybinding.when) : keybinding.when
+			})
+		);
 	}
 
 	return {

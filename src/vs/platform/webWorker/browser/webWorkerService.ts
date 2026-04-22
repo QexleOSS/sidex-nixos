@@ -12,7 +12,9 @@ export const IWebWorkerService = createDecorator<IWebWorkerService>('IWebWorkerS
 export interface IWebWorkerService {
 	readonly _serviceBrand: undefined;
 
-	createWorkerClient<T extends object>(workerDescriptor: WebWorkerDescriptor | Worker | Promise<Worker>): IWebWorkerClient<T>;
+	createWorkerClient<T extends object>(
+		workerDescriptor: WebWorkerDescriptor | Worker | Promise<Worker>
+	): IWebWorkerClient<T>;
 
 	getWorkerUrl(descriptor: WebWorkerDescriptor): string;
 }

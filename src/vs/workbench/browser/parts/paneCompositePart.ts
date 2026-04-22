@@ -15,7 +15,16 @@ import { IView } from '../../../base/browser/ui/grid/grid.js';
 import { IWorkbenchLayoutService, Parts, SINGLE_WINDOW_PARTS } from '../../services/layout/browser/layoutService.js';
 import { CompositePart, ICompositePartOptions, ICompositeTitleLabel } from './compositePart.js';
 import { IPaneCompositeBarOptions, PaneCompositeBar } from './paneCompositeBar.js';
-import { Dimension, EventHelper, trackFocus, $, addDisposableListener, EventType, prepend, getWindow } from '../../../base/browser/dom.js';
+import {
+	Dimension,
+	EventHelper,
+	trackFocus,
+	$,
+	addDisposableListener,
+	EventType,
+	prepend,
+	getWindow
+} from '../../../base/browser/dom.js';
 import { Registry } from '../../../platform/registry/common/platform.js';
 import { INotificationService } from '../../../platform/notification/common/notification.js';
 import { IStorageService } from '../../../platform/storage/common/storage.js';
@@ -47,7 +56,6 @@ export enum CompositeBarPosition {
 }
 
 export interface IPaneCompositePart extends IView {
-
 	readonly partId: SINGLE_WINDOW_PARTS;
 	readonly registryId: string;
 
@@ -106,16 +114,19 @@ export interface IPaneCompositePart extends IView {
 }
 
 export abstract class AbstractPaneCompositePart extends CompositePart<PaneComposite> implements IPaneCompositePart {
-
 	private static readonly MIN_COMPOSITE_BAR_WIDTH = 50;
 
 	get snap(): boolean {
 		// Always allow snapping closed
 		// Only allow dragging open if the panel contains view containers
-		return this.layoutService.isVisible(this.partId) || !!this.paneCompositeBar.value?.getVisiblePaneCompositeIds().length;
+		return (
+			this.layoutService.isVisible(this.partId) || !!this.paneCompositeBar.value?.getVisiblePaneCompositeIds().length
+		);
 	}
 
-	get onDidPaneCompositeOpen(): Event<IPaneComposite> { return Event.map(this.onDidCompositeOpen.event, compositeEvent => <IPaneComposite>compositeEvent.composite); }
+	get onDidPaneCompositeOpen(): Event<IPaneComposite> {
+		return Event.map(this.onDidCompositeOpen.event, compositeEvent => <IPaneComposite>compositeEvent.composite);
+	}
 	readonly onDidPaneCompositeClose = this.onDidCompositeClose.event as Event<IPaneComposite>;
 
 	private titleContainer: HTMLElement | undefined;
@@ -157,7 +168,7 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 		@IViewDescriptorService private readonly viewDescriptorService: IViewDescriptorService,
 		@IContextKeyService protected readonly contextKeyService: IContextKeyService,
 		@IExtensionService private readonly extensionService: IExtensionService,
-		@IMenuService protected readonly menuService: IMenuService,
+		@IMenuService protected readonly menuService: IMenuService
 	) {
 		super(
 			notificationService,
@@ -185,27 +196,33 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 		this._register(this.onDidPaneCompositeOpen(composite => this.onDidOpen(composite)));
 		this._register(this.onDidPaneCompositeClose(this.onDidClose, this));
 
-		this._register(this.registry.onDidDeregister((viewletDescriptor: PaneCompositeDescriptor) => {
+		this._register(
+			this.registry.onDidDeregister((viewletDescriptor: PaneCompositeDescriptor) => {
+				const activeContainers = this.viewDescriptorService
+					.getViewContainersByLocation(this.location)
+					.filter(
+						container => this.viewDescriptorService.getViewContainerModel(container).activeViewDescriptors.length > 0
+					);
 
-			const activeContainers = this.viewDescriptorService.getViewContainersByLocation(this.location)
-				.filter(container => this.viewDescriptorService.getViewContainerModel(container).activeViewDescriptors.length > 0);
-
-			if (activeContainers.length) {
-				if (this.getActiveComposite()?.getId() === viewletDescriptor.id) {
-					const defaultViewletId = this.viewDescriptorService.getDefaultViewContainer(this.location)?.id;
-					const containerToOpen = activeContainers.filter(c => c.id === defaultViewletId)[0] || activeContainers[0];
-					this.doOpenPaneComposite(containerToOpen.id);
+				if (activeContainers.length) {
+					if (this.getActiveComposite()?.getId() === viewletDescriptor.id) {
+						const defaultViewletId = this.viewDescriptorService.getDefaultViewContainer(this.location)?.id;
+						const containerToOpen = activeContainers.filter(c => c.id === defaultViewletId)[0] || activeContainers[0];
+						this.doOpenPaneComposite(containerToOpen.id);
+					}
+				} else {
+					this.layoutService.setPartHidden(true, this.partId);
 				}
-			} else {
-				this.layoutService.setPartHidden(true, this.partId);
-			}
 
-			this.removeComposite(viewletDescriptor.id);
-		}));
+				this.removeComposite(viewletDescriptor.id);
+			})
+		);
 
-		this._register(this.extensionService.onDidRegisterExtensions(() => {
-			this.layoutCompositeBar();
-		}));
+		this._register(
+			this.extensionService.onDidRegisterExtensions(() => {
+				this.layoutCompositeBar();
+			})
+		);
 	}
 
 	private onDidOpen(composite: IComposite): void {
@@ -253,7 +270,7 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 		this.emptyPaneMessageElement = $('.empty-pane-message-area');
 
 		const messageElement = $('.empty-pane-message');
-		messageElement.textContent = localize('pane.emptyMessage', "Drag a view here to display.");
+		messageElement.textContent = localize('pane.emptyMessage', 'Drag a view here to display.');
 
 		this.emptyPaneMessageElement.appendChild(messageElement);
 		parent.appendChild(this.emptyPaneMessageElement);
@@ -273,59 +290,72 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 		};
 
 		if (this.viewDescriptorService.canMoveViews()) {
-			this._register(CompositeDragAndDropObserver.INSTANCE.registerTarget(this.element, {
-				onDragOver: (e) => {
-					EventHelper.stop(e.eventData, true);
-					if (this.paneCompositeBar.value) {
-						const validDropTarget = this.paneCompositeBar.value.dndHandler.onDragEnter(e.dragAndDropData, undefined, e.eventData);
-						toggleDropEffect(e.eventData.dataTransfer, 'move', validDropTarget);
-					}
-				},
-				onDragEnter: (e) => {
-					EventHelper.stop(e.eventData, true);
-					if (this.paneCompositeBar.value) {
-						const validDropTarget = this.paneCompositeBar.value.dndHandler.onDragEnter(e.dragAndDropData, undefined, e.eventData);
-						setDropBackgroundFeedback(validDropTarget);
-					}
-				},
-				onDragLeave: (e) => {
-					EventHelper.stop(e.eventData, true);
-					setDropBackgroundFeedback(false);
-				},
-				onDragEnd: (e) => {
-					EventHelper.stop(e.eventData, true);
-					setDropBackgroundFeedback(false);
-				},
-				onDrop: (e) => {
-					EventHelper.stop(e.eventData, true);
-					setDropBackgroundFeedback(false);
-					if (this.paneCompositeBar.value) {
-						this.paneCompositeBar.value.dndHandler.drop(e.dragAndDropData, undefined, e.eventData);
-					} else {
-						// Allow opening views/composites if the composite bar is hidden
-						const dragData = e.dragAndDropData.getData();
-
-						if (dragData.type === 'composite') {
-							const currentContainer = this.viewDescriptorService.getViewContainerById(dragData.id)!;
-							this.viewDescriptorService.moveViewContainerToLocation(currentContainer, this.location, undefined, 'dnd');
-							this.openPaneComposite(currentContainer.id, true);
+			this._register(
+				CompositeDragAndDropObserver.INSTANCE.registerTarget(this.element, {
+					onDragOver: e => {
+						EventHelper.stop(e.eventData, true);
+						if (this.paneCompositeBar.value) {
+							const validDropTarget = this.paneCompositeBar.value.dndHandler.onDragEnter(
+								e.dragAndDropData,
+								undefined,
+								e.eventData
+							);
+							toggleDropEffect(e.eventData.dataTransfer, 'move', validDropTarget);
 						}
+					},
+					onDragEnter: e => {
+						EventHelper.stop(e.eventData, true);
+						if (this.paneCompositeBar.value) {
+							const validDropTarget = this.paneCompositeBar.value.dndHandler.onDragEnter(
+								e.dragAndDropData,
+								undefined,
+								e.eventData
+							);
+							setDropBackgroundFeedback(validDropTarget);
+						}
+					},
+					onDragLeave: e => {
+						EventHelper.stop(e.eventData, true);
+						setDropBackgroundFeedback(false);
+					},
+					onDragEnd: e => {
+						EventHelper.stop(e.eventData, true);
+						setDropBackgroundFeedback(false);
+					},
+					onDrop: e => {
+						EventHelper.stop(e.eventData, true);
+						setDropBackgroundFeedback(false);
+						if (this.paneCompositeBar.value) {
+							this.paneCompositeBar.value.dndHandler.drop(e.dragAndDropData, undefined, e.eventData);
+						} else {
+							// Allow opening views/composites if the composite bar is hidden
+							const dragData = e.dragAndDropData.getData();
 
-						else if (dragData.type === 'view') {
-							const viewToMove = this.viewDescriptorService.getViewDescriptorById(dragData.id)!;
-							if (viewToMove.canMoveView) {
-								this.viewDescriptorService.moveViewToLocation(viewToMove, this.location, 'dnd');
+							if (dragData.type === 'composite') {
+								const currentContainer = this.viewDescriptorService.getViewContainerById(dragData.id)!;
+								this.viewDescriptorService.moveViewContainerToLocation(
+									currentContainer,
+									this.location,
+									undefined,
+									'dnd'
+								);
+								this.openPaneComposite(currentContainer.id, true);
+							} else if (dragData.type === 'view') {
+								const viewToMove = this.viewDescriptorService.getViewDescriptorById(dragData.id)!;
+								if (viewToMove.canMoveView) {
+									this.viewDescriptorService.moveViewToLocation(viewToMove, this.location, 'dnd');
 
-								const newContainer = this.viewDescriptorService.getViewContainerByViewId(viewToMove.id)!;
+									const newContainer = this.viewDescriptorService.getViewContainerByViewId(viewToMove.id)!;
 
-								this.openPaneComposite(newContainer.id, true).then(composite => {
-									composite?.openView(viewToMove.id, true);
-								});
+									this.openPaneComposite(newContainer.id, true).then(composite => {
+										composite?.openView(viewToMove.id, true);
+									});
+								}
 							}
 						}
 					}
-				},
-			}));
+				})
+			);
 		}
 	}
 
@@ -335,50 +365,60 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 			return undefined;
 		}
 
-		this._register(addDisposableListener(titleArea, EventType.CONTEXT_MENU, e => {
-			this.onTitleAreaContextMenu(new StandardMouseEvent(getWindow(titleArea), e));
-		}));
+		this._register(
+			addDisposableListener(titleArea, EventType.CONTEXT_MENU, e => {
+				this.onTitleAreaContextMenu(new StandardMouseEvent(getWindow(titleArea), e));
+			})
+		);
 		this._register(Gesture.addTarget(titleArea));
-		this._register(addDisposableListener(titleArea, GestureEventType.Contextmenu, e => {
-			this.onTitleAreaContextMenu(new StandardMouseEvent(getWindow(titleArea), e));
-		}));
+		this._register(
+			addDisposableListener(titleArea, GestureEventType.Contextmenu, e => {
+				this.onTitleAreaContextMenu(new StandardMouseEvent(getWindow(titleArea), e));
+			})
+		);
 
 		if (this.globalLeftActionsMenuId) {
 			const globalLeftTitleActionsContainer = titleArea.appendChild($('.global-actions-left'));
-			this.globalLeftToolBar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar,
-				globalLeftTitleActionsContainer,
-				this.globalLeftActionsMenuId,
-				{
-					actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
-					orientation: ActionsOrientation.HORIZONTAL,
-					getKeyBinding: action => this.keybindingService.lookupKeybinding(action.id),
-					anchorAlignmentProvider: () => this.getTitleAreaDropDownAnchorAlignment(),
-					hoverDelegate: this.toolbarHoverDelegate,
-					hiddenItemStrategy: HiddenItemStrategy.NoHide,
-					highlightToggledItems: false,
-					telemetrySource: this.nameForTelemetry
-				}
-			));
+			this.globalLeftToolBar = this._register(
+				this.instantiationService.createInstance(
+					MenuWorkbenchToolBar,
+					globalLeftTitleActionsContainer,
+					this.globalLeftActionsMenuId,
+					{
+						actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
+						orientation: ActionsOrientation.HORIZONTAL,
+						getKeyBinding: action => this.keybindingService.lookupKeybinding(action.id),
+						anchorAlignmentProvider: () => this.getTitleAreaDropDownAnchorAlignment(),
+						hoverDelegate: this.toolbarHoverDelegate,
+						hiddenItemStrategy: HiddenItemStrategy.NoHide,
+						highlightToggledItems: false,
+						telemetrySource: this.nameForTelemetry
+					}
+				)
+			);
 		}
 
 		const globalTitleActionsContainer = titleArea.appendChild($('.global-actions'));
 
 		// Global Actions Toolbar
-		this.globalToolBar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar,
-			globalTitleActionsContainer,
-			this.globalActionsMenuId,
-			{
-				actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
-				orientation: ActionsOrientation.HORIZONTAL,
-				getKeyBinding: action => this.keybindingService.lookupKeybinding(action.id),
-				anchorAlignmentProvider: () => this.getTitleAreaDropDownAnchorAlignment(),
-				toggleMenuTitle: localize('moreActions', "More Actions..."),
-				hoverDelegate: this.toolbarHoverDelegate,
-				hiddenItemStrategy: HiddenItemStrategy.NoHide,
-				highlightToggledItems: true,
-				telemetrySource: this.nameForTelemetry
-			}
-		));
+		this.globalToolBar = this._register(
+			this.instantiationService.createInstance(
+				MenuWorkbenchToolBar,
+				globalTitleActionsContainer,
+				this.globalActionsMenuId,
+				{
+					actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
+					orientation: ActionsOrientation.HORIZONTAL,
+					getKeyBinding: action => this.keybindingService.lookupKeybinding(action.id),
+					anchorAlignmentProvider: () => this.getTitleAreaDropDownAnchorAlignment(),
+					toggleMenuTitle: localize('moreActions', 'More Actions...'),
+					hoverDelegate: this.toolbarHoverDelegate,
+					hiddenItemStrategy: HiddenItemStrategy.NoHide,
+					highlightToggledItems: true,
+					telemetrySource: this.nameForTelemetry
+				}
+			)
+		);
 
 		return titleArea;
 	}
@@ -392,7 +432,9 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 			const activeViewlet = this.getActivePaneComposite()!;
 			return { type: 'composite', id: activeViewlet.getId() };
 		};
-		this._register(CompositeDragAndDropObserver.INSTANCE.registerDraggable(this.titleLabelElement!, draggedItemProvider, {}));
+		this._register(
+			CompositeDragAndDropObserver.INSTANCE.registerDraggable(this.titleLabelElement!, draggedItemProvider, {})
+		);
 
 		return titleLabel;
 	}
@@ -410,7 +452,8 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 
 		// Remove old composite bar
 		if (wasCompositeBarVisible) {
-			const previousCompositeBarContainer = previousPosition === CompositeBarPosition.TITLE ? this.titleContainer : this.headerFooterCompositeBarContainer;
+			const previousCompositeBarContainer =
+				previousPosition === CompositeBarPosition.TITLE ? this.titleContainer : this.headerFooterCompositeBarContainer;
 			if (!this.paneCompositeBarContainer || !this.paneCompositeBar.value || !previousCompositeBarContainer) {
 				throw new Error('Composite bar containers should exist when removing the previous composite bar');
 			}
@@ -431,12 +474,17 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 		// Create new composite bar
 		let newCompositeBarContainer;
 		switch (newPosition) {
-			case CompositeBarPosition.TOP: newCompositeBarContainer = this.createHeaderArea(); break;
-			case CompositeBarPosition.TITLE: newCompositeBarContainer = this.titleContainer; break;
-			case CompositeBarPosition.BOTTOM: newCompositeBarContainer = this.createFooterArea(); break;
+			case CompositeBarPosition.TOP:
+				newCompositeBarContainer = this.createHeaderArea();
+				break;
+			case CompositeBarPosition.TITLE:
+				newCompositeBarContainer = this.titleContainer;
+				break;
+			case CompositeBarPosition.BOTTOM:
+				newCompositeBarContainer = this.createFooterArea();
+				break;
 		}
 		if (isCompositeBarVisible) {
-
 			if (this.paneCompositeBarContainer || this.paneCompositeBar.value || !newCompositeBarContainer) {
 				throw new Error('Invalid composite bar state when creating the new composite bar');
 			}
@@ -479,13 +527,17 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 		}
 		this.headerFooterCompositeBarContainer = area;
 
-		this.headerFooterCompositeBarDispoables.add(addDisposableListener(area, EventType.CONTEXT_MENU, e => {
-			this.onCompositeBarAreaContextMenu(new StandardMouseEvent(getWindow(area), e));
-		}));
+		this.headerFooterCompositeBarDispoables.add(
+			addDisposableListener(area, EventType.CONTEXT_MENU, e => {
+				this.onCompositeBarAreaContextMenu(new StandardMouseEvent(getWindow(area), e));
+			})
+		);
 		this.headerFooterCompositeBarDispoables.add(Gesture.addTarget(area));
-		this.headerFooterCompositeBarDispoables.add(addDisposableListener(area, GestureEventType.Contextmenu, e => {
-			this.onCompositeBarAreaContextMenu(new StandardMouseEvent(getWindow(area), e));
-		}));
+		this.headerFooterCompositeBarDispoables.add(
+			addDisposableListener(area, GestureEventType.Contextmenu, e => {
+				this.onCompositeBarAreaContextMenu(new StandardMouseEvent(getWindow(area), e));
+			})
+		);
 
 		return area;
 	}
@@ -501,7 +553,13 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 	}
 
 	protected createCompositeBar(): PaneCompositeBar {
-		return this.instantiationService.createInstance(PaneCompositeBar, this.location, this.getCompositeBarOptions(), this.partId, this);
+		return this.instantiationService.createInstance(
+			PaneCompositeBar,
+			this.location,
+			this.getCompositeBarOptions(),
+			this.partId,
+			this
+		);
 	}
 
 	protected override onTitleAreaUpdate(compositeId: string): void {
@@ -560,18 +618,17 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 	}
 
 	getPaneComposites(): PaneCompositeDescriptor[] {
-		return (this.registry as PaneCompositeRegistry).getPaneComposites()
-			.sort((v1, v2) => {
-				if (typeof v1.order !== 'number') {
-					return 1;
-				}
+		return (this.registry as PaneCompositeRegistry).getPaneComposites().sort((v1, v2) => {
+			if (typeof v1.order !== 'number') {
+				return 1;
+			}
 
-				if (typeof v2.order !== 'number') {
-					return -1;
-				}
+			if (typeof v2.order !== 'number') {
+				return -1;
+			}
 
-				return v1.order - v2.order;
-			});
+			return v1.order - v2.order;
+		});
 	}
 
 	getPinnedPaneCompositeIds(): string[] {
@@ -628,7 +685,10 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 			const padding = this.compositeBarPosition === CompositeBarPosition.TITLE ? 16 : 8;
 			const borderWidth = this.partId === Parts.PANEL_PART ? 0 : 1;
 			let availableWidth = this.contentDimension.width - padding - borderWidth;
-			availableWidth = Math.max(AbstractPaneCompositePart.MIN_COMPOSITE_BAR_WIDTH, availableWidth - this.getToolbarWidth());
+			availableWidth = Math.max(
+				AbstractPaneCompositePart.MIN_COMPOSITE_BAR_WIDTH,
+				availableWidth - this.getToolbarWidth()
+			);
 			this.paneCompositeBar.value.layout(availableWidth, this.dimension.height);
 		}
 	}
@@ -653,8 +713,12 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 
 		// Each toolbar item has 4px margin
 		const toolBarWidth = this.toolBar.getItemsWidth() + this.toolBar.getItemsLength() * 4;
-		const globalToolBarWidth = this.globalToolBar ? this.globalToolBar.getItemsWidth() + this.globalToolBar.getItemsLength() * 4 : 0;
-		const globalLeftToolBarWidth = this.globalLeftToolBar ? this.globalLeftToolBar.getItemsWidth() + this.globalLeftToolBar.getItemsLength() * 4 : 0;
+		const globalToolBarWidth = this.globalToolBar
+			? this.globalToolBar.getItemsWidth() + this.globalToolBar.getItemsLength() * 4
+			: 0;
+		const globalLeftToolBarWidth = this.globalLeftToolBar
+			? this.globalLeftToolBar.getItemsWidth() + this.globalLeftToolBar.getItemsLength() * 4
+			: 0;
 		return toolBarWidth + globalToolBarWidth + globalLeftToolBarWidth + 8; // 8px padding left
 	}
 
@@ -699,10 +763,15 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 			const disposables = new DisposableStore();
 			const scopedContextKeyService = disposables.add(this.contextKeyService.createScoped(this.element));
 			scopedContextKeyService.createKey('viewContainer', viewPaneContainer.viewContainer.id);
-			const menu = this.menuService.getMenuActions(ViewsSubMenu, scopedContextKeyService, { shouldForwardArgs: true, renderShortTitle: true });
+			const menu = this.menuService.getMenuActions(ViewsSubMenu, scopedContextKeyService, {
+				shouldForwardArgs: true,
+				renderShortTitle: true
+			});
 			const viewsActions = getActionBarActions(menu, () => true).primary;
 			disposables.dispose();
-			return viewsActions.length > 1 && viewsActions.some(a => a.enabled) ? new SubmenuAction('views', localize('views', "Views"), viewsActions) : undefined;
+			return viewsActions.length > 1 && viewsActions.some(a => a.enabled)
+				? new SubmenuAction('views', localize('views', 'Views'), viewsActions)
+				: undefined;
 		}
 		return undefined;
 	}

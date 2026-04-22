@@ -27,13 +27,7 @@ export class ParsedTokenThemeRule {
 	readonly foreground: string | null;
 	readonly background: string | null;
 
-	constructor(
-		token: string,
-		index: number,
-		fontStyle: number,
-		foreground: string | null,
-		background: string | null,
-	) {
+	constructor(token: string, index: number, fontStyle: number, foreground: string | null, background: string | null) {
 		this.token = token;
 		this.index = index;
 		this.fontStyle = fontStyle;
@@ -88,13 +82,7 @@ export function parseTokenTheme(source: ITokenThemeRule[]): ParsedTokenThemeRule
 			background = entry.background;
 		}
 
-		result[resultLen++] = new ParsedTokenThemeRule(
-			entry.token || '',
-			i,
-			fontStyle,
-			foreground,
-			background
-		);
+		result[resultLen++] = new ParsedTokenThemeRule(entry.token || '', i, fontStyle, foreground, background);
 	}
 
 	return result;
@@ -103,8 +91,10 @@ export function parseTokenTheme(source: ITokenThemeRule[]): ParsedTokenThemeRule
 /**
  * Resolve rules (i.e. inheritance).
  */
-function resolveParsedTokenThemeRules(parsedThemeRules: ParsedTokenThemeRule[], customTokenColors: string[]): TokenTheme {
-
+function resolveParsedTokenThemeRules(
+	parsedThemeRules: ParsedTokenThemeRule[],
+	customTokenColors: string[]
+): TokenTheme {
 	// Sort rules lexicographically, and then by index if necessary
 	parsedThemeRules.sort((a, b) => {
 		const r = strcmp(a.token, b.token);
@@ -137,7 +127,6 @@ function resolveParsedTokenThemeRules(parsedThemeRules: ParsedTokenThemeRule[], 
 		colorMap.getId(color);
 	}
 
-
 	const foregroundColorId = colorMap.getId(defaultForeground);
 	const backgroundColorId = colorMap.getId(defaultBackground);
 
@@ -154,7 +143,6 @@ function resolveParsedTokenThemeRules(parsedThemeRules: ParsedTokenThemeRule[], 
 const colorRegExp = /^#?([0-9A-Fa-f]{6})([0-9A-Fa-f]{2})?$/;
 
 export class ColorMap {
-
 	private _lastColorId: number;
 	private readonly _id2color: Color[];
 	private readonly _color2id: Map<string, ColorId>;
@@ -187,11 +175,9 @@ export class ColorMap {
 	public getColorMap(): Color[] {
 		return this._id2color.slice(0);
 	}
-
 }
 
 export class TokenTheme {
-
 	public static createFromRawTokenTheme(source: ITokenThemeRule[], customTokenColors: string[]): TokenTheme {
 		return this.createFromParsedTokenTheme(parseTokenTheme(source), customTokenColors);
 	}
@@ -231,17 +217,11 @@ export class TokenTheme {
 		if (typeof result === 'undefined') {
 			const rule = this._match(token);
 			const standardToken = toStandardTokenType(token);
-			result = (
-				rule.metadata
-				| (standardToken << MetadataConsts.TOKEN_TYPE_OFFSET)
-			) >>> 0;
+			result = (rule.metadata | (standardToken << MetadataConsts.TOKEN_TYPE_OFFSET)) >>> 0;
 			this._cache.set(token, result);
 		}
 
-		return (
-			result
-			| (languageId << MetadataConsts.LANGUAGEID_OFFSET)
-		) >>> 0;
+		return (result | (languageId << MetadataConsts.LANGUAGEID_OFFSET)) >>> 0;
 	}
 }
 
@@ -286,11 +266,11 @@ export class ThemeTrieElementRule {
 		this._fontStyle = fontStyle;
 		this._foreground = foreground;
 		this._background = background;
-		this.metadata = (
-			(this._fontStyle << MetadataConsts.FONT_STYLE_OFFSET)
-			| (this._foreground << MetadataConsts.FOREGROUND_OFFSET)
-			| (this._background << MetadataConsts.BACKGROUND_OFFSET)
-		) >>> 0;
+		this.metadata =
+			((this._fontStyle << MetadataConsts.FONT_STYLE_OFFSET) |
+				(this._foreground << MetadataConsts.FOREGROUND_OFFSET) |
+				(this._background << MetadataConsts.BACKGROUND_OFFSET)) >>>
+			0;
 	}
 
 	public clone(): ThemeTrieElementRule {
@@ -307,22 +287,24 @@ export class ThemeTrieElementRule {
 		if (background !== ColorId.None) {
 			this._background = background;
 		}
-		this.metadata = (
-			(this._fontStyle << MetadataConsts.FONT_STYLE_OFFSET)
-			| (this._foreground << MetadataConsts.FOREGROUND_OFFSET)
-			| (this._background << MetadataConsts.BACKGROUND_OFFSET)
-		) >>> 0;
+		this.metadata =
+			((this._fontStyle << MetadataConsts.FONT_STYLE_OFFSET) |
+				(this._foreground << MetadataConsts.FOREGROUND_OFFSET) |
+				(this._background << MetadataConsts.BACKGROUND_OFFSET)) >>>
+			0;
 	}
 }
 
 export class ExternalThemeTrieElement {
-
 	public readonly mainRule: ThemeTrieElementRule;
 	public readonly children: Map<string, ExternalThemeTrieElement>;
 
 	constructor(
 		mainRule: ThemeTrieElementRule,
-		children: Map<string, ExternalThemeTrieElement> | { [key: string]: ExternalThemeTrieElement } = new Map<string, ExternalThemeTrieElement>()
+		children: Map<string, ExternalThemeTrieElement> | { [key: string]: ExternalThemeTrieElement } = new Map<
+			string,
+			ExternalThemeTrieElement
+		>()
 	) {
 		this.mainRule = mainRule;
 		if (children instanceof Map) {

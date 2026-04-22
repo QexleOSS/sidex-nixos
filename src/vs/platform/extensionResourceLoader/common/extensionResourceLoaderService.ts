@@ -17,7 +17,6 @@ import { IExtensionGalleryManifestService } from '../../extensionManagement/comm
 import { ILogService } from '../../log/common/log.js';
 
 export class ExtensionResourceLoaderService extends AbstractExtensionResourceLoaderService {
-
 	constructor(
 		@IFileService fileService: IFileService,
 		@IStorageService storageService: IStorageService,
@@ -26,21 +25,31 @@ export class ExtensionResourceLoaderService extends AbstractExtensionResourceLoa
 		@IConfigurationService configurationService: IConfigurationService,
 		@IExtensionGalleryManifestService extensionGalleryManifestService: IExtensionGalleryManifestService,
 		@IRequestService private readonly _requestService: IRequestService,
-		@ILogService logService: ILogService,
+		@ILogService logService: ILogService
 	) {
-		super(fileService, storageService, productService, environmentService, configurationService, extensionGalleryManifestService, logService);
+		super(
+			fileService,
+			storageService,
+			productService,
+			environmentService,
+			configurationService,
+			extensionGalleryManifestService,
+			logService
+		);
 	}
 
 	async readExtensionResource(uri: URI): Promise<string> {
 		if (await this.isExtensionGalleryResource(uri)) {
 			const headers = await this.getExtensionGalleryRequestHeaders();
-			const requestContext = await this._requestService.request({ url: uri.toString(), headers, callSite: 'extensionResourceLoader.readExtensionResource' }, CancellationToken.None);
+			const requestContext = await this._requestService.request(
+				{ url: uri.toString(), headers, callSite: 'extensionResourceLoader.readExtensionResource' },
+				CancellationToken.None
+			);
 			return (await asTextOrError(requestContext)) || '';
 		}
 		const result = await this._fileService.readFile(uri);
 		return result.value.toString();
 	}
-
 }
 
 registerSingleton(IExtensionResourceLoaderService, ExtensionResourceLoaderService, InstantiationType.Delayed);

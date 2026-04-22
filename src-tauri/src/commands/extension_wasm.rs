@@ -2,7 +2,7 @@ use crate::commands::extension_platform::ExtensionManifest;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{BufRead, Write};
+use std::io::{BufRead, Read as _, Write};
 use std::path::Path;
 use std::process::{Child, ChildStdin, Command, Stdio};
 use std::sync::{Arc, Mutex};
@@ -54,8 +54,15 @@ impl TsServerProcess {
             }
         }
 
-        let which_cmd = if cfg!(target_os = "windows") { "where" } else { "which" };
-        if let Ok(out) = std::process::Command::new(which_cmd).arg("tsserver").output() {
+        let which_cmd = if cfg!(target_os = "windows") {
+            "where"
+        } else {
+            "which"
+        };
+        if let Ok(out) = std::process::Command::new(which_cmd)
+            .arg("tsserver")
+            .output()
+        {
             if out.status.success() {
                 let path = String::from_utf8_lossy(&out.stdout).trim().to_string();
                 if !path.is_empty() {
@@ -161,7 +168,6 @@ impl TsServerProcess {
             }
 
             let mut body = vec![0u8; content_length];
-            use std::io::Read;
             if self.reader.read_exact(&mut body).is_err() {
                 log::warn!("[tsserver] failed to read {content_length} byte body");
                 return None;
@@ -205,7 +211,7 @@ impl LspServerProcess {
             .args(args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null());
+            .stderr(Stdio::piped());
 
         let mut child = command
             .spawn()
@@ -271,9 +277,8 @@ impl LspServerProcess {
             loop {
                 let mut header = String::new();
                 match self.reader.read_line(&mut header) {
-                    Ok(0) => return None,
-                    Ok(_) => {}
-                    Err(_) => return None,
+                    Ok(1..) => {}
+                    Ok(_) | Err(_) => return None,
                 }
                 let line = header.trim();
                 if line.is_empty() {
@@ -288,7 +293,6 @@ impl LspServerProcess {
             }
 
             let mut body = vec![0u8; content_length];
-            use std::io::Read;
             if self.reader.read_exact(&mut body).is_err() {
                 return None;
             }
@@ -321,6 +325,16 @@ impl LspServerProcess {
 
 impl Drop for LspServerProcess {
     fn drop(&mut self) {
+        if let Some(mut stderr) = self.child.stderr.take() {
+            use std::io::Read;
+            let mut buf = String::new();
+            let _ = stderr.read_to_string(&mut buf);
+            if !buf.is_empty() {
+                for line in buf.lines().take(10) {
+                    log::warn!("[lsp:{}] stderr: {}", self.server_name, line);
+                }
+            }
+        }
         let _ = self.child.kill();
         log::info!("[lsp:{}] killed", self.server_name);
     }
@@ -328,7 +342,11 @@ impl Drop for LspServerProcess {
 
 /// Find a binary on PATH or common install locations
 fn find_binary(name: &str, extra_paths: &[&str]) -> Option<String> {
-    let which_cmd = if cfg!(target_os = "windows") { "where" } else { "which" };
+    let which_cmd = if cfg!(target_os = "windows") {
+        "where"
+    } else {
+        "which"
+    };
     if let Ok(out) = std::process::Command::new(which_cmd).arg(name).output() {
         if out.status.success() {
             let path = String::from_utf8_lossy(&out.stdout)
@@ -348,6 +366,103 @@ fn find_binary(name: &str, extra_paths: &[&str]) -> Option<String> {
         }
     }
     None
+}
+
+/// Determine the platform target triple for LSP binary downloads.
+fn platform_target() -> Option<&'static str> {
+    if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
+        Some("aarch64-apple-darwin")
+    } else if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
+        Some("x86_64-apple-darwin")
+    } else if cfg!(target_os = "linux") && cfg!(target_arch = "x86_64") {
+        Some("x86_64-unknown-linux-gnu")
+    } else if cfg!(target_os = "windows") && cfg!(target_arch = "x86_64") {
+        Some("x86_64-pc-windows-msvc")
+    } else {
+        None
+    }
+}
+
+/// Download and cache an LSP binary from a URL template.
+///
+/// `url_template` may contain `{target}` which is replaced with the platform
+/// triple. The URL must point to a gzip-compressed binary. Returns the path
+/// to the cached binary, or `None` on failure.
+fn download_lsp_binary(server_name: &str, url_template: &str) -> Option<String> {
+    let target = platform_target()?;
+    let url = url_template.replace("{target}", target);
+
+    let data_dir = dirs::data_local_dir()?;
+    let server_dir = data_dir
+        .join("com.sidex.app")
+        .join("lsp-servers")
+        .join(server_name);
+    let bin_name = if cfg!(target_os = "windows") {
+        format!("{server_name}.exe")
+    } else {
+        server_name.to_string()
+    };
+    let bin_path = server_dir.join(&bin_name);
+
+    if bin_path.exists() {
+        return Some(bin_path.to_string_lossy().to_string());
+    }
+
+    log::info!("[lsp:{server_name}] downloading from {url}");
+
+    let response = match reqwest::blocking::get(&url) {
+        Ok(r) if r.status().is_success() => r,
+        Ok(r) => {
+            log::error!("[lsp:{server_name}] download failed: HTTP {}", r.status());
+            return None;
+        }
+        Err(e) => {
+            log::error!("[lsp:{server_name}] download failed: {e}");
+            return None;
+        }
+    };
+
+    let compressed = match response.bytes() {
+        Ok(b) => b,
+        Err(e) => {
+            log::error!("[lsp:{server_name}] failed to read response: {e}");
+            return None;
+        }
+    };
+
+    log::info!(
+        "[lsp:{server_name}] downloaded {} bytes, decompressing",
+        compressed.len()
+    );
+
+    let mut decoder = flate2::read::GzDecoder::new(&compressed[..]);
+    let mut decompressed = Vec::new();
+    if let Err(e) = std::io::Read::read_to_end(&mut decoder, &mut decompressed) {
+        log::error!("[lsp:{server_name}] decompression failed: {e}");
+        return None;
+    }
+
+    if let Err(e) = std::fs::create_dir_all(&server_dir) {
+        log::error!("[lsp:{server_name}] mkdir failed: {e}");
+        return None;
+    }
+    if let Err(e) = std::fs::write(&bin_path, &decompressed) {
+        log::error!("[lsp:{server_name}] write failed: {e}");
+        return None;
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Err(e) = std::fs::set_permissions(&bin_path, std::fs::Permissions::from_mode(0o755))
+        {
+            log::error!("[lsp:{server_name}] chmod failed: {e}");
+            return None;
+        }
+    }
+
+    log::info!("[lsp:{server_name}] installed to {}", bin_path.display());
+    Some(bin_path.to_string_lossy().to_string())
 }
 
 #[allow(unsafe_code, clippy::all, unused)]
@@ -382,6 +497,7 @@ struct WasmHostState {
     tsserver_open_files: std::collections::HashSet<String>,
     lsp_servers: HashMap<String, LspServerProcess>,
     lsp_open_files: HashMap<String, std::collections::HashSet<String>>,
+    lsp_spawn_failures: HashMap<String, (u32, std::time::Instant)>,
     extension_id: String,
     extension_path: String,
     extension_version: String,
@@ -411,6 +527,7 @@ struct WasmHostState {
     next_lang_config_handle: u64,
 }
 
+#[allow(dead_code)]
 struct ScmSourceControl {
     id: String,
     label: String,
@@ -419,18 +536,21 @@ struct ScmSourceControl {
     count: u32,
 }
 
+#[allow(dead_code)]
 struct ProgressTask {
     message: Option<String>,
     increment: f64,
     cancelled: bool,
 }
 
+#[allow(dead_code)]
 struct TestController {
     id: String,
     label: String,
     items: Vec<wit_types::TestItem>,
 }
 
+#[allow(dead_code)]
 struct TestRun {
     controller_handle: u64,
     name: Option<String>,
@@ -451,13 +571,15 @@ fn is_within_workspace(path: &str, workspace_folders: &[String]) -> bool {
         return true;
     }
     let canon = std::path::Path::new(path);
-    workspace_folders.iter().any(|folder| canon.starts_with(folder))
+    workspace_folders
+        .iter()
+        .any(|folder| canon.starts_with(folder))
 }
 
 fn require_workspace_path(uri: &str, workspace_folders: &[String]) -> Result<String, String> {
     let path = uri_to_path(uri).to_string();
     if !is_within_workspace(&path, workspace_folders) {
-        return Err(format!("access denied: path is outside workspace"));
+        return Err("access denied: path is outside workspace".to_string());
     }
     Ok(path)
 }
@@ -494,6 +616,7 @@ impl WasmHostState {
             tsserver_open_files: std::collections::HashSet::new(),
             lsp_servers: HashMap::new(),
             lsp_open_files: HashMap::new(),
+            lsp_spawn_failures: HashMap::new(),
             extension_id: String::new(),
             extension_path: String::new(),
             extension_version: String::new(),
@@ -578,11 +701,9 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
     fn find_files(&mut self, pattern: String, max_results: u32) -> Vec<String> {
         let mut results = Vec::new();
         // Extract file extension from glob pattern like "**/*.css"
-        let ext_match = if let Some(star_dot) = pattern.rfind("*.") {
-            Some(pattern[star_dot + 1..].to_string())
-        } else {
-            None
-        };
+        let ext_match = pattern
+            .rfind("*.")
+            .map(|star_dot| pattern[star_dot + 1..].to_string());
 
         for folder in &self.workspace_folders {
             let walker = walkdir::WalkDir::new(folder)
@@ -630,22 +751,21 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
         std::fs::write(&path, content).map_err(|e| e.to_string())
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     fn stat_file(&mut self, uri: String) -> Result<wit_types::FileStat, String> {
+        use std::time::UNIX_EPOCH;
         let path = uri_to_path(&uri);
         let meta = std::fs::metadata(path).map_err(|e| e.to_string())?;
-        use std::time::UNIX_EPOCH;
         let ctime = meta
             .created()
             .ok()
             .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0);
+            .map_or(0, |d| d.as_millis() as u64);
         let mtime = meta
             .modified()
             .ok()
             .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0);
+            .map_or(0, |d| d.as_millis() as u64);
         let file_type = if meta.is_dir() {
             2
         } else if meta.is_symlink() {
@@ -712,15 +832,27 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
 
     // ── Logging ──────────────────────────────────────────────────────────────
 
-    fn show_info_message_with_actions(&mut self, message: String, actions: Vec<wit_types::NotificationAction>) -> Option<String> {
+    fn show_info_message_with_actions(
+        &mut self,
+        message: String,
+        actions: Vec<wit_types::NotificationAction>,
+    ) -> Option<String> {
         log::info!("[wasm-ext][notification] {message}");
         actions.first().map(|a| a.title.clone())
     }
-    fn show_warn_message_with_actions(&mut self, message: String, actions: Vec<wit_types::NotificationAction>) -> Option<String> {
+    fn show_warn_message_with_actions(
+        &mut self,
+        message: String,
+        actions: Vec<wit_types::NotificationAction>,
+    ) -> Option<String> {
         log::warn!("[wasm-ext][notification] {message}");
         actions.first().map(|a| a.title.clone())
     }
-    fn show_error_message_with_actions(&mut self, message: String, actions: Vec<wit_types::NotificationAction>) -> Option<String> {
+    fn show_error_message_with_actions(
+        &mut self,
+        message: String,
+        actions: Vec<wit_types::NotificationAction>,
+    ) -> Option<String> {
         log::error!("[wasm-ext][notification] {message}");
         actions.first().map(|a| a.title.clone())
     }
@@ -743,24 +875,53 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
 
     // ── Workspace ────────────────────────────────────────────────────────────
 
-    fn get_workspace_name(&mut self) -> Option<String> { self.workspace_name.clone() }
-    fn get_configuration_section(&mut self, section: String) -> Vec<(String, String)> {
-        self.configuration.get(&section).map(|m| m.iter().map(|(k,v)|(k.clone(),v.clone())).collect()).unwrap_or_default()
+    fn get_workspace_name(&mut self) -> Option<String> {
+        self.workspace_name.clone()
     }
-    fn update_configuration(&mut self, section: String, key: String, value: String, _global: bool) -> Result<(), String> {
-        self.configuration.entry(section).or_default().insert(key, value);
+    fn get_configuration_section(&mut self, section: String) -> Vec<(String, String)> {
+        self.configuration
+            .get(&section)
+            .map(|m| m.iter().map(|(k, v)| (k.clone(), v.clone())).collect())
+            .unwrap_or_default()
+    }
+    fn update_configuration(
+        &mut self,
+        section: String,
+        key: String,
+        value: String,
+        _global: bool,
+    ) -> Result<(), String> {
+        self.configuration
+            .entry(section)
+            .or_default()
+            .insert(key, value);
         Ok(())
     }
-    fn find_files_with_exclude(&mut self, include_pattern: String, _exclude_pattern: String, max_results: u32) -> Vec<String> {
+    fn find_files_with_exclude(
+        &mut self,
+        include_pattern: String,
+        _exclude_pattern: String,
+        max_results: u32,
+    ) -> Vec<String> {
         self.find_files(include_pattern, max_results)
     }
     fn open_text_document(&mut self, uri: String) -> Result<String, String> {
         self.read_file(uri.clone())?;
         Ok(uri)
     }
-    fn open_text_document_with_content(&mut self, content: String, language_id: String) -> Result<String, String> {
+    fn open_text_document_with_content(
+        &mut self,
+        content: String,
+        language_id: String,
+    ) -> Result<String, String> {
         let uri = format!("untitled:///{}", uuid::Uuid::new_v4());
-        self.documents.insert(uri.clone(), DocumentData { text: content, language_id });
+        self.documents.insert(
+            uri.clone(),
+            DocumentData {
+                text: content,
+                language_id,
+            },
+        );
         Ok(uri)
     }
     fn save_text_document(&mut self, uri: String) -> Result<bool, String> {
@@ -773,21 +934,28 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
     }
     fn save_all_text_documents(&mut self) -> Result<bool, String> {
         let uris: Vec<String> = self.documents.keys().cloned().collect();
-        for uri in uris { self.save_text_document(uri)?; }
+        for uri in uris {
+            self.save_text_document(uri)?;
+        }
         Ok(true)
     }
-    fn apply_workspace_edit_entries(&mut self, entries: Vec<wit_types::WorkspaceEditEntry>) -> Result<bool, String> {
+    fn apply_workspace_edit_entries(
+        &mut self,
+        entries: Vec<wit_types::WorkspaceEditEntry>,
+    ) -> Result<bool, String> {
         for entry in &entries {
             let path = require_workspace_path(&entry.uri, &self.workspace_folders)?;
             match entry.kind {
                 wit_types::WorkspaceEditKind::CreateFile => {
                     if let Some(ref opts) = entry.create_options {
-                        if !opts.overwrite && std::path::Path::new(&path).exists() { continue; }
+                        if !opts.overwrite && std::path::Path::new(&path).exists() {
+                            continue;
+                        }
                     }
                     std::fs::write(&path, "").map_err(|e| e.to_string())?;
                 }
                 wit_types::WorkspaceEditKind::DeleteFile => {
-                    if entry.delete_options.as_ref().map_or(false, |o| o.recursive) {
+                    if entry.delete_options.as_ref().is_some_and(|o| o.recursive) {
                         let _ = std::fs::remove_dir_all(&path);
                     } else {
                         let _ = std::fs::remove_file(&path);
@@ -799,19 +967,37 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
                         std::fs::rename(&path, &new_path).map_err(|e| e.to_string())?;
                     }
                 }
-                _ => {}
+                wit_types::WorkspaceEditKind::TextEdit => {}
             }
         }
         Ok(true)
     }
-    fn create_file_system_watcher(&mut self, _glob_pattern: String) -> Result<u64, String> { Ok(0) }
-    fn on_did_create_files(&mut self, uris: Vec<String>) { log::info!("[wasm-ext] files created: {:?}", uris); }
-    fn on_did_rename_files(&mut self, old_uris: Vec<String>, new_uris: Vec<String>) { log::info!("[wasm-ext] files renamed: {:?} -> {:?}", old_uris, new_uris); }
-    fn on_did_delete_files(&mut self, uris: Vec<String>) { log::info!("[wasm-ext] files deleted: {:?}", uris); }
-    fn get_workspace_state(&mut self, key: String) -> Option<String> { self.workspace_state.get(&key).cloned() }
-    fn set_workspace_state(&mut self, key: String, value: String) -> Result<(), String> { self.workspace_state.insert(key, value); Ok(()) }
-    fn get_global_state(&mut self, key: String) -> Option<String> { self.global_storage.get(&key).cloned() }
-    fn set_global_state(&mut self, key: String, value: String) -> Result<(), String> { self.global_storage.insert(key, value); Ok(()) }
+    fn create_file_system_watcher(&mut self, _glob_pattern: String) -> Result<u64, String> {
+        Ok(0)
+    }
+    fn on_did_create_files(&mut self, uris: Vec<String>) {
+        log::info!("[wasm-ext] files created: {uris:?}");
+    }
+    fn on_did_rename_files(&mut self, old_uris: Vec<String>, new_uris: Vec<String>) {
+        log::info!("[wasm-ext] files renamed: {old_uris:?} -> {new_uris:?}");
+    }
+    fn on_did_delete_files(&mut self, uris: Vec<String>) {
+        log::info!("[wasm-ext] files deleted: {uris:?}");
+    }
+    fn get_workspace_state(&mut self, key: String) -> Option<String> {
+        self.workspace_state.get(&key).cloned()
+    }
+    fn set_workspace_state(&mut self, key: String, value: String) -> Result<(), String> {
+        self.workspace_state.insert(key, value);
+        Ok(())
+    }
+    fn get_global_state(&mut self, key: String) -> Option<String> {
+        self.global_storage.get(&key).cloned()
+    }
+    fn set_global_state(&mut self, key: String, value: String) -> Result<(), String> {
+        self.global_storage.insert(key, value);
+        Ok(())
+    }
 
     // ── File system ──────────────────────────────────────────────────────────
 
@@ -822,11 +1008,20 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
     fn delete_file(&mut self, uri: String, recursive: bool) -> Result<(), String> {
         let path = require_workspace_path(&uri, &self.workspace_folders)?;
         let p = std::path::Path::new(&path);
-        if p.is_dir() && recursive { std::fs::remove_dir_all(&path).map_err(|e| e.to_string()) }
-        else if p.is_dir() { std::fs::remove_dir(&path).map_err(|e| e.to_string()) }
-        else { std::fs::remove_file(&path).map_err(|e| e.to_string()) }
+        if p.is_dir() && recursive {
+            std::fs::remove_dir_all(&path).map_err(|e| e.to_string())
+        } else if p.is_dir() {
+            std::fs::remove_dir(&path).map_err(|e| e.to_string())
+        } else {
+            std::fs::remove_file(&path).map_err(|e| e.to_string())
+        }
     }
-    fn rename_file(&mut self, old_uri: String, new_uri: String, _overwrite: bool) -> Result<(), String> {
+    fn rename_file(
+        &mut self,
+        old_uri: String,
+        new_uri: String,
+        _overwrite: bool,
+    ) -> Result<(), String> {
         let old = require_workspace_path(&old_uri, &self.workspace_folders)?;
         let new = require_workspace_path(&new_uri, &self.workspace_folders)?;
         std::fs::rename(&old, &new).map_err(|e| e.to_string())
@@ -843,10 +1038,19 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
     fn list_dir_with_types(&mut self, uri: String) -> Result<Vec<(String, u32)>, String> {
         let path = uri_to_path(&uri);
         let entries = std::fs::read_dir(path).map_err(|e| e.to_string())?;
-        Ok(entries.flatten().map(|e| {
-            let ft = if e.path().is_dir() { 2u32 } else if e.path().is_symlink() { 64u32 } else { 1u32 };
-            (e.file_name().to_string_lossy().to_string(), ft)
-        }).collect())
+        Ok(entries
+            .flatten()
+            .map(|e| {
+                let ft = if e.path().is_dir() {
+                    2u32
+                } else if e.path().is_symlink() {
+                    64u32
+                } else {
+                    1u32
+                };
+                (e.file_name().to_string_lossy().to_string(), ft)
+            })
+            .collect())
     }
 
     // ── Document access ──────────────────────────────────────────────────────
@@ -854,10 +1058,15 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
     fn get_document_version(&mut self, uri: String) -> Option<u32> {
         self.documents.get(&uri).map(|_| 1)
     }
+    #[allow(clippy::cast_possible_truncation)]
     fn get_document_line_count(&mut self, uri: String) -> Option<u32> {
-        self.documents.get(&uri).map(|d| d.text.lines().count() as u32)
+        self.documents
+            .get(&uri)
+            .map(|d| d.text.lines().count() as u32)
     }
-    fn get_document_is_dirty(&mut self, _uri: String) -> bool { false }
+    fn get_document_is_dirty(&mut self, _uri: String) -> bool {
+        false
+    }
     fn get_document_is_untitled(&mut self, uri: String) -> bool {
         uri.starts_with("untitled://")
     }
@@ -867,19 +1076,55 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
 
     // ── Window / editor ──────────────────────────────────────────────────────
 
-    fn get_active_text_editor_uri(&mut self) -> Option<String> { self.active_editor_uri.clone() }
-    fn get_active_text_editor_selection(&mut self) -> Option<wit_types::Range> { None }
-    fn get_active_text_editor_selections(&mut self) -> Vec<wit_types::Range> { vec![] }
-    fn get_active_text_editor_visible_ranges(&mut self) -> Vec<wit_types::Range> { vec![] }
-    fn get_active_text_editor_language_id(&mut self) -> Option<String> { self.active_editor_language_id.clone() }
-    fn get_active_text_editor_view_column(&mut self) -> Option<u32> { Some(1) }
+    fn get_active_text_editor_uri(&mut self) -> Option<String> {
+        self.active_editor_uri.clone()
+    }
+    fn get_active_text_editor_selection(&mut self) -> Option<wit_types::Range> {
+        None
+    }
+    fn get_active_text_editor_selections(&mut self) -> Vec<wit_types::Range> {
+        vec![]
+    }
+    fn get_active_text_editor_visible_ranges(&mut self) -> Vec<wit_types::Range> {
+        vec![]
+    }
+    fn get_active_text_editor_language_id(&mut self) -> Option<String> {
+        self.active_editor_language_id.clone()
+    }
+    fn get_active_text_editor_view_column(&mut self) -> Option<u32> {
+        Some(1)
+    }
     fn get_visible_text_editors(&mut self) -> Vec<String> {
         self.active_editor_uri.iter().cloned().collect()
     }
-    fn set_text_editor_selection(&mut self, _uri: String, _selection: wit_types::Range) -> Result<(), String> { Ok(()) }
-    fn set_text_editor_selections(&mut self, _uri: String, _selections: Vec<wit_types::Range>) -> Result<(), String> { Ok(()) }
-    fn reveal_range(&mut self, _uri: String, _r: wit_types::Range, _reveal_type: u32) -> Result<(), String> { Ok(()) }
-    fn insert_snippet(&mut self, uri: String, snippet: String, _range: Option<wit_types::Range>) -> Result<(), String> {
+    fn set_text_editor_selection(
+        &mut self,
+        _uri: String,
+        _selection: wit_types::Range,
+    ) -> Result<(), String> {
+        Ok(())
+    }
+    fn set_text_editor_selections(
+        &mut self,
+        _uri: String,
+        _selections: Vec<wit_types::Range>,
+    ) -> Result<(), String> {
+        Ok(())
+    }
+    fn reveal_range(
+        &mut self,
+        _uri: String,
+        _r: wit_types::Range,
+        _reveal_type: u32,
+    ) -> Result<(), String> {
+        Ok(())
+    }
+    fn insert_snippet(
+        &mut self,
+        uri: String,
+        snippet: String,
+        _range: Option<wit_types::Range>,
+    ) -> Result<(), String> {
         log::info!("[wasm-ext] insert_snippet in {uri}: {snippet}");
         Ok(())
     }
@@ -890,29 +1135,59 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
         log::info!("[wasm-ext] show_input_box: {:?}", options.prompt);
         options.value.clone()
     }
-    fn show_quick_pick(&mut self, items: Vec<wit_types::QuickPickItem>, _options: wit_types::QuickPickOptions) -> Vec<wit_types::QuickPickItem> {
+    fn show_quick_pick(
+        &mut self,
+        items: Vec<wit_types::QuickPickItem>,
+        _options: wit_types::QuickPickOptions,
+    ) -> Vec<wit_types::QuickPickItem> {
         items.into_iter().filter(|i| i.picked).collect()
     }
-    fn show_open_dialog(&mut self, _options: wit_types::OpenDialogOptions) -> Vec<String> { vec![] }
-    fn show_save_dialog(&mut self, _options: wit_types::SaveDialogOptions) -> Option<String> { None }
+    fn show_open_dialog(&mut self, _options: wit_types::OpenDialogOptions) -> Vec<String> {
+        vec![]
+    }
+    fn show_save_dialog(&mut self, _options: wit_types::SaveDialogOptions) -> Option<String> {
+        None
+    }
     fn set_status_bar_message(&mut self, text: String, _timeout_ms: Option<u32>) -> u64 {
         let h = self.next_status_bar_handle;
         self.next_status_bar_handle += 1;
         self.status_bar_messages.insert(h, text);
         h
     }
-    fn clear_status_bar_message(&mut self, handle: u64) { self.status_bar_messages.remove(&handle); }
-    fn with_progress(&mut self, _options: wit_types::ProgressOptions, task_id: String) {
-        self.progress_tasks.insert(task_id, ProgressTask { message: None, increment: 0.0, cancelled: false });
+    fn clear_status_bar_message(&mut self, handle: u64) {
+        self.status_bar_messages.remove(&handle);
     }
-    fn report_progress(&mut self, task_id: String, increment: Option<f64>, message: Option<String>) {
+    fn with_progress(&mut self, _options: wit_types::ProgressOptions, task_id: String) {
+        self.progress_tasks.insert(
+            task_id,
+            ProgressTask {
+                message: None,
+                increment: 0.0,
+                cancelled: false,
+            },
+        );
+    }
+    fn report_progress(
+        &mut self,
+        task_id: String,
+        increment: Option<f64>,
+        message: Option<String>,
+    ) {
         if let Some(t) = self.progress_tasks.get_mut(&task_id) {
-            if let Some(inc) = increment { t.increment += inc; }
-            if message.is_some() { t.message = message; }
+            if let Some(inc) = increment {
+                t.increment += inc;
+            }
+            if message.is_some() {
+                t.message = message;
+            }
         }
     }
-    fn complete_progress(&mut self, task_id: String) { self.progress_tasks.remove(&task_id); }
-    fn get_window_state(&mut self) -> wit_types::WindowState { wit_types::WindowState { focused: true } }
+    fn complete_progress(&mut self, task_id: String) {
+        self.progress_tasks.remove(&task_id);
+    }
+    fn get_window_state(&mut self) -> wit_types::WindowState {
+        wit_types::WindowState { focused: true }
+    }
     fn open_external_uri(&mut self, uri: String) -> Result<bool, String> {
         log::info!("[wasm-ext] open_external_uri: {uri}");
         Ok(true)
@@ -926,19 +1201,33 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
         log::info!("[wasm-ext] execute_built_in_command: {id} args={args}");
         Ok("{}".to_string())
     }
-    fn get_all_commands(&mut self, _filter_internal: bool) -> Vec<String> { vec![] }
+    fn get_all_commands(&mut self, _filter_internal: bool) -> Vec<String> {
+        vec![]
+    }
 
     // ── Editor actions ───────────────────────────────────────────────────────
 
-    fn show_text_document_at(&mut self, uri: String, _range: wit_types::Range, _preview: bool) -> Result<(), String> {
+    fn show_text_document_at(
+        &mut self,
+        uri: String,
+        _range: wit_types::Range,
+        _preview: bool,
+    ) -> Result<(), String> {
         log::info!("[wasm-ext] show_text_document_at: {uri}");
         Ok(())
     }
-    fn diff_editor_open(&mut self, original: String, modified: String, title: String) -> Result<(), String> {
+    fn diff_editor_open(
+        &mut self,
+        original: String,
+        modified: String,
+        title: String,
+    ) -> Result<(), String> {
         log::info!("[wasm-ext] diff_editor_open: {original} vs {modified} ({title})");
         Ok(())
     }
-    fn close_active_editor(&mut self) -> Result<(), String> { Ok(()) }
+    fn close_active_editor(&mut self) -> Result<(), String> {
+        Ok(())
+    }
 
     // ── Decorations ──────────────────────────────────────────────────────────
 
@@ -948,47 +1237,107 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
         self.decoration_types.insert(h, options);
         h
     }
-    fn set_decorations(&mut self, _editor_uri: String, _type_id: u64, _decorations: Vec<wit_types::DecorationInstance>) -> Result<(), String> { Ok(()) }
-    fn delete_decoration_type(&mut self, type_id: u64) { self.decoration_types.remove(&type_id); }
+    fn set_decorations(
+        &mut self,
+        _editor_uri: String,
+        _type_id: u64,
+        _decorations: Vec<wit_types::DecorationInstance>,
+    ) -> Result<(), String> {
+        Ok(())
+    }
+    fn delete_decoration_type(&mut self, type_id: u64) {
+        self.decoration_types.remove(&type_id);
+    }
 
     // ── Languages ────────────────────────────────────────────────────────────
 
-    fn register_language_configuration(&mut self, config: wit_types::LanguageConfiguration) -> Result<u64, String> {
+    fn register_language_configuration(
+        &mut self,
+        config: wit_types::LanguageConfiguration,
+    ) -> Result<u64, String> {
         let h = self.next_lang_config_handle;
         self.next_lang_config_handle += 1;
         self.lang_config_handles.insert(h, config);
         Ok(h)
     }
-    fn unregister_language_configuration(&mut self, handle: u64) { self.lang_config_handles.remove(&handle); }
+    fn unregister_language_configuration(&mut self, handle: u64) {
+        self.lang_config_handles.remove(&handle);
+    }
     fn get_languages(&mut self) -> Vec<String> {
-        vec!["plaintext".to_string(),"typescript".to_string(),"javascript".to_string(),"rust".to_string(),"python".to_string(),"go".to_string(),"css".to_string(),"html".to_string(),"json".to_string()]
+        vec![
+            "plaintext".to_string(),
+            "typescript".to_string(),
+            "javascript".to_string(),
+            "rust".to_string(),
+            "python".to_string(),
+            "go".to_string(),
+            "css".to_string(),
+            "html".to_string(),
+            "json".to_string(),
+        ]
     }
     fn change_document_language(&mut self, uri: String, language_id: String) -> Result<(), String> {
-        if let Some(doc) = self.documents.get_mut(&uri) { doc.language_id = language_id; }
+        if let Some(doc) = self.documents.get_mut(&uri) {
+            doc.language_id = language_id;
+        }
         Ok(())
     }
 
     // ── SCM ──────────────────────────────────────────────────────────────────
 
-    fn scm_create_source_control(&mut self, id: String, label: String, root_uri: Option<String>) -> Result<u64, String> {
+    fn scm_create_source_control(
+        &mut self,
+        id: String,
+        label: String,
+        root_uri: Option<String>,
+    ) -> Result<u64, String> {
         let h = self.next_scm_handle;
         self.next_scm_handle += 1;
-        self.scm_handles.insert(h, ScmSourceControl { id, label, root_uri, input_box_value: String::new(), count: 0 });
+        self.scm_handles.insert(
+            h,
+            ScmSourceControl {
+                id,
+                label,
+                root_uri,
+                input_box_value: String::new(),
+                count: 0,
+            },
+        );
         Ok(h)
     }
-    fn scm_dispose(&mut self, handle: u64) { self.scm_handles.remove(&handle); }
+    fn scm_dispose(&mut self, handle: u64) {
+        self.scm_handles.remove(&handle);
+    }
     fn scm_set_count(&mut self, handle: u64, count: u32) {
-        if let Some(s) = self.scm_handles.get_mut(&handle) { s.count = count; }
+        if let Some(s) = self.scm_handles.get_mut(&handle) {
+            s.count = count;
+        }
     }
     fn scm_set_commit_template(&mut self, _handle: u64, _template: String) {}
     fn scm_get_input_box_value(&mut self, handle: u64) -> String {
-        self.scm_handles.get(&handle).map(|s| s.input_box_value.clone()).unwrap_or_default()
+        self.scm_handles
+            .get(&handle)
+            .map(|s| s.input_box_value.clone())
+            .unwrap_or_default()
     }
     fn scm_set_input_box_value(&mut self, handle: u64, value: String) {
-        if let Some(s) = self.scm_handles.get_mut(&handle) { s.input_box_value = value; }
+        if let Some(s) = self.scm_handles.get_mut(&handle) {
+            s.input_box_value = value;
+        }
     }
-    fn scm_set_resource_groups(&mut self, _handle: u64, _groups: Vec<(String, Vec<wit_types::ScmResource>)>) -> Result<(), String> { Ok(()) }
-    fn scm_create_resource_group(&mut self, _handle: u64, _id: String, _label: String) -> Result<u64, String> {
+    fn scm_set_resource_groups(
+        &mut self,
+        _handle: u64,
+        _groups: Vec<(String, Vec<wit_types::ScmResource>)>,
+    ) -> Result<(), String> {
+        Ok(())
+    }
+    fn scm_create_resource_group(
+        &mut self,
+        _handle: u64,
+        _id: String,
+        _label: String,
+    ) -> Result<u64, String> {
         let h = self.next_scm_handle;
         self.next_scm_handle += 1;
         Ok(h)
@@ -1003,47 +1352,87 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
         self.task_providers.insert(h, task_type);
         Ok(h)
     }
-    fn unregister_task_provider(&mut self, handle: u64) { self.task_providers.remove(&handle); }
+    fn unregister_task_provider(&mut self, handle: u64) {
+        self.task_providers.remove(&handle);
+    }
     fn execute_task(&mut self, task: wit_types::TaskExecution) -> Result<u64, String> {
         log::info!("[wasm-ext] execute_task: {}", task.name);
         Ok(0)
     }
-    fn terminate_task_execution(&mut self, _execution_id: u64) -> Result<(), String> { Ok(()) }
-    fn fetch_tasks(&mut self, _filter_type: Option<String>) -> Vec<wit_types::TaskExecution> { vec![] }
+    fn terminate_task_execution(&mut self, _execution_id: u64) -> Result<(), String> {
+        Ok(())
+    }
+    fn fetch_tasks(&mut self, _filter_type: Option<String>) -> Vec<wit_types::TaskExecution> {
+        vec![]
+    }
 
     // ── Debug ────────────────────────────────────────────────────────────────
 
-    fn register_debug_adapter_descriptor(&mut self, debug_type: String, executable: String, args: Vec<String>) -> Result<u64, String> {
+    fn register_debug_adapter_descriptor(
+        &mut self,
+        debug_type: String,
+        executable: String,
+        args: Vec<String>,
+    ) -> Result<u64, String> {
         let h = self.next_debug_handle;
         self.next_debug_handle += 1;
-        self.debug_adapters.insert(h, format!("{debug_type}:{executable}:{}", args.join(",")));
+        self.debug_adapters
+            .insert(h, format!("{debug_type}:{executable}:{}", args.join(",")));
         Ok(h)
     }
-    fn unregister_debug_adapter_descriptor(&mut self, handle: u64) { self.debug_adapters.remove(&handle); }
-    fn start_debug_session(&mut self, options: wit_types::DebugSessionOptions) -> Result<u64, String> {
+    fn unregister_debug_adapter_descriptor(&mut self, handle: u64) {
+        self.debug_adapters.remove(&handle);
+    }
+    fn start_debug_session(
+        &mut self,
+        options: wit_types::DebugSessionOptions,
+    ) -> Result<u64, String> {
         log::info!("[wasm-ext] start_debug_session: {}", options.name);
         Ok(0)
     }
-    fn stop_debug_session(&mut self, _session_id: u64) -> Result<(), String> { Ok(()) }
-    fn add_breakpoints(&mut self, breakpoints: Vec<wit_types::SourceBreakpoint>) -> Result<(), String> {
+    fn stop_debug_session(&mut self, _session_id: u64) -> Result<(), String> {
+        Ok(())
+    }
+    fn add_breakpoints(
+        &mut self,
+        breakpoints: Vec<wit_types::SourceBreakpoint>,
+    ) -> Result<(), String> {
         log::info!("[wasm-ext] add_breakpoints: {} bps", breakpoints.len());
         Ok(())
     }
-    fn remove_breakpoints(&mut self, _ids: Vec<String>) -> Result<(), String> { Ok(()) }
-    fn get_breakpoints(&mut self) -> Vec<wit_types::SourceBreakpoint> { vec![] }
+    fn remove_breakpoints(&mut self, _ids: Vec<String>) -> Result<(), String> {
+        Ok(())
+    }
+    fn get_breakpoints(&mut self) -> Vec<wit_types::SourceBreakpoint> {
+        vec![]
+    }
 
     // ── Environment ──────────────────────────────────────────────────────────
 
-    fn env_app_name(&mut self) -> String { "SideX".to_string() }
+    fn env_app_name(&mut self) -> String {
+        "SideX".to_string()
+    }
     fn env_app_root(&mut self) -> String {
-        std::env::current_exe().ok().and_then(|p| p.parent().map(|p| p.to_string_lossy().to_string())).unwrap_or_default()
+        std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.to_string_lossy().to_string()))
+            .unwrap_or_default()
     }
-    fn env_language(&mut self) -> String { "en".to_string() }
+    fn env_language(&mut self) -> String {
+        "en".to_string()
+    }
     fn env_machine_id(&mut self) -> String {
-        hostname::get().ok().map(|h| h.to_string_lossy().to_string()).unwrap_or_else(|| "unknown".to_string())
+        hostname::get().ok().map_or_else(
+            || "unknown".to_string(),
+            |h| h.to_string_lossy().to_string(),
+        )
     }
-    fn env_session_id(&mut self) -> String { uuid::Uuid::new_v4().to_string() }
-    fn env_clipboard_read_text(&mut self) -> Result<String, String> { Ok(String::new()) }
+    fn env_session_id(&mut self) -> String {
+        uuid::Uuid::new_v4().to_string()
+    }
+    fn env_clipboard_read_text(&mut self) -> Result<String, String> {
+        Ok(String::new())
+    }
     fn env_clipboard_write_text(&mut self, text: String) -> Result<(), String> {
         log::info!("[wasm-ext] clipboard write: {} chars", text.len());
         Ok(())
@@ -1051,31 +1440,85 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
     fn env_shell(&mut self) -> Option<String> {
         std::env::var("SHELL").ok()
     }
-    fn env_remote_name(&mut self) -> Option<String> { None }
-    fn env_is_new_app_install(&mut self) -> bool { false }
+    fn env_remote_name(&mut self) -> Option<String> {
+        None
+    }
+    fn env_is_new_app_install(&mut self) -> bool {
+        false
+    }
 
     // ── Extensions ───────────────────────────────────────────────────────────
 
-    fn get_extension_id(&mut self) -> String { self.extension_id.clone() }
-    fn get_extension_path(&mut self) -> String { self.extension_path.clone() }
-    fn get_extension_version(&mut self) -> String { self.extension_version.clone() }
+    fn get_extension_id(&mut self) -> String {
+        self.extension_id.clone()
+    }
+    fn get_extension_path(&mut self) -> String {
+        self.extension_path.clone()
+    }
+    fn get_extension_version(&mut self) -> String {
+        self.extension_version.clone()
+    }
     fn get_extension_global_storage_path(&mut self) -> String {
-        dirs::data_local_dir().map(|d| d.join("sidex").join("global-storage").join(&self.extension_id).to_string_lossy().to_string()).unwrap_or_default()
+        dirs::data_local_dir()
+            .map(|d| {
+                d.join("sidex")
+                    .join("global-storage")
+                    .join(&self.extension_id)
+                    .to_string_lossy()
+                    .to_string()
+            })
+            .unwrap_or_default()
     }
     fn get_extension_workspace_storage_path(&mut self) -> String {
-        dirs::data_local_dir().map(|d| d.join("sidex").join("workspace-storage").join(&self.extension_id).to_string_lossy().to_string()).unwrap_or_default()
+        dirs::data_local_dir()
+            .map(|d| {
+                d.join("sidex")
+                    .join("workspace-storage")
+                    .join(&self.extension_id)
+                    .to_string_lossy()
+                    .to_string()
+            })
+            .unwrap_or_default()
     }
     fn get_extension_log_path(&mut self) -> String {
-        dirs::data_local_dir().map(|d| d.join("sidex").join("logs").join(&self.extension_id).to_string_lossy().to_string()).unwrap_or_default()
+        dirs::data_local_dir()
+            .map(|d| {
+                d.join("sidex")
+                    .join("logs")
+                    .join(&self.extension_id)
+                    .to_string_lossy()
+                    .to_string()
+            })
+            .unwrap_or_default()
     }
-    fn is_extension_active(&mut self, _extension_id: String) -> bool { false }
-    fn get_extension_exports(&mut self, _extension_id: String) -> Option<String> { None }
-    fn extension_storage_get(&mut self, key: String) -> Option<String> { self.storage.get(&key).cloned() }
-    fn extension_storage_set(&mut self, key: String, value: String) -> Result<(), String> { self.storage.insert(key, value); Ok(()) }
-    fn extension_storage_delete(&mut self, key: String) -> Result<(), String> { self.storage.remove(&key); Ok(()) }
-    fn extension_secrets_get(&mut self, key: String) -> Result<Option<String>, String> { Ok(self.secrets.get(&key).cloned()) }
-    fn extension_secrets_store(&mut self, key: String, value: String) -> Result<(), String> { self.secrets.insert(key, value); Ok(()) }
-    fn extension_secrets_delete(&mut self, key: String) -> Result<(), String> { self.secrets.remove(&key); Ok(()) }
+    fn is_extension_active(&mut self, _extension_id: String) -> bool {
+        false
+    }
+    fn get_extension_exports(&mut self, _extension_id: String) -> Option<String> {
+        None
+    }
+    fn extension_storage_get(&mut self, key: String) -> Option<String> {
+        self.storage.get(&key).cloned()
+    }
+    fn extension_storage_set(&mut self, key: String, value: String) -> Result<(), String> {
+        self.storage.insert(key, value);
+        Ok(())
+    }
+    fn extension_storage_delete(&mut self, key: String) -> Result<(), String> {
+        self.storage.remove(&key);
+        Ok(())
+    }
+    fn extension_secrets_get(&mut self, key: String) -> Result<Option<String>, String> {
+        Ok(self.secrets.get(&key).cloned())
+    }
+    fn extension_secrets_store(&mut self, key: String, value: String) -> Result<(), String> {
+        self.secrets.insert(key, value);
+        Ok(())
+    }
+    fn extension_secrets_delete(&mut self, key: String) -> Result<(), String> {
+        self.secrets.remove(&key);
+        Ok(())
+    }
 
     // ── Notebooks ────────────────────────────────────────────────────────────
 
@@ -1089,71 +1532,161 @@ impl wit_bindings::sidex::extension::host_api::Host for WasmHostState {
         self.notebook_handles.remove(&handle);
         Ok(())
     }
-    fn notebook_get_cells(&mut self, _handle: u64) -> Vec<wit_types::NotebookCell> { vec![] }
-    fn notebook_execute_cell(&mut self, notebook_uri: u64, cell_index: u32) -> Result<wit_types::NotebookCellOutput, String> {
+    fn notebook_get_cells(&mut self, _handle: u64) -> Vec<wit_types::NotebookCell> {
+        vec![]
+    }
+    fn notebook_execute_cell(
+        &mut self,
+        notebook_uri: u64,
+        cell_index: u32,
+    ) -> Result<wit_types::NotebookCellOutput, String> {
         log::info!("[wasm-ext] notebook_execute_cell: handle={notebook_uri}[{cell_index}]");
         Ok(wit_types::NotebookCellOutput { items: vec![] })
     }
-    fn notebook_apply_edit(&mut self, _handle: u64, _cell_index: u32, _new_value: String) -> Result<(), String> { Ok(()) }
-    fn notebook_insert_cell(&mut self, _handle: u64, _index: u32, _kind: u32, _language_id: String, _value: String) -> Result<(), String> { Ok(()) }
-    fn notebook_delete_cell(&mut self, _handle: u64, _index: u32) -> Result<(), String> { Ok(()) }
+    fn notebook_apply_edit(
+        &mut self,
+        _handle: u64,
+        _cell_index: u32,
+        _new_value: String,
+    ) -> Result<(), String> {
+        Ok(())
+    }
+    fn notebook_insert_cell(
+        &mut self,
+        _handle: u64,
+        _index: u32,
+        _kind: u32,
+        _language_id: String,
+        _value: String,
+    ) -> Result<(), String> {
+        Ok(())
+    }
+    fn notebook_delete_cell(&mut self, _handle: u64, _index: u32) -> Result<(), String> {
+        Ok(())
+    }
 
     // ── Testing ──────────────────────────────────────────────────────────────
 
     fn test_controller_create(&mut self, id: String, label: String) -> Result<u64, String> {
         let h = self.next_test_handle;
         self.next_test_handle += 1;
-        self.test_controllers.insert(h, TestController { id, label, items: vec![] });
+        self.test_controllers.insert(
+            h,
+            TestController {
+                id,
+                label,
+                items: vec![],
+            },
+        );
         Ok(h)
     }
-    fn test_controller_dispose(&mut self, handle: u64) { self.test_controllers.remove(&handle); }
-    fn test_controller_add_items(&mut self, handle: u64, items: Vec<wit_types::TestItem>) -> Result<(), String> {
-        if let Some(c) = self.test_controllers.get_mut(&handle) { c.items.extend(items); }
+    fn test_controller_dispose(&mut self, handle: u64) {
+        self.test_controllers.remove(&handle);
+    }
+    fn test_controller_add_items(
+        &mut self,
+        handle: u64,
+        items: Vec<wit_types::TestItem>,
+    ) -> Result<(), String> {
+        if let Some(c) = self.test_controllers.get_mut(&handle) {
+            c.items.extend(items);
+        }
         Ok(())
     }
-    fn test_run_create(&mut self, controller_handle: u64, name: Option<String>) -> Result<u64, String> {
+    fn test_run_create(
+        &mut self,
+        controller_handle: u64,
+        name: Option<String>,
+    ) -> Result<u64, String> {
         let h = self.next_run_handle;
         self.next_run_handle += 1;
-        self.test_runs.insert(h, TestRun { controller_handle, name, results: vec![] });
+        self.test_runs.insert(
+            h,
+            TestRun {
+                controller_handle,
+                name,
+                results: vec![],
+            },
+        );
         Ok(h)
     }
     fn test_run_started(&mut self, run_handle: u64, item_id: String) {
         if let Some(r) = self.test_runs.get_mut(&run_handle) {
-            r.results.push(wit_types::TestResult { id: item_id, state: wit_types::TestResultState::Running, message: None, duration: None });
+            r.results.push(wit_types::TestResult {
+                id: item_id,
+                state: wit_types::TestResultState::Running,
+                message: None,
+                duration: None,
+            });
         }
     }
     fn test_run_passed(&mut self, run_handle: u64, item_id: String, duration: Option<u64>) {
         if let Some(r) = self.test_runs.get_mut(&run_handle) {
-            r.results.push(wit_types::TestResult { id: item_id, state: wit_types::TestResultState::Passed, message: None, duration });
+            r.results.push(wit_types::TestResult {
+                id: item_id,
+                state: wit_types::TestResultState::Passed,
+                message: None,
+                duration,
+            });
         }
     }
-    fn test_run_failed(&mut self, run_handle: u64, item_id: String, message: String, duration: Option<u64>) {
+    fn test_run_failed(
+        &mut self,
+        run_handle: u64,
+        item_id: String,
+        message: String,
+        duration: Option<u64>,
+    ) {
         if let Some(r) = self.test_runs.get_mut(&run_handle) {
-            r.results.push(wit_types::TestResult { id: item_id, state: wit_types::TestResultState::Failed, message: Some(message), duration });
+            r.results.push(wit_types::TestResult {
+                id: item_id,
+                state: wit_types::TestResultState::Failed,
+                message: Some(message),
+                duration,
+            });
         }
     }
-    fn test_run_errored(&mut self, run_handle: u64, item_id: String, message: String, duration: Option<u64>) {
+    fn test_run_errored(
+        &mut self,
+        run_handle: u64,
+        item_id: String,
+        message: String,
+        duration: Option<u64>,
+    ) {
         if let Some(r) = self.test_runs.get_mut(&run_handle) {
-            r.results.push(wit_types::TestResult { id: item_id, state: wit_types::TestResultState::Errored, message: Some(message), duration });
+            r.results.push(wit_types::TestResult {
+                id: item_id,
+                state: wit_types::TestResultState::Errored,
+                message: Some(message),
+                duration,
+            });
         }
     }
     fn test_run_skipped(&mut self, run_handle: u64, item_id: String) {
         if let Some(r) = self.test_runs.get_mut(&run_handle) {
-            r.results.push(wit_types::TestResult { id: item_id, state: wit_types::TestResultState::Skipped, message: None, duration: None });
+            r.results.push(wit_types::TestResult {
+                id: item_id,
+                state: wit_types::TestResultState::Skipped,
+                message: None,
+                duration: None,
+            });
         }
     }
     fn test_run_end(&mut self, run_handle: u64) {
         if let Some(r) = self.test_runs.get(&run_handle) {
-            log::info!("[wasm-ext] test run {} ended: {} results", run_handle, r.results.len());
+            log::info!(
+                "[wasm-ext] test run {} ended: {} results",
+                run_handle,
+                r.results.len()
+            );
         }
     }
 
     // ── Telemetry ────────────────────────────────────────────────────────────
 
     fn telemetry_send_event(&mut self, event_name: String, data: Vec<(String, String)>) {
-        log::debug!("[wasm-ext][telemetry] {event_name}: {:?}", data);
+        log::debug!("[wasm-ext][telemetry] {event_name}: {data:?}");
     }
-
 }
 
 impl wit_bindings::sidex::extension::common_types::Host for WasmHostState {}
@@ -1191,7 +1724,11 @@ impl WasmHostState {
             (doc.text.clone(), kind)
         } else {
             let disk_content = std::fs::read_to_string(file).unwrap_or_default();
-            let kind = if file.ends_with(".tsx") || file.ends_with(".jsx") {
+            let ext = std::path::Path::new(file)
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(str::to_ascii_lowercase);
+            let kind = if matches!(ext.as_deref(), Some("tsx" | "jsx")) {
                 "4"
             } else {
                 "3"
@@ -1221,6 +1758,7 @@ impl WasmHostState {
 
     /// Handle __sidex.lsp commands. Payload format:
     /// {"server":"rust-analyzer","cmd":"rust-analyzer","args":[],"method":"textDocument/completion","params":{...}}
+    #[allow(clippy::too_many_lines)]
     fn execute_lsp_command(&mut self, payload: &str) -> Result<String, String> {
         let server_name = extract_json_string(payload, "server")
             .ok_or_else(|| "lsp: missing server".to_string())?;
@@ -1229,29 +1767,43 @@ impl WasmHostState {
         let params = extract_json_object(payload, "params").unwrap_or_else(|| "{}".to_string());
 
         if !self.lsp_servers.contains_key(&server_name) {
+            if let Some((failures, last)) = self.lsp_spawn_failures.get(&server_name) {
+                if *failures >= 3 && last.elapsed() < std::time::Duration::from_secs(30) {
+                    return Err(format!("lsp: {server_name} disabled after {failures} consecutive failures (retrying in {}s)", 30 - last.elapsed().as_secs()));
+                }
+                if last.elapsed() >= std::time::Duration::from_secs(30) {
+                    self.lsp_spawn_failures.remove(&server_name);
+                }
+            }
+
             let cmd = extract_json_string(payload, "cmd").unwrap_or_else(|| server_name.clone());
             let extra_args = extract_json_string_array(payload, "args");
+            let download_url = extract_json_string(payload, "downloadUrl");
             let root = self
                 .workspace_folders
                 .first()
-                .map(|f| format!("file://{f}"))
-                .unwrap_or_else(|| "file:///tmp".to_string());
-            let binary = find_binary(
-                &cmd,
-                &[
-                    &format!("/usr/local/bin/{cmd}"),
-                    &format!("/opt/homebrew/bin/{cmd}"),
-                    &format!("/usr/bin/{cmd}"),
-                ],
-            )
-            .ok_or_else(|| format!("lsp: {cmd} binary not found"))?;
+                .map_or_else(|| "file:///tmp".to_string(), |f| format!("file://{f}"));
+            let binary = download_url
+                .as_deref()
+                .and_then(|url| download_lsp_binary(&cmd, url))
+                .or_else(|| {
+                    find_binary(
+                        &cmd,
+                        &[
+                            &format!("/usr/local/bin/{cmd}"),
+                            &format!("/opt/homebrew/bin/{cmd}"),
+                            &format!("/usr/bin/{cmd}"),
+                        ],
+                    )
+                })
+                .ok_or_else(|| format!("lsp: {cmd} binary not found"))?;
 
             let cargo_dir = env!("CARGO_MANIFEST_DIR");
             let resolved_args: Vec<String> = extra_args
                 .iter()
                 .map(|a| {
                     if !a.starts_with('/') {
-                        let resolved = format!("{}/{}", cargo_dir, a);
+                        let resolved = format!("{cargo_dir}/{a}");
                         if std::path::Path::new(&resolved).exists() {
                             return resolved;
                         }
@@ -1259,13 +1811,28 @@ impl WasmHostState {
                     a.clone()
                 })
                 .collect();
-            let args_refs: Vec<&str> = resolved_args.iter().map(|s| s.as_str()).collect();
-            let server = LspServerProcess::spawn(&server_name, &binary, &args_refs, &root)
-                .ok_or_else(|| format!("lsp: failed to start {server_name}"))?;
-
-            self.lsp_servers.insert(server_name.clone(), server);
-            self.lsp_open_files
-                .insert(server_name.clone(), std::collections::HashSet::new());
+            let args_refs: Vec<&str> = resolved_args
+                .iter()
+                .map(std::string::String::as_str)
+                .collect();
+            if let Some(server) = LspServerProcess::spawn(&server_name, &binary, &args_refs, &root)
+            {
+                self.lsp_spawn_failures.remove(&server_name);
+                self.lsp_servers.insert(server_name.clone(), server);
+                self.lsp_open_files
+                    .insert(server_name.clone(), std::collections::HashSet::new());
+            } else {
+                let entry = self
+                    .lsp_spawn_failures
+                    .entry(server_name.clone())
+                    .or_insert((0, std::time::Instant::now()));
+                entry.0 += 1;
+                entry.1 = std::time::Instant::now();
+                return Err(format!(
+                    "lsp: failed to start {server_name} (attempt {})",
+                    entry.0
+                ));
+            }
         }
 
         if let Some(td) = extract_json_object(&params, "textDocument") {
@@ -1278,34 +1845,25 @@ impl WasmHostState {
                 if !files.contains(&uri) {
                     let file_path = uri.strip_prefix("file://").unwrap_or(&uri);
                     let lang_id = extract_json_string(&td, "languageId").unwrap_or_else(|| {
-                        if file_path.ends_with(".rs") {
-                            "rust".to_string()
-                        } else if file_path.ends_with(".go") {
-                            "go".to_string()
-                        } else if file_path.ends_with(".py") {
-                            "python".to_string()
-                        } else if file_path.ends_with(".c") || file_path.ends_with(".h") {
-                            "c".to_string()
-                        } else if file_path.ends_with(".cpp") || file_path.ends_with(".cc") {
-                            "cpp".to_string()
-                        } else if file_path.ends_with(".css") {
-                            "css".to_string()
-                        } else if file_path.ends_with(".scss") {
-                            "scss".to_string()
-                        } else if file_path.ends_with(".less") {
-                            "less".to_string()
-                        } else if file_path.ends_with(".html") || file_path.ends_with(".htm") {
-                            "html".to_string()
-                        } else if file_path.ends_with(".json") {
-                            "json".to_string()
-                        } else if file_path.ends_with(".jsonc") {
-                            "jsonc".to_string()
-                        } else if file_path.ends_with(".ts") || file_path.ends_with(".tsx") {
-                            "typescript".to_string()
-                        } else if file_path.ends_with(".js") || file_path.ends_with(".jsx") {
-                            "javascript".to_string()
-                        } else {
-                            "plaintext".to_string()
+                        let ext = std::path::Path::new(file_path)
+                            .extension()
+                            .and_then(|e| e.to_str())
+                            .map(str::to_ascii_lowercase);
+                        match ext.as_deref() {
+                            Some("rs") => "rust".to_string(),
+                            Some("go") => "go".to_string(),
+                            Some("py") => "python".to_string(),
+                            Some("c" | "h") => "c".to_string(),
+                            Some("cpp" | "cc") => "cpp".to_string(),
+                            Some("css") => "css".to_string(),
+                            Some("scss") => "scss".to_string(),
+                            Some("less") => "less".to_string(),
+                            Some("html" | "htm") => "html".to_string(),
+                            Some("json") => "json".to_string(),
+                            Some("jsonc") => "jsonc".to_string(),
+                            Some("ts" | "tsx") => "typescript".to_string(),
+                            Some("js" | "jsx") => "javascript".to_string(),
+                            _ => "plaintext".to_string(),
                         }
                     });
                     let content = self
@@ -1363,8 +1921,7 @@ fn extract_json_string(json: &str, key: &str) -> Option<String> {
     let search = format!(r#""{key}":"#);
     let start = json.find(&search)? + search.len();
     let rest = json[start..].trim_start();
-    if rest.starts_with('"') {
-        let inner = &rest[1..];
+    if let Some(inner) = rest.strip_prefix('"') {
         let mut result = String::new();
         let mut chars = inner.chars();
         loop {
@@ -1538,7 +2095,9 @@ impl WasmExtensionRuntime {
                     },
                 );
             }
-            host_state.workspace_folders = guard.shared_workspace_folders.clone();
+            host_state
+                .workspace_folders
+                .clone_from(&guard.shared_workspace_folders);
         }
 
         let bindings = SidexExtension::instantiate(&mut store, &component, &guard.linker)
@@ -1577,7 +2136,10 @@ impl WasmExtensionRuntime {
     }
 
     pub fn loaded_extension_ids(&self) -> Vec<String> {
-        let guard = self.inner.lock().unwrap_or_else(|e| e.into_inner());
+        let guard = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         guard.extensions.keys().cloned().collect()
     }
 
@@ -1980,7 +2542,7 @@ pub async fn wasm_provide_completion_all(
                             "documentation": item.documentation,
                             "insertText": item.insert_text.as_deref().unwrap_or(&item.label),
                             // "0" prefix so WASM extension results sort before other sources
-                            "sortText": item.sort_text.as_deref().map(|s| format!("0{s}")).unwrap_or_else(|| format!("0{}", item.label)),
+                            "sortText": item.sort_text.as_deref().map_or_else(|| format!("0{}", item.label), |s| format!("0{s}")),
                             "filterText": item.filter_text,
                         }));
                     }
@@ -2174,7 +2736,10 @@ pub async fn wasm_on_document_opened(
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
     let ctx = make_doc_ctx(&uri, &language_id, version);
     for ext in guard.extensions.values_mut() {
-        let _ = ext.bindings.sidex_extension_extension_api().call_on_document_opened(&mut ext.store, &ctx);
+        let _ = ext
+            .bindings
+            .sidex_extension_extension_api()
+            .call_on_document_opened(&mut ext.store, &ctx);
     }
     Ok(())
 }
@@ -2189,7 +2754,10 @@ pub async fn wasm_on_document_closed(
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
     let ctx = make_doc_ctx(&uri, &language_id, version);
     for ext in guard.extensions.values_mut() {
-        let _ = ext.bindings.sidex_extension_extension_api().call_on_document_closed(&mut ext.store, &ctx);
+        let _ = ext
+            .bindings
+            .sidex_extension_extension_api()
+            .call_on_document_closed(&mut ext.store, &ctx);
     }
     Ok(())
 }
@@ -2205,7 +2773,10 @@ pub async fn wasm_on_document_saved(
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
     let ctx = make_doc_ctx(&uri, &language_id, version);
     for ext in guard.extensions.values_mut() {
-        let _ = ext.bindings.sidex_extension_extension_api().call_on_document_saved(&mut ext.store, &ctx, reason);
+        let _ = ext
+            .bindings
+            .sidex_extension_extension_api()
+            .call_on_document_saved(&mut ext.store, &ctx, reason);
     }
     Ok(())
 }
@@ -2220,7 +2791,10 @@ pub async fn wasm_on_document_changed(
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
     let ctx = make_doc_ctx(&uri, &language_id, version);
     for ext in guard.extensions.values_mut() {
-        let _ = ext.bindings.sidex_extension_extension_api().call_on_document_changed(&mut ext.store, &ctx, &[]);
+        let _ = ext
+            .bindings
+            .sidex_extension_extension_api()
+            .call_on_document_changed(&mut ext.store, &ctx, &[]);
     }
     Ok(())
 }
@@ -2232,7 +2806,10 @@ pub async fn wasm_on_configuration_changed(
 ) -> Result<(), String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
     for ext in guard.extensions.values_mut() {
-        let _ = ext.bindings.sidex_extension_extension_api().call_on_configuration_changed(&mut ext.store, &section);
+        let _ = ext
+            .bindings
+            .sidex_extension_extension_api()
+            .call_on_configuration_changed(&mut ext.store, &section);
     }
     Ok(())
 }
@@ -2244,8 +2821,11 @@ pub async fn wasm_on_active_editor_changed(
 ) -> Result<(), String> {
     if let Ok(mut guard) = state.inner.lock() {
         for ext in guard.extensions.values_mut() {
-            ext.store.data_mut().active_editor_uri = uri.clone();
-            let _ = ext.bindings.sidex_extension_extension_api().call_on_active_editor_changed(&mut ext.store, uri.as_deref());
+            ext.store.data_mut().active_editor_uri.clone_from(&uri);
+            let _ = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_on_active_editor_changed(&mut ext.store, uri.as_deref());
         }
     }
     Ok(())
@@ -2257,7 +2837,11 @@ pub async fn wasm_on_active_editor_changed(
 
 #[tauri::command]
 pub async fn wasm_provide_type_definition_all(
-    uri: String, language_id: String, version: u32, line: u32, character: u32,
+    uri: String,
+    language_id: String,
+    version: u32,
+    line: u32,
+    character: u32,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2267,8 +2851,14 @@ pub async fn wasm_provide_type_definition_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(locs) = ext.bindings.sidex_extension_extension_api().call_provide_type_definition(&mut ext.store, &ctx, pos) {
-                for l in &locs { all.push(serialize_location(l)); }
+            if let Ok(locs) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_type_definition(&mut ext.store, &ctx, pos)
+            {
+                for l in &locs {
+                    all.push(serialize_location(l));
+                }
             }
         }
     }
@@ -2277,7 +2867,11 @@ pub async fn wasm_provide_type_definition_all(
 
 #[tauri::command]
 pub async fn wasm_provide_implementation_all(
-    uri: String, language_id: String, version: u32, line: u32, character: u32,
+    uri: String,
+    language_id: String,
+    version: u32,
+    line: u32,
+    character: u32,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2287,8 +2881,14 @@ pub async fn wasm_provide_implementation_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(locs) = ext.bindings.sidex_extension_extension_api().call_provide_implementation(&mut ext.store, &ctx, pos) {
-                for l in &locs { all.push(serialize_location(l)); }
+            if let Ok(locs) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_implementation(&mut ext.store, &ctx, pos)
+            {
+                for l in &locs {
+                    all.push(serialize_location(l));
+                }
             }
         }
     }
@@ -2297,7 +2897,11 @@ pub async fn wasm_provide_implementation_all(
 
 #[tauri::command]
 pub async fn wasm_provide_declaration_all(
-    uri: String, language_id: String, version: u32, line: u32, character: u32,
+    uri: String,
+    language_id: String,
+    version: u32,
+    line: u32,
+    character: u32,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2307,8 +2911,14 @@ pub async fn wasm_provide_declaration_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(locs) = ext.bindings.sidex_extension_extension_api().call_provide_declaration(&mut ext.store, &ctx, pos) {
-                for l in &locs { all.push(serialize_location(l)); }
+            if let Ok(locs) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_declaration(&mut ext.store, &ctx, pos)
+            {
+                for l in &locs {
+                    all.push(serialize_location(l));
+                }
             }
         }
     }
@@ -2316,9 +2926,15 @@ pub async fn wasm_provide_declaration_all(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn wasm_provide_code_actions_all(
-    uri: String, language_id: String, version: u32,
-    start_line: u32, start_character: u32, end_line: u32, end_character: u32,
+    uri: String,
+    language_id: String,
+    version: u32,
+    start_line: u32,
+    start_character: u32,
+    end_line: u32,
+    end_character: u32,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2331,7 +2947,11 @@ pub async fn wasm_provide_code_actions_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(actions) = ext.bindings.sidex_extension_extension_api().call_provide_code_actions(&mut ext.store, &ctx, range, &[]) {
+            if let Ok(actions) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_code_actions(&mut ext.store, &ctx, range, &[])
+            {
                 for a in &actions {
                     all.push(serde_json::json!({
                         "title": a.title,
@@ -2347,7 +2967,9 @@ pub async fn wasm_provide_code_actions_all(
 
 #[tauri::command]
 pub async fn wasm_provide_code_lenses_all(
-    uri: String, language_id: String, version: u32,
+    uri: String,
+    language_id: String,
+    version: u32,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2356,7 +2978,11 @@ pub async fn wasm_provide_code_lenses_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(lenses) = ext.bindings.sidex_extension_extension_api().call_provide_code_lenses(&mut ext.store, &ctx) {
+            if let Ok(lenses) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_code_lenses(&mut ext.store, &ctx)
+            {
                 for l in &lenses {
                     all.push(serde_json::json!({
                         "range": serialize_range(&l.range),
@@ -2371,7 +2997,11 @@ pub async fn wasm_provide_code_lenses_all(
 
 #[tauri::command]
 pub async fn wasm_provide_signature_help_all(
-    uri: String, language_id: String, version: u32, line: u32, character: u32,
+    uri: String,
+    language_id: String,
+    version: u32,
+    line: u32,
+    character: u32,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Option<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2380,7 +3010,11 @@ pub async fn wasm_provide_signature_help_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(Some(sh)) = ext.bindings.sidex_extension_extension_api().call_provide_signature_help(&mut ext.store, &ctx, pos) {
+            if let Ok(Some(sh)) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_signature_help(&mut ext.store, &ctx, pos)
+            {
                 return Ok(Some(serde_json::json!({
                     "signatures": sh.signatures.iter().map(|s| serde_json::json!({
                         "label": s.label,
@@ -2398,7 +3032,11 @@ pub async fn wasm_provide_signature_help_all(
 
 #[tauri::command]
 pub async fn wasm_provide_document_highlights_all(
-    uri: String, language_id: String, version: u32, line: u32, character: u32,
+    uri: String,
+    language_id: String,
+    version: u32,
+    line: u32,
+    character: u32,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2408,9 +3046,15 @@ pub async fn wasm_provide_document_highlights_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(highlights) = ext.bindings.sidex_extension_extension_api().call_provide_document_highlights(&mut ext.store, &ctx, pos) {
+            if let Ok(highlights) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_document_highlights(&mut ext.store, &ctx, pos)
+            {
                 for h in &highlights {
-                    all.push(serde_json::json!({ "range": serialize_range(&h.range), "kind": h.kind }));
+                    all.push(
+                        serde_json::json!({ "range": serialize_range(&h.range), "kind": h.kind }),
+                    );
                 }
             }
         }
@@ -2420,7 +3064,12 @@ pub async fn wasm_provide_document_highlights_all(
 
 #[tauri::command]
 pub async fn wasm_provide_rename_all(
-    uri: String, language_id: String, version: u32, line: u32, character: u32, new_name: String,
+    uri: String,
+    language_id: String,
+    version: u32,
+    line: u32,
+    character: u32,
+    new_name: String,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Option<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2429,7 +3078,11 @@ pub async fn wasm_provide_rename_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(Some(r)) = ext.bindings.sidex_extension_extension_api().call_provide_rename(&mut ext.store, &ctx, pos, &new_name) {
+            if let Ok(Some(r)) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_rename(&mut ext.store, &ctx, pos, &new_name)
+            {
                 return Ok(Some(serde_json::json!({
                     "edits": r.edits.iter().map(|e| serde_json::json!({
                         "uri": e.uri,
@@ -2444,7 +3097,9 @@ pub async fn wasm_provide_rename_all(
 
 #[tauri::command]
 pub async fn wasm_provide_folding_ranges_all(
-    uri: String, language_id: String, version: u32,
+    uri: String,
+    language_id: String,
+    version: u32,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2453,7 +3108,11 @@ pub async fn wasm_provide_folding_ranges_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(ranges) = ext.bindings.sidex_extension_extension_api().call_provide_folding_ranges(&mut ext.store, &ctx) {
+            if let Ok(ranges) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_folding_ranges(&mut ext.store, &ctx)
+            {
                 for r in &ranges {
                     all.push(serde_json::json!({ "startLine": r.start_line, "endLine": r.end_line, "kind": r.kind }));
                 }
@@ -2464,9 +3123,15 @@ pub async fn wasm_provide_folding_ranges_all(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn wasm_provide_inlay_hints_all(
-    uri: String, language_id: String, version: u32,
-    start_line: u32, start_character: u32, end_line: u32, end_character: u32,
+    uri: String,
+    language_id: String,
+    version: u32,
+    start_line: u32,
+    start_character: u32,
+    end_line: u32,
+    end_character: u32,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2479,7 +3144,11 @@ pub async fn wasm_provide_inlay_hints_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(hints) = ext.bindings.sidex_extension_extension_api().call_provide_inlay_hints(&mut ext.store, &ctx, range) {
+            if let Ok(hints) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_inlay_hints(&mut ext.store, &ctx, range)
+            {
                 for h in &hints {
                     all.push(serde_json::json!({
                         "position": { "line": h.position.line, "character": h.position.character },
@@ -2497,7 +3166,9 @@ pub async fn wasm_provide_inlay_hints_all(
 
 #[tauri::command]
 pub async fn wasm_provide_document_links_all(
-    uri: String, language_id: String, version: u32,
+    uri: String,
+    language_id: String,
+    version: u32,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2506,7 +3177,11 @@ pub async fn wasm_provide_document_links_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(links) = ext.bindings.sidex_extension_extension_api().call_provide_document_links(&mut ext.store, &ctx) {
+            if let Ok(links) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_document_links(&mut ext.store, &ctx)
+            {
                 for l in &links {
                     all.push(serde_json::json!({ "range": serialize_range(&l.range), "target": l.target }));
                 }
@@ -2518,18 +3193,27 @@ pub async fn wasm_provide_document_links_all(
 
 #[tauri::command]
 pub async fn wasm_provide_selection_ranges_all(
-    uri: String, language_id: String, version: u32,
+    uri: String,
+    language_id: String,
+    version: u32,
     positions: Vec<(u32, u32)>,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
     let ctx = make_doc_ctx(&uri, &language_id, version);
-    let wit_positions: Vec<wit_types::Position> = positions.iter().map(|(l, c)| make_position(*l, *c)).collect();
+    let wit_positions: Vec<wit_types::Position> = positions
+        .iter()
+        .map(|(l, c)| make_position(*l, *c))
+        .collect();
     let mut all = Vec::new();
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(ranges) = ext.bindings.sidex_extension_extension_api().call_provide_selection_ranges(&mut ext.store, &ctx, &wit_positions) {
+            if let Ok(ranges) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_selection_ranges(&mut ext.store, &ctx, &wit_positions)
+            {
                 for r in &ranges {
                     all.push(serde_json::json!({ "range": serialize_range(&r.range) }));
                 }
@@ -2541,7 +3225,9 @@ pub async fn wasm_provide_selection_ranges_all(
 
 #[tauri::command]
 pub async fn wasm_provide_semantic_tokens_all(
-    uri: String, language_id: String, version: u32,
+    uri: String,
+    language_id: String,
+    version: u32,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Option<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2549,8 +3235,14 @@ pub async fn wasm_provide_semantic_tokens_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(Some(tokens)) = ext.bindings.sidex_extension_extension_api().call_provide_semantic_tokens(&mut ext.store, &ctx) {
-                return Ok(Some(serde_json::json!({ "data": tokens.data, "resultId": tokens.result_id })));
+            if let Ok(Some(tokens)) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_semantic_tokens(&mut ext.store, &ctx)
+            {
+                return Ok(Some(
+                    serde_json::json!({ "data": tokens.data, "resultId": tokens.result_id }),
+                ));
             }
         }
     }
@@ -2559,7 +3251,9 @@ pub async fn wasm_provide_semantic_tokens_all(
 
 #[tauri::command]
 pub async fn wasm_provide_document_colors_all(
-    uri: String, language_id: String, version: u32,
+    uri: String,
+    language_id: String,
+    version: u32,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2568,7 +3262,11 @@ pub async fn wasm_provide_document_colors_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(colors) = ext.bindings.sidex_extension_extension_api().call_provide_document_colors(&mut ext.store, &ctx) {
+            if let Ok(colors) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_document_colors(&mut ext.store, &ctx)
+            {
                 for c in &colors {
                     all.push(serde_json::json!({
                         "range": serialize_range(&c.range),
@@ -2591,7 +3289,11 @@ pub async fn wasm_provide_workspace_symbols_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(symbols) = ext.bindings.sidex_extension_extension_api().call_provide_workspace_symbols(&mut ext.store, &query) {
+            if let Ok(symbols) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_workspace_symbols(&mut ext.store, &query)
+            {
                 for s in &symbols {
                     all.push(serde_json::json!({
                         "name": s.name,
@@ -2608,10 +3310,17 @@ pub async fn wasm_provide_workspace_symbols_all(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn wasm_provide_range_formatting_all(
-    uri: String, language_id: String, version: u32,
-    start_line: u32, start_character: u32, end_line: u32, end_character: u32,
-    tab_size: u32, insert_spaces: bool,
+    uri: String,
+    language_id: String,
+    version: u32,
+    start_line: u32,
+    start_character: u32,
+    end_line: u32,
+    end_character: u32,
+    tab_size: u32,
+    insert_spaces: bool,
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<Vec<serde_json::Value>, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
@@ -2623,12 +3332,21 @@ pub async fn wasm_provide_range_formatting_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            if let Ok(edits) = ext.bindings.sidex_extension_extension_api().call_provide_range_formatting(&mut ext.store, &ctx, range, tab_size, insert_spaces) {
+            if let Ok(edits) = ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_provide_range_formatting(&mut ext.store, &ctx, range, tab_size, insert_spaces)
+            {
                 if !edits.is_empty() {
-                    return Ok(edits.iter().map(|e| serde_json::json!({
-                        "range": serialize_range(&e.range),
-                        "newText": e.new_text,
-                    })).collect());
+                    return Ok(edits
+                        .iter()
+                        .map(|e| {
+                            serde_json::json!({
+                                "range": serialize_range(&e.range),
+                                "newText": e.new_text,
+                            })
+                        })
+                        .collect());
                 }
             }
         }
@@ -2647,8 +3365,14 @@ pub async fn wasm_execute_command_all(
     let ids: Vec<String> = guard.extensions.keys().cloned().collect();
     for id in &ids {
         if let Some(ext) = guard.extensions.get_mut(id) {
-            match ext.bindings.sidex_extension_extension_api().call_execute_command(&mut ext.store, &command_id, &args) {
-                Ok(Ok(result)) => results.push(serde_json::json!({ "extensionId": id, "result": result })),
+            match ext
+                .bindings
+                .sidex_extension_extension_api()
+                .call_execute_command(&mut ext.store, &command_id, &args)
+            {
+                Ok(Ok(result)) => {
+                    results.push(serde_json::json!({ "extensionId": id, "result": result }));
+                }
                 Ok(Err(e)) => log::warn!("[wasm] execute_command error from {id}: {e}"),
                 Err(e) => log::warn!("[wasm] execute_command trap from {id}: {e}"),
             }
@@ -2663,17 +3387,25 @@ pub async fn wasm_get_extension_metadata(
     state: State<'_, Arc<WasmExtensionRuntime>>,
 ) -> Result<serde_json::Value, String> {
     let mut guard = state.inner.lock().map_err(|e| e.to_string())?;
-    let ext = guard.extensions.get_mut(&extension_id)
+    let ext = guard
+        .extensions
+        .get_mut(&extension_id)
         .ok_or_else(|| format!("extension not loaded: {extension_id}"))?;
     let api = ext.bindings.sidex_extension_extension_api();
     let name = api.call_get_name(&mut ext.store).unwrap_or_default();
-    let display_name = api.call_get_display_name(&mut ext.store).unwrap_or_default();
+    let display_name = api
+        .call_get_display_name(&mut ext.store)
+        .unwrap_or_default();
     let version = api.call_get_version(&mut ext.store).unwrap_or_default();
     let publisher = api.call_get_publisher(&mut ext.store).unwrap_or_default();
-    let activation_events = api.call_get_activation_events(&mut ext.store).unwrap_or_default();
+    let activation_events = api
+        .call_get_activation_events(&mut ext.store)
+        .unwrap_or_default();
     let commands = api.call_get_commands(&mut ext.store).unwrap_or_default();
     let languages = api.call_get_languages(&mut ext.store).unwrap_or_default();
-    let legend = api.call_get_semantic_tokens_legend(&mut ext.store).unwrap_or(None);
+    let legend = api
+        .call_get_semantic_tokens_legend(&mut ext.store)
+        .unwrap_or(None);
     Ok(serde_json::json!({
         "id": extension_id,
         "name": name,

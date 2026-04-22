@@ -2,7 +2,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', 'src-tauri/target/**', 'extensions/**'],
+    ignores: ['dist/**', 'node_modules/**', 'src-tauri/target/**', 'extensions/**', 'src/vscode-dts/**', 'src/typings/**', '**/test/**/fixtures/**'],
   },
   {
     files: ['**/*.ts', '**/*.tsx'],

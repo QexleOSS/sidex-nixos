@@ -15,19 +15,13 @@ export abstract class PositionOffsetTransformerBase {
 	abstract getOffset(position: Position): number;
 
 	getOffsetRange(range: Range): OffsetRange {
-		return new OffsetRange(
-			this.getOffset(range.getStartPosition()),
-			this.getOffset(range.getEndPosition())
-		);
+		return new OffsetRange(this.getOffset(range.getStartPosition()), this.getOffset(range.getEndPosition()));
 	}
 
 	abstract getPosition(offset: number): Position;
 
 	getRange(offsetRange: OffsetRange): Range {
-		return Range.fromPositions(
-			this.getPosition(offsetRange.start),
-			this.getPosition(offsetRange.endExclusive)
-		);
+		return Range.fromPositions(this.getPosition(offsetRange.start), this.getPosition(offsetRange.endExclusive));
 	}
 
 	getStringEdit(edit: TextEdit): StringEdit {

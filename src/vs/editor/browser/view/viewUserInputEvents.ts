@@ -4,7 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IKeyboardEvent } from '../../../base/browser/keyboardEvent.js';
-import { IEditorMouseEvent, IMouseTarget, IMouseTargetViewZoneData, IPartialEditorMouseEvent, MouseTargetType } from '../editorBrowser.js';
+import {
+	IEditorMouseEvent,
+	IMouseTarget,
+	IMouseTargetViewZoneData,
+	IPartialEditorMouseEvent,
+	MouseTargetType
+} from '../editorBrowser.js';
 import { IMouseWheelEvent } from '../../../base/browser/mouseEvent.js';
 import { Position } from '../../common/core/position.js';
 import { ICoordinatesConverter } from '../../common/coordinatesConverter.js';
@@ -14,7 +20,6 @@ export interface EventCallback<T> {
 }
 
 export class ViewUserInputEvents {
-
 	public onKeyDown: EventCallback<IKeyboardEvent> | null = null;
 	public onKeyUp: EventCallback<IKeyboardEvent> | null = null;
 	public onContextMenu: EventCallback<IEditorMouseEvent> | null = null;
@@ -79,7 +84,9 @@ export class ViewUserInputEvents {
 
 	private _convertViewToModelMouseEvent(e: IEditorMouseEvent): IEditorMouseEvent;
 	private _convertViewToModelMouseEvent(e: IPartialEditorMouseEvent): IPartialEditorMouseEvent;
-	private _convertViewToModelMouseEvent(e: IEditorMouseEvent | IPartialEditorMouseEvent): IEditorMouseEvent | IPartialEditorMouseEvent {
+	private _convertViewToModelMouseEvent(
+		e: IEditorMouseEvent | IPartialEditorMouseEvent
+	): IEditorMouseEvent | IPartialEditorMouseEvent {
 		if (e.target) {
 			return {
 				event: e.event,
@@ -93,7 +100,10 @@ export class ViewUserInputEvents {
 		return ViewUserInputEvents.convertViewToModelMouseTarget(target, this._coordinatesConverter);
 	}
 
-	public static convertViewToModelMouseTarget(target: IMouseTarget, coordinatesConverter: ICoordinatesConverter): IMouseTarget {
+	public static convertViewToModelMouseTarget(
+		target: IMouseTarget,
+		coordinatesConverter: ICoordinatesConverter
+	): IMouseTarget {
 		const result = { ...target };
 		if (result.position) {
 			result.position = coordinatesConverter.convertViewPositionToModelPosition(result.position);
@@ -107,13 +117,21 @@ export class ViewUserInputEvents {
 		return result;
 	}
 
-	private static convertViewToModelViewZoneData(data: IMouseTargetViewZoneData, coordinatesConverter: ICoordinatesConverter): IMouseTargetViewZoneData {
+	private static convertViewToModelViewZoneData(
+		data: IMouseTargetViewZoneData,
+		coordinatesConverter: ICoordinatesConverter
+	): IMouseTargetViewZoneData {
 		return {
 			viewZoneId: data.viewZoneId,
-			positionBefore: data.positionBefore ? coordinatesConverter.convertViewPositionToModelPosition(data.positionBefore) : data.positionBefore,
-			positionAfter: data.positionAfter ? coordinatesConverter.convertViewPositionToModelPosition(data.positionAfter) : data.positionAfter,
+			positionBefore: data.positionBefore
+				? coordinatesConverter.convertViewPositionToModelPosition(data.positionBefore)
+				: data.positionBefore,
+			positionAfter: data.positionAfter
+				? coordinatesConverter.convertViewPositionToModelPosition(data.positionAfter)
+				: data.positionAfter,
 			position: coordinatesConverter.convertViewPositionToModelPosition(data.position),
-			afterLineNumber: coordinatesConverter.convertViewPositionToModelPosition(new Position(data.afterLineNumber, 1)).lineNumber,
+			afterLineNumber: coordinatesConverter.convertViewPositionToModelPosition(new Position(data.afterLineNumber, 1))
+				.lineNumber
 		};
 	}
 }

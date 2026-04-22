@@ -5,8 +5,20 @@
 
 import { timeout } from '../../../../../../base/common/async.js';
 import { BugIndicatingError } from '../../../../../../base/common/errors.js';
-import { Disposable, DisposableStore, IDisposable, MutableDisposable } from '../../../../../../base/common/lifecycle.js';
-import { autorun, derived, IObservable, observableValue, runOnChange, runOnChangeWithCancellationToken } from '../../../../../../base/common/observable.js';
+import {
+	Disposable,
+	DisposableStore,
+	IDisposable,
+	MutableDisposable
+} from '../../../../../../base/common/lifecycle.js';
+import {
+	autorun,
+	derived,
+	IObservable,
+	observableValue,
+	runOnChange,
+	runOnChangeWithCancellationToken
+} from '../../../../../../base/common/observable.js';
 import { IConfigurationService } from '../../../../../../platform/configuration/common/configuration.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../../../platform/storage/common/storage.js';
 import { InlineEditsGutterIndicator } from './components/gutterIndicatorView.js';
@@ -20,19 +32,24 @@ enum UserKind {
 }
 
 export class InlineEditsOnboardingExperience extends Disposable {
-
 	private readonly _disposables = this._register(new MutableDisposable());
 
 	private readonly _setupDone = observableValue({ name: 'setupDone' }, false);
 
 	private readonly _activeCompletionId = derived<string | undefined>(reader => {
 		const model = this._model.read(reader);
-		if (!model) { return undefined; }
+		if (!model) {
+			return undefined;
+		}
 
-		if (!this._setupDone.read(reader)) { return undefined; }
+		if (!this._setupDone.read(reader)) {
+			return undefined;
+		}
 
 		const indicator = this._indicator.read(reader);
-		if (!indicator || !indicator.isVisible.read(reader)) { return undefined; }
+		if (!indicator || !indicator.isVisible.read(reader)) {
+			return undefined;
+		}
 
 		return model.inlineEdit.inlineCompletion.identity.id;
 	});
@@ -42,7 +59,7 @@ export class InlineEditsOnboardingExperience extends Disposable {
 		private readonly _indicator: IObservable<InlineEditsGutterIndicator | undefined>,
 		private readonly _collapsedView: InlineEditsCollapsedView,
 		@IStorageService private readonly _storageService: IStorageService,
-		@IConfigurationService private readonly _configurationService: IConfigurationService,
+		@IConfigurationService private readonly _configurationService: IConfigurationService
 	) {
 		super();
 
@@ -67,77 +84,99 @@ export class InlineEditsOnboardingExperience extends Disposable {
 		let secondTimeUserAnimationCount = 0;
 
 		// pulse animation for new users
-		disposableStore.add(runOnChangeWithCancellationToken(this._activeCompletionId, async (id, _, __, token) => {
-			if (id === undefined) { return; }
-			let userType = this.getNewUserType();
+		disposableStore.add(
+			runOnChangeWithCancellationToken(this._activeCompletionId, async (id, _, __, token) => {
+				if (id === undefined) {
+					return;
+				}
+				let userType = this.getNewUserType();
 
-			// User Kind Transition
-			switch (userType) {
-				case UserKind.FirstTime: {
-					if (firstTimeUserAnimationCount++ >= 5 || userHasHoveredOverIcon) {
-						userType = UserKind.SecondTime;
-						this.setNewUserType(userType);
+				// User Kind Transition
+				switch (userType) {
+					case UserKind.FirstTime: {
+						if (firstTimeUserAnimationCount++ >= 5 || userHasHoveredOverIcon) {
+							userType = UserKind.SecondTime;
+							this.setNewUserType(userType);
+						}
+						break;
 					}
-					break;
-				}
-				case UserKind.SecondTime: {
-					if (secondTimeUserAnimationCount++ >= 3 && inlineEditHasBeenAccepted) {
-						userType = UserKind.Active;
-						this.setNewUserType(userType);
+					case UserKind.SecondTime: {
+						if (secondTimeUserAnimationCount++ >= 3 && inlineEditHasBeenAccepted) {
+							userType = UserKind.Active;
+							this.setNewUserType(userType);
+						}
+						break;
 					}
-					break;
 				}
-			}
 
-			// Animation
-			switch (userType) {
-				case UserKind.FirstTime: {
-					for (let i = 0; i < 3 && !token.isCancellationRequested; i++) {
-						await this._indicator.get()?.triggerAnimation();
-						await timeout(500);
+				// Animation
+				switch (userType) {
+					case UserKind.FirstTime: {
+						for (let i = 0; i < 3 && !token.isCancellationRequested; i++) {
+							await this._indicator.get()?.triggerAnimation();
+							await timeout(500);
+						}
+						break;
 					}
-					break;
+					case UserKind.SecondTime: {
+						this._indicator.get()?.triggerAnimation();
+						break;
+					}
 				}
-				case UserKind.SecondTime: {
-					this._indicator.get()?.triggerAnimation();
-					break;
-				}
-			}
-		}));
+			})
+		);
 
-		disposableStore.add(autorun(reader => {
-			if (this._collapsedView.isVisible.read(reader)) {
-				if (this.getNewUserType() !== UserKind.Active) {
-					this._collapsedView.triggerAnimation();
+		disposableStore.add(
+			autorun(reader => {
+				if (this._collapsedView.isVisible.read(reader)) {
+					if (this.getNewUserType() !== UserKind.Active) {
+						this._collapsedView.triggerAnimation();
+					}
 				}
-			}
-		}));
+			})
+		);
 
 		// Remember when the user has hovered over the icon
-		disposableStore.add(autorun((reader) => {
-			const indicator = this._indicator.read(reader);
-			if (!indicator) { return; }
-			reader.store.add(runOnChange(indicator.isHoveredOverIcon, async (isHovered) => {
-				if (isHovered) {
-					userHasHoveredOverIcon = true;
+		disposableStore.add(
+			autorun(reader => {
+				const indicator = this._indicator.read(reader);
+				if (!indicator) {
+					return;
 				}
-			}));
-		}));
+				reader.store.add(
+					runOnChange(indicator.isHoveredOverIcon, async isHovered => {
+						if (isHovered) {
+							userHasHoveredOverIcon = true;
+						}
+					})
+				);
+			})
+		);
 
 		// Remember when the user has accepted an inline edit
-		disposableStore.add(autorun((reader) => {
-			const model = this._model.read(reader);
-			if (!model) { return; }
-			reader.store.add(model.onDidAccept(() => {
-				inlineEditHasBeenAccepted = true;
-			}));
-		}));
+		disposableStore.add(
+			autorun(reader => {
+				const model = this._model.read(reader);
+				if (!model) {
+					return;
+				}
+				reader.store.add(
+					model.onDidAccept(() => {
+						inlineEditHasBeenAccepted = true;
+					})
+				);
+			})
+		);
 
 		return disposableStore;
 	}
 
 	private getNewUserType(): UserKind {
-		return this._storageService.get('inlineEditsGutterIndicatorUserKind', StorageScope.APPLICATION, UserKind.FirstTime) as UserKind;
+		return this._storageService.get(
+			'inlineEditsGutterIndicatorUserKind',
+			StorageScope.APPLICATION,
+			UserKind.FirstTime
+		) as UserKind;
 	}
 
 	private setNewUserType(value: UserKind): void {
@@ -151,7 +190,12 @@ export class InlineEditsOnboardingExperience extends Disposable {
 				break;
 		}
 
-		this._storageService.store('inlineEditsGutterIndicatorUserKind', value, StorageScope.APPLICATION, StorageTarget.USER);
+		this._storageService.store(
+			'inlineEditsGutterIndicatorUserKind',
+			value,
+			StorageScope.APPLICATION,
+			StorageTarget.USER
+		);
 	}
 
 	private _initializeDebugSetting(): IDisposable {

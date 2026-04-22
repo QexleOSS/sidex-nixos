@@ -11,7 +11,7 @@ export class LineSequence implements ISequence {
 	constructor(
 		private readonly trimmedHash: number[],
 		private readonly lines: string[]
-	) { }
+	) {}
 
 	getElement(offset: number): number {
 		return this.trimmedHash[offset];

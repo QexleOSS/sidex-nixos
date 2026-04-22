@@ -8,19 +8,38 @@ import { toErrorMessage } from '../../../../../base/common/errorMessage.js';
 import { basename, isEqual } from '../../../../../base/common/resources.js';
 import { Action } from '../../../../../base/common/actions.js';
 import { URI } from '../../../../../base/common/uri.js';
-import { FileOperationError, FileOperationResult, IWriteFileOptions } from '../../../../../platform/files/common/files.js';
-import { ITextFileService, ISaveErrorHandler, ITextFileEditorModel, ITextFileSaveAsOptions, ITextFileSaveOptions } from '../../../../services/textfile/common/textfiles.js';
+import {
+	FileOperationError,
+	FileOperationResult,
+	IWriteFileOptions
+} from '../../../../../platform/files/common/files.js';
+import {
+	ITextFileService,
+	ISaveErrorHandler,
+	ITextFileEditorModel,
+	ITextFileSaveAsOptions,
+	ITextFileSaveOptions
+} from '../../../../services/textfile/common/textfiles.js';
 import { ServicesAccessor, IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IDisposable, dispose, Disposable } from '../../../../../base/common/lifecycle.js';
 import { IWorkbenchContribution } from '../../../../common/contributions.js';
 import { ITextModelService } from '../../../../../editor/common/services/resolverService.js';
 import { ResourceMap } from '../../../../../base/common/map.js';
 import { DiffEditorInput } from '../../../../common/editor/diffEditorInput.js';
-import { IContextKey, IContextKeyService, RawContextKey } from '../../../../../platform/contextkey/common/contextkey.js';
+import {
+	IContextKey,
+	IContextKeyService,
+	RawContextKey
+} from '../../../../../platform/contextkey/common/contextkey.js';
 import { TextFileContentProvider } from '../../common/files.js';
 import { FileEditorInput } from './fileEditorInput.js';
 import { SAVE_FILE_AS_LABEL } from '../fileConstants.js';
-import { INotificationService, INotificationHandle, INotificationActions, Severity } from '../../../../../platform/notification/common/notification.js';
+import {
+	INotificationService,
+	INotificationHandle,
+	INotificationActions,
+	Severity
+} from '../../../../../platform/notification/common/notification.js';
 import { IOpenerService } from '../../../../../platform/opener/common/opener.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../../platform/storage/common/storage.js';
 import { IProductService } from '../../../../../platform/product/common/productService.js';
@@ -37,11 +56,13 @@ export const CONFLICT_RESOLUTION_SCHEME = 'conflictResolution';
 
 const LEARN_MORE_DIRTY_WRITE_IGNORE_KEY = 'learnMoreDirtyWriteError';
 
-const conflictEditorHelp = localize('userGuide', "Use the actions in the editor tool bar to either undo your changes or overwrite the content of the file with your changes.");
+const conflictEditorHelp = localize(
+	'userGuide',
+	'Use the actions in the editor tool bar to either undo your changes or overwrite the content of the file with your changes.'
+);
 
 // A handler for text file save error happening with conflict resolution actions
 export class TextFileSaveErrorHandler extends Disposable implements ISaveErrorHandler, IWorkbenchContribution {
-
 	static readonly ID = 'workbench.contrib.textFileSaveErrorHandler';
 
 	private readonly messages = new ResourceMap<INotificationHandle>();
@@ -59,7 +80,9 @@ export class TextFileSaveErrorHandler extends Disposable implements ISaveErrorHa
 	) {
 		super();
 
-		this.conflictResolutionContext = new RawContextKey<boolean>(CONFLICT_RESOLUTION_CONTEXT, false, true).bindTo(contextKeyService);
+		this.conflictResolutionContext = new RawContextKey<boolean>(CONFLICT_RESOLUTION_CONTEXT, false, true).bindTo(
+			contextKeyService
+		);
 
 		const provider = this._register(instantiationService.createInstance(TextFileContentProvider));
 		this._register(textModelService.registerTextModelContentProvider(CONFLICT_RESOLUTION_SCHEME, provider));
@@ -111,7 +134,6 @@ export class TextFileSaveErrorHandler extends Disposable implements ISaveErrorHa
 
 		// Dirty write prevention
 		if (fileOperationError.fileOperationResult === FileOperationResult.FILE_MODIFIED_SINCE) {
-
 			// If the user tried to save from the opened conflict editor, show its message again
 			if (this.activeConflictResolutionResource && isEqual(this.activeConflictResolutionResource, model.resource)) {
 				if (this.storageService.getBoolean(LEARN_MORE_DIRTY_WRITE_IGNORE_KEY, StorageScope.APPLICATION)) {
@@ -126,10 +148,16 @@ export class TextFileSaveErrorHandler extends Disposable implements ISaveErrorHa
 
 			// Otherwise show the message that will lead the user into the save conflict editor.
 			else {
-				message = localize('staleSaveError', "Failed to save '{0}': The content of the file is newer. Please compare your version with the file contents or overwrite the content of the file with your changes.", basename(resource));
+				message = localize(
+					'staleSaveError',
+					"Failed to save '{0}': The content of the file is newer. Please compare your version with the file contents or overwrite the content of the file with your changes.",
+					basename(resource)
+				);
 
 				primaryActions.push(this.instantiationService.createInstance(ResolveSaveConflictAction, model));
-				primaryActions.push(this.instantiationService.createInstance(SaveModelIgnoreModifiedSinceAction, model, options));
+				primaryActions.push(
+					this.instantiationService.createInstance(SaveModelIgnoreModifiedSinceAction, model, options)
+				);
 
 				secondaryActions.push(this.instantiationService.createInstance(ConfigureSaveConflictAction));
 			}
@@ -144,7 +172,9 @@ export class TextFileSaveErrorHandler extends Disposable implements ISaveErrorHa
 
 			// Save Elevated
 			if (canSaveElevated && (isPermissionDenied || triedToUnlock)) {
-				primaryActions.push(this.instantiationService.createInstance(SaveModelElevatedAction, model, options, !!triedToUnlock));
+				primaryActions.push(
+					this.instantiationService.createInstance(SaveModelElevatedAction, model, options, !!triedToUnlock)
+				);
 			}
 
 			// Unlock
@@ -166,14 +196,43 @@ export class TextFileSaveErrorHandler extends Disposable implements ISaveErrorHa
 			// Message
 			if (isWriteLocked) {
 				if (triedToUnlock && canSaveElevated) {
-					message = isWindows ? localize('readonlySaveErrorAdmin', "Failed to save '{0}': File is read-only. Select 'Overwrite as Admin' to retry as administrator.", basename(resource)) : localize('readonlySaveErrorSudo', "Failed to save '{0}': File is read-only. Select 'Overwrite as Sudo' to retry as superuser.", basename(resource));
+					message = isWindows
+						? localize(
+								'readonlySaveErrorAdmin',
+								"Failed to save '{0}': File is read-only. Select 'Overwrite as Admin' to retry as administrator.",
+								basename(resource)
+							)
+						: localize(
+								'readonlySaveErrorSudo',
+								"Failed to save '{0}': File is read-only. Select 'Overwrite as Sudo' to retry as superuser.",
+								basename(resource)
+							);
 				} else {
-					message = localize('readonlySaveError', "Failed to save '{0}': File is read-only. Select 'Overwrite' to attempt to make it writeable.", basename(resource));
+					message = localize(
+						'readonlySaveError',
+						"Failed to save '{0}': File is read-only. Select 'Overwrite' to attempt to make it writeable.",
+						basename(resource)
+					);
 				}
 			} else if (canSaveElevated && isPermissionDenied) {
-				message = isWindows ? localize('permissionDeniedSaveError', "Failed to save '{0}': Insufficient permissions. Select 'Retry as Admin' to retry as administrator.", basename(resource)) : localize('permissionDeniedSaveErrorSudo', "Failed to save '{0}': Insufficient permissions. Select 'Retry as Sudo' to retry as superuser.", basename(resource));
+				message = isWindows
+					? localize(
+							'permissionDeniedSaveError',
+							"Failed to save '{0}': Insufficient permissions. Select 'Retry as Admin' to retry as administrator.",
+							basename(resource)
+						)
+					: localize(
+							'permissionDeniedSaveErrorSudo',
+							"Failed to save '{0}': Insufficient permissions. Select 'Retry as Sudo' to retry as superuser.",
+							basename(resource)
+						);
 			} else {
-				message = localize({ key: 'genericSaveError', comment: ['{0} is the resource that failed to save and {1} the error message'] }, "Failed to save '{0}': {1}", basename(resource), toErrorMessage(error, false));
+				message = localize(
+					{ key: 'genericSaveError', comment: ['{0} is the resource that failed to save and {1} the error message'] },
+					"Failed to save '{0}': {1}",
+					basename(resource),
+					toErrorMessage(error, false)
+				);
 			}
 		}
 
@@ -185,7 +244,10 @@ export class TextFileSaveErrorHandler extends Disposable implements ISaveErrorHa
 			message,
 			actions
 		});
-		Event.once(handle.onDidClose)(() => { dispose(primaryActions); dispose(secondaryActions); });
+		Event.once(handle.onDidClose)(() => {
+			dispose(primaryActions);
+			dispose(secondaryActions);
+		});
 		this.messages.set(model.resource, handle);
 	}
 
@@ -205,11 +267,8 @@ function clearPendingResolveSaveConflictMessages(): void {
 }
 
 class ResolveConflictLearnMoreAction extends Action {
-
-	constructor(
-		@IOpenerService private readonly openerService: IOpenerService
-	) {
-		super('workbench.files.action.resolveConflictLearnMore', localize('learnMore', "Learn More"));
+	constructor(@IOpenerService private readonly openerService: IOpenerService) {
+		super('workbench.files.action.resolveConflictLearnMore', localize('learnMore', 'Learn More'));
 	}
 
 	override async run(): Promise<void> {
@@ -218,15 +277,14 @@ class ResolveConflictLearnMoreAction extends Action {
 }
 
 class DoNotShowResolveConflictLearnMoreAction extends Action {
-
-	constructor(
-		@IStorageService private readonly storageService: IStorageService
-	) {
-		super('workbench.files.action.resolveConflictLearnMoreDoNotShowAgain', localize('dontShowAgain', "Don't Show Again"));
+	constructor(@IStorageService private readonly storageService: IStorageService) {
+		super(
+			'workbench.files.action.resolveConflictLearnMoreDoNotShowAgain',
+			localize('dontShowAgain', "Don't Show Again")
+		);
 	}
 
 	override async run(notification: IDisposable): Promise<void> {
-
 		// Remember this as application state
 		this.storageService.store(LEARN_MORE_DIRTY_WRITE_IGNORE_KEY, true, StorageScope.APPLICATION, StorageTarget.USER);
 
@@ -236,7 +294,6 @@ class DoNotShowResolveConflictLearnMoreAction extends Action {
 }
 
 class ResolveSaveConflictAction extends Action {
-
 	constructor(
 		private model: ITextFileEditorModel,
 		@IEditorService private readonly editorService: IEditorService,
@@ -244,16 +301,24 @@ class ResolveSaveConflictAction extends Action {
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IProductService private readonly productService: IProductService
 	) {
-		super('workbench.files.action.resolveConflict', localize('compareChanges', "Compare"));
+		super('workbench.files.action.resolveConflict', localize('compareChanges', 'Compare'));
 	}
 
 	override async run(): Promise<void> {
 		if (!this.model.isDisposed()) {
 			const resource = this.model.resource;
 			const name = basename(resource);
-			const editorLabel = localize('saveConflictDiffLabel', "{0} (in file) ↔ {1} (in {2}) - Resolve save conflict", name, name, this.productService.nameLong);
+			const editorLabel = localize(
+				'saveConflictDiffLabel',
+				'{0} (in file) ↔ {1} (in {2}) - Resolve save conflict',
+				name,
+				name,
+				this.productService.nameLong
+			);
 
-			await TextFileContentProvider.open(resource, CONFLICT_RESOLUTION_SCHEME, editorLabel, this.editorService, { pinned: true });
+			await TextFileContentProvider.open(resource, CONFLICT_RESOLUTION_SCHEME, editorLabel, this.editorService, {
+				pinned: true
+			});
 
 			// Show additional help how to resolve the save conflict
 			const actions = { primary: [this.instantiationService.createInstance(ResolveConflictLearnMoreAction)] };
@@ -271,13 +336,21 @@ class ResolveSaveConflictAction extends Action {
 }
 
 class SaveModelElevatedAction extends Action {
-
 	constructor(
 		private model: ITextFileEditorModel,
 		private options: ITextFileSaveOptions,
 		private triedToUnlock: boolean
 	) {
-		super('workbench.files.action.saveModelElevated', triedToUnlock ? isWindows ? localize('overwriteElevated', "Overwrite as Admin...") : localize('overwriteElevatedSudo', "Overwrite as Sudo...") : isWindows ? localize('saveElevated', "Retry as Admin...") : localize('saveElevatedSudo', "Retry as Sudo..."));
+		super(
+			'workbench.files.action.saveModelElevated',
+			triedToUnlock
+				? isWindows
+					? localize('overwriteElevated', 'Overwrite as Admin...')
+					: localize('overwriteElevatedSudo', 'Overwrite as Sudo...')
+				: isWindows
+					? localize('saveElevated', 'Retry as Admin...')
+					: localize('saveElevatedSudo', 'Retry as Sudo...')
+		);
 	}
 
 	override async run(): Promise<void> {
@@ -293,12 +366,11 @@ class SaveModelElevatedAction extends Action {
 }
 
 class RetrySaveModelAction extends Action {
-
 	constructor(
 		private model: ITextFileEditorModel,
 		private options: ITextFileSaveOptions
 	) {
-		super('workbench.files.action.saveModel', localize('retry', "Retry"));
+		super('workbench.files.action.saveModel', localize('retry', 'Retry'));
 	}
 
 	override async run(): Promise<void> {
@@ -309,11 +381,8 @@ class RetrySaveModelAction extends Action {
 }
 
 class RevertModelAction extends Action {
-
-	constructor(
-		private model: ITextFileEditorModel
-	) {
-		super('workbench.files.action.revertModel', localize('revert', "Revert"));
+	constructor(private model: ITextFileEditorModel) {
+		super('workbench.files.action.revertModel', localize('revert', 'Revert'));
 	}
 
 	override async run(): Promise<void> {
@@ -324,7 +393,6 @@ class RevertModelAction extends Action {
 }
 
 class SaveModelAsAction extends Action {
-
 	constructor(
 		private model: ITextFileEditorModel,
 		@IEditorService private editorService: IEditorService
@@ -344,7 +412,9 @@ class SaveModelAsAction extends Action {
 	private findEditor(): IEditorIdentifier | undefined {
 		let preferredMatchingEditor: IEditorIdentifier | undefined;
 
-		const editors = this.editorService.findEditors(this.model.resource, { supportSideBySide: SideBySideEditor.PRIMARY });
+		const editors = this.editorService.findEditors(this.model.resource, {
+			supportSideBySide: SideBySideEditor.PRIMARY
+		});
 		for (const identifier of editors) {
 			if (identifier.editor instanceof FileEditorInput) {
 				// We prefer a `FileEditorInput` for "Save As", but it is possible
@@ -363,12 +433,11 @@ class SaveModelAsAction extends Action {
 }
 
 class UnlockModelAction extends Action {
-
 	constructor(
 		private model: ITextFileEditorModel,
 		private options: ITextFileSaveOptions
 	) {
-		super('workbench.files.action.unlock', localize('overwrite', "Overwrite"));
+		super('workbench.files.action.unlock', localize('overwrite', 'Overwrite'));
 	}
 
 	override async run(): Promise<void> {
@@ -379,12 +448,11 @@ class UnlockModelAction extends Action {
 }
 
 class SaveModelIgnoreModifiedSinceAction extends Action {
-
 	constructor(
 		private model: ITextFileEditorModel,
 		private options: ITextFileSaveOptions
 	) {
-		super('workbench.files.action.saveIgnoreModifiedSince', localize('overwrite', "Overwrite"));
+		super('workbench.files.action.saveIgnoreModifiedSince', localize('overwrite', 'Overwrite'));
 	}
 
 	override async run(): Promise<void> {
@@ -395,11 +463,8 @@ class SaveModelIgnoreModifiedSinceAction extends Action {
 }
 
 class ConfigureSaveConflictAction extends Action {
-
-	constructor(
-		@IPreferencesService private readonly preferencesService: IPreferencesService
-	) {
-		super('workbench.files.action.configureSaveConflict', localize('configure', "Configure"));
+	constructor(@IPreferencesService private readonly preferencesService: IPreferencesService) {
+		super('workbench.files.action.configureSaveConflict', localize('configure', 'Configure'));
 	}
 
 	override async run(): Promise<void> {

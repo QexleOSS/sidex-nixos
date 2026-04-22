@@ -12,13 +12,23 @@ import { Range } from '../../core/range.js';
 import { IWordAtPosition, getWordAtText } from '../../core/wordHelper.js';
 import { StandardTokenType } from '../../encodedTokenAttributes.js';
 import { ILanguageService } from '../../languages/language.js';
-import { ILanguageConfigurationService, LanguageConfigurationServiceChangeEvent, ResolvedLanguageConfiguration } from '../../languages/languageConfigurationRegistry.js';
+import {
+	ILanguageConfigurationService,
+	LanguageConfigurationServiceChangeEvent,
+	ResolvedLanguageConfiguration
+} from '../../languages/languageConfigurationRegistry.js';
 import { BracketPairsTextModelPart } from '../bracketPairsTextModelPart/bracketPairsImpl.js';
 import { TextModel } from '../textModel.js';
 import { TextModelPart } from '../textModelPart.js';
 import { AbstractSyntaxTokenBackend, AttachedViews } from './abstractSyntaxTokenBackend.js';
 import { TreeSitterSyntaxTokenBackend } from './treeSitter/treeSitterSyntaxTokenBackend.js';
-import { IModelContentChangedEvent, IModelLanguageChangedEvent, IModelLanguageConfigurationChangedEvent, IModelTokensChangedEvent, IModelFontTokensChangedEvent } from '../../textModelEvents.js';
+import {
+	IModelContentChangedEvent,
+	IModelLanguageChangedEvent,
+	IModelLanguageConfigurationChangedEvent,
+	IModelTokensChangedEvent,
+	IModelFontTokensChangedEvent
+} from '../../textModelEvents.js';
 import { ITokenizationTextModelPart } from '../../tokenizationTextModelPart.js';
 import { LineTokens } from '../../tokens/lineTokens.js';
 import { SparseMultilineTokens } from '../../tokens/sparseMultilineTokens.js';
@@ -40,7 +50,9 @@ export class TokenizationTextModelPart extends TextModelPart implements ITokeniz
 	private readonly _onDidChangeTokens: Emitter<IModelTokensChangedEvent>;
 	public readonly onDidChangeTokens: Event<IModelTokensChangedEvent>;
 
-	private readonly _onDidChangeFontTokens: Emitter<IModelFontTokensChangedEvent> = this._register(new Emitter<IModelFontTokensChangedEvent>());
+	private readonly _onDidChangeFontTokens: Emitter<IModelFontTokensChangedEvent> = this._register(
+		new Emitter<IModelFontTokensChangedEvent>()
+	);
 	public readonly onDidChangeFontTokens: Event<IModelFontTokensChangedEvent> = this._onDidChangeFontTokens.event;
 
 	public readonly tokens: IObservable<AbstractSyntaxTokenBackend>;
@@ -55,7 +67,7 @@ export class TokenizationTextModelPart extends TextModelPart implements ITokeniz
 		@ILanguageService private readonly _languageService: ILanguageService,
 		@ILanguageConfigurationService private readonly _languageConfigurationService: ILanguageConfigurationService,
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
-		@ITreeSitterLibraryService private readonly _treeSitterLibraryService: ITreeSitterLibraryService,
+		@ITreeSitterLibraryService private readonly _treeSitterLibraryService: ITreeSitterLibraryService
 	) {
 		super();
 
@@ -69,29 +81,44 @@ export class TokenizationTextModelPart extends TextModelPart implements ITokeniz
 		this.tokens = derived(this, reader => {
 			let tokens: AbstractSyntaxTokenBackend;
 			if (this._useTreeSitter.read(reader)) {
-				tokens = reader.store.add(this._instantiationService.createInstance(
-					TreeSitterSyntaxTokenBackend,
-					this._languageIdObs,
-					this._languageService.languageIdCodec,
-					this._textModel,
-					this._attachedViews.visibleLineRanges
-				));
+				tokens = reader.store.add(
+					this._instantiationService.createInstance(
+						TreeSitterSyntaxTokenBackend,
+						this._languageIdObs,
+						this._languageService.languageIdCodec,
+						this._textModel,
+						this._attachedViews.visibleLineRanges
+					)
+				);
 			} else {
-				tokens = reader.store.add(new TokenizerSyntaxTokenBackend(this._languageService.languageIdCodec, this._textModel, () => this._languageId, this._attachedViews));
+				tokens = reader.store.add(
+					new TokenizerSyntaxTokenBackend(
+						this._languageService.languageIdCodec,
+						this._textModel,
+						() => this._languageId,
+						this._attachedViews
+					)
+				);
 			}
 
-			reader.store.add(tokens.onDidChangeTokens(e => {
-				this._emitModelTokensChangedEvent(e);
-			}));
-			reader.store.add(tokens.onDidChangeFontTokens(e => {
-				if (!this._textModel._isDisposing()) {
-					this._onDidChangeFontTokens.fire(e);
-				}
-			}));
+			reader.store.add(
+				tokens.onDidChangeTokens(e => {
+					this._emitModelTokensChangedEvent(e);
+				})
+			);
+			reader.store.add(
+				tokens.onDidChangeFontTokens(e => {
+					if (!this._textModel._isDisposing()) {
+						this._onDidChangeFontTokens.fire(e);
+					}
+				})
+			);
 
-			reader.store.add(tokens.onDidChangeBackgroundTokenizationState(e => {
-				this._bracketPairsTextModelPart.handleDidChangeBackgroundTokenizationState();
-			}));
+			reader.store.add(
+				tokens.onDidChangeBackgroundTokenizationState(e => {
+					this._bracketPairsTextModelPart.handleDidChangeBackgroundTokenizationState();
+				})
+			);
 			return tokens;
 		});
 
@@ -119,9 +146,11 @@ export class TokenizationTextModelPart extends TextModelPart implements ITokeniz
 	_hasListeners(): boolean {
 		// Note: _onDidChangeFontTokens is intentionally excluded because it's an internal event
 		// that TokenizationFontDecorationProvider subscribes to during TextModel construction
-		return (this._onDidChangeLanguage.hasListeners()
-			|| this._onDidChangeLanguageConfiguration.hasListeners()
-			|| this._onDidChangeTokens.hasListeners());
+		return (
+			this._onDidChangeLanguage.hasListeners() ||
+			this._onDidChangeLanguageConfiguration.hasListeners() ||
+			this._onDidChangeTokens.hasListeners()
+		);
 	}
 
 	public handleLanguageConfigurationServiceChange(e: LanguageConfigurationServiceChangeEvent): void {
@@ -133,7 +162,8 @@ export class TokenizationTextModelPart extends TextModelPart implements ITokeniz
 	public handleDidChangeContent(e: IModelContentChangedEvent): void {
 		if (e.isFlush) {
 			this._semanticTokens.flush();
-		} else if (!e.isEolChange) { // We don't have to do anything on an EOL change
+		} else if (!e.isEolChange) {
+			// We don't have to do anything on an EOL change
 			for (const c of e.changes) {
 				const [eolCount, firstLineLength, lastLineLength] = countEOL(c.text);
 
@@ -227,7 +257,7 @@ export class TokenizationTextModelPart extends TextModelPart implements ITokeniz
 
 		this._emitModelTokensChangedEvent({
 			semanticTokensApplied: tokens !== null,
-			ranges: [{ fromLineNumber: 1, toLineNumber: this._textModel.getLineCount() }],
+			ranges: [{ fromLineNumber: 1, toLineNumber: this._textModel.getLineCount() }]
 		});
 	}
 
@@ -243,18 +273,16 @@ export class TokenizationTextModelPart extends TextModelPart implements ITokeniz
 		if (this.hasCompleteSemanticTokens()) {
 			return;
 		}
-		const changedRange = this._textModel.validateRange(
-			this._semanticTokens.setPartial(range, tokens)
-		);
+		const changedRange = this._textModel.validateRange(this._semanticTokens.setPartial(range, tokens));
 
 		this._emitModelTokensChangedEvent({
 			semanticTokensApplied: true,
 			ranges: [
 				{
 					fromLineNumber: changedRange.startLineNumber,
-					toLineNumber: changedRange.endLineNumber,
-				},
-			],
+					toLineNumber: changedRange.endLineNumber
+				}
+			]
 		});
 	}
 
@@ -342,12 +370,12 @@ export class TokenizationTextModelPart extends TextModelPart implements ITokeniz
 	public getWordUntilPosition(position: IPosition): IWordAtPosition {
 		const wordAtPosition = this.getWordAtPosition(position);
 		if (!wordAtPosition) {
-			return { word: '', startColumn: position.column, endColumn: position.column, };
+			return { word: '', startColumn: position.column, endColumn: position.column };
 		}
 		return {
 			word: wordAtPosition.word.substr(0, position.column - wordAtPosition.startColumn),
 			startColumn: wordAtPosition.startColumn,
-			endColumn: position.column,
+			endColumn: position.column
 		};
 	}
 

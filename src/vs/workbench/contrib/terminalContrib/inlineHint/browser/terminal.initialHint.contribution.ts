@@ -18,10 +18,23 @@ import { IConfigurationService } from '../../../../../platform/configuration/com
 import { IContextMenuService } from '../../../../../platform/contextview/browser/contextView.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../../platform/keybinding/common/keybinding.js';
-import { ITerminalCapabilityStore, TerminalCapability } from '../../../../../platform/terminal/common/capabilities/capabilities.js';
+import {
+	ITerminalCapabilityStore,
+	TerminalCapability
+} from '../../../../../platform/terminal/common/capabilities/capabilities.js';
 import { AccessibilityVerbositySettingId } from '../../../accessibility/browser/accessibilityConfiguration.js';
-import { IDetachedTerminalInstance, ITerminalConfigurationService, ITerminalContribution, ITerminalInstance, IXtermTerminal } from '../../../terminal/browser/terminal.js';
-import { registerTerminalContribution, type IDetachedCompatibleTerminalContributionContext, type ITerminalContributionContext } from '../../../terminal/browser/terminalExtensions.js';
+import {
+	IDetachedTerminalInstance,
+	ITerminalConfigurationService,
+	ITerminalContribution,
+	ITerminalInstance,
+	IXtermTerminal
+} from '../../../terminal/browser/terminal.js';
+import {
+	registerTerminalContribution,
+	type IDetachedCompatibleTerminalContributionContext,
+	type ITerminalContributionContext
+} from '../../../terminal/browser/terminalExtensions.js';
 import { TerminalInstance } from '../../../terminal/browser/terminalInstance.js';
 import { TerminalInitialHintSettingId } from '../common/terminalInitialHintConfiguration.js';
 import './media/terminalInitialHint.css';
@@ -32,7 +45,9 @@ const $ = dom.$;
 
 export class InitialHintAddon extends Disposable implements ITerminalAddon {
 	private readonly _onDidRequestCreateHint = this._register(new Emitter<void>());
-	get onDidRequestCreateHint(): Event<void> { return this._onDidRequestCreateHint.event; }
+	get onDidRequestCreateHint(): Event<void> {
+		return this._onDidRequestCreateHint.event;
+	}
 	private readonly _disposables = this._register(new MutableDisposable<DisposableStore>());
 
 	constructor(private readonly _capabilities: ITerminalCapabilityStore) {
@@ -45,15 +60,19 @@ export class InitialHintAddon extends Disposable implements ITerminalAddon {
 		if (capability) {
 			store.add(Event.once(capability.promptInputModel.onDidStartInput)(() => this._onDidRequestCreateHint.fire()));
 		} else {
-			this._register(this._capabilities.onDidAddCapability(e => {
-				if (e.id === TerminalCapability.CommandDetection) {
-					const capability = e.capability;
-					store.add(Event.once(capability.promptInputModel.onDidStartInput)(() => this._onDidRequestCreateHint.fire()));
-					if (!capability.promptInputModel.value) {
-						this._onDidRequestCreateHint.fire();
+			this._register(
+				this._capabilities.onDidAddCapability(e => {
+					if (e.id === TerminalCapability.CommandDetection) {
+						const capability = e.capability;
+						store.add(
+							Event.once(capability.promptInputModel.onDidStartInput)(() => this._onDidRequestCreateHint.fire())
+						);
+						if (!capability.promptInputModel.value) {
+							this._onDidRequestCreateHint.fire();
+						}
 					}
-				}
-			}));
+				})
+			);
 		}
 	}
 }
@@ -69,21 +88,26 @@ export class TerminalInitialHintContribution extends Disposable implements ITerm
 		return instance.getContribution<TerminalInitialHintContribution>(TerminalInitialHintContribution.ID);
 	}
 	private readonly _decoration = this._register(new MutableDisposable<IDecoration>());
-	private _xterm: IXtermTerminal & { raw: RawXtermTerminal } | undefined;
+	private _xterm: (IXtermTerminal & { raw: RawXtermTerminal }) | undefined;
 	private readonly _cursorMoveListener = this._register(new MutableDisposable());
 
 	constructor(
 		private readonly _ctx: ITerminalContributionContext | IDetachedCompatibleTerminalContributionContext,
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
-		@ITerminalConfigurationService private readonly _terminalConfigurationService: ITerminalConfigurationService,
+		@ITerminalConfigurationService private readonly _terminalConfigurationService: ITerminalConfigurationService
 	) {
 		super();
 	}
 
 	xtermOpen(xterm: IXtermTerminal & { raw: RawXtermTerminal }): void {
 		// Don't show if the terminal was launched by an extension or a feature like debug
-		if (hasKey(this._ctx.instance, { shellLaunchConfig: true }) && (this._ctx.instance.shellLaunchConfig.isExtensionOwnedTerminal || this._ctx.instance.shellLaunchConfig.isFeatureTerminal || this._ctx.instance.shellLaunchConfig.hideFromUser)) {
+		if (
+			hasKey(this._ctx.instance, { shellLaunchConfig: true }) &&
+			(this._ctx.instance.shellLaunchConfig.isExtensionOwnedTerminal ||
+				this._ctx.instance.shellLaunchConfig.isFeatureTerminal ||
+				this._ctx.instance.shellLaunchConfig.hideFromUser)
+		) {
 			return;
 		}
 		// Don't show if disabled
@@ -95,7 +119,9 @@ export class TerminalInitialHintContribution extends Disposable implements ITerm
 			return;
 		}
 		this._xterm = xterm;
-		this._addon = this._register(this._instantiationService.createInstance(InitialHintAddon, this._ctx.instance.capabilities));
+		this._addon = this._register(
+			this._instantiationService.createInstance(InitialHintAddon, this._ctx.instance.capabilities)
+		);
 		this._xterm.raw.loadAddon(this._addon);
 		this._register(this._addon.onDidRequestCreateHint(() => this._createHint()));
 	}
@@ -109,7 +135,15 @@ export class TerminalInitialHintContribution extends Disposable implements ITerm
 	private _createHint(): void {
 		const instance = this._ctx.instance instanceof TerminalInstance ? this._ctx.instance : undefined;
 		const commandDetectionCapability = instance?.capabilities.get(TerminalCapability.CommandDetection);
-		if (!instance || !this._xterm || this._hintWidget || !commandDetectionCapability || commandDetectionCapability.promptInputModel.value || !!instance.shellLaunchConfig.attachPersistentProcess || commandDetectionCapability.commands.length > 0) {
+		if (
+			!instance ||
+			!this._xterm ||
+			this._hintWidget ||
+			!commandDetectionCapability ||
+			commandDetectionCapability.promptInputModel.value ||
+			!!instance.shellLaunchConfig.attachPersistentProcess ||
+			commandDetectionCapability.commands.length > 0
+		) {
 			return;
 		}
 
@@ -129,25 +163,32 @@ export class TerminalInitialHintContribution extends Disposable implements ITerm
 			this._register(marker);
 			this._decoration.value = this._xterm.raw.registerDecoration({
 				marker,
-				x: this._xterm.raw.buffer.active.cursorX + 1,
+				x: this._xterm.raw.buffer.active.cursorX + 1
 			});
 		}
 
 		this._register(this._xterm.raw.onKey(() => this.dispose()));
 
-		this._register(this._configurationService.onDidChangeConfiguration(e => {
-			if (e.affectsConfiguration(TerminalInitialHintSettingId.Enabled) && !this._configurationService.getValue(TerminalInitialHintSettingId.Enabled)) {
-				this.dispose();
-			}
-		}));
+		this._register(
+			this._configurationService.onDidChangeConfiguration(e => {
+				if (
+					e.affectsConfiguration(TerminalInitialHintSettingId.Enabled) &&
+					!this._configurationService.getValue(TerminalInitialHintSettingId.Enabled)
+				) {
+					this.dispose();
+				}
+			})
+		);
 
 		const inputModel = commandDetectionCapability.promptInputModel;
 		if (inputModel) {
-			this._register(inputModel.onDidChangeInput(() => {
-				if (inputModel.value) {
-					this.dispose();
-				}
-			}));
+			this._register(
+				inputModel.onDidChangeInput(() => {
+					if (inputModel.value) {
+						this.dispose();
+					}
+				})
+			);
 		}
 
 		// Listen to cursor move and recreate the hint (only if no input has been received)
@@ -162,35 +203,37 @@ export class TerminalInitialHintContribution extends Disposable implements ITerm
 		if (!this._decoration.value) {
 			return;
 		}
-		this._register(this._decoration.value.onRender((e) => {
-			if (!this._hintWidget && this._xterm?.isFocused) {
-				const widget = this._register(this._instantiationService.createInstance(TerminalInitialHintWidget, instance));
-				this._addon?.dispose();
-				this._hintWidget = widget.getDomNode();
-				if (!this._hintWidget) {
-					return;
+		this._register(
+			this._decoration.value.onRender(e => {
+				if (!this._hintWidget && this._xterm?.isFocused) {
+					const widget = this._register(this._instantiationService.createInstance(TerminalInitialHintWidget, instance));
+					this._addon?.dispose();
+					this._hintWidget = widget.getDomNode();
+					if (!this._hintWidget) {
+						return;
+					}
+					e.appendChild(this._hintWidget);
+					e.classList.add('terminal-initial-hint');
+					const font = this._xterm.getFont();
+					if (font) {
+						e.style.fontFamily = font.fontFamily;
+						e.style.fontSize = font.fontSize + 'px';
+					}
 				}
-				e.appendChild(this._hintWidget);
-				e.classList.add('terminal-initial-hint');
-				const font = this._xterm.getFont();
-				if (font) {
-					e.style.fontFamily = font.fontFamily;
-					e.style.fontSize = font.fontSize + 'px';
+				if (this._hintWidget && this._xterm) {
+					const decoration = this._hintWidget.parentElement;
+					if (decoration) {
+						decoration.style.width =
+							((this._xterm.raw.cols - this._xterm.raw.buffer.active.cursorX) / this._xterm!.raw.cols) * 100 + '%';
+					}
 				}
-			}
-			if (this._hintWidget && this._xterm) {
-				const decoration = this._hintWidget.parentElement;
-				if (decoration) {
-					decoration.style.width = (this._xterm.raw.cols - this._xterm.raw.buffer.active.cursorX) / this._xterm!.raw.cols * 100 + '%';
-				}
-			}
-		}));
+			})
+		);
 	}
 }
 registerTerminalContribution(TerminalInitialHintContribution.ID, TerminalInitialHintContribution, false);
 
 class TerminalInitialHintWidget extends Disposable {
-
 	private _domNode: HTMLElement | undefined;
 	private readonly _toDispose: DisposableStore = this._register(new DisposableStore());
 	private _isVisible = false;
@@ -201,26 +244,42 @@ class TerminalInitialHintWidget extends Disposable {
 		@ICommandService private readonly _commandService: ICommandService,
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@IContextMenuService private readonly _contextMenuService: IContextMenuService,
-		@IKeybindingService private readonly _keybindingService: IKeybindingService,
+		@IKeybindingService private readonly _keybindingService: IKeybindingService
 	) {
 		super();
-		this._toDispose.add(_instance.onDidFocus(() => {
-			if (this._instance.hasFocus && this._isVisible && this._ariaLabel && this._configurationService.getValue(AccessibilityVerbositySettingId.TerminalInlineChat)) {
-				status(this._ariaLabel);
-			}
-		}));
-		this._toDispose.add(this._configurationService.onDidChangeConfiguration(e => {
-			if (e.affectsConfiguration(TerminalInitialHintSettingId.Enabled) && !this._configurationService.getValue(TerminalInitialHintSettingId.Enabled)) {
-				this.dispose();
-			}
-		}));
+		this._toDispose.add(
+			_instance.onDidFocus(() => {
+				if (
+					this._instance.hasFocus &&
+					this._isVisible &&
+					this._ariaLabel &&
+					this._configurationService.getValue(AccessibilityVerbositySettingId.TerminalInlineChat)
+				) {
+					status(this._ariaLabel);
+				}
+			})
+		);
+		this._toDispose.add(
+			this._configurationService.onDidChangeConfiguration(e => {
+				if (
+					e.affectsConfiguration(TerminalInitialHintSettingId.Enabled) &&
+					!this._configurationService.getValue(TerminalInitialHintSettingId.Enabled)
+				) {
+					this.dispose();
+				}
+			})
+		);
 	}
 
 	/**
 	 * Creates wrapped hint elements with click listeners for responsive hint layouts.
 	 * Returns a before link and an after prose span containing a link.
 	 */
-	private _createWrappedHintElements(text: string, keybindingLabel: string, clickHandler: () => void): { before: HTMLAnchorElement; after: HTMLSpanElement } {
+	private _createWrappedHintElements(
+		text: string,
+		keybindingLabel: string,
+		clickHandler: () => void
+	): { before: HTMLAnchorElement; after: HTMLSpanElement } {
 		const [beforeText, afterText] = text.split(keybindingLabel);
 		const before = $('a', undefined, beforeText) as HTMLAnchorElement;
 		this._toDispose.add(dom.addDisposableListener(before, dom.EventType.CLICK, clickHandler));
@@ -263,7 +322,9 @@ class TerminalInitialHintWidget extends Disposable {
 
 		// Suggest hint
 		const suggestEnabled = this._configurationService.getValue<boolean>(TerminalSuggestSettingId.Enabled);
-		const suggestKeybinding = suggestEnabled ? this._keybindingService.lookupKeybinding(TerminalSuggestCommandId.TriggerSuggest) : undefined;
+		const suggestKeybinding = suggestEnabled
+			? this._keybindingService.lookupKeybinding(TerminalSuggestCommandId.TriggerSuggest)
+			: undefined;
 		const suggestKeybindingLabel = suggestKeybinding?.getLabel();
 		if (suggestKeybinding && suggestKeybindingLabel) {
 			const suggestActionPart = localize('showSuggestHint', 'Show suggestions {0}. ', suggestKeybindingLabel);
@@ -272,7 +333,11 @@ class TerminalInitialHintWidget extends Disposable {
 				this._commandService.executeCommand(TerminalSuggestCommandId.TriggerSuggest);
 			};
 
-			const { before: suggestBefore, after: suggestAfter } = this._createWrappedHintElements(suggestActionPart, suggestKeybindingLabel, handleSuggestClick);
+			const { before: suggestBefore, after: suggestAfter } = this._createWrappedHintElements(
+				suggestActionPart,
+				suggestKeybindingLabel,
+				handleSuggestClick
+			);
 
 			hintElement.appendChild(suggestBefore);
 
@@ -296,30 +361,38 @@ class TerminalInitialHintWidget extends Disposable {
 		}
 
 		// Dismiss hint - normal mode version
-		const typeToDismiss = localize({
-			key: 'hintTextDismiss',
-			comment: [
-				'Preserve double-square brackets and their order',
-			]
-		}, '[[don\'t show]] this again.');
+		const typeToDismiss = localize(
+			{
+				key: 'hintTextDismiss',
+				comment: ['Preserve double-square brackets and their order']
+			},
+			"[[don't show]] this again."
+		);
 		const typeToDismissRendered = renderFormattedText(typeToDismiss, { actionHandler: dontShowHintHandler });
 		typeToDismissRendered.classList.add('detail', 'terminal-initial-hint-prose');
 
-		const proseBefore = $('span.terminal-initial-hint-prose', undefined, localize('hintTextDismissProse', " Start typing to dismiss or "));
+		const proseBefore = $(
+			'span.terminal-initial-hint-prose',
+			undefined,
+			localize('hintTextDismissProse', ' Start typing to dismiss or ')
+		);
 		hintElement.appendChild(proseBefore);
 		hintElement.appendChild(typeToDismissRendered);
 
 		// Dismiss hint - compact mode version
-		const typeToDismissCompact = localize({
-			key: 'hintTextDismissCompact',
-			comment: [
-				'Preserve double-square brackets and their order',
-			]
-		}, '[[Don\'t show this again]]');
-		const typeToDismissCompactRendered = renderFormattedText(typeToDismissCompact, { actionHandler: dontShowHintHandler });
+		const typeToDismissCompact = localize(
+			{
+				key: 'hintTextDismissCompact',
+				comment: ['Preserve double-square brackets and their order']
+			},
+			"[[Don't show this again]]"
+		);
+		const typeToDismissCompactRendered = renderFormattedText(typeToDismissCompact, {
+			actionHandler: dontShowHintHandler
+		});
 		typeToDismissCompactRendered.classList.add('detail', 'terminal-initial-hint-compact');
 		hintElement.appendChild(typeToDismissCompactRendered);
-		ariaLabelParts.push(localize('hintTextDismissAriaLabel', 'Start typing to dismiss or don\'t show this again.'));
+		ariaLabelParts.push(localize('hintTextDismissAriaLabel', "Start typing to dismiss or don't show this again."));
 
 		return { ariaLabel: ariaLabelParts.join(' '), hintHandler, hintElement };
 	}
@@ -336,29 +409,42 @@ class TerminalInitialHintWidget extends Disposable {
 			this._domNode!.style.paddingLeft = '4px';
 
 			this._domNode.append(hintElement);
-			this._ariaLabel = ariaLabel.concat(localize('disableHint', ' Toggle {0} in settings to disable this hint.', AccessibilityVerbositySettingId.TerminalInlineChat));
+			this._ariaLabel = ariaLabel.concat(
+				localize(
+					'disableHint',
+					' Toggle {0} in settings to disable this hint.',
+					AccessibilityVerbositySettingId.TerminalInlineChat
+				)
+			);
 
-			this._toDispose.add(dom.addDisposableListener(this._domNode, 'click', () => {
-				this._domNode?.remove();
-				this._domNode = undefined;
-			}));
+			this._toDispose.add(
+				dom.addDisposableListener(this._domNode, 'click', () => {
+					this._domNode?.remove();
+					this._domNode = undefined;
+				})
+			);
 
-			this._toDispose.add(dom.addDisposableListener(this._domNode, dom.EventType.CONTEXT_MENU, (e) => {
-				this._contextMenuService.showContextMenu({
-					getAnchor: () => { return new StandardMouseEvent(dom.getActiveWindow(), e); },
-					getActions: () => {
-						return [{
-							id: 'workench.action.disableTerminalInitialHint',
-							label: localize('disableInitialHint', "Disable Initial Hint"),
-							tooltip: localize('disableInitialHint', "Disable Initial Hint"),
-							enabled: true,
-							class: undefined,
-							run: () => this._configurationService.updateValue(TerminalInitialHintSettingId.Enabled, false)
+			this._toDispose.add(
+				dom.addDisposableListener(this._domNode, dom.EventType.CONTEXT_MENU, e => {
+					this._contextMenuService.showContextMenu({
+						getAnchor: () => {
+							return new StandardMouseEvent(dom.getActiveWindow(), e);
+						},
+						getActions: () => {
+							return [
+								{
+									id: 'workench.action.disableTerminalInitialHint',
+									label: localize('disableInitialHint', 'Disable Initial Hint'),
+									tooltip: localize('disableInitialHint', 'Disable Initial Hint'),
+									enabled: true,
+									class: undefined,
+									run: () => this._configurationService.updateValue(TerminalInitialHintSettingId.Enabled, false)
+								}
+							];
 						}
-						];
-					}
-				});
-			}));
+					});
+				})
+			);
 		}
 		return this._domNode;
 	}

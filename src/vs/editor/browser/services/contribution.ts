@@ -13,4 +13,8 @@ import { MarkerDecorationsContribution } from './markerDecorations.js';
 registerSingleton(IEditorWorkerService, EditorWorkerService, InstantiationType.Eager);
 
 // eager because it instantiates IMarkerDecorationsService which is responsible for rendering squiggles
-registerEditorContribution(MarkerDecorationsContribution.ID, MarkerDecorationsContribution, EditorContributionInstantiation.Eager);
+registerEditorContribution(
+	MarkerDecorationsContribution.ID,
+	MarkerDecorationsContribution,
+	EditorContributionInstantiation.Eager
+);

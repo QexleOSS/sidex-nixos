@@ -9,11 +9,13 @@ import { InstantiationType, registerSingleton } from '../../../../platform/insta
 import { IProductService } from '../../../../platform/product/common/productService.js';
 import { IRemoteAgentService } from '../../remote/common/remoteAgentService.js';
 
-class WebExtensionGalleryManifestService extends ExtensionGalleryManifestService implements IExtensionGalleryManifestService {
-
+class WebExtensionGalleryManifestService
+	extends ExtensionGalleryManifestService
+	implements IExtensionGalleryManifestService
+{
 	constructor(
 		@IProductService productService: IProductService,
-		@IRemoteAgentService remoteAgentService: IRemoteAgentService,
+		@IRemoteAgentService remoteAgentService: IRemoteAgentService
 	) {
 		super(productService);
 		const remoteConnection = remoteAgentService.getConnection();
@@ -21,11 +23,12 @@ class WebExtensionGalleryManifestService extends ExtensionGalleryManifestService
 			const channel = remoteConnection.getChannel('extensionGalleryManifest');
 			this.getExtensionGalleryManifest().then(manifest => {
 				channel.call('setExtensionGalleryManifest', [manifest]);
-				this._register(this.onDidChangeExtensionGalleryManifest(manifest => channel.call('setExtensionGalleryManifest', [manifest])));
+				this._register(
+					this.onDidChangeExtensionGalleryManifest(manifest => channel.call('setExtensionGalleryManifest', [manifest]))
+				);
 			});
 		}
 	}
-
 }
 
 registerSingleton(IExtensionGalleryManifestService, WebExtensionGalleryManifestService, InstantiationType.Delayed);

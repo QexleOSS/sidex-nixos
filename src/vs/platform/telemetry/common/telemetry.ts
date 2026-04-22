@@ -15,7 +15,6 @@ export interface ITelemetryData {
 }
 
 export interface ITelemetryService {
-
 	readonly _serviceBrand: undefined;
 
 	readonly telemetryLevel: TelemetryLevel;
@@ -41,14 +40,20 @@ export interface ITelemetryService {
 	 * Sends a telemetry event that has been privacy approved.
 	 * Do not call this unless you have been given approval.
 	 */
-	publicLog2<E extends ClassifiedEvent<OmitMetadata<T>> = never, T extends IGDPRProperty = never>(eventName: string, data?: StrictPropertyCheck<T, E>): void;
+	publicLog2<E extends ClassifiedEvent<OmitMetadata<T>> = never, T extends IGDPRProperty = never>(
+		eventName: string,
+		data?: StrictPropertyCheck<T, E>
+	): void;
 
 	/**
 	 * @deprecated Use publicLogError2 and the typescript GDPR annotation where possible
 	 */
 	publicLogError(errorEventName: string, data?: ITelemetryData): void;
 
-	publicLogError2<E extends ClassifiedEvent<OmitMetadata<T>> = never, T extends IGDPRProperty = never>(eventName: string, data?: StrictPropertyCheck<T, E>): void;
+	publicLogError2<E extends ClassifiedEvent<OmitMetadata<T>> = never, T extends IGDPRProperty = never>(
+		eventName: string,
+		data?: StrictPropertyCheck<T, E>
+	): void;
 
 	setExperimentProperty(name: string, value: string): void;
 
@@ -69,7 +74,9 @@ export interface ITelemetryEndpoint {
 	sendErrorTelemetry: boolean;
 }
 
-export const ICustomEndpointTelemetryService = createDecorator<ICustomEndpointTelemetryService>('customEndpointTelemetryService');
+export const ICustomEndpointTelemetryService = createDecorator<ICustomEndpointTelemetryService>(
+	'customEndpointTelemetryService'
+);
 
 export interface ICustomEndpointTelemetryService {
 	readonly _serviceBrand: undefined;

@@ -23,7 +23,6 @@ export interface WebviewInputInitInfo {
 }
 
 export class WebviewInput extends EditorInput {
-
 	public static typeId = 'workbench.editors.webviewInput';
 
 	public override get typeId(): string {
@@ -35,7 +34,9 @@ export class WebviewInput extends EditorInput {
 	}
 
 	public override get capabilities(): EditorInputCapabilities {
-		return EditorInputCapabilities.Readonly | EditorInputCapabilities.Singleton | EditorInputCapabilities.CanDropIntoEditor;
+		return (
+			EditorInputCapabilities.Readonly | EditorInputCapabilities.Singleton | EditorInputCapabilities.CanDropIntoEditor
+		);
 	}
 
 	private readonly _resourceId = generateUuid();
@@ -61,7 +62,7 @@ export class WebviewInput extends EditorInput {
 	constructor(
 		init: WebviewInputInitInfo,
 		webview: IOverlayWebview,
-		@IThemeService private readonly _themeService: IThemeService,
+		@IThemeService private readonly _themeService: IThemeService
 	) {
 		super();
 
@@ -72,10 +73,12 @@ export class WebviewInput extends EditorInput {
 		this._iconPath = init.iconPath;
 		this._webview = webview;
 
-		this._register(_themeService.onDidColorThemeChange(() => {
-			// Potentially update icon
-			this._onDidChangeLabel.fire();
-		}));
+		this._register(
+			_themeService.onDidColorThemeChange(() => {
+				// Potentially update icon
+				this._onDidChangeLabel.fire();
+			})
+		);
 	}
 
 	override dispose() {
@@ -161,11 +164,17 @@ export class WebviewInput extends EditorInput {
 		return other;
 	}
 
-	public claim(claimant: unknown, targetWindow: CodeWindow, scopedContextKeyService: IContextKeyService | undefined): void {
+	public claim(
+		claimant: unknown,
+		targetWindow: CodeWindow,
+		scopedContextKeyService: IContextKeyService | undefined
+	): void {
 		return this._webview.claim(claimant, targetWindow, scopedContextKeyService);
 	}
 }
-export type WebviewIconPath = ThemeIcon | {
-	readonly light: URI;
-	readonly dark: URI;
-};
+export type WebviewIconPath =
+	| ThemeIcon
+	| {
+			readonly light: URI;
+			readonly dark: URI;
+	  };

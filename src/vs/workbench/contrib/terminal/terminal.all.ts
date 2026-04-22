@@ -33,4 +33,4 @@ import '../terminalContrib/sendSequence/browser/terminal.sendSequence.contributi
 import '../terminalContrib/sendSignal/browser/terminal.sendSignal.contribution.js';
 import '../terminalContrib/suggest/browser/terminal.suggest.contribution.js';
 import '../terminalContrib/wslRecommendation/browser/terminal.wslRecommendation.contribution.js';
-import '../terminalContrib/voice/browser/terminal.voice.contribution.js';
+// Removed: voice contribution (AI/speech feature not used in SideX)

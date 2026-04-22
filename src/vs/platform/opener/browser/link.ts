@@ -31,7 +31,6 @@ export interface ILinkOptions {
 }
 
 export class Link extends Disposable {
-
 	private el: HTMLAnchorElement;
 	private hover?: IManagedHover;
 	private hoverDelegate: IHoverDelegate;
@@ -90,10 +89,17 @@ export class Link extends Disposable {
 	) {
 		super();
 
-		this.el = append(container, $('a.monaco-link', {
-			tabIndex: _link.tabIndex ?? 0,
-			href: _link.href,
-		}, _link.label));
+		this.el = append(
+			container,
+			$(
+				'a.monaco-link',
+				{
+					tabIndex: _link.tabIndex ?? 0,
+					href: _link.href
+				},
+				_link.label
+			)
+		);
 
 		this.hoverDelegate = options.hoverDelegate ?? getDefaultHoverDelegate('mouse');
 		this.setTooltip(_link.title);
@@ -103,26 +109,27 @@ export class Link extends Disposable {
 		const onClickEmitter = this._register(new DomEmitter(this.el, 'click'));
 		const onKeyDown = this._register(new DomEmitter(this.el, 'keydown'));
 		const onKeyActivate = Event.chain(onKeyDown.event, $ =>
-			$.map(e => new StandardKeyboardEvent(e))
-				.filter(e => e.keyCode === KeyCode.Enter || e.keyCode === KeyCode.Space)
+			$.map(e => new StandardKeyboardEvent(e)).filter(e => e.keyCode === KeyCode.Enter || e.keyCode === KeyCode.Space)
 		);
 		const onTap = this._register(new DomEmitter(this.el, TouchEventType.Tap)).event;
 		this._register(Gesture.addTarget(this.el));
 		const onOpen = Event.any<EventLike>(onClickEmitter.event, onKeyActivate, onTap);
 
-		this._register(onOpen(e => {
-			if (!this.enabled) {
-				return;
-			}
+		this._register(
+			onOpen(e => {
+				if (!this.enabled) {
+					return;
+				}
 
-			EventHelper.stop(e, true);
+				EventHelper.stop(e, true);
 
-			if (options?.opener) {
-				options.opener(this._link.href);
-			} else {
-				openerService.open(this._link.href, { allowCommands: true });
-			}
-		}));
+				if (options?.opener) {
+					options.opener(this._link.href);
+				} else {
+					openerService.open(this._link.href, { allowCommands: true });
+				}
+			})
+		);
 
 		this.enabled = true;
 	}

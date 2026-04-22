@@ -15,7 +15,6 @@ export enum EndOfLine {
 
 @es5ClassCompat
 export class TextEdit {
-
 	static isTextEdit(thing: unknown): thing is TextEdit {
 		if (thing instanceof TextEdit) {
 			return true;
@@ -23,8 +22,7 @@ export class TextEdit {
 		if (!thing || typeof thing !== 'object') {
 			return false;
 		}
-		return Range.isRange((<TextEdit>thing))
-			&& typeof (<TextEdit>thing).newText === 'string';
+		return Range.isRange(<TextEdit>thing) && typeof (<TextEdit>thing).newText === 'string';
 	}
 
 	static replace(range: Range, newText: string): TextEdit {

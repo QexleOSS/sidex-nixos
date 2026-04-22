@@ -50,7 +50,7 @@ export const enum TerminalCapability {
 	/**
 	 * The terminal can detect the prompt type being used (e.g., p10k, posh-git).
 	 */
-	PromptTypeDetection,
+	PromptTypeDetection
 }
 
 /**
@@ -70,7 +70,7 @@ export interface ITerminalCapabilityStore {
 
 	/**
 	 * Fired when a capability is removed.
-	*/
+	 */
 	readonly onDidRemoveCapability: Event<AnyTerminalCapabilityChangeEvent>;
 
 	/**
@@ -118,7 +118,7 @@ export interface TerminalCapabilityChangeEvent<T extends TerminalCapability> {
 }
 
 export type AnyTerminalCapabilityChangeEvent = {
-	[K in TerminalCapability]: TerminalCapabilityChangeEvent<K>
+	[K in TerminalCapability]: TerminalCapabilityChangeEvent<K>;
 }[TerminalCapability];
 
 /**

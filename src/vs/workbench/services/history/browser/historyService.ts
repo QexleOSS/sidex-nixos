@@ -6,11 +6,39 @@
 import { localize } from '../../../../nls.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IResourceEditorInput, IEditorOptions } from '../../../../platform/editor/common/editor.js';
-import { IEditorPane, IEditorCloseEvent, EditorResourceAccessor, IEditorIdentifier, GroupIdentifier, EditorsOrder, SideBySideEditor, IUntypedEditorInput, isResourceEditorInput, isEditorInput, isSideBySideEditorInput, EditorCloseContext, IEditorPaneSelection, EditorPaneSelectionCompareResult, EditorPaneSelectionChangeReason, isEditorPaneWithSelection, IEditorPaneSelectionChangeEvent, IEditorPaneWithSelection, IEditorWillMoveEvent, GroupModelChangeKind } from '../../../common/editor.js';
+import {
+	IEditorPane,
+	IEditorCloseEvent,
+	EditorResourceAccessor,
+	IEditorIdentifier,
+	GroupIdentifier,
+	EditorsOrder,
+	SideBySideEditor,
+	IUntypedEditorInput,
+	isResourceEditorInput,
+	isEditorInput,
+	isSideBySideEditorInput,
+	EditorCloseContext,
+	IEditorPaneSelection,
+	EditorPaneSelectionCompareResult,
+	EditorPaneSelectionChangeReason,
+	isEditorPaneWithSelection,
+	IEditorPaneSelectionChangeEvent,
+	IEditorPaneWithSelection,
+	IEditorWillMoveEvent,
+	GroupModelChangeKind
+} from '../../../common/editor.js';
 import { EditorInput } from '../../../common/editor/editorInput.js';
 import { IEditorService } from '../../editor/common/editorService.js';
 import { GoFilter, GoScope, IHistoryService } from '../common/history.js';
-import { FileChangesEvent, IFileService, FileChangeType, FILES_EXCLUDE_CONFIG, FileOperationEvent, FileOperation } from '../../../../platform/files/common/files.js';
+import {
+	FileChangesEvent,
+	IFileService,
+	FileChangeType,
+	FILES_EXCLUDE_CONFIG,
+	FileOperationEvent,
+	FileOperation
+} from '../../../../platform/files/common/files.js';
 import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
 import { Disposable, DisposableStore, IDisposable, DisposableMap } from '../../../../base/common/lifecycle.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
@@ -51,7 +79,6 @@ interface IRecentlyClosedEditor {
 }
 
 export class HistoryService extends Disposable implements IHistoryService {
-
 	declare readonly _serviceBrand: undefined;
 
 	private static readonly MOUSE_NAVIGATION_SETTING = 'workbench.editor.mouseBackForwardToNavigate';
@@ -79,18 +106,69 @@ export class HistoryService extends Disposable implements IHistoryService {
 
 		this.editorHelper = this.instantiationService.createInstance(EditorHelper);
 
-		this.canNavigateBackContextKey = (new RawContextKey<boolean>('canNavigateBack', false, localize('canNavigateBack', "Whether it is possible to navigate back in editor history"))).bindTo(this.contextKeyService);
-		this.canNavigateForwardContextKey = (new RawContextKey<boolean>('canNavigateForward', false, localize('canNavigateForward', "Whether it is possible to navigate forward in editor history"))).bindTo(this.contextKeyService);
+		this.canNavigateBackContextKey = new RawContextKey<boolean>(
+			'canNavigateBack',
+			false,
+			localize('canNavigateBack', 'Whether it is possible to navigate back in editor history')
+		).bindTo(this.contextKeyService);
+		this.canNavigateForwardContextKey = new RawContextKey<boolean>(
+			'canNavigateForward',
+			false,
+			localize('canNavigateForward', 'Whether it is possible to navigate forward in editor history')
+		).bindTo(this.contextKeyService);
 
-		this.canNavigateBackInNavigationsContextKey = (new RawContextKey<boolean>('canNavigateBackInNavigationLocations', false, localize('canNavigateBackInNavigationLocations', "Whether it is possible to navigate back in editor navigation locations history"))).bindTo(this.contextKeyService);
-		this.canNavigateForwardInNavigationsContextKey = (new RawContextKey<boolean>('canNavigateForwardInNavigationLocations', false, localize('canNavigateForwardInNavigationLocations', "Whether it is possible to navigate forward in editor navigation locations history"))).bindTo(this.contextKeyService);
-		this.canNavigateToLastNavigationLocationContextKey = (new RawContextKey<boolean>('canNavigateToLastNavigationLocation', false, localize('canNavigateToLastNavigationLocation', "Whether it is possible to navigate to the last editor navigation location"))).bindTo(this.contextKeyService);
+		this.canNavigateBackInNavigationsContextKey = new RawContextKey<boolean>(
+			'canNavigateBackInNavigationLocations',
+			false,
+			localize(
+				'canNavigateBackInNavigationLocations',
+				'Whether it is possible to navigate back in editor navigation locations history'
+			)
+		).bindTo(this.contextKeyService);
+		this.canNavigateForwardInNavigationsContextKey = new RawContextKey<boolean>(
+			'canNavigateForwardInNavigationLocations',
+			false,
+			localize(
+				'canNavigateForwardInNavigationLocations',
+				'Whether it is possible to navigate forward in editor navigation locations history'
+			)
+		).bindTo(this.contextKeyService);
+		this.canNavigateToLastNavigationLocationContextKey = new RawContextKey<boolean>(
+			'canNavigateToLastNavigationLocation',
+			false,
+			localize(
+				'canNavigateToLastNavigationLocation',
+				'Whether it is possible to navigate to the last editor navigation location'
+			)
+		).bindTo(this.contextKeyService);
 
-		this.canNavigateBackInEditsContextKey = (new RawContextKey<boolean>('canNavigateBackInEditLocations', false, localize('canNavigateBackInEditLocations', "Whether it is possible to navigate back in editor edit locations history"))).bindTo(this.contextKeyService);
-		this.canNavigateForwardInEditsContextKey = (new RawContextKey<boolean>('canNavigateForwardInEditLocations', false, localize('canNavigateForwardInEditLocations', "Whether it is possible to navigate forward in editor edit locations history"))).bindTo(this.contextKeyService);
-		this.canNavigateToLastEditLocationContextKey = (new RawContextKey<boolean>('canNavigateToLastEditLocation', false, localize('canNavigateToLastEditLocation', "Whether it is possible to navigate to the last editor edit location"))).bindTo(this.contextKeyService);
+		this.canNavigateBackInEditsContextKey = new RawContextKey<boolean>(
+			'canNavigateBackInEditLocations',
+			false,
+			localize(
+				'canNavigateBackInEditLocations',
+				'Whether it is possible to navigate back in editor edit locations history'
+			)
+		).bindTo(this.contextKeyService);
+		this.canNavigateForwardInEditsContextKey = new RawContextKey<boolean>(
+			'canNavigateForwardInEditLocations',
+			false,
+			localize(
+				'canNavigateForwardInEditLocations',
+				'Whether it is possible to navigate forward in editor edit locations history'
+			)
+		).bindTo(this.contextKeyService);
+		this.canNavigateToLastEditLocationContextKey = new RawContextKey<boolean>(
+			'canNavigateToLastEditLocation',
+			false,
+			localize('canNavigateToLastEditLocation', 'Whether it is possible to navigate to the last editor edit location')
+		).bindTo(this.contextKeyService);
 
-		this.canReopenClosedEditorContextKey = (new RawContextKey<boolean>('canReopenClosedEditor', false, localize('canReopenClosedEditor', "Whether it is possible to reopen the last closed editor"))).bindTo(this.contextKeyService);
+		this.canReopenClosedEditorContextKey = new RawContextKey<boolean>(
+			'canReopenClosedEditor',
+			false,
+			localize('canReopenClosedEditor', 'Whether it is possible to reopen the last closed editor')
+		).bindTo(this.contextKeyService);
 
 		this.registerListeners();
 
@@ -103,7 +181,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 	}
 
 	private registerListeners(): void {
-
 		// Mouse back/forward support
 		this.registerMouseNavigationListener();
 
@@ -111,7 +188,9 @@ export class HistoryService extends Disposable implements IHistoryService {
 		this._register(this.editorService.onDidActiveEditorChange(() => this.onDidActiveEditorChange()));
 		this._register(this.editorService.onDidOpenEditorFail(event => this.remove(event.editor)));
 		this._register(this.editorService.onDidCloseEditor(event => this.onDidCloseEditor(event)));
-		this._register(this.editorService.onDidMostRecentlyActiveEditorsChange(() => this.handleEditorEventInRecentEditorsStack()));
+		this._register(
+			this.editorService.onDidMostRecentlyActiveEditorsChange(() => this.handleEditorEventInRecentEditorsStack())
+		);
 
 		// Editor group changes
 		this._register(this.editorGroupService.onDidRemoveGroup(e => this.onDidRemoveGroup(e)));
@@ -142,27 +221,38 @@ export class HistoryService extends Disposable implements IHistoryService {
 			mouseBackForwardSupportListener.clear();
 
 			if (this.configurationService.getValue(HistoryService.MOUSE_NAVIGATION_SETTING)) {
-				this._register(Event.runAndSubscribe(this.layoutService.onDidAddContainer, ({ container, disposables }) => {
-					const eventDisposables = disposables.add(new DisposableStore());
-					eventDisposables.add(addDisposableListener(container, EventType.MOUSE_DOWN, e => this.onMouseDownOrUp(e, true)));
-					eventDisposables.add(addDisposableListener(container, EventType.MOUSE_UP, e => this.onMouseDownOrUp(e, false)));
+				this._register(
+					Event.runAndSubscribe(
+						this.layoutService.onDidAddContainer,
+						({ container, disposables }) => {
+							const eventDisposables = disposables.add(new DisposableStore());
+							eventDisposables.add(
+								addDisposableListener(container, EventType.MOUSE_DOWN, e => this.onMouseDownOrUp(e, true))
+							);
+							eventDisposables.add(
+								addDisposableListener(container, EventType.MOUSE_UP, e => this.onMouseDownOrUp(e, false))
+							);
 
-					mouseBackForwardSupportListener.add(eventDisposables);
-				}, { container: this.layoutService.mainContainer, disposables: this._store }));
+							mouseBackForwardSupportListener.add(eventDisposables);
+						},
+						{ container: this.layoutService.mainContainer, disposables: this._store }
+					)
+				);
 			}
 		};
 
-		this._register(this.configurationService.onDidChangeConfiguration(event => {
-			if (event.affectsConfiguration(HistoryService.MOUSE_NAVIGATION_SETTING)) {
-				handleMouseBackForwardSupport();
-			}
-		}));
+		this._register(
+			this.configurationService.onDidChangeConfiguration(event => {
+				if (event.affectsConfiguration(HistoryService.MOUSE_NAVIGATION_SETTING)) {
+					handleMouseBackForwardSupport();
+				}
+			})
+		);
 
 		handleMouseBackForwardSupport();
 	}
 
 	private onMouseDownOrUp(event: MouseEvent, isMouseDown: boolean): void {
-
 		// Support to navigate in history when mouse buttons 4/5 are pressed
 		// We want to trigger this on mouse down for a faster experience
 		// but we also need to prevent mouse up from triggering the default
@@ -198,7 +288,9 @@ export class HistoryService extends Disposable implements IHistoryService {
 		}
 
 		// Remember as last active editor (can be undefined if none opened)
-		this.lastActiveEditor = activeEditorPane?.input ? { editor: activeEditorPane.input, groupId: activeEditorPane.group.id } : undefined;
+		this.lastActiveEditor = activeEditorPane?.input
+			? { editor: activeEditorPane.input, groupId: activeEditorPane.group.id }
+			: undefined;
 
 		// Dispose old listeners
 		this.activeEditorListeners.clear();
@@ -209,10 +301,16 @@ export class HistoryService extends Disposable implements IHistoryService {
 		if (!activeEditorPane?.group.isTransient(activeEditorPane.input)) {
 			this.handleActiveEditorChange(activeEditorGroup, activeEditorPane);
 		} else {
-			this.logService.trace(`[History]: ignoring transient editor change until becoming non-transient (editor: ${activeEditorPane.input?.resource?.toString()}})`);
+			this.logService.trace(
+				`[History]: ignoring transient editor change until becoming non-transient (editor: ${activeEditorPane.input?.resource?.toString()}})`
+			);
 
 			const transientListener = activeEditorGroup.onDidModelChange(e => {
-				if (e.kind === GroupModelChangeKind.EDITOR_TRANSIENT && e.editor === activeEditorPane.input && !activeEditorPane.group.isTransient(activeEditorPane.input)) {
+				if (
+					e.kind === GroupModelChangeKind.EDITOR_TRANSIENT &&
+					e.editor === activeEditorPane.input &&
+					!activeEditorPane.group.isTransient(activeEditorPane.input)
+				) {
 					transientListener.dispose();
 
 					this.handleActiveEditorChange(activeEditorGroup, activeEditorPane);
@@ -224,13 +322,17 @@ export class HistoryService extends Disposable implements IHistoryService {
 
 		// Listen to selection changes unless the editor is transient
 		if (isEditorPaneWithSelection(activeEditorPane)) {
-			this.activeEditorListeners.add(activeEditorPane.onDidChangeSelection(e => {
-				if (!activeEditorPane.group.isTransient(activeEditorPane.input)) {
-					this.handleActiveEditorSelectionChangeEvent(activeEditorGroup, activeEditorPane, e);
-				} else {
-					this.logService.trace(`[History]: ignoring transient editor selection change (editor: ${activeEditorPane.input?.resource?.toString()}})`);
-				}
-			}));
+			this.activeEditorListeners.add(
+				activeEditorPane.onDidChangeSelection(e => {
+					if (!activeEditorPane.group.isTransient(activeEditorPane.input)) {
+						this.handleActiveEditorSelectionChangeEvent(activeEditorGroup, activeEditorPane, e);
+					} else {
+						this.logService.trace(
+							`[History]: ignoring transient editor selection change (editor: ${activeEditorPane.input?.resource?.toString()}})`
+						);
+					}
+				})
+			);
 		}
 
 		// Context keys
@@ -238,7 +340,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 	}
 
 	private onDidFilesChange(event: FileChangesEvent | FileOperationEvent): void {
-
 		// External file changes (watcher)
 		if (event instanceof FileChangesEvent) {
 			if (event.gotDeleted()) {
@@ -248,7 +349,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 
 		// Internal file changes (e.g. explorer)
 		else {
-
 			// Delete
 			if (event.isOperation(FileOperation.DELETE)) {
 				this.remove(event);
@@ -266,7 +366,11 @@ export class HistoryService extends Disposable implements IHistoryService {
 		this.handleActiveEditorChangeInNavigationStacks(group, editorPane);
 	}
 
-	private handleActiveEditorSelectionChangeEvent(group: IEditorGroup, editorPane: IEditorPaneWithSelection, event: IEditorPaneSelectionChangeEvent): void {
+	private handleActiveEditorSelectionChangeEvent(
+		group: IEditorGroup,
+		editorPane: IEditorPaneWithSelection,
+		event: IEditorPaneSelectionChangeEvent
+	): void {
 		this.handleActiveEditorSelectionChangeInNavigationStacks(group, editorPane, event);
 	}
 
@@ -301,7 +405,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 	}
 
 	clear(): void {
-
 		// History
 		this.clearRecentlyOpened();
 
@@ -357,14 +460,19 @@ export class HistoryService extends Disposable implements IHistoryService {
 	readonly onDidChangeEditorNavigationStack = this._onDidChangeEditorNavigationStack.event;
 
 	private defaultScopedEditorNavigationStack: IEditorNavigationStacks | undefined = undefined;
-	private readonly editorGroupScopedNavigationStacks = new Map<GroupIdentifier, { stack: IEditorNavigationStacks; disposable: IDisposable }>();
-	private readonly editorScopedNavigationStacks = new Map<GroupIdentifier, Map<EditorInput, { stack: IEditorNavigationStacks; disposable: IDisposable }>>();
+	private readonly editorGroupScopedNavigationStacks = new Map<
+		GroupIdentifier,
+		{ stack: IEditorNavigationStacks; disposable: IDisposable }
+	>();
+	private readonly editorScopedNavigationStacks = new Map<
+		GroupIdentifier,
+		Map<EditorInput, { stack: IEditorNavigationStacks; disposable: IDisposable }>
+	>();
 
 	private editorNavigationScope = GoScope.DEFAULT;
 
 	private registerEditorNavigationScopeChangeListener(): void {
 		const handleEditorNavigationScopeChange = () => {
-
 			// Ensure to start fresh when setting changes
 			this.disposeEditorNavigationStacks();
 
@@ -379,18 +487,19 @@ export class HistoryService extends Disposable implements IHistoryService {
 			}
 		};
 
-		this._register(this.configurationService.onDidChangeConfiguration(event => {
-			if (event.affectsConfiguration(HistoryService.NAVIGATION_SCOPE_SETTING)) {
-				handleEditorNavigationScopeChange();
-			}
-		}));
+		this._register(
+			this.configurationService.onDidChangeConfiguration(event => {
+				if (event.affectsConfiguration(HistoryService.NAVIGATION_SCOPE_SETTING)) {
+					handleEditorNavigationScopeChange();
+				}
+			})
+		);
 
 		handleEditorNavigationScopeChange();
 	}
 
 	private getStack(group = this.editorGroupService.activeGroup, editor = group.activeEditor): IEditorNavigationStacks {
 		switch (this.editorNavigationScope) {
-
 			// Per Editor
 			case GoScope.EDITOR: {
 				if (!editor) {
@@ -422,7 +531,9 @@ export class HistoryService extends Disposable implements IHistoryService {
 				if (!stack) {
 					const disposable = new DisposableStore();
 
-					stack = disposable.add(this.instantiationService.createInstance(EditorNavigationStacks, GoScope.EDITOR_GROUP));
+					stack = disposable.add(
+						this.instantiationService.createInstance(EditorNavigationStacks, GoScope.EDITOR_GROUP)
+					);
 					disposable.add(stack.onDidChange(() => this._onDidChangeEditorNavigationStack.fire()));
 
 					this.editorGroupScopedNavigationStacks.set(group.id, { stack, disposable });
@@ -434,9 +545,13 @@ export class HistoryService extends Disposable implements IHistoryService {
 			// Global
 			case GoScope.DEFAULT: {
 				if (!this.defaultScopedEditorNavigationStack) {
-					this.defaultScopedEditorNavigationStack = this._register(this.instantiationService.createInstance(EditorNavigationStacks, GoScope.DEFAULT));
+					this.defaultScopedEditorNavigationStack = this._register(
+						this.instantiationService.createInstance(EditorNavigationStacks, GoScope.DEFAULT)
+					);
 
-					this._register(this.defaultScopedEditorNavigationStack.onDidChange(() => this._onDidChangeEditorNavigationStack.fire()));
+					this._register(
+						this.defaultScopedEditorNavigationStack.onDidChange(() => this._onDidChangeEditorNavigationStack.fire())
+					);
 				}
 
 				return this.defaultScopedEditorNavigationStack;
@@ -464,7 +579,11 @@ export class HistoryService extends Disposable implements IHistoryService {
 		this.getStack(group, editorPane?.input).handleActiveEditorChange(editorPane);
 	}
 
-	private handleActiveEditorSelectionChangeInNavigationStacks(group: IEditorGroup, editorPane: IEditorPaneWithSelection, event: IEditorPaneSelectionChangeEvent): void {
+	private handleActiveEditorSelectionChangeInNavigationStacks(
+		group: IEditorGroup,
+		editorPane: IEditorPaneWithSelection,
+		event: IEditorPaneSelectionChangeEvent
+	): void {
 		this.getStack(group, editorPane.input).handleActiveEditorSelectionChange(editorPane, event);
 	}
 
@@ -484,7 +603,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 	}
 
 	private handleEditorGroupRemoveInNavigationStacks(group: IEditorGroup): void {
-
 		// Global
 		this.defaultScopedEditorNavigationStack?.remove(group.id);
 
@@ -509,7 +627,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 	}
 
 	private withEachEditorNavigationStack(fn: (stack: IEditorNavigationStacks) => void): void {
-
 		// Global
 		if (this.defaultScopedEditorNavigationStack) {
 			fn(this.defaultScopedEditorNavigationStack);
@@ -529,7 +646,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 	}
 
 	private disposeEditorNavigationStacks(): void {
-
 		// Global
 		this.defaultScopedEditorNavigationStack?.dispose();
 		this.defaultScopedEditorNavigationStack = undefined;
@@ -574,7 +690,10 @@ export class HistoryService extends Disposable implements IHistoryService {
 		return this.doNavigateInRecentlyUsedEditorsStack(stack[index], groupId);
 	}
 
-	private async doNavigateInRecentlyUsedEditorsStack(editorIdentifier: IEditorIdentifier | undefined, groupId?: GroupIdentifier): Promise<void> {
+	private async doNavigateInRecentlyUsedEditorsStack(
+		editorIdentifier: IEditorIdentifier | undefined,
+		groupId?: GroupIdentifier
+	): Promise<void> {
 		if (editorIdentifier) {
 			const acrossGroups = typeof groupId !== 'number' || !this.editorGroupService.getGroup(groupId);
 
@@ -597,7 +716,10 @@ export class HistoryService extends Disposable implements IHistoryService {
 		}
 	}
 
-	private ensureRecentlyUsedStack(indexModifier: (index: number) => number, groupId?: GroupIdentifier): [readonly IEditorIdentifier[], number] {
+	private ensureRecentlyUsedStack(
+		indexModifier: (index: number) => number,
+		groupId?: GroupIdentifier
+	): [readonly IEditorIdentifier[], number] {
 		let editors: readonly IEditorIdentifier[];
 		let index: number;
 
@@ -611,7 +733,9 @@ export class HistoryService extends Disposable implements IHistoryService {
 
 		// Within group
 		else {
-			editors = this.recentlyUsedEditorsInGroupStack || group.getEditors(EditorsOrder.MOST_RECENTLY_ACTIVE).map(editor => ({ groupId: group.id, editor }));
+			editors =
+				this.recentlyUsedEditorsInGroupStack ||
+				group.getEditors(EditorsOrder.MOST_RECENTLY_ACTIVE).map(editor => ({ groupId: group.id, editor }));
 			index = this.recentlyUsedEditorsInGroupStackIndex;
 		}
 
@@ -636,7 +760,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 	}
 
 	private handleEditorEventInRecentEditorsStack(): void {
-
 		// Drop all-editors stack unless navigating in all editors
 		if (!this.navigatingInRecentlyUsedEditorsStack) {
 			this.recentlyUsedEditorsStack = undefined;
@@ -709,7 +832,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 	}
 
 	async reopenLastClosedEditor(): Promise<void> {
-
 		// Open editor if we have one
 		const lastClosedEditor = this.recentlyClosedEditors.pop();
 		let reopenClosedEditorPromise: Promise<void> | undefined = undefined;
@@ -724,7 +846,12 @@ export class HistoryService extends Disposable implements IHistoryService {
 	}
 
 	private async doReopenLastClosedEditor(lastClosedEditor: IRecentlyClosedEditor): Promise<void> {
-		const options: IEditorOptions = { pinned: true, sticky: lastClosedEditor.sticky, index: lastClosedEditor.index, ignoreError: true };
+		const options: IEditorOptions = {
+			pinned: true,
+			sticky: lastClosedEditor.sticky,
+			index: lastClosedEditor.index,
+			ignoreError: true
+		};
 
 		// Special sticky handling: remove the index property from options
 		// if that would result in sticky state to not preserve or apply
@@ -739,7 +866,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 		// Re-open editor unless already opened
 		let editorPane: IEditorPane | undefined = undefined;
 		if (!this.editorGroupService.activeGroup.contains(lastClosedEditor.editor)) {
-
 			// Fix for https://github.com/microsoft/vscode/issues/107850
 			// If opening an editor fails, it is possible that we get
 			// another editor-close event as a result. But we really do
@@ -762,7 +888,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 
 		// If no editor was opened, try with the next one
 		if (!editorPane) {
-
 			// Fix for https://github.com/microsoft/vscode/issues/67882
 			// If opening of the editor fails, make sure to try the next one
 			// but make sure to remove this one from the list to prevent
@@ -784,7 +909,11 @@ export class HistoryService extends Disposable implements IHistoryService {
 				return false; // remove: editor matches directly
 			}
 
-			if (recentlyClosedEditor.associatedResources.some(associatedResource => this.editorHelper.matchesFile(associatedResource, arg1))) {
+			if (
+				recentlyClosedEditor.associatedResources.some(associatedResource =>
+					this.editorHelper.matchesFile(associatedResource, arg1)
+				)
+			) {
 				return false; // remove: an associated resource matches
 			}
 
@@ -806,20 +935,28 @@ export class HistoryService extends Disposable implements IHistoryService {
 
 	private readonly editorHistoryListeners = this._register(new DisposableMap<EditorInput, DisposableStore>());
 
-	private readonly resourceExcludeMatcher = this._register(new WindowIdleValue(mainWindow, () => {
-		const matcher = this._register(this.instantiationService.createInstance(
-			ResourceGlobMatcher,
-			root => getExcludes(root ? this.configurationService.getValue<ISearchConfiguration>({ resource: root }) : this.configurationService.getValue<ISearchConfiguration>()) || Object.create(null),
-			event => event.affectsConfiguration(FILES_EXCLUDE_CONFIG) || event.affectsConfiguration(SEARCH_EXCLUDE_CONFIG)
-		));
+	private readonly resourceExcludeMatcher = this._register(
+		new WindowIdleValue(mainWindow, () => {
+			const matcher = this._register(
+				this.instantiationService.createInstance(
+					ResourceGlobMatcher,
+					root =>
+						getExcludes(
+							root
+								? this.configurationService.getValue<ISearchConfiguration>({ resource: root })
+								: this.configurationService.getValue<ISearchConfiguration>()
+						) || Object.create(null),
+					event => event.affectsConfiguration(FILES_EXCLUDE_CONFIG) || event.affectsConfiguration(SEARCH_EXCLUDE_CONFIG)
+				)
+			);
 
-		this._register(matcher.onExpressionChange(() => this.removeExcludedFromHistory()));
+			this._register(matcher.onExpressionChange(() => this.removeExcludedFromHistory()));
 
-		return matcher;
-	}));
+			return matcher;
+		})
+	);
 
 	private handleActiveEditorChangeInHistory(editorPane?: IEditorPane): void {
-
 		// Ensure we have not configured to exclude input and don't track invalid inputs
 		const editor = editorPane?.input;
 		if (!editor || editor.isDisposed() || !this.includeInHistory(editor)) {
@@ -853,13 +990,16 @@ export class HistoryService extends Disposable implements IHistoryService {
 
 		// React to editor input disposing
 		if (isEditorInput(editor)) {
-			this.editorHelper.onEditorDispose(editor, () => this.updateHistoryOnEditorDispose(historyInput), this.editorHistoryListeners);
+			this.editorHelper.onEditorDispose(
+				editor,
+				() => this.updateHistoryOnEditorDispose(historyInput),
+				this.editorHistoryListeners
+			);
 		}
 	}
 
 	private updateHistoryOnEditorDispose(editor: EditorInput | IResourceEditorInput): void {
 		if (isEditorInput(editor)) {
-
 			// Any non side-by-side editor input gets removed directly on dispose
 			if (!isSideBySideEditorInput(editor)) {
 				this.removeFromHistory(editor);
@@ -871,7 +1011,9 @@ export class HistoryService extends Disposable implements IHistoryService {
 			// they are excluded.
 			else {
 				const resourceInputs: IResourceEditorInput[] = [];
-				const sideInputs = editor.primary.matches(editor.secondary) ? [editor.primary] : [editor.primary, editor.secondary];
+				const sideInputs = editor.primary.matches(editor.secondary)
+					? [editor.primary]
+					: [editor.primary, editor.secondary];
 				for (const sideInput of sideInputs) {
 					const candidateResourceInput = this.editorHelper.preferResourceEditorInput(sideInput);
 					if (isResourceEditorInput(candidateResourceInput) && this.includeInHistory(candidateResourceInput)) {
@@ -884,7 +1026,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 				this.replaceInHistory(editor, ...resourceInputs);
 			}
 		} else {
-
 			// Remove any editor that should not be included in history
 			if (!this.includeInHistory(editor)) {
 				this.removeFromHistory(editor);
@@ -944,17 +1085,18 @@ export class HistoryService extends Disposable implements IHistoryService {
 		return removed;
 	}
 
-	private replaceInHistory(editor: EditorInput | IResourceEditorInput, ...replacements: ReadonlyArray<EditorInput | IResourceEditorInput>): void {
+	private replaceInHistory(
+		editor: EditorInput | IResourceEditorInput,
+		...replacements: ReadonlyArray<EditorInput | IResourceEditorInput>
+	): void {
 		this.ensureHistoryLoaded(this.history);
 
 		let replaced = false;
 
 		const newHistory: Array<EditorInput | IResourceEditorInput> = [];
 		for (const entry of this.history) {
-
 			// Entry matches and is going to be disposed + replaced
 			if (this.editorHelper.matchesEditor(editor, entry)) {
-
 				// Cleanup any listeners associated with the input when replacing from history
 				this.editorHelper.clearOnEditorDispose(editor, this.editorHistoryListeners);
 
@@ -995,7 +1137,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 
 	private ensureHistoryLoaded(history: Array<EditorInput | IResourceEditorInput> | undefined): asserts history {
 		if (!this.history) {
-
 			// Until history is loaded, it is just empty
 			this.history = [];
 
@@ -1015,7 +1156,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 	}
 
 	private loadHistory(): void {
-
 		// Init as empty before adding - since we are about to
 		// populate the history from opened editors, we capture
 		// the right order here.
@@ -1063,10 +1203,7 @@ export class HistoryService extends Disposable implements IHistoryService {
 		// to figure out if the editor has been already added.
 		for (const editor of storedEditorHistory) {
 			const historyEntryId = `${editor.resource.toString()}/${editor.options?.override}`;
-			if (
-				!handledEditors.has(historyEntryId) &&
-				this.includeInHistory(editor)
-			) {
+			if (!handledEditors.has(historyEntryId) && this.includeInHistory(editor)) {
 				handledEditors.add(historyEntryId);
 				this.addToHistory(editor, false /* at the end */);
 			}
@@ -1088,9 +1225,10 @@ export class HistoryService extends Disposable implements IHistoryService {
 					try {
 						entries.push({
 							...entryParsed.editor,
-							resource: typeof entryParsed.editor.resource === 'string' ?
-								URI.parse(entryParsed.editor.resource) :  	//  from 1.67.x: URI is stored efficiently as URI.toString()
-								URI.from(entryParsed.editor.resource)		// until 1.66.x: URI was stored very verbose as URI.toJSON()
+							resource:
+								typeof entryParsed.editor.resource === 'string'
+									? URI.parse(entryParsed.editor.resource) //  from 1.67.x: URI is stored efficiently as URI.toString()
+									: URI.from(entryParsed.editor.resource) // until 1.66.x: URI was stored very verbose as URI.toJSON()
 						});
 					} catch (error) {
 						onUnexpectedError(error); // do not fail entire history when one entry fails
@@ -1123,7 +1261,12 @@ export class HistoryService extends Disposable implements IHistoryService {
 			});
 		}
 
-		this.storageService.store(HistoryService.HISTORY_STORAGE_KEY, JSON.stringify(entries), StorageScope.WORKSPACE, StorageTarget.MACHINE);
+		this.storageService.store(
+			HistoryService.HISTORY_STORAGE_KEY,
+			JSON.stringify(entries),
+			StorageScope.WORKSPACE,
+			StorageTarget.MACHINE
+		);
 	}
 
 	//#endregion
@@ -1131,7 +1274,6 @@ export class HistoryService extends Disposable implements IHistoryService {
 	//#region Last Active Workspace/File
 
 	getLastActiveWorkspaceRoot(schemeFilter?: string, authorityFilter?: string): URI | undefined {
-
 		// No Folder: return early
 		const folders = this.contextService.getWorkspace().folders;
 		if (folders.length === 0) {
@@ -1141,7 +1283,10 @@ export class HistoryService extends Disposable implements IHistoryService {
 		// Single Folder: return early
 		if (folders.length === 1) {
 			const resource = folders[0].uri;
-			if ((!schemeFilter || resource.scheme === schemeFilter) && (!authorityFilter || resource.authority === authorityFilter)) {
+			if (
+				(!schemeFilter || resource.scheme === schemeFilter) &&
+				(!authorityFilter || resource.authority === authorityFilter)
+			) {
 				return resource;
 			}
 
@@ -1171,7 +1316,10 @@ export class HistoryService extends Disposable implements IHistoryService {
 		// Fallback to first workspace matching scheme filter if any
 		for (const folder of folders) {
 			const resource = folder.uri;
-			if ((!schemeFilter || resource.scheme === schemeFilter) && (!authorityFilter || resource.authority === authorityFilter)) {
+			if (
+				(!schemeFilter || resource.scheme === schemeFilter) &&
+				(!authorityFilter || resource.authority === authorityFilter)
+			) {
 				return resource;
 			}
 		}
@@ -1188,7 +1336,11 @@ export class HistoryService extends Disposable implements IHistoryService {
 				resource = input.resource;
 			}
 
-			if (resource && resource.scheme === filterByScheme && (!filterByAuthority || resource.authority === filterByAuthority)) {
+			if (
+				resource &&
+				resource.scheme === filterByScheme &&
+				(!filterByAuthority || resource.authority === filterByAuthority)
+			) {
 				return resource;
 			}
 		}
@@ -1220,12 +1372,11 @@ export class HistoryService extends Disposable implements IHistoryService {
 registerSingleton(IHistoryService, HistoryService, InstantiationType.Eager);
 
 class EditorSelectionState {
-
 	constructor(
 		private readonly editorIdentifier: IEditorIdentifier,
 		readonly selection: IEditorPaneSelection | undefined,
 		private readonly reason: EditorPaneSelectionChangeReason | undefined
-	) { }
+	) {}
 
 	justifiesNewNavigationEntry(other: EditorSelectionState): boolean {
 		if (this.editorIdentifier.groupId !== other.editorIdentifier.groupId) {
@@ -1242,7 +1393,11 @@ class EditorSelectionState {
 
 		const result = this.selection.compare(other.selection);
 
-		if (result === EditorPaneSelectionCompareResult.SIMILAR && (other.reason === EditorPaneSelectionChangeReason.NAVIGATION || other.reason === EditorPaneSelectionChangeReason.JUMP)) {
+		if (
+			result === EditorPaneSelectionCompareResult.SIMILAR &&
+			(other.reason === EditorPaneSelectionChangeReason.NAVIGATION ||
+				other.reason === EditorPaneSelectionChangeReason.JUMP)
+		) {
 			// let navigation sources win even if the selection is `SIMILAR`
 			// (e.g. "Go to definition" should add a history entry)
 			return true;
@@ -1272,7 +1427,6 @@ interface IEditorNavigationStacks extends IDisposable {
 }
 
 class EditorNavigationStacks extends Disposable implements IEditorNavigationStacks {
-
 	private readonly selectionsStack: EditorNavigationStack;
 	private readonly editsStack: EditorNavigationStack;
 	private readonly navigationsStack: EditorNavigationStack;
@@ -1287,15 +1441,17 @@ class EditorNavigationStacks extends Disposable implements IEditorNavigationStac
 	) {
 		super();
 
-		this.selectionsStack = this._register(this.instantiationService.createInstance(EditorNavigationStack, GoFilter.NONE, this.scope));
-		this.editsStack = this._register(this.instantiationService.createInstance(EditorNavigationStack, GoFilter.EDITS, this.scope));
-		this.navigationsStack = this._register(this.instantiationService.createInstance(EditorNavigationStack, GoFilter.NAVIGATION, this.scope));
+		this.selectionsStack = this._register(
+			this.instantiationService.createInstance(EditorNavigationStack, GoFilter.NONE, this.scope)
+		);
+		this.editsStack = this._register(
+			this.instantiationService.createInstance(EditorNavigationStack, GoFilter.EDITS, this.scope)
+		);
+		this.navigationsStack = this._register(
+			this.instantiationService.createInstance(EditorNavigationStack, GoFilter.NAVIGATION, this.scope)
+		);
 
-		this.stacks = [
-			this.selectionsStack,
-			this.editsStack,
-			this.navigationsStack
-		];
+		this.stacks = [this.selectionsStack, this.editsStack, this.navigationsStack];
 
 		this.onDidChange = Event.any(
 			this.selectionsStack.onDidChange,
@@ -1334,19 +1490,24 @@ class EditorNavigationStacks extends Disposable implements IEditorNavigationStac
 
 	private getStack(filter = GoFilter.NONE): EditorNavigationStack {
 		switch (filter) {
-			case GoFilter.NONE: return this.selectionsStack;
-			case GoFilter.EDITS: return this.editsStack;
-			case GoFilter.NAVIGATION: return this.navigationsStack;
+			case GoFilter.NONE:
+				return this.selectionsStack;
+			case GoFilter.EDITS:
+				return this.editsStack;
+			case GoFilter.NAVIGATION:
+				return this.navigationsStack;
 		}
 	}
 
 	handleActiveEditorChange(editorPane?: IEditorPane): void {
-
 		// Always send to selections navigation stack
 		this.selectionsStack.notifyNavigation(editorPane);
 	}
 
-	handleActiveEditorSelectionChange(editorPane: IEditorPaneWithSelection, event: IEditorPaneSelectionChangeEvent): void {
+	handleActiveEditorSelectionChange(
+		editorPane: IEditorPaneWithSelection,
+		event: IEditorPaneSelectionChangeEvent
+	): void {
 		const previous = this.selectionsStack.current;
 
 		// Always send to selections navigation stack
@@ -1363,10 +1524,10 @@ class EditorNavigationStacks extends Disposable implements IEditorNavigationStac
 		// in that case we do not want to receive repeated entries in
 		// the navigation stack.
 		else if (
-			(event.reason === EditorPaneSelectionChangeReason.NAVIGATION || event.reason === EditorPaneSelectionChangeReason.JUMP) &&
+			(event.reason === EditorPaneSelectionChangeReason.NAVIGATION ||
+				event.reason === EditorPaneSelectionChangeReason.JUMP) &&
 			!this.selectionsStack.isNavigating()
 		) {
-
 			// A "JUMP" navigation selection change always has a source and
 			// target. As such, we add the previous entry of the selections
 			// navigation stack so that our navigation stack receives both
@@ -1404,22 +1565,28 @@ class EditorNavigationStacks extends Disposable implements IEditorNavigationStac
 class NoOpEditorNavigationStacks implements IEditorNavigationStacks {
 	onDidChange = Event.None;
 
-	canGoForward(): boolean { return false; }
-	async goForward(): Promise<void> { }
-	canGoBack(): boolean { return false; }
-	async goBack(): Promise<void> { }
-	async goPrevious(): Promise<void> { }
-	canGoLast(): boolean { return false; }
-	async goLast(): Promise<void> { }
+	canGoForward(): boolean {
+		return false;
+	}
+	async goForward(): Promise<void> {}
+	canGoBack(): boolean {
+		return false;
+	}
+	async goBack(): Promise<void> {}
+	async goPrevious(): Promise<void> {}
+	canGoLast(): boolean {
+		return false;
+	}
+	async goLast(): Promise<void> {}
 
-	handleActiveEditorChange(): void { }
-	handleActiveEditorSelectionChange(): void { }
+	handleActiveEditorChange(): void {}
+	handleActiveEditorSelectionChange(): void {}
 
-	clear(): void { }
-	remove(): void { }
-	move(): void { }
+	clear(): void {}
+	remove(): void {}
+	move(): void {}
 
-	dispose(): void { }
+	dispose(): void {}
 }
 
 interface IEditorNavigationStackEntry {
@@ -1429,14 +1596,13 @@ interface IEditorNavigationStackEntry {
 }
 
 export class EditorNavigationStack extends Disposable {
-
 	private static readonly MAX_STACK_SIZE = 50;
 
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
 
 	private readonly mapEditorToDisposable = this._register(new DisposableMap<EditorInput, DisposableStore>());
-	private readonly mapGroupToDisposable = this._register(new DisposableMap<GroupIdentifier, IDisposable>);
+	private readonly mapGroupToDisposable = this._register(new DisposableMap<GroupIdentifier, IDisposable>());
 
 	private readonly editorHelper: EditorHelper;
 
@@ -1477,9 +1643,11 @@ export class EditorNavigationStack extends Disposable {
 	private registerListeners(): void {
 		this._register(this.onDidChange(() => this.traceStack()));
 		this._register(this.logService.onDidChangeLogLevel(() => this.traceStack()));
-		this._register(this.editorGroupService.onDidRemoveGroup(group => {
-			this.mapGroupToDisposable.deleteAndDispose(group.id);
-		}));
+		this._register(
+			this.editorGroupService.onDidRemoveGroup(group => {
+				this.mapGroupToDisposable.deleteAndDispose(group.id);
+			})
+		);
 	}
 
 	private traceStack(): void {
@@ -1490,7 +1658,9 @@ export class EditorNavigationStack extends Disposable {
 		const entryLabels: string[] = [];
 		for (const entry of this.stack) {
 			if (typeof entry.selection?.log === 'function') {
-				entryLabels.push(`- group: ${entry.groupId}, editor: ${entry.editor.resource?.toString()}, selection: ${entry.selection.log()}`);
+				entryLabels.push(
+					`- group: ${entry.groupId}, editor: ${entry.editor.resource?.toString()}, selection: ${entry.selection.log()}`
+				);
 			} else {
 				entryLabels.push(`- group: ${entry.groupId}, editor: ${entry.editor.resource?.toString()}, selection: <none>`);
 			}
@@ -1505,33 +1675,45 @@ ${entryLabels.join('\n')}
 		}
 	}
 
-	private trace(msg: string, editor: EditorInput | IResourceEditorInput | undefined | null = null, event?: IEditorPaneSelectionChangeEvent): void {
+	private trace(
+		msg: string,
+		editor: EditorInput | IResourceEditorInput | undefined | null = null,
+		event?: IEditorPaneSelectionChangeEvent
+	): void {
 		if (this.logService.getLevel() !== LogLevel.Trace) {
 			return;
 		}
 
 		let filterLabel: string;
 		switch (this.filter) {
-			case GoFilter.NONE: filterLabel = 'global';
+			case GoFilter.NONE:
+				filterLabel = 'global';
 				break;
-			case GoFilter.EDITS: filterLabel = 'edits';
+			case GoFilter.EDITS:
+				filterLabel = 'edits';
 				break;
-			case GoFilter.NAVIGATION: filterLabel = 'navigation';
+			case GoFilter.NAVIGATION:
+				filterLabel = 'navigation';
 				break;
 		}
 
 		let scopeLabel: string;
 		switch (this.scope) {
-			case GoScope.DEFAULT: scopeLabel = 'default';
+			case GoScope.DEFAULT:
+				scopeLabel = 'default';
 				break;
-			case GoScope.EDITOR_GROUP: scopeLabel = 'editorGroup';
+			case GoScope.EDITOR_GROUP:
+				scopeLabel = 'editorGroup';
 				break;
-			case GoScope.EDITOR: scopeLabel = 'editor';
+			case GoScope.EDITOR:
+				scopeLabel = 'editor';
 				break;
 		}
 
 		if (editor !== null) {
-			this.logService.trace(`[History stack ${filterLabel}-${scopeLabel}]: ${msg} (editor: ${editor?.resource?.toString()}, event: ${this.traceEvent(event)})`);
+			this.logService.trace(
+				`[History stack ${filterLabel}-${scopeLabel}]: ${msg} (editor: ${editor?.resource?.toString()}, event: ${this.traceEvent(event)})`
+			);
 		} else {
 			this.logService.trace(`[History stack ${filterLabel}-${scopeLabel}]: ${msg}`);
 		}
@@ -1543,11 +1725,16 @@ ${entryLabels.join('\n')}
 		}
 
 		switch (event.reason) {
-			case EditorPaneSelectionChangeReason.EDIT: return 'edit';
-			case EditorPaneSelectionChangeReason.NAVIGATION: return 'navigation';
-			case EditorPaneSelectionChangeReason.JUMP: return 'jump';
-			case EditorPaneSelectionChangeReason.PROGRAMMATIC: return 'programmatic';
-			case EditorPaneSelectionChangeReason.USER: return 'user';
+			case EditorPaneSelectionChangeReason.EDIT:
+				return 'edit';
+			case EditorPaneSelectionChangeReason.NAVIGATION:
+				return 'navigation';
+			case EditorPaneSelectionChangeReason.JUMP:
+				return 'jump';
+			case EditorPaneSelectionChangeReason.PROGRAMMATIC:
+				return 'programmatic';
+			case EditorPaneSelectionChangeReason.USER:
+				return 'user';
 		}
 	}
 
@@ -1555,7 +1742,10 @@ ${entryLabels.join('\n')}
 		if (!this.mapGroupToDisposable.has(groupId)) {
 			const group = this.editorGroupService.getGroup(groupId);
 			if (group) {
-				this.mapGroupToDisposable.set(groupId, group.onWillMoveEditor(e => this.onWillMoveEditor(e)));
+				this.mapGroupToDisposable.set(
+					groupId,
+					group.onWillMoveEditor(e => this.onWillMoveEditor(e))
+				);
 			}
 		}
 	}
@@ -1599,7 +1789,11 @@ ${entryLabels.join('\n')}
 			if (isSelectionAwareEditorPane && hasValidEditor) {
 				this.trace('notifyNavigation() updating current selection state', editorPane?.input, event);
 
-				this.currentSelectionState = new EditorSelectionState({ groupId: editorPane.group.id, editor: editorPane.input }, editorPane.getSelection(), event?.reason);
+				this.currentSelectionState = new EditorSelectionState(
+					{ groupId: editorPane.group.id, editor: editorPane.input },
+					editorPane.getSelection(),
+					event?.reason
+				);
 			} else {
 				this.trace('notifyNavigation() dropping current selection state', editorPane?.input, event);
 
@@ -1627,8 +1821,17 @@ ${entryLabels.join('\n')}
 		}
 	}
 
-	private onSelectionAwareEditorNavigation(groupId: GroupIdentifier, editor: EditorInput, selection: IEditorPaneSelection | undefined, event?: IEditorPaneSelectionChangeEvent): void {
-		if (this.current?.groupId === groupId && !selection && this.editorHelper.matchesEditor(this.current.editor, editor)) {
+	private onSelectionAwareEditorNavigation(
+		groupId: GroupIdentifier,
+		editor: EditorInput,
+		selection: IEditorPaneSelection | undefined,
+		event?: IEditorPaneSelectionChangeEvent
+	): void {
+		if (
+			this.current?.groupId === groupId &&
+			!selection &&
+			this.editorHelper.matchesEditor(this.current.editor, editor)
+		) {
 			return; // do not push same editor input again of same group if we have no valid selection
 		}
 
@@ -1660,20 +1863,32 @@ ${entryLabels.join('\n')}
 		this.doAdd(groupId, editor);
 	}
 
-	private doAdd(groupId: GroupIdentifier, editor: EditorInput | IResourceEditorInput, selection?: IEditorPaneSelection): void {
+	private doAdd(
+		groupId: GroupIdentifier,
+		editor: EditorInput | IResourceEditorInput,
+		selection?: IEditorPaneSelection
+	): void {
 		if (!this.navigating) {
 			this.addOrReplace(groupId, editor, selection);
 		}
 	}
 
-	private doReplace(groupId: GroupIdentifier, editor: EditorInput | IResourceEditorInput, selection?: IEditorPaneSelection): void {
+	private doReplace(
+		groupId: GroupIdentifier,
+		editor: EditorInput | IResourceEditorInput,
+		selection?: IEditorPaneSelection
+	): void {
 		if (!this.navigating) {
 			this.addOrReplace(groupId, editor, selection, true /* force replace */);
 		}
 	}
 
-	addOrReplace(groupId: GroupIdentifier, editorCandidate: EditorInput | IResourceEditorInput, selection?: IEditorPaneSelection, forceReplace?: boolean): void {
-
+	addOrReplace(
+		groupId: GroupIdentifier,
+		editorCandidate: EditorInput | IResourceEditorInput,
+		selection?: IEditorPaneSelection,
+		forceReplace?: boolean
+	): void {
 		// Ensure we listen to changes in group
 		this.registerGroupListeners(groupId);
 
@@ -1711,7 +1926,6 @@ ${entryLabels.join('\n')}
 
 		// Add to stack at current position
 		else {
-
 			// If we are not at the end of history, we remove anything after
 			if (this.stack.length > this.index + 1) {
 				for (let i = this.index + 1; i < this.stack.length; i++) {
@@ -1786,7 +2000,8 @@ ${entryLabels.join('\n')}
 
 		// Remove all stack entries that match `arg1`
 		this.stack = this.stack.filter(entry => {
-			const matches = typeof arg1 === 'number' ? entry.groupId === arg1 : this.editorHelper.matchesEditor(arg1, entry.editor);
+			const matches =
+				typeof arg1 === 'number' ? entry.groupId === arg1 : this.editorHelper.matchesEditor(arg1, entry.editor);
 
 			// Cleanup any listeners associated with the input when removing
 			if (matches) {
@@ -1919,7 +2134,6 @@ ${entryLabels.join('\n')}
 	}
 
 	private async maybeGoCurrent(): Promise<boolean> {
-
 		// When this navigation stack works with a specific
 		// filter where not every selection change is added
 		// to the stack, we want to first reveal the current
@@ -2000,13 +2214,16 @@ ${entryLabels.join('\n')}
 			return this.editorService.openEditor(location.editor, options, location.groupId);
 		}
 
-		return this.editorService.openEditor({
-			...location.editor,
-			options: {
-				...location.editor.options,
-				...options
-			}
-		}, location.groupId);
+		return this.editorService.openEditor(
+			{
+				...location.editor,
+				options: {
+					...location.editor.options,
+					...options
+				}
+			},
+			location.groupId
+		);
 	}
 
 	isNavigating(): boolean {
@@ -2017,18 +2234,19 @@ ${entryLabels.join('\n')}
 }
 
 class EditorHelper {
-
 	constructor(
 		@IUriIdentityService private readonly uriIdentityService: IUriIdentityService,
 		@ILifecycleService private readonly lifecycleService: ILifecycleService,
 		@IFileService private readonly fileService: IFileService,
 		@IPathService private readonly pathService: IPathService
-	) { }
+	) {}
 
 	preferResourceEditorInput(editor: EditorInput): EditorInput | IResourceEditorInput;
 	preferResourceEditorInput(editor: IResourceEditorInput): IResourceEditorInput | undefined;
 	preferResourceEditorInput(editor: EditorInput | IResourceEditorInput): EditorInput | IResourceEditorInput | undefined;
-	preferResourceEditorInput(editor: EditorInput | IResourceEditorInput): EditorInput | IResourceEditorInput | undefined {
+	preferResourceEditorInput(
+		editor: EditorInput | IResourceEditorInput
+	): EditorInput | IResourceEditorInput | undefined {
 		const resource = EditorResourceAccessor.getOriginalUri(editor);
 
 		// For now, only prefer well known schemes that we control to prevent
@@ -2063,7 +2281,10 @@ class EditorHelper {
 		}
 	}
 
-	matchesEditor(arg1: EditorInput | IResourceEditorInput | FileChangesEvent | FileOperationEvent, inputB: EditorInput | IResourceEditorInput): boolean {
+	matchesEditor(
+		arg1: EditorInput | IResourceEditorInput | FileChangesEvent | FileOperationEvent,
+		inputB: EditorInput | IResourceEditorInput
+	): boolean {
 		if (arg1 instanceof FileChangesEvent || arg1 instanceof FileOperationEvent) {
 			if (isEditorInput(inputB)) {
 				return false; // we only support this for `IResourceEditorInputs` that are file based
@@ -2091,7 +2312,10 @@ class EditorHelper {
 		return arg1 && inputB && this.uriIdentityService.extUri.isEqual(arg1.resource, inputB.resource);
 	}
 
-	matchesFile(resource: URI, arg2: EditorInput | IResourceEditorInput | FileChangesEvent | FileOperationEvent): boolean {
+	matchesFile(
+		resource: URI,
+		arg2: EditorInput | IResourceEditorInput | FileChangesEvent | FileOperationEvent
+	): boolean {
 		if (arg2 instanceof FileChangesEvent) {
 			return arg2.contains(resource, FileChangeType.DELETED);
 		}
@@ -2128,7 +2352,11 @@ class EditorHelper {
 		return editorPane.input ? identifier.editor.matches(editorPane.input) : false;
 	}
 
-	onEditorDispose(editor: EditorInput, listener: Function, mapEditorToDispose: DisposableMap<EditorInput, DisposableStore>): void {
+	onEditorDispose(
+		editor: EditorInput,
+		listener: Function,
+		mapEditorToDispose: DisposableMap<EditorInput, DisposableStore>
+	): void {
 		const toDispose = Event.once(editor.onWillDispose)(() => listener());
 
 		let disposables = mapEditorToDispose.get(editor);
@@ -2140,7 +2368,10 @@ class EditorHelper {
 		disposables.add(toDispose);
 	}
 
-	clearOnEditorDispose(editor: EditorInput | IResourceEditorInput | FileChangesEvent | FileOperationEvent, mapEditorToDispose: DisposableMap<EditorInput, DisposableStore>): void {
+	clearOnEditorDispose(
+		editor: EditorInput | IResourceEditorInput | FileChangesEvent | FileOperationEvent,
+		mapEditorToDispose: DisposableMap<EditorInput, DisposableStore>
+	): void {
 		if (!isEditorInput(editor)) {
 			return; // only supported when passing in an actual editor input
 		}

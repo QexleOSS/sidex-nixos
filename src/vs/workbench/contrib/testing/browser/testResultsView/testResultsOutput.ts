@@ -8,7 +8,15 @@ import { Delayer } from '../../../../../base/common/async.js';
 import { VSBuffer } from '../../../../../base/common/buffer.js';
 import { Event } from '../../../../../base/common/event.js';
 import { Iterable } from '../../../../../base/common/iterator.js';
-import { Disposable, DisposableStore, IDisposable, IReference, MutableDisposable, combinedDisposable, toDisposable } from '../../../../../base/common/lifecycle.js';
+import {
+	Disposable,
+	DisposableStore,
+	IDisposable,
+	IReference,
+	MutableDisposable,
+	combinedDisposable,
+	toDisposable
+} from '../../../../../base/common/lifecycle.js';
 import { ScrollEvent } from '../../../../../base/common/scrollable.js';
 import { URI } from '../../../../../base/common/uri.js';
 import { ICodeEditor, IDiffEditorConstructionOptions } from '../../../../../editor/browser/editorBrowser.js';
@@ -39,11 +47,16 @@ import { getXtermScaledDimensions } from '../../../terminal/browser/xterm/xtermT
 import { TERMINAL_BACKGROUND_COLOR } from '../../../terminal/common/terminalColorRegistry.js';
 import { Testing } from '../../common/constants.js';
 import { MutableObservableValue } from '../../common/observableValue.js';
-import { ITaskRawOutput, ITestResult, ITestRunTaskResults, LiveTestResult, TestResultItemChangeReason } from '../../common/testResult.js';
+import {
+	ITaskRawOutput,
+	ITestResult,
+	ITestRunTaskResults,
+	LiveTestResult,
+	TestResultItemChangeReason
+} from '../../common/testResult.js';
 import { ITestMessage, TestMessageType, getMarkId } from '../../common/testTypes.js';
 import { colorizeTestMessageInEditor } from '../testMessageColorizer.js';
 import { InspectSubject, MessageSubject, TaskSubject, TestOutputSubject } from './testResultsSubject.js';
-
 
 class SimpleDiffEditorModel extends EditorModel {
 	public readonly original: ITextModel;
@@ -51,7 +64,7 @@ class SimpleDiffEditorModel extends EditorModel {
 
 	constructor(
 		private readonly _original: IReference<IResolvedTextEditorModel>,
-		private readonly _modified: IReference<IResolvedTextEditorModel>,
+		private readonly _modified: IReference<IResolvedTextEditorModel>
 	) {
 		super();
 		this.original = this._original.object.textEditorModel;
@@ -64,7 +77,6 @@ class SimpleDiffEditorModel extends EditorModel {
 		this._modified.dispose();
 	}
 }
-
 
 export interface IPeekOutputRenderer extends IDisposable {
 	readonly onDidContentSizeChange?: Event<void>;
@@ -88,14 +100,14 @@ const commonEditorOptions: IEditorOptions = {
 		useShadows: false,
 		verticalHasArrows: false,
 		horizontalHasArrows: false,
-		handleMouseWheel: false,
+		handleMouseWheel: false
 	},
 	overviewRulerLanes: 0,
 	fixedOverflowWidgets: true,
 	readOnly: true,
 	stickyScroll: { enabled: false },
 	minimap: { enabled: false },
-	automaticLayout: false,
+	automaticLayout: false
 };
 
 const diffEditorOptions: IDiffEditorConstructionOptions = {
@@ -108,10 +120,14 @@ const diffEditorOptions: IDiffEditorConstructionOptions = {
 	useInlineViewWhenSpaceIsLimited: false,
 	originalAriaLabel: localize('testingOutputExpected', 'Expected result'),
 	modifiedAriaLabel: localize('testingOutputActual', 'Actual result'),
-	diffAlgorithm: 'advanced',
+	diffAlgorithm: 'advanced'
 };
 
-function applyEditorMirrorOptions<T extends IEditorOptions>(base: T, cfg: IConfigurationService, update: (options: Partial<IEditorOptions>) => void) {
+function applyEditorMirrorOptions<T extends IEditorOptions>(
+	base: T,
+	cfg: IConfigurationService,
+	update: (options: Partial<IEditorOptions>) => void
+) {
 	const immutable = new Set(Object.keys(base));
 	function applyCurrent() {
 		const configuration = cfg.getValue<IEditorConfiguration>('editor');
@@ -156,7 +172,7 @@ export class DiffContentProvider extends Disposable implements IPeekOutputRender
 		private readonly container: HTMLElement,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ITextModelService private readonly modelService: ITextModelService,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
+		@IConfigurationService private readonly configurationService: IConfigurationService
 	) {
 		super();
 	}
@@ -174,30 +190,17 @@ export class DiffContentProvider extends Disposable implements IPeekOutputRender
 
 		const [original, modified] = await Promise.all([
 			this.modelService.createModelReference(subject.expectedUri),
-			this.modelService.createModelReference(subject.actualUri),
+			this.modelService.createModelReference(subject.actualUri)
 		]);
 
-		const model = this.model.value = new SimpleDiffEditorModel(original, modified);
+		const model = (this.model.value = new SimpleDiffEditorModel(original, modified));
 		if (!this.widget.value) {
 			const options = { ...diffEditorOptions };
-			const listener = applyEditorMirrorOptions(
-				options,
-				this.configurationService,
-				u => editor.updateOptions(u)
-			);
+			const listener = applyEditorMirrorOptions(options, this.configurationService, u => editor.updateOptions(u));
 
-			const editor = this.widget.value = this.editor ? this.instantiationService.createInstance(
-				EmbeddedDiffEditorWidget,
-				this.container,
-				options,
-				{},
-				this.editor,
-			) : this.instantiationService.createInstance(
-				DiffEditorWidget,
-				this.container,
-				options,
-				{},
-			);
+			const editor = (this.widget.value = this.editor
+				? this.instantiationService.createInstance(EmbeddedDiffEditorWidget, this.container, options, {}, this.editor)
+				: this.instantiationService.createInstance(DiffEditorWidget, this.container, options, {}));
 
 			Event.once(editor.onDidDispose)(() => {
 				listener.dispose();
@@ -209,9 +212,7 @@ export class DiffContentProvider extends Disposable implements IPeekOutputRender
 		}
 
 		this.widget.value.setModel(model);
-		this.widget.value.updateOptions(this.getOptions(
-			isMultiline(message.expected) || isMultiline(message.actual)
-		));
+		this.widget.value.updateOptions(this.getOptions(isMultiline(message.expected) || isMultiline(message.actual)));
 
 		return true;
 	}
@@ -243,22 +244,18 @@ export class DiffContentProvider extends Disposable implements IPeekOutputRender
 	}
 
 	protected getOptions(isMultiline: boolean): IDiffEditorOptions {
-		return isMultiline
-			? { ...diffEditorOptions, lineNumbers: 'on' }
-			: { ...diffEditorOptions, lineNumbers: 'off' };
+		return isMultiline ? { ...diffEditorOptions, lineNumbers: 'on' } : { ...diffEditorOptions, lineNumbers: 'off' };
 	}
 }
 
-
 export class MarkdownTestMessagePeek extends Disposable implements IPeekOutputRenderer {
-
 	private readonly rendered = this._register(new DisposableStore());
 
 	private element?: HTMLElement;
 
 	constructor(
 		private readonly container: HTMLElement,
-		@IMarkdownRendererService private readonly markdownRendererService: IMarkdownRendererService,
+		@IMarkdownRendererService private readonly markdownRendererService: IMarkdownRendererService
 	) {
 		super();
 		this._register(toDisposable(() => this.clear()));
@@ -274,7 +271,6 @@ export class MarkdownTestMessagePeek extends Disposable implements IPeekOutputRe
 		if (ITestMessage.isDiffable(message) || typeof message.message === 'string') {
 			return false;
 		}
-
 
 		const rendered = this.rendered.add(this.markdownRendererService.render(message.message, {}));
 		rendered.element.style.userSelect = 'text';
@@ -305,8 +301,8 @@ class ScrollHelper {
 	constructor(
 		private readonly hasMultipleFrames: boolean,
 		private readonly contentHeight: number,
-		private readonly viewHeight: number,
-	) { }
+		private readonly viewHeight: number
+	) {}
 
 	public onScrolled(evt: ScrollEvent, container: HTMLElement | undefined | null, editor: ICodeEditor | undefined) {
 		if (!editor || !container) {
@@ -337,7 +333,7 @@ export class PlainTextMessagePeek extends Disposable implements IPeekOutputRende
 		private readonly container: HTMLElement,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ITextModelService private readonly modelService: ITextModelService,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
+		@IConfigurationService private readonly configurationService: IConfigurationService
 	) {
 		super();
 	}
@@ -349,32 +345,25 @@ export class PlainTextMessagePeek extends Disposable implements IPeekOutputRende
 		}
 
 		const message = subject.message;
-		if (ITestMessage.isDiffable(message) || message.type === TestMessageType.Output || typeof message.message !== 'string') {
+		if (
+			ITestMessage.isDiffable(message) ||
+			message.type === TestMessageType.Output ||
+			typeof message.message !== 'string'
+		) {
 			this.clear();
 			return false;
 		}
 
-		const modelRef = this.model.value = await this.modelService.createModelReference(subject.messageUri);
+		const modelRef = (this.model.value = await this.modelService.createModelReference(subject.messageUri));
 		if (!this.widget.value) {
 			const options = { ...commonEditorOptions };
-			const listener = applyEditorMirrorOptions(
-				options,
-				this.configurationService,
-				u => editor.updateOptions(u)
-			);
+			const listener = applyEditorMirrorOptions(options, this.configurationService, u => editor.updateOptions(u));
 
-			const editor = this.widget.value = this.editor ? this.instantiationService.createInstance(
-				EmbeddedCodeEditorWidget,
-				this.container,
-				options,
-				{},
-				this.editor,
-			) : this.instantiationService.createInstance(
-				CodeEditorWidget,
-				this.container,
-				options,
-				{ isSimpleWidget: true }
-			);
+			const editor = (this.widget.value = this.editor
+				? this.instantiationService.createInstance(EmbeddedCodeEditorWidget, this.container, options, {}, this.editor)
+				: this.instantiationService.createInstance(CodeEditorWidget, this.container, options, {
+						isSimpleWidget: true
+					}));
 
 			Event.once(editor.onDidDispose)(() => {
 				listener.dispose();
@@ -432,7 +421,7 @@ export class TerminalMessagePeek extends Disposable implements IPeekOutputRender
 		private readonly isInPeekView: boolean,
 		@ITerminalService private readonly terminalService: ITerminalService,
 		@IViewDescriptorService private readonly viewDescriptorService: IViewDescriptorService,
-		@IWorkspaceContextService private readonly workspaceContext: IWorkspaceContextService,
+		@IWorkspaceContextService private readonly workspaceContext: IWorkspaceContextService
 	) {
 		super();
 	}
@@ -451,13 +440,15 @@ export class TerminalMessagePeek extends Disposable implements IPeekOutputRender
 		const cwd = this.terminalCwd;
 		capabilities.add(TerminalCapability.CwdDetection, {
 			type: TerminalCapability.CwdDetection,
-			get cwds() { return [cwd.value]; },
+			get cwds() {
+				return [cwd.value];
+			},
 			onDidChangeCwd: cwd.onDidChange,
 			getCwd: () => cwd.value,
-			updateCwd: () => { },
+			updateCwd: () => {}
 		});
 
-		return this.terminal.value = await this.terminalService.createDetachedTerminal({
+		return (this.terminal.value = await this.terminalService.createDetachedTerminal({
 			rows: 10,
 			cols: 80,
 			readonly: true,
@@ -476,16 +467,19 @@ export class TerminalMessagePeek extends Disposable implements IPeekOutputRender
 					return location === ViewContainerLocation.Panel
 						? theme.getColor(PANEL_BACKGROUND)
 						: theme.getColor(SIDE_BAR_BACKGROUND);
-				},
+				}
 			}
-		});
+		}));
 	}
 
 	public async update(subject: InspectSubject): Promise<boolean> {
 		this.outputDataListener.clear();
 		if (subject instanceof TaskSubject) {
 			await this.updateForTaskSubject(subject);
-		} else if (subject instanceof TestOutputSubject || (subject instanceof MessageSubject && subject.message.type === TestMessageType.Output)) {
+		} else if (
+			subject instanceof TestOutputSubject ||
+			(subject instanceof MessageSubject && subject.message.type === TestMessageType.Output)
+		) {
 			await this.updateForTestSubject(subject);
 		} else {
 			this.clear();
@@ -515,17 +509,30 @@ export class TerminalMessagePeek extends Disposable implements IPeekOutputRender
 					}
 				}
 			},
-			doListenForMoreData: (output, result, write) => result.onChange(e => {
-				if (e.reason === TestResultItemChangeReason.NewMessage && e.item.item.extId === testItem.extId && e.message.type === TestMessageType.Output) {
-					for (const chunk of output.getRangeIter(e.message.offset, e.message.length)) {
-						write(chunk.buffer);
+			doListenForMoreData: (output, result, write) =>
+				result.onChange(e => {
+					if (
+						e.reason === TestResultItemChangeReason.NewMessage &&
+						e.item.item.extId === testItem.extId &&
+						e.message.type === TestMessageType.Output
+					) {
+						for (const chunk of output.getRangeIter(e.message.offset, e.message.length)) {
+							write(chunk.buffer);
+						}
 					}
-				}
-			}),
+				})
 		});
 
-		if (subject instanceof MessageSubject && subject.message.type === TestMessageType.Output && subject.message.marker !== undefined) {
-			terminal?.xterm.selectMarkedRange(getMarkId(subject.message.marker, true), getMarkId(subject.message.marker, false), /* scrollIntoView= */ true);
+		if (
+			subject instanceof MessageSubject &&
+			subject.message.type === TestMessageType.Output &&
+			subject.message.marker !== undefined
+		) {
+			terminal?.xterm.selectMarkedRange(
+				getMarkId(subject.message.marker, true),
+				getMarkId(subject.message.marker, false),
+				/* scrollIntoView= */ true
+			);
 		}
 	}
 
@@ -540,7 +547,7 @@ export class TerminalMessagePeek extends Disposable implements IPeekOutputRender
 				this.updateCwd(Iterable.find(result.tests, t => !!t.item.uri)?.item.uri);
 				return task.output.buffers;
 			},
-			doListenForMoreData: (task, _result, write) => task.output.onDidWriteData(e => write(e.buffer)),
+			doListenForMoreData: (task, _result, write) => task.output.onDidWriteData(e => write(e.buffer))
 		});
 	}
 
@@ -610,8 +617,8 @@ export class TerminalMessagePeek extends Disposable implements IPeekOutputRender
 	}
 
 	private updateCwd(testUri?: URI) {
-		const wf = (testUri && this.workspaceContext.getWorkspaceFolder(testUri))
-			|| this.workspaceContext.getWorkspace().folders[0];
+		const wf =
+			(testUri && this.workspaceContext.getWorkspaceFolder(testUri)) || this.workspaceContext.getWorkspace().folders[0];
 		if (wf) {
 			this.terminalCwd.value = wf.uri.fsPath;
 		}

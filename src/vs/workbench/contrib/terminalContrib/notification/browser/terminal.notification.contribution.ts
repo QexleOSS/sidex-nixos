@@ -10,10 +10,12 @@ import { IConfigurationService } from '../../../../../platform/configuration/com
 import { INotificationService } from '../../../../../platform/notification/common/notification.js';
 import { ITerminalLogService } from '../../../../../platform/terminal/common/terminal.js';
 import type { ITerminalContribution, ITerminalInstance, IXtermTerminal } from '../../../terminal/browser/terminal.js';
-import { registerTerminalContribution, type ITerminalContributionContext } from '../../../terminal/browser/terminalExtensions.js';
+import {
+	registerTerminalContribution,
+	type ITerminalContributionContext
+} from '../../../terminal/browser/terminalExtensions.js';
 import { TerminalOscNotificationsSettingId } from '../common/terminalNotificationConfiguration.js';
 import { TerminalNotificationHandler } from './terminalNotificationHandler.js';
-
 
 class TerminalOscNotificationsContribution extends Disposable implements ITerminalContribution {
 	static readonly ID = 'terminal.oscNotifications';
@@ -24,19 +26,25 @@ class TerminalOscNotificationsContribution extends Disposable implements ITermin
 		private readonly _ctx: ITerminalContributionContext,
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@INotificationService private readonly _notificationService: INotificationService,
-		@ITerminalLogService private readonly _logService: ITerminalLogService,
+		@ITerminalLogService private readonly _logService: ITerminalLogService
 	) {
 		super();
-		this._handler = this._register(new TerminalNotificationHandler({
-			isEnabled: () => this._configurationService.getValue<boolean>(TerminalOscNotificationsSettingId.EnableNotifications) === true,
-			isWindowFocused: () => dom.getActiveWindow().document.hasFocus(),
-			isTerminalVisible: () => this._ctx.instance.isVisible,
-			focusTerminal: () => this._ctx.instance.focus(true),
-			notify: notification => this._notificationService.notify(notification),
-			updateEnableNotifications: value => this._configurationService.updateValue(TerminalOscNotificationsSettingId.EnableNotifications, value),
-			logWarn: message => this._logService.warn(message),
-			writeToProcess: data => { void this._ctx.instance.sendText(data, false); }
-		}));
+		this._handler = this._register(
+			new TerminalNotificationHandler({
+				isEnabled: () =>
+					this._configurationService.getValue<boolean>(TerminalOscNotificationsSettingId.EnableNotifications) === true,
+				isWindowFocused: () => dom.getActiveWindow().document.hasFocus(),
+				isTerminalVisible: () => this._ctx.instance.isVisible,
+				focusTerminal: () => this._ctx.instance.focus(true),
+				notify: notification => this._notificationService.notify(notification),
+				updateEnableNotifications: value =>
+					this._configurationService.updateValue(TerminalOscNotificationsSettingId.EnableNotifications, value),
+				logWarn: message => this._logService.warn(message),
+				writeToProcess: data => {
+					void this._ctx.instance.sendText(data, false);
+				}
+			})
+		);
 	}
 
 	xtermReady(xterm: IXtermTerminal & { raw: RawXtermTerminal }): void {

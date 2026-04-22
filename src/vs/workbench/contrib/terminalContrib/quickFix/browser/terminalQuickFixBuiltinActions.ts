@@ -5,14 +5,21 @@
 
 import { URI } from '../../../../../base/common/uri.js';
 import { localize } from '../../../../../nls.js';
-import { ITerminalQuickFixInternalOptions, ITerminalCommandMatchResult, ITerminalQuickFixTerminalCommandAction, TerminalQuickFixActionInternal, TerminalQuickFixType } from './quickFix.js';
+import {
+	ITerminalQuickFixInternalOptions,
+	ITerminalCommandMatchResult,
+	ITerminalQuickFixTerminalCommandAction,
+	TerminalQuickFixActionInternal,
+	TerminalQuickFixType
+} from './quickFix.js';
 
 export const GitCommandLineRegex = /git/;
 export const GitFastForwardPullOutputRegex = /and can be fast-forwarded/;
 export const GitPushCommandLineRegex = /git\s+push/;
 export const GitTwoDashesRegex = /error: did you mean `--(.+)` \(with two dashes\)\?/;
 export const GitSimilarOutputRegex = /(?:(most similar commands? (is|are)))/;
-export const FreePortOutputRegex = /(?:address already in use (?:0\.0\.0\.0|127\.0\.0\.1|localhost|::):|Unable to bind [^ ]*:|can't listen on port |listen EADDRINUSE [^ ]*:)(?<portNumber>\d{4,5})/;
+export const FreePortOutputRegex =
+	/(?:address already in use (?:0\.0\.0\.0|127\.0\.0\.1|localhost|::):|Unable to bind [^ ]*:|can't listen on port |listen EADDRINUSE [^ ]*:)(?<portNumber>\d{4,5})/;
 export const GitPushOutputRegex = /git push --set-upstream origin (?<branchName>[^\s]+)/;
 // The previous line starts with "Create a pull request for \'([^\s]+)\' on GitHub by visiting:\s*"
 // it's safe to assume it's a github pull request if the URL includes `/pull/`
@@ -112,7 +119,9 @@ export function gitTwoDashes(): ITerminalQuickFixInternalOptions {
 		}
 	};
 }
-export function freePort(runCallback: (port: string, commandLine: string) => Promise<void>): ITerminalQuickFixInternalOptions {
+export function freePort(
+	runCallback: (port: string, commandLine: string) => Promise<void>
+): ITerminalQuickFixInternalOptions {
 	return {
 		id: 'Free Port',
 		type: 'internal',
@@ -129,7 +138,7 @@ export function freePort(runCallback: (port: string, commandLine: string) => Pro
 			if (!port) {
 				return;
 			}
-			const label = localize("terminal.freePort", "Free port {0}", port);
+			const label = localize('terminal.freePort', 'Free port {0}', port);
 			return {
 				type: TerminalQuickFixType.Port,
 				class: undefined,
@@ -242,7 +251,7 @@ export function gitCreatePr(): ITerminalQuickFixInternalOptions {
 			if (!link) {
 				return;
 			}
-			const label = localize("terminal.createPR", "Create PR {0}", link);
+			const label = localize('terminal.createPR', 'Create PR {0}', link);
 			return {
 				id: 'Git Create Pr',
 				label,
@@ -286,7 +295,9 @@ export function pwshGeneralError(): ITerminalQuickFixInternalOptions {
 				return;
 			}
 
-			const suggestions = lines[i + 1].match(/The most similar commands are: (?<values>.+)./)?.groups?.values?.split(', ');
+			const suggestions = lines[i + 1]
+				.match(/The most similar commands are: (?<values>.+)./)
+				?.groups?.values?.split(', ');
 			if (!suggestions) {
 				return;
 			}
@@ -343,7 +354,8 @@ export function pwshUnixCommandNotFoundError(): ITerminalQuickFixInternalOptions
 				if (line.length === 0) {
 					break;
 				}
-				const installCommand = line.match(/You also have .+ installed, you can run '(?<command>.+)' instead./)?.groups?.command;
+				const installCommand = line.match(/You also have .+ installed, you can run '(?<command>.+)' instead./)?.groups
+					?.command;
 				if (installCommand) {
 					result.push({
 						id: 'Pwsh Unix Command Not Found Error',

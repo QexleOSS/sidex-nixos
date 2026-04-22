@@ -4,13 +4,24 @@
  *--------------------------------------------------------------------------------------------*/
 
 import './hover.css';
-import { Disposable, DisposableStore, IDisposable, MutableDisposable, toDisposable } from '../../../base/common/lifecycle.js';
+import {
+	Disposable,
+	DisposableStore,
+	IDisposable,
+	MutableDisposable,
+	toDisposable
+} from '../../../base/common/lifecycle.js';
 import { Event, Emitter } from '../../../base/common/event.js';
 import * as dom from '../../../base/browser/dom.js';
 import { IKeybindingService } from '../../keybinding/common/keybinding.js';
 import { KeyCode } from '../../../base/common/keyCodes.js';
 import { IConfigurationService } from '../../configuration/common/configuration.js';
-import { HoverAction, HoverPosition, HoverWidget as BaseHoverWidget, getHoverAccessibleViewHint } from '../../../base/browser/ui/hover/hoverWidget.js';
+import {
+	HoverAction,
+	HoverPosition,
+	HoverWidget as BaseHoverWidget,
+	getHoverAccessibleViewHint
+} from '../../../base/browser/ui/hover/hoverWidget.js';
 import { Widget } from '../../../base/browser/ui/widget.js';
 import { AnchorPosition } from '../../../base/browser/ui/contextview/contextview.js';
 import { IMarkdownRendererService } from '../../markdown/browser/markdownRenderer.js';
@@ -19,7 +30,12 @@ import { localize } from '../../../nls.js';
 import { isMacintosh } from '../../../base/common/platform.js';
 import { IAccessibilityService } from '../../accessibility/common/accessibility.js';
 import { status } from '../../../base/browser/ui/aria/aria.js';
-import { HoverStyle, type IHoverOptions, type IHoverTarget, type IHoverWidget } from '../../../base/browser/ui/hover/hover.js';
+import {
+	HoverStyle,
+	type IHoverOptions,
+	type IHoverTarget,
+	type IHoverWidget
+} from '../../../base/browser/ui/hover/hover.js';
 import { TimeoutTimer } from '../../../base/common/async.js';
 import { isNumber } from '../../../base/common/types.js';
 
@@ -37,7 +53,7 @@ type TargetRect = {
 const enum Constants {
 	PointerSize = 3,
 	HoverBorderWidth = 2,
-	HoverWindowEdgeMargin = 2,
+	HoverWindowEdgeMargin = 2
 }
 
 export class HoverWidget extends Widget implements IHoverWidget {
@@ -67,24 +83,42 @@ export class HoverWidget extends Widget implements IHoverWidget {
 		return dom.getWindow(this._target.targetElements[0]).document.documentElement;
 	}
 
-	get isDisposed(): boolean { return this._isDisposed; }
-	get isMouseIn(): boolean { return this._lockMouseTracker.isMouseIn; }
-	get domNode(): HTMLElement { return this._hover.containerDomNode; }
+	get isDisposed(): boolean {
+		return this._isDisposed;
+	}
+	get isMouseIn(): boolean {
+		return this._lockMouseTracker.isMouseIn;
+	}
+	get domNode(): HTMLElement {
+		return this._hover.containerDomNode;
+	}
 
 	private readonly _onDispose = this._register(new Emitter<void>());
-	get onDispose(): Event<void> { return this._onDispose.event; }
+	get onDispose(): Event<void> {
+		return this._onDispose.event;
+	}
 	private readonly _onRequestLayout = this._register(new Emitter<void>());
-	get onRequestLayout(): Event<void> { return this._onRequestLayout.event; }
+	get onRequestLayout(): Event<void> {
+		return this._onRequestLayout.event;
+	}
 
-	get anchor(): AnchorPosition { return this._hoverPosition === HoverPosition.BELOW ? AnchorPosition.BELOW : AnchorPosition.ABOVE; }
-	get x(): number { return this._x; }
-	get y(): number { return this._y; }
+	get anchor(): AnchorPosition {
+		return this._hoverPosition === HoverPosition.BELOW ? AnchorPosition.BELOW : AnchorPosition.ABOVE;
+	}
+	get x(): number {
+		return this._x;
+	}
+	get y(): number {
+		return this._y;
+	}
 
 	/**
 	 * Whether the hover is "locked" by holding the alt/option key. When locked, the hover will not
 	 * hide and can be hovered regardless of whether the `hideOnHover` hover option is set.
 	 */
-	get isLocked(): boolean { return this._isLocked; }
+	get isLocked(): boolean {
+		return this._isLocked;
+	}
 	set isLocked(value: boolean) {
 		if (this._isLocked === value) {
 			return;
@@ -157,11 +191,12 @@ export class HoverWidget extends Widget implements IHoverWidget {
 		}
 
 		// Default to position above when the position is unspecified or a mouse event
-		this._hoverPosition = options.position?.hoverPosition === undefined
-			? HoverPosition.ABOVE
-			: isNumber(options.position.hoverPosition)
-				? options.position.hoverPosition
-				: HoverPosition.BELOW;
+		this._hoverPosition =
+			options.position?.hoverPosition === undefined
+				? HoverPosition.ABOVE
+				: isNumber(options.position.hoverPosition)
+					? options.position.hoverPosition
+					: HoverPosition.BELOW;
 
 		// Don't allow mousedown out of the widget, otherwise preventDefault will call and text will
 		// not be selected.
@@ -182,23 +217,23 @@ export class HoverWidget extends Widget implements IHoverWidget {
 		if (typeof options.content === 'string') {
 			contentsElement.textContent = options.content;
 			contentsElement.style.whiteSpace = 'pre-wrap';
-
 		} else if (dom.isHTMLElement(options.content)) {
 			contentsElement.appendChild(options.content);
 			contentsElement.classList.add('html-hover-contents');
-
 		} else {
 			const markdown = options.content;
 
-			const { element } = this._register(this._markdownRenderer.render(markdown, {
-				actionHandler: this._linkHandler,
-				asyncRenderCallback: () => {
-					contentsElement.classList.add('code-hover-contents');
-					this.layout();
-					// This changes the dimensions of the hover so trigger a layout
-					this._onRequestLayout.fire();
-				}
-			}));
+			const { element } = this._register(
+				this._markdownRenderer.render(markdown, {
+					actionHandler: this._linkHandler,
+					asyncRenderCallback: () => {
+						contentsElement.classList.add('code-hover-contents');
+						this.layout();
+						// This changes the dimensions of the hover so trigger a layout
+						this._onRequestLayout.fire();
+					}
+				})
+			);
 			contentsElement.appendChild(element);
 		}
 		rowElement.appendChild(contentsElement);
@@ -210,15 +245,21 @@ export class HoverWidget extends Widget implements IHoverWidget {
 			options.actions.forEach(action => {
 				const keybinding = this._keybindingService.lookupKeybinding(action.commandId);
 				const keybindingLabel = keybinding ? keybinding.getLabel() : null;
-				this._register(HoverAction.render(actionsElement, {
-					label: action.label,
-					commandId: action.commandId,
-					run: e => {
-						action.run(e);
-						this.dispose();
-					},
-					iconClass: action.iconClass
-				}, keybindingLabel));
+				this._register(
+					HoverAction.render(
+						actionsElement,
+						{
+							label: action.label,
+							commandId: action.commandId,
+							run: e => {
+								action.run(e);
+								this.dispose();
+							},
+							iconClass: action.iconClass
+						},
+						keybindingLabel
+					)
+				);
 			});
 			statusBarElement.appendChild(actionsElement);
 			this._hover.containerDomNode.appendChild(statusBarElement);
@@ -239,8 +280,11 @@ export class HoverWidget extends Widget implements IHoverWidget {
 			if (options.persistence?.hideOnHover === undefined) {
 				// When unset, will default to true when it's a string or when it's markdown that
 				// appears to have a link using a naive check for '](' and '</a>'
-				hideOnHover = typeof options.content === 'string' ||
-					isMarkdownString(options.content) && !options.content.value.includes('](') && !options.content.value.includes('</a>');
+				hideOnHover =
+					typeof options.content === 'string' ||
+					(isMarkdownString(options.content) &&
+						!options.content.value.includes('](') &&
+						!options.content.value.includes('</a>'));
 			} else {
 				// It's set explicitly
 				hideOnHover = options.persistence.hideOnHover;
@@ -261,11 +305,13 @@ export class HoverWidget extends Widget implements IHoverWidget {
 			mouseTrackerTargets.push(this._hoverContainer);
 		}
 		const mouseTracker = this._register(new CompositeMouseTracker(mouseTrackerTargets));
-		this._register(mouseTracker.onMouseOut(() => {
-			if (!this._isLocked) {
-				this.dispose();
-			}
-		}));
+		this._register(
+			mouseTracker.onMouseOut(() => {
+				if (!this._isLocked) {
+					this.dispose();
+				}
+			})
+		);
 
 		// Setup another mouse tracker when hideOnHover is set in order to track the hover as well
 		// when it is locked. This ensures the hover will hide on mouseout after alt has been
@@ -273,11 +319,13 @@ export class HoverWidget extends Widget implements IHoverWidget {
 		if (hideOnHover) {
 			const mouseTracker2Targets = [...this._target.targetElements, this._hoverContainer];
 			this._lockMouseTracker = this._register(new CompositeMouseTracker(mouseTracker2Targets));
-			this._register(this._lockMouseTracker.onMouseOut(() => {
-				if (!this._isLocked) {
-					this.dispose();
-				}
-			}));
+			this._register(
+				this._lockMouseTracker.onMouseOut(() => {
+					if (!this._isLocked) {
+						this.dispose();
+					}
+				})
+			);
 		} else {
 			this._lockMouseTracker = mouseTracker;
 		}
@@ -297,14 +345,18 @@ export class HoverWidget extends Widget implements IHoverWidget {
 			const afterContainerFocusElement = dom.append(this._hoverContainer, $('div'));
 			beforeContainerFocusElement.tabIndex = 0;
 			afterContainerFocusElement.tabIndex = 0;
-			this._register(dom.addDisposableListener(afterContainerFocusElement, 'focus', (e) => {
-				firstContainerFocusElement.focus();
-				e.preventDefault();
-			}));
-			this._register(dom.addDisposableListener(beforeContainerFocusElement, 'focus', (e) => {
-				lastContainerFocusElement.focus();
-				e.preventDefault();
-			}));
+			this._register(
+				dom.addDisposableListener(afterContainerFocusElement, 'focus', e => {
+					firstContainerFocusElement.focus();
+					e.preventDefault();
+				})
+			);
+			this._register(
+				dom.addDisposableListener(beforeContainerFocusElement, 'focus', e => {
+					lastContainerFocusElement.focus();
+					e.preventDefault();
+				})
+			);
 		}
 	}
 
@@ -330,9 +382,14 @@ export class HoverWidget extends Widget implements IHoverWidget {
 	public render(container: HTMLElement): void {
 		container.appendChild(this._hoverContainer);
 		const hoverFocused = this._hoverContainer.contains(this._hoverContainer.ownerDocument.activeElement);
-		const accessibleViewHint = hoverFocused && getHoverAccessibleViewHint(this._configurationService.getValue('accessibility.verbosity.hover') === true && this._accessibilityService.isScreenReaderOptimized(), this._keybindingService.lookupKeybinding('editor.action.accessibleView')?.getAriaLabel());
+		const accessibleViewHint =
+			hoverFocused &&
+			getHoverAccessibleViewHint(
+				this._configurationService.getValue('accessibility.verbosity.hover') === true &&
+					this._accessibilityService.isScreenReaderOptimized(),
+				this._keybindingService.lookupKeybinding('editor.action.accessibleView')?.getAriaLabel()
+			);
 		if (accessibleViewHint) {
-
 			status(accessibleViewHint);
 		}
 		this.layout();
@@ -351,7 +408,7 @@ export class HoverWidget extends Widget implements IHoverWidget {
 				top: boundingRect.top * zoom,
 				bottom: boundingRect.bottom * zoom,
 				right: boundingRect.right * zoom,
-				left: boundingRect.left * zoom,
+				left: boundingRect.left * zoom
 			};
 		};
 
@@ -361,10 +418,15 @@ export class HoverWidget extends Widget implements IHoverWidget {
 		const height = bottom - top;
 
 		const targetRect: TargetRect = {
-			top, right, bottom, left, width, height,
+			top,
+			right,
+			bottom,
+			left,
+			width,
+			height,
 			center: {
-				x: left + (width / 2),
-				y: top + (height / 2)
+				x: left + width / 2,
+				y: top + height / 2
 			}
 		};
 
@@ -405,8 +467,8 @@ export class HoverWidget extends Widget implements IHoverWidget {
 					break;
 			}
 
-			targetRect.center.x = targetRect.left + (width / 2);
-			targetRect.center.y = targetRect.top + (height / 2);
+			targetRect.center.x = targetRect.left + width / 2;
+			targetRect.center.y = targetRect.top + height / 2;
 		}
 
 		this.computeXCordinate(targetRect);
@@ -429,19 +491,13 @@ export class HoverWidget extends Widget implements IHoverWidget {
 
 		if (this._target.x !== undefined) {
 			this._x = this._target.x;
-		}
-
-		else if (this._hoverPosition === HoverPosition.RIGHT) {
+		} else if (this._hoverPosition === HoverPosition.RIGHT) {
 			this._x = target.right;
-		}
-
-		else if (this._hoverPosition === HoverPosition.LEFT) {
+		} else if (this._hoverPosition === HoverPosition.LEFT) {
 			this._x = target.left - hoverWidth;
-		}
-
-		else {
+		} else {
 			if (this._hoverPointer) {
-				this._x = target.center.x - (this._hover.containerDomNode.clientWidth / 2);
+				this._x = target.center.x - this._hover.containerDomNode.clientWidth / 2;
 			} else {
 				this._x = target.left;
 			}
@@ -449,7 +505,10 @@ export class HoverWidget extends Widget implements IHoverWidget {
 			// Hover is going beyond window towards right end
 			if (this._x + hoverWidth >= this._targetDocumentElement.clientWidth) {
 				this._hover.containerDomNode.classList.add('right-aligned');
-				this._x = Math.max(this._targetDocumentElement.clientWidth - hoverWidth - Constants.HoverWindowEdgeMargin, this._targetDocumentElement.clientLeft);
+				this._x = Math.max(
+					this._targetDocumentElement.clientWidth - hoverWidth - Constants.HoverWindowEdgeMargin,
+					this._targetDocumentElement.clientLeft
+				);
 			}
 		}
 
@@ -457,25 +516,18 @@ export class HoverWidget extends Widget implements IHoverWidget {
 		if (this._x < this._targetDocumentElement.clientLeft) {
 			this._x = target.left + Constants.HoverWindowEdgeMargin;
 		}
-
 	}
 
 	private computeYCordinate(target: TargetRect): void {
 		if (this._target.y !== undefined) {
 			this._y = this._target.y;
-		}
-
-		else if (this._hoverPosition === HoverPosition.ABOVE) {
+		} else if (this._hoverPosition === HoverPosition.ABOVE) {
 			this._y = target.top;
-		}
-
-		else if (this._hoverPosition === HoverPosition.BELOW) {
+		} else if (this._hoverPosition === HoverPosition.BELOW) {
 			this._y = target.bottom - 2;
-		}
-
-		else {
+		} else {
 			if (this._hoverPointer) {
-				this._y = target.center.y + (this._hover.containerDomNode.clientHeight / 2);
+				this._y = target.center.y + this._hover.containerDomNode.clientHeight / 2;
 			} else {
 				this._y = target.bottom;
 			}
@@ -493,7 +545,7 @@ export class HoverWidget extends Widget implements IHoverWidget {
 			return;
 		}
 
-		const hoverPointerOffset = (this._hoverPointer ? Constants.PointerSize : 0);
+		const hoverPointerOffset = this._hoverPointer ? Constants.PointerSize : 0;
 
 		// When force position is enabled, restrict max width
 		if (this._forcePosition) {
@@ -524,7 +576,6 @@ export class HoverWidget extends Widget implements IHoverWidget {
 		}
 		// Position hover on left to target
 		else if (this._hoverPosition === HoverPosition.LEFT) {
-
 			const roomOnLeft = target.left;
 			// Hover on the left is going beyond window.
 			if (roomOnLeft < this._hover.containerDomNode.clientWidth + hoverPointerOffset) {
@@ -539,7 +590,10 @@ export class HoverWidget extends Widget implements IHoverWidget {
 				}
 			}
 			// Hover on the left is going beyond window.
-			if (target.left - this._hover.containerDomNode.clientWidth - hoverPointerOffset <= this._targetDocumentElement.clientLeft) {
+			if (
+				target.left - this._hover.containerDomNode.clientWidth - hoverPointerOffset <=
+				this._targetDocumentElement.clientLeft
+			) {
 				this._hoverPosition = HoverPosition.RIGHT;
 			}
 		}
@@ -552,7 +606,7 @@ export class HoverWidget extends Widget implements IHoverWidget {
 			return;
 		}
 
-		const hoverPointerOffset = (this._hoverPointer ? Constants.PointerSize : 0);
+		const hoverPointerOffset = this._hoverPointer ? Constants.PointerSize : 0;
 
 		// Position hover on top of the target
 		if (this._hoverPosition === HoverPosition.ABOVE) {
@@ -565,7 +619,10 @@ export class HoverWidget extends Widget implements IHoverWidget {
 		// Position hover below the target
 		else if (this._hoverPosition === HoverPosition.BELOW) {
 			// Hover on bottom is going beyond window
-			if (target.bottom + this._hover.containerDomNode.offsetHeight + hoverPointerOffset > this._targetWindow.innerHeight) {
+			if (
+				target.bottom + this._hover.containerDomNode.offsetHeight + hoverPointerOffset >
+				this._targetWindow.innerHeight
+			) {
 				this._hoverPosition = HoverPosition.ABOVE;
 			}
 		}
@@ -612,7 +669,7 @@ export class HoverWidget extends Widget implements IHoverWidget {
 
 				// Otherwise show the pointer at the center of hover
 				else {
-					this._hoverPointer.style.top = `${Math.round((hoverHeight / 2)) - Constants.PointerSize}px`;
+					this._hoverPointer.style.top = `${Math.round(hoverHeight / 2) - Constants.PointerSize}px`;
 				}
 
 				break;
@@ -623,7 +680,7 @@ export class HoverWidget extends Widget implements IHoverWidget {
 				const hoverWidth = this._hover.containerDomNode.clientWidth;
 
 				// Position pointer at the center of the hover
-				let pointerLeftPosition = Math.round((hoverWidth / 2)) - Constants.PointerSize;
+				let pointerLeftPosition = Math.round(hoverWidth / 2) - Constants.PointerSize;
 
 				// If pointer goes beyond target then position it at the center of the target
 				const pointerX = this._x + pointerLeftPosition;
@@ -662,9 +719,13 @@ class CompositeMouseTracker extends Widget {
 	private readonly _mouseTimer: MutableDisposable<TimeoutTimer> = this._register(new MutableDisposable());
 
 	private readonly _onMouseOut = this._register(new Emitter<void>());
-	get onMouseOut(): Event<void> { return this._onMouseOut.event; }
+	get onMouseOut(): Event<void> {
+		return this._onMouseOut.event;
+	}
 
-	get isMouseIn(): boolean { return this._isMouseIn; }
+	get isMouseIn(): boolean {
+		return this._isMouseIn;
+	}
 
 	/**
 	 * @param _elements The target elements to track mouse in/out events on.
@@ -714,12 +775,14 @@ class CompositeMouseTracker extends Widget {
 		const store = new DisposableStore();
 		store.add(dom.addDisposableListener(element, dom.EventType.MOUSE_OVER, () => this._onTargetMouseOver()));
 		store.add(dom.addDisposableListener(element, dom.EventType.MOUSE_LEAVE, () => this._onTargetMouseLeave()));
-		store.add(toDisposable(() => {
-			const index = this._elements.indexOf(element);
-			if (index >= 0) {
-				this._elements.splice(index, 1);
-			}
-		}));
+		store.add(
+			toDisposable(() => {
+				const index = this._elements.indexOf(element);
+				if (index >= 0) {
+					this._elements.splice(index, 1);
+				}
+			})
+		);
 		return store;
 	}
 }
@@ -727,12 +790,9 @@ class CompositeMouseTracker extends Widget {
 class ElementHoverTarget implements IHoverTarget {
 	readonly targetElements: readonly HTMLElement[];
 
-	constructor(
-		private _element: HTMLElement
-	) {
+	constructor(private _element: HTMLElement) {
 		this.targetElements = [this._element];
 	}
 
-	dispose(): void {
-	}
+	dispose(): void {}
 }

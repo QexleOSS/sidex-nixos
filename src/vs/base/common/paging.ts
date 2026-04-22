@@ -76,11 +76,12 @@ export function singlePagePager<T>(elements: T[]): IPager<T> {
 }
 
 export class PagedModel<T> implements IPagedModel<T> {
-
 	private pager: IPager<T>;
 	private pages: IPage<T>[] = [];
 
-	get length(): number { return this.pager.total; }
+	get length(): number {
+		return this.pager.total;
+	}
 	readonly onDidIncrementLength = Event.None;
 
 	constructor(arg: IPager<T> | T[]) {
@@ -88,10 +89,7 @@ export class PagedModel<T> implements IPagedModel<T> {
 
 		const totalPages = Math.ceil(this.pager.total / this.pager.pageSize);
 
-		this.pages = [
-			createPage(this.pager.firstPage.slice()),
-			...range(totalPages - 1).map(() => createPage<T>())
-		];
+		this.pages = [createPage(this.pager.firstPage.slice()), ...range(totalPages - 1).map(() => createPage<T>())];
 	}
 
 	isResolved(index: number): boolean {
@@ -124,18 +122,20 @@ export class PagedModel<T> implements IPagedModel<T> {
 
 		if (!page.promise) {
 			page.cts = new CancellationTokenSource();
-			page.promise = this.pager.getPage(pageIndex, page.cts.token)
-				.then(elements => {
+			page.promise = this.pager.getPage(pageIndex, page.cts.token).then(
+				elements => {
 					page.elements = elements;
 					page.isResolved = true;
 					page.promise = null;
 					page.cts = null;
-				}, err => {
+				},
+				err => {
 					page.isResolved = false;
 					page.promise = null;
 					page.cts = null;
 					return Promise.reject(err);
-				});
+				}
+			);
 		}
 
 		const listener = cancellationToken.onCancellationRequested(() => {
@@ -152,17 +152,22 @@ export class PagedModel<T> implements IPagedModel<T> {
 
 		page.promiseIndexes.add(index);
 
-		return page.promise.then(() => page.elements[indexInPage])
-			.finally(() => listener.dispose());
+		return page.promise.then(() => page.elements[indexInPage]).finally(() => listener.dispose());
 	}
 }
 
 export class DelayedPagedModel<T> implements IPagedModel<T> {
+	get length(): number {
+		return this.model.length;
+	}
+	get onDidIncrementLength() {
+		return this.model.onDidIncrementLength;
+	}
 
-	get length(): number { return this.model.length; }
-	get onDidIncrementLength() { return this.model.onDidIncrementLength; }
-
-	constructor(private readonly model: IPagedModel<T>, private timeout: number = 500) { }
+	constructor(
+		private readonly model: IPagedModel<T>,
+		private timeout: number = 500
+	) {}
 
 	isResolved(index: number): boolean {
 		return this.model.isResolved(index);
@@ -235,7 +240,6 @@ export class PageIteratorPager<T> implements IPager<T> {
 			throw new Error(`Page ${pageIndex} is out of bounds. Total pages: ${this.cachedPages.length}`);
 		}
 
-
 		// Check if there's already a pending request that will load this index
 		// (any pending request for an index >= our requested index)
 		let promise: Promise<void> | undefined;
@@ -278,7 +282,6 @@ export class PageIteratorPager<T> implements IPager<T> {
 }
 
 export class IterativePagedModel<T> implements IPagedModel<T> {
-
 	private items: T[] = [];
 	private _hasNextPage = true;
 	private readonly _onDidIncrementLength = new Emitter<number>();
@@ -354,8 +357,8 @@ export class IterativePagedModel<T> implements IPagedModel<T> {
 
 		const pagePromise = this.pager.getNextPage(cancellationToken);
 
-		this.loadingPromise = pagePromise
-			.then(page => {
+		this.loadingPromise = pagePromise.then(
+			page => {
 				this.items.push(...page.items);
 				this._hasNextPage = page.hasMore;
 
@@ -365,10 +368,12 @@ export class IterativePagedModel<T> implements IPagedModel<T> {
 
 				// Fire length update event
 				this._onDidIncrementLength.fire(this.length);
-			}, err => {
+			},
+			err => {
 				this.loadingPromise = null;
 				throw err;
-			});
+			}
+		);
 
 		await this.loadingPromise;
 	}

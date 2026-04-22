@@ -4,14 +4,24 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { KeyCode } from '../../../../base/common/keyCodes.js';
-import { RawContextKey, IContextKeyService, ContextKeyExpr, IContextKey } from '../../../../platform/contextkey/common/contextkey.js';
+import {
+	RawContextKey,
+	IContextKeyService,
+	ContextKeyExpr,
+	IContextKey
+} from '../../../../platform/contextkey/common/contextkey.js';
 import { KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { ISnippetsService } from './snippets.js';
 import { getNonWhitespacePrefix } from './snippetsService.js';
 import { IDisposable } from '../../../../base/common/lifecycle.js';
 import { IEditorContribution } from '../../../../editor/common/editorCommon.js';
 import { Range } from '../../../../editor/common/core/range.js';
-import { registerEditorContribution, EditorCommand, registerEditorCommand, EditorContributionInstantiation } from '../../../../editor/browser/editorExtensions.js';
+import {
+	registerEditorContribution,
+	EditorCommand,
+	registerEditorCommand,
+	EditorContributionInstantiation
+} from '../../../../editor/browser/editorExtensions.js';
 import { SnippetController2 } from '../../../../editor/contrib/snippet/browser/snippetController2.js';
 import { showSimpleSuggestions } from '../../../../editor/contrib/suggest/browser/suggest.js';
 import { EditorContextKeys } from '../../../../editor/common/editorContextKeys.js';
@@ -25,7 +35,6 @@ import { ILanguageFeaturesService } from '../../../../editor/common/services/lan
 import { CompletionItemProvider } from '../../../../editor/common/languages.js';
 
 export class TabCompletionController implements IEditorContribution {
-
 	static readonly ID = 'editor.tabCompletionController';
 
 	static readonly ContextKey = new RawContextKey<boolean>('hasSnippetCompletions', undefined);
@@ -47,7 +56,7 @@ export class TabCompletionController implements IEditorContribution {
 		@ISnippetsService private readonly _snippetService: ISnippetsService,
 		@IClipboardService private readonly _clipboardService: IClipboardService,
 		@ILanguageFeaturesService private readonly _languageFeaturesService: ILanguageFeaturesService,
-		@IContextKeyService contextKeyService: IContextKeyService,
+		@IContextKeyService contextKeyService: IContextKeyService
 	) {
 		this._hasSnippets = TabCompletionController.ContextKey.bindTo(contextKeyService);
 		this._configListener = this._editor.onDidChangeConfiguration(e => {
@@ -79,7 +88,6 @@ export class TabCompletionController implements IEditorContribution {
 	}
 
 	private _updateSnippets(): void {
-
 		// reset first
 		this._activeSnippets = [];
 		this._completionProvider?.dispose();
@@ -111,7 +119,6 @@ export class TabCompletionController implements IEditorContribution {
 					}
 				}
 			}
-
 		} else if (!Range.spansMultipleLines(selection) && model.getValueLengthInRange(selection) <= 100) {
 			// actual selection -> snippet must be a full match
 			const selected = model.getValueInRange(selection);
@@ -175,10 +182,10 @@ export class TabCompletionController implements IEditorContribution {
 				}
 			}
 			SnippetController2.get(this._editor)?.insert(snippet.codeSnippet, {
-				overwriteBefore: snippet.prefix.length, overwriteAfter: 0,
+				overwriteBefore: snippet.prefix.length,
+				overwriteAfter: 0,
 				clipboardText
 			});
-
 		} else if (this._activeSnippets.length > 1) {
 			// two or more -> show IntelliSense box
 			if (this._completionProvider) {
@@ -192,17 +199,19 @@ registerEditorContribution(TabCompletionController.ID, TabCompletionController, 
 
 const TabCompletionCommand = EditorCommand.bindToContribution<TabCompletionController>(TabCompletionController.get);
 
-registerEditorCommand(new TabCompletionCommand({
-	id: 'insertSnippet',
-	precondition: TabCompletionController.ContextKey,
-	handler: x => x.performSnippetCompletions(),
-	kbOpts: {
-		weight: KeybindingWeight.EditorContrib,
-		kbExpr: ContextKeyExpr.and(
-			EditorContextKeys.editorTextFocus,
-			EditorContextKeys.tabDoesNotMoveFocus,
-			SnippetController2.InSnippetMode.toNegated()
-		),
-		primary: KeyCode.Tab
-	}
-}));
+registerEditorCommand(
+	new TabCompletionCommand({
+		id: 'insertSnippet',
+		precondition: TabCompletionController.ContextKey,
+		handler: x => x.performSnippetCompletions(),
+		kbOpts: {
+			weight: KeybindingWeight.EditorContrib,
+			kbExpr: ContextKeyExpr.and(
+				EditorContextKeys.editorTextFocus,
+				EditorContextKeys.tabDoesNotMoveFocus,
+				SnippetController2.InSnippetMode.toNegated()
+			),
+			primary: KeyCode.Tab
+		}
+	})
+);

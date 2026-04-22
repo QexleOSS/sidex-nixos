@@ -12,13 +12,19 @@ import { IExtHostRpcService } from './extHostRpcService.js';
 export interface IExtHostApiDeprecationService {
 	readonly _serviceBrand: undefined;
 
-	report(apiId: string, extension: IExtensionDescription, migrationSuggestion: string, options?: { usageId?: string }): void;
+	report(
+		apiId: string,
+		extension: IExtensionDescription,
+		migrationSuggestion: string,
+		options?: { usageId?: string }
+	): void;
 }
 
-export const IExtHostApiDeprecationService = createDecorator<IExtHostApiDeprecationService>('IExtHostApiDeprecationService');
+export const IExtHostApiDeprecationService = createDecorator<IExtHostApiDeprecationService>(
+	'IExtHostApiDeprecationService'
+);
 
 export class ExtHostApiDeprecationService implements IExtHostApiDeprecationService {
-
 	declare readonly _serviceBrand: undefined;
 
 	private readonly _reportedUsages = new Set<string>();
@@ -26,12 +32,17 @@ export class ExtHostApiDeprecationService implements IExtHostApiDeprecationServi
 
 	constructor(
 		@IExtHostRpcService rpc: IExtHostRpcService,
-		@ILogService private readonly _extHostLogService: ILogService,
+		@ILogService private readonly _extHostLogService: ILogService
 	) {
 		this._telemetryShape = rpc.getProxy(extHostProtocol.MainContext.MainThreadTelemetry);
 	}
 
-	public report(apiId: string, extension: IExtensionDescription, migrationSuggestion: string, options?: { usageId?: string }): void {
+	public report(
+		apiId: string,
+		extension: IExtensionDescription,
+		migrationSuggestion: string,
+		options?: { usageId?: string }
+	): void {
 		const key = this.getUsageKey(apiId, extension, options?.usageId);
 		if (this._reportedUsages.has(key)) {
 			return;
@@ -48,16 +59,28 @@ export class ExtHostApiDeprecationService implements IExtHostApiDeprecationServi
 			usageId: string;
 		};
 		type DeprecationTelemetryMeta = {
-			extensionId: { classification: 'SystemMetaData'; purpose: 'PerformanceAndHealth'; comment: 'The id of the extension that is using the deprecated API' };
-			apiId: { classification: 'SystemMetaData'; purpose: 'PerformanceAndHealth'; comment: 'The id of the deprecated API' };
-			usageId: { classification: 'SystemMetaData'; purpose: 'PerformanceAndHealth'; comment: 'Id identifying the specific usage of the deprecated API' };
+			extensionId: {
+				classification: 'SystemMetaData';
+				purpose: 'PerformanceAndHealth';
+				comment: 'The id of the extension that is using the deprecated API';
+			};
+			apiId: {
+				classification: 'SystemMetaData';
+				purpose: 'PerformanceAndHealth';
+				comment: 'The id of the deprecated API';
+			};
+			usageId: {
+				classification: 'SystemMetaData';
+				purpose: 'PerformanceAndHealth';
+				comment: 'Id identifying the specific usage of the deprecated API';
+			};
 			owner: 'mjbvz';
 			comment: 'Helps us gain insights on extensions using deprecated API so we can assist in migration to new API';
 		};
 		this._telemetryShape.$publicLog2<DeprecationTelemetry, DeprecationTelemetryMeta>('extHostDeprecatedApiUsage', {
 			extensionId: extension.identifier.value,
 			apiId: apiId,
-			usageId: options?.usageId ?? '',
+			usageId: options?.usageId ?? ''
 		});
 	}
 
@@ -67,11 +90,12 @@ export class ExtHostApiDeprecationService implements IExtHostApiDeprecationServi
 	}
 }
 
+export const NullApiDeprecationService = Object.freeze(
+	new (class implements IExtHostApiDeprecationService {
+		declare readonly _serviceBrand: undefined;
 
-export const NullApiDeprecationService = Object.freeze(new class implements IExtHostApiDeprecationService {
-	declare readonly _serviceBrand: undefined;
-
-	public report(_apiId: string, _extension: IExtensionDescription, _warningMessage: string): void {
-		// noop
-	}
-}());
+		public report(_apiId: string, _extension: IExtensionDescription, _warningMessage: string): void {
+			// noop
+		}
+	})()
+);

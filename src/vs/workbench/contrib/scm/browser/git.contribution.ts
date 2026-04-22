@@ -17,8 +17,22 @@ import { Schemas } from '../../../../base/common/network.js';
 import { MarkdownString } from '../../../../base/common/htmlContent.js';
 import { registerWorkbenchContribution2, WorkbenchPhase } from '../../../common/contributions.js';
 import type { IWorkbenchContribution } from '../../../common/contributions.js';
-import { ISCMService, ISCMProvider, ISCMResource, ISCMResourceGroup, ISCMResourceDecorations, ISCMActionButtonDescriptor } from '../common/scm.js';
-import type { ISCMHistoryProvider, ISCMHistoryOptions, ISCMHistoryItem, ISCMHistoryItemChange, ISCMHistoryItemRef, ISCMHistoryItemRefsChangeEvent } from '../common/history.js';
+import {
+	ISCMService,
+	ISCMProvider,
+	ISCMResource,
+	ISCMResourceGroup,
+	ISCMResourceDecorations,
+	ISCMActionButtonDescriptor
+} from '../common/scm.js';
+import type {
+	ISCMHistoryProvider,
+	ISCMHistoryOptions,
+	ISCMHistoryItem,
+	ISCMHistoryItemChange,
+	ISCMHistoryItemRef,
+	ISCMHistoryItemRefsChangeEvent
+} from '../common/history.js';
 import type { CancellationToken } from '../../../../base/common/cancellation.js';
 import type { ISCMArtifactProvider } from '../common/artifact.js';
 import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
@@ -32,11 +46,23 @@ import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextke
 import { IFileService } from '../../../../platform/files/common/files.js';
 import { IQuickInputService } from '../../../../platform/quickinput/common/quickInput.js';
 import { FileSystemProviderCapabilities, FileType, FilePermission } from '../../../../platform/files/common/files.js';
-import type { IFileSystemProvider, IStat, IFileDeleteOptions, IFileOverwriteOptions, IFileWriteOptions, IWatchOptions, IFileChange } from '../../../../platform/files/common/files.js';
+import type {
+	IFileSystemProvider,
+	IStat,
+	IFileDeleteOptions,
+	IFileOverwriteOptions,
+	IFileWriteOptions,
+	IWatchOptions,
+	IFileChange
+} from '../../../../platform/files/common/files.js';
 import type { ITextModel } from '../../../../editor/common/model.js';
 import type { Command } from '../../../../editor/common/languages.js';
 import type { Event } from '../../../../base/common/event.js';
-import { IDecorationsService, IDecorationsProvider, IDecorationData } from '../../../services/decorations/common/decorations.js';
+import {
+	IDecorationsService,
+	IDecorationsProvider,
+	IDecorationData
+} from '../../../services/decorations/common/decorations.js';
 import { registerColor } from '../../../../platform/theme/common/colorRegistry.js';
 import { historyItemRefColor, historyItemRemoteRefColor } from './scmHistory.js';
 
@@ -93,7 +119,6 @@ async function invokeGit<T>(cmd: string, args?: Record<string, unknown>): Promis
 const GIT_ORIGINAL_SCHEME = 'git-original';
 
 class TauriGitOriginalFileProvider implements IFileSystemProvider {
-
 	readonly capabilities = FileSystemProviderCapabilities.FileReadWrite | FileSystemProviderCapabilities.Readonly;
 
 	private readonly _onDidChangeCapabilities = new Emitter<void>();
@@ -137,14 +162,14 @@ class TauriGitOriginalFileProvider implements IFileSystemProvider {
 		}
 		try {
 			const revFile = `${gitRef}:${filePath}`;
-			const output = await invoke('git_run', {
+			const output = (await invoke('git_run', {
 				path: this._workspaceRoot,
-				args: ['show', revFile],
-			}) as string;
+				args: ['show', revFile]
+			})) as string;
 			return new TextEncoder().encode(output);
 		} catch {
 			try {
-				const bytes = await invoke('git_show', { path: this._workspaceRoot, file: filePath }) as number[];
+				const bytes = (await invoke('git_show', { path: this._workspaceRoot, file: filePath })) as number[];
 				return new Uint8Array(bytes);
 			} catch {
 				return new Uint8Array();
@@ -160,7 +185,6 @@ class TauriGitOriginalFileProvider implements IFileSystemProvider {
 // ─── SCM Resource ───────────────────────────────────────────────────────────
 
 class TauriGitResource implements ISCMResource {
-
 	readonly decorations: ISCMResourceDecorations;
 	readonly contextValue: string | undefined;
 	readonly command: Command | undefined;
@@ -172,7 +196,7 @@ class TauriGitResource implements ISCMResource {
 		readonly sourceUri: URI,
 		private readonly _status: string,
 		private readonly _staged: boolean,
-		private readonly _workspaceRootUri: URI,
+		private readonly _workspaceRootUri: URI
 	) {
 		this.decorations = TauriGitResource._decorationForStatus(_status);
 		this.contextValue = _staged ? 'staged' : 'unstaged';
@@ -234,14 +258,17 @@ class TauriGitResource implements ISCMResource {
 // ─── SCM Resource Group ─────────────────────────────────────────────────────
 
 class TauriGitResourceGroup implements ISCMResourceGroup {
-
 	resources: ISCMResource[] = [];
 
 	private _resourceTree: ResourceTree<ISCMResource, ISCMResourceGroup> | undefined;
 	get resourceTree(): ResourceTree<ISCMResource, ISCMResourceGroup> {
 		if (!this._resourceTree) {
 			const rootUri = this.provider.rootUri ?? URI.file('/');
-			this._resourceTree = new ResourceTree<ISCMResource, ISCMResourceGroup>(this, rootUri, this._uriIdentService.extUri);
+			this._resourceTree = new ResourceTree<ISCMResource, ISCMResourceGroup>(
+				this,
+				rootUri,
+				this._uriIdentService.extUri
+			);
 			for (const resource of this.resources) {
 				this._resourceTree.add(resource.sourceUri, resource);
 			}
@@ -264,7 +291,7 @@ class TauriGitResourceGroup implements ISCMResourceGroup {
 		readonly label: string,
 		readonly provider: ISCMProvider,
 		private readonly _uriIdentService: IUriIdentityService,
-		hideWhenEmpty: boolean = false,
+		hideWhenEmpty: boolean = false
 	) {
 		this.contextValue = id;
 		this.hideWhenEmpty = hideWhenEmpty;
@@ -281,7 +308,6 @@ class TauriGitResourceGroup implements ISCMResourceGroup {
 // ─── SCM History Provider ───────────────────────────────────────────────────
 
 class TauriGitHistoryProvider implements ISCMHistoryProvider {
-
 	private readonly _historyItemRef = observableValue<ISCMHistoryItemRef | undefined>(this, undefined);
 	readonly historyItemRef: IObservable<ISCMHistoryItemRef | undefined> = this._historyItemRef;
 
@@ -291,25 +317,32 @@ class TauriGitHistoryProvider implements ISCMHistoryProvider {
 	private readonly _historyItemBaseRef = observableValue<ISCMHistoryItemRef | undefined>(this, undefined);
 	readonly historyItemBaseRef: IObservable<ISCMHistoryItemRef | undefined> = this._historyItemBaseRef;
 
-	private readonly _historyItemRefChanges = observableValue<ISCMHistoryItemRefsChangeEvent>(this, { added: [], removed: [], modified: [], silent: true });
+	private readonly _historyItemRefChanges = observableValue<ISCMHistoryItemRefsChangeEvent>(this, {
+		added: [],
+		removed: [],
+		modified: [],
+		silent: true
+	});
 	readonly historyItemRefChanges: IObservable<ISCMHistoryItemRefsChangeEvent> = this._historyItemRefChanges;
 
 	constructor(
 		private readonly _rootPath: string,
 		private readonly _rootUri: URI,
-		private readonly _logService: ILogService,
-	) { }
+		private readonly _logService: ILogService
+	) {}
 
 	_githubUrl: string | undefined;
 
 	async _detectGitHubUrl(): Promise<string | undefined> {
 		try {
 			const invoke = await getTauriInvoke();
-			if (!invoke) { return undefined; }
-			const output = await invoke('git_run', {
+			if (!invoke) {
+				return undefined;
+			}
+			const output = (await invoke('git_run', {
 				path: this._rootPath,
-				args: ['remote', 'get-url', 'origin'],
-			}) as string;
+				args: ['remote', 'get-url', 'origin']
+			})) as string;
 			const url = output.trim();
 			this._githubUrl = url;
 			return url;
@@ -324,7 +357,7 @@ class TauriGitHistoryProvider implements ISCMHistoryProvider {
 			name: branch,
 			revision: headHash,
 			color: historyItemRefColor,
-			icon: ThemeIcon.fromId('git-branch'),
+			icon: ThemeIcon.fromId('git-branch')
 		};
 
 		const oldRef = this._historyItemRef.get();
@@ -333,57 +366,77 @@ class TauriGitHistoryProvider implements ISCMHistoryProvider {
 		this._resolveRemoteRef(branch, headHash);
 
 		if (oldRef?.revision !== headHash) {
-			this._historyItemRefChanges.set({
-				added: oldRef ? [] : [newRef],
-				removed: [],
-				modified: oldRef ? [newRef] : [],
-				silent: false,
-			}, undefined);
+			this._historyItemRefChanges.set(
+				{
+					added: oldRef ? [] : [newRef],
+					removed: [],
+					modified: oldRef ? [newRef] : [],
+					silent: false
+				},
+				undefined
+			);
 		}
 	}
 
 	private async _resolveRemoteRef(branch: string, _headHash?: string): Promise<void> {
 		try {
 			const invoke = await getTauriInvoke();
-			if (!invoke) { return; }
+			if (!invoke) {
+				return;
+			}
 
-			const trackingBranch = (await invoke('git_run', {
-				path: this._rootPath,
-				args: ['config', '--get', `branch.${branch}.remote`],
-			}) as string).trim();
+			const trackingBranch = (
+				(await invoke('git_run', {
+					path: this._rootPath,
+					args: ['config', '--get', `branch.${branch}.remote`]
+				})) as string
+			).trim();
 
 			if (trackingBranch) {
-				const remoteBranch = (await invoke('git_run', {
-					path: this._rootPath,
-					args: ['rev-parse', '--abbrev-ref', `${branch}@{upstream}`],
-				}) as string).trim();
+				const remoteBranch = (
+					(await invoke('git_run', {
+						path: this._rootPath,
+						args: ['rev-parse', '--abbrev-ref', `${branch}@{upstream}`]
+					})) as string
+				).trim();
 
-				const remoteHash = (await invoke('git_run', {
-					path: this._rootPath,
-					args: ['rev-parse', remoteBranch],
-				}) as string).trim();
+				const remoteHash = (
+					(await invoke('git_run', {
+						path: this._rootPath,
+						args: ['rev-parse', remoteBranch]
+					})) as string
+				).trim();
 
-				this._historyItemRemoteRef.set({
-					id: `refs/remotes/${remoteBranch}`,
-					name: remoteBranch,
-					revision: remoteHash,
-					color: historyItemRemoteRefColor,
-					icon: ThemeIcon.fromId('cloud'),
-				}, undefined);
+				this._historyItemRemoteRef.set(
+					{
+						id: `refs/remotes/${remoteBranch}`,
+						name: remoteBranch,
+						revision: remoteHash,
+						color: historyItemRemoteRefColor,
+						icon: ThemeIcon.fromId('cloud')
+					},
+					undefined
+				);
 
-				this._historyItemBaseRef.set({
-					id: `refs/remotes/${remoteBranch}`,
-					name: remoteBranch,
-					revision: remoteHash,
-					icon: ThemeIcon.fromId('git-commit'),
-				}, undefined);
+				this._historyItemBaseRef.set(
+					{
+						id: `refs/remotes/${remoteBranch}`,
+						name: remoteBranch,
+						revision: remoteHash,
+						icon: ThemeIcon.fromId('git-commit')
+					},
+					undefined
+				);
 			}
 		} catch {
 			// No upstream configured
 		}
 	}
 
-	async provideHistoryItemRefs(_historyItemRefs?: string[], _token?: CancellationToken): Promise<ISCMHistoryItemRef[] | undefined> {
+	async provideHistoryItemRefs(
+		_historyItemRefs?: string[],
+		_token?: CancellationToken
+	): Promise<ISCMHistoryItemRef[] | undefined> {
 		const refs: ISCMHistoryItemRef[] = [];
 		const current = this._historyItemRef.get();
 		if (current) {
@@ -396,12 +449,15 @@ class TauriGitHistoryProvider implements ISCMHistoryProvider {
 		return refs;
 	}
 
-	async provideHistoryItems(options: ISCMHistoryOptions, _token?: CancellationToken): Promise<ISCMHistoryItem[] | undefined> {
+	async provideHistoryItems(
+		options: ISCMHistoryOptions,
+		_token?: CancellationToken
+	): Promise<ISCMHistoryItem[] | undefined> {
 		try {
 			const limit = typeof options.limit === 'number' ? options.limit : 50;
 			const entries = await invokeGit<TauriGitLogEntry[]>('git_log_graph', {
 				path: this._rootPath,
-				limit: limit + (options.skip ?? 0),
+				limit: limit + (options.skip ?? 0)
 			});
 
 			if (!entries) {
@@ -425,7 +481,11 @@ class TauriGitHistoryProvider implements ISCMHistoryProvider {
 
 				const authorDate = new Date(entry.date);
 				const dateString = authorDate.toLocaleString(undefined, {
-					year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric'
+					year: 'numeric',
+					month: 'long',
+					day: 'numeric',
+					hour: 'numeric',
+					minute: 'numeric'
 				});
 				const relativeDate = this._fromNow(authorDate);
 
@@ -453,10 +513,14 @@ class TauriGitHistoryProvider implements ISCMHistoryProvider {
 					const fc = entry.files_changed;
 					statsMd.appendMarkdown(`<span>${fc === 1 ? `${fc} file changed` : `${fc} files changed`}</span>`);
 					if (entry.insertions) {
-						statsMd.appendMarkdown(`,&nbsp;<span style="color:var(--vscode-scmGraph-historyItemHoverAdditionsForeground);">${entry.insertions} insertion${entry.insertions === 1 ? '' : 's'}(+)</span>`);
+						statsMd.appendMarkdown(
+							`,&nbsp;<span style="color:var(--vscode-scmGraph-historyItemHoverAdditionsForeground);">${entry.insertions} insertion${entry.insertions === 1 ? '' : 's'}(+)</span>`
+						);
 					}
 					if (entry.deletions) {
-						statsMd.appendMarkdown(`,&nbsp;<span style="color:var(--vscode-scmGraph-historyItemHoverDeletionsForeground);">${entry.deletions} deletion${entry.deletions === 1 ? '' : 's'}(-)</span>`);
+						statsMd.appendMarkdown(
+							`,&nbsp;<span style="color:var(--vscode-scmGraph-historyItemHoverDeletionsForeground);">${entry.deletions} deletion${entry.deletions === 1 ? '' : 's'}(-)</span>`
+						);
 					}
 					statsMd.appendMarkdown('\n\n---\n\n');
 					tooltip.push(statsMd);
@@ -472,13 +536,16 @@ class TauriGitHistoryProvider implements ISCMHistoryProvider {
 					authorEmail: entry.email,
 					authorIcon: ThemeIcon.fromId('account'),
 					timestamp: authorDate.getTime(),
-					statistics: entry.files_changed !== undefined ? {
-						files: entry.files_changed,
-						insertions: entry.insertions ?? 0,
-						deletions: entry.deletions ?? 0,
-					} : undefined,
+					statistics:
+						entry.files_changed !== undefined
+							? {
+									files: entry.files_changed,
+									insertions: entry.insertions ?? 0,
+									deletions: entry.deletions ?? 0
+								}
+							: undefined,
 					references,
-					tooltip,
+					tooltip
 				} satisfies ISCMHistoryItem;
 			});
 		} catch (err) {
@@ -487,7 +554,11 @@ class TauriGitHistoryProvider implements ISCMHistoryProvider {
 		}
 	}
 
-	async provideHistoryItemChanges(historyItemId: string, _historyItemParentId: string | undefined, _token?: CancellationToken): Promise<ISCMHistoryItemChange[] | undefined> {
+	async provideHistoryItemChanges(
+		historyItemId: string,
+		_historyItemParentId: string | undefined,
+		_token?: CancellationToken
+	): Promise<ISCMHistoryItemChange[] | undefined> {
 		try {
 			const parentRef = _historyItemParentId ?? `${historyItemId}~1`;
 
@@ -498,16 +569,16 @@ class TauriGitHistoryProvider implements ISCMHistoryProvider {
 
 			let nameOutput: string;
 			try {
-				nameOutput = await invoke('git_run', {
+				nameOutput = (await invoke('git_run', {
 					path: this._rootPath,
-					args: ['diff-tree', '--no-commit-id', '-r', '--name-status', parentRef, historyItemId],
-				}) as string;
+					args: ['diff-tree', '--no-commit-id', '-r', '--name-status', parentRef, historyItemId]
+				})) as string;
 			} catch {
 				try {
-					nameOutput = await invoke('git_run', {
+					nameOutput = (await invoke('git_run', {
 						path: this._rootPath,
-						args: ['diff-tree', '--no-commit-id', '-r', '--name-only', historyItemId],
-					}) as string;
+						args: ['diff-tree', '--no-commit-id', '-r', '--name-only', historyItemId]
+					})) as string;
 				} catch {
 					return [];
 				}
@@ -517,7 +588,9 @@ class TauriGitHistoryProvider implements ISCMHistoryProvider {
 				return [];
 			}
 
-			return nameOutput.trim().split('\n')
+			return nameOutput
+				.trim()
+				.split('\n')
 				.filter(line => line.trim())
 				.map(line => {
 					const parts = line.split('\t');
@@ -526,7 +599,7 @@ class TauriGitHistoryProvider implements ISCMHistoryProvider {
 					return {
 						uri: fileUri,
 						originalUri: fileUri.with({ scheme: GIT_ORIGINAL_SCHEME, query: parentRef }),
-						modifiedUri: fileUri.with({ scheme: GIT_ORIGINAL_SCHEME, query: historyItemId }),
+						modifiedUri: fileUri.with({ scheme: GIT_ORIGINAL_SCHEME, query: historyItemId })
 					} satisfies ISCMHistoryItemChange;
 				});
 		} catch (err) {
@@ -544,36 +617,58 @@ class TauriGitHistoryProvider implements ISCMHistoryProvider {
 		return undefined;
 	}
 
-	async resolveHistoryItemChangeRangeChatContext(_historyItemId: string, _historyItemParentId: string, _path: string, _token?: CancellationToken): Promise<string | undefined> {
+	async resolveHistoryItemChangeRangeChatContext(
+		_historyItemId: string,
+		_historyItemParentId: string,
+		_path: string,
+		_token?: CancellationToken
+	): Promise<string | undefined> {
 		return undefined;
 	}
 
 	private _fromNow(date: Date): string {
 		const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-		if (seconds < 60) { return 'just now'; }
+		if (seconds < 60) {
+			return 'just now';
+		}
 		const minutes = Math.floor(seconds / 60);
-		if (minutes < 60) { return `${minutes} minute${minutes === 1 ? '' : 's'} ago`; }
+		if (minutes < 60) {
+			return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+		}
 		const hours = Math.floor(minutes / 60);
-		if (hours < 24) { return `${hours} hour${hours === 1 ? '' : 's'} ago`; }
+		if (hours < 24) {
+			return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+		}
 		const days = Math.floor(hours / 24);
-		if (days < 30) { return `${days} day${days === 1 ? '' : 's'} ago`; }
+		if (days < 30) {
+			return `${days} day${days === 1 ? '' : 's'} ago`;
+		}
 		const months = Math.floor(days / 30);
-		if (months < 12) { return `${months} month${months === 1 ? '' : 's'} ago`; }
+		if (months < 12) {
+			return `${months} month${months === 1 ? '' : 's'} ago`;
+		}
 		const years = Math.floor(months / 12);
 		return `${years} year${years === 1 ? '' : 's'} ago`;
 	}
 
-	async resolveHistoryItemRefsCommonAncestor(_historyItemRefs: string[], _token?: CancellationToken): Promise<string | undefined> {
+	async resolveHistoryItemRefsCommonAncestor(
+		_historyItemRefs: string[],
+		_token?: CancellationToken
+	): Promise<string | undefined> {
 		if (_historyItemRefs.length < 2) {
 			return _historyItemRefs[0];
 		}
 		try {
 			const invoke = await getTauriInvoke();
-			if (!invoke) { return undefined; }
-			const result = (await invoke('git_run', {
-				path: this._rootPath,
-				args: ['merge-base', _historyItemRefs[0], _historyItemRefs[1]],
-			}) as string).trim();
+			if (!invoke) {
+				return undefined;
+			}
+			const result = (
+				(await invoke('git_run', {
+					path: this._rootPath,
+					args: ['merge-base', _historyItemRefs[0], _historyItemRefs[1]]
+				})) as string
+			).trim();
 			return result || undefined;
 		} catch {
 			return undefined;
@@ -584,7 +679,6 @@ class TauriGitHistoryProvider implements ISCMHistoryProvider {
 // ─── SCM Provider ───────────────────────────────────────────────────────────
 
 class TauriGitSCMProvider extends Disposable implements ISCMProvider {
-
 	readonly id: string;
 	readonly providerId = 'git';
 	readonly label = 'Git';
@@ -595,31 +689,46 @@ class TauriGitSCMProvider extends Disposable implements ISCMProvider {
 	readonly inputBoxTextModel: ITextModel;
 
 	private readonly _contextValue = observableValue<string | undefined>(this, 'git');
-	get contextValue(): IObservable<string | undefined> { return this._contextValue; }
+	get contextValue(): IObservable<string | undefined> {
+		return this._contextValue;
+	}
 
 	private readonly _count = observableValue<number | undefined>(this, undefined);
-	get count(): IObservable<number | undefined> { return this._count; }
+	get count(): IObservable<number | undefined> {
+		return this._count;
+	}
 
 	private readonly _commitTemplate = observableValue<string>(this, '');
-	get commitTemplate(): IObservable<string> { return this._commitTemplate; }
+	get commitTemplate(): IObservable<string> {
+		return this._commitTemplate;
+	}
 
 	private readonly _actionButton = observableValue<ISCMActionButtonDescriptor | undefined>(this, undefined);
-	get actionButton(): IObservable<ISCMActionButtonDescriptor | undefined> { return this._actionButton; }
+	get actionButton(): IObservable<ISCMActionButtonDescriptor | undefined> {
+		return this._actionButton;
+	}
 
 	private readonly _statusBarCommands = observableValue<readonly Command[] | undefined>(this, undefined);
-	get statusBarCommands(): IObservable<readonly Command[] | undefined> { return this._statusBarCommands; }
+	get statusBarCommands(): IObservable<readonly Command[] | undefined> {
+		return this._statusBarCommands;
+	}
 
 	private readonly _artifactProvider = observableValue<ISCMArtifactProvider | undefined>(this, undefined);
-	get artifactProvider(): IObservable<ISCMArtifactProvider | undefined> { return this._artifactProvider; }
+	get artifactProvider(): IObservable<ISCMArtifactProvider | undefined> {
+		return this._artifactProvider;
+	}
 
 	private readonly _historyProvider = observableValue<ISCMHistoryProvider | undefined>(this, undefined);
-	get historyProvider(): IObservable<ISCMHistoryProvider | undefined> { return this._historyProvider; }
+	get historyProvider(): IObservable<ISCMHistoryProvider | undefined> {
+		return this._historyProvider;
+	}
 
 	readonly acceptInputCommand: Command = {
 		id: 'git.commit',
-		title: 'Commit',
+		title: 'Commit'
 	};
 
+	private readonly _mergeGroup: TauriGitResourceGroup;
 	private readonly _stagedGroup: TauriGitResourceGroup;
 	private readonly _changesGroup: TauriGitResourceGroup;
 	readonly groups: TauriGitResourceGroup[];
@@ -638,7 +747,7 @@ class TauriGitSCMProvider extends Disposable implements ISCMProvider {
 		modelService: IModelService,
 		languageService: ILanguageService,
 		private readonly uriIdentityService: IUriIdentityService,
-		private readonly logService: ILogService,
+		private readonly logService: ILogService
 	) {
 		super();
 
@@ -653,12 +762,15 @@ class TauriGitSCMProvider extends Disposable implements ISCMProvider {
 		}
 		this.inputBoxTextModel = model;
 
+		this._mergeGroup = new TauriGitResourceGroup('merge', 'Merge Changes', this, uriIdentityService, true);
 		this._stagedGroup = new TauriGitResourceGroup('staged', 'Staged Changes', this, uriIdentityService, true);
 		this._changesGroup = new TauriGitResourceGroup('changes', 'Changes', this, uriIdentityService, false);
-		this.groups = [this._stagedGroup, this._changesGroup];
+		this.groups = [this._mergeGroup, this._stagedGroup, this._changesGroup];
 
 		this._register(this._onDidChangeResourceGroups);
 		this._register(this._onDidChangeResources);
+		this._register(this._mergeGroup._onDidChange);
+		this._register(this._mergeGroup._onDidChangeResources);
 		this._register(this._stagedGroup._onDidChange);
 		this._register(this._stagedGroup._onDidChangeResources);
 		this._register(this._changesGroup._onDidChange);
@@ -666,11 +778,7 @@ class TauriGitSCMProvider extends Disposable implements ISCMProvider {
 	}
 
 	setupHistoryProvider(): void {
-		this._historyProviderInstance = new TauriGitHistoryProvider(
-			this.rootUri.fsPath,
-			this.rootUri,
-			this.logService,
-		);
+		this._historyProviderInstance = new TauriGitHistoryProvider(this.rootUri.fsPath, this.rootUri, this.logService);
 		this._historyProvider.set(this._historyProviderInstance, undefined);
 
 		this._historyProviderInstance._detectGitHubUrl().then(url => {
@@ -712,18 +820,26 @@ class TauriGitSCMProvider extends Disposable implements ISCMProvider {
 			}
 		}
 
+		const mergeResources: ISCMResource[] = [];
 		const stagedResources: ISCMResource[] = [];
 		const changesResources: ISCMResource[] = [];
 
+		const CONFLICT_XY_CODES = new Set(['UU', 'AA', 'DD', 'AU', 'UA', 'DU', 'UD']);
+		const isConflictStatus = (status: string): boolean =>
+			status === 'conflicted' || status === 'conflict' || CONFLICT_XY_CODES.has(status);
+
 		for (const change of status.changes) {
 			const fileUri = URI.joinPath(this.rootUri, change.path);
-			if (change.staged) {
+			if (isConflictStatus(change.status)) {
+				mergeResources.push(new TauriGitResource(this._mergeGroup, fileUri, change.status, false, this.rootUri));
+			} else if (change.staged) {
 				stagedResources.push(new TauriGitResource(this._stagedGroup, fileUri, change.status, true, this.rootUri));
 			} else {
 				changesResources.push(new TauriGitResource(this._changesGroup, fileUri, change.status, false, this.rootUri));
 			}
 		}
 
+		this._mergeGroup.setResources(mergeResources);
 		this._stagedGroup.setResources(stagedResources);
 		this._changesGroup.setResources(changesResources);
 
@@ -731,7 +847,7 @@ class TauriGitSCMProvider extends Disposable implements ISCMProvider {
 		this._onDidChangeResources.fire();
 		this._onDidChangeResourceGroups.fire();
 
-		const total = stagedResources.length + changesResources.length;
+		const total = mergeResources.length + stagedResources.length + changesResources.length;
 		this._count.set(total, undefined);
 
 		let ahead = 0;
@@ -739,10 +855,12 @@ class TauriGitSCMProvider extends Disposable implements ISCMProvider {
 		try {
 			const invoke = await getTauriInvoke();
 			if (invoke) {
-				const output = (await invoke('git_run', {
-					path: rootPath,
-					args: ['rev-list', '--left-right', '--count', `HEAD...@{upstream}`],
-				}) as string).trim();
+				const output = (
+					(await invoke('git_run', {
+						path: rootPath,
+						args: ['rev-list', '--left-right', '--count', `HEAD...@{upstream}`]
+					})) as string
+				).trim();
 				const parts = output.split(/\s+/);
 				ahead = parseInt(parts[0], 10) || 0;
 				behind = parseInt(parts[1], 10) || 0;
@@ -751,48 +869,59 @@ class TauriGitSCMProvider extends Disposable implements ISCMProvider {
 			// No upstream configured or remote unreachable
 		}
 
-		this._statusBarCommands.set([{
-			id: 'git.checkoutTo',
-			title: `$(git-branch) ${this._branch}${total > 0 ? '*' : ''}`,
-			tooltip: `Branch: ${this._branch}${total > 0 ? ' (modified)' : ''}`,
-		}, {
-			id: 'git.sync',
-			title: ahead > 0 || behind > 0
-				? `$(sync) ${behind}$(arrow-down) ${ahead}$(arrow-up)`
-				: '$(sync)',
-			tooltip: 'Synchronize Changes',
-		}], undefined);
+		this._statusBarCommands.set(
+			[
+				{
+					id: 'git.checkoutTo',
+					title: `$(git-branch) ${this._branch}${total > 0 ? '*' : ''}`,
+					tooltip: `Branch: ${this._branch}${total > 0 ? ' (modified)' : ''}`
+				},
+				{
+					id: 'git.sync',
+					title: ahead > 0 || behind > 0 ? `$(sync) ${behind}$(arrow-down) ${ahead}$(arrow-up)` : '$(sync)',
+					tooltip: 'Synchronize Changes'
+				}
+			],
+			undefined
+		);
 
 		if (total === 0 && ahead > 0) {
-			const syncLabel = behind > 0
-				? `$(sync) Sync Changes ${behind}$(arrow-down) ${ahead}$(arrow-up)`
-				: `$(sync) Sync Changes ${ahead}$(arrow-up)`;
-			this._actionButton.set({
-				command: { id: 'git.sync', title: syncLabel },
-				secondaryCommands: [
-					[
-						{ id: 'git.sync', title: 'Sync' },
-						{ id: 'git.push', title: 'Push' },
-						{ id: 'git.pull', title: 'Pull' },
+			const syncLabel =
+				behind > 0
+					? `$(sync) Sync Changes ${behind}$(arrow-down) ${ahead}$(arrow-up)`
+					: `$(sync) Sync Changes ${ahead}$(arrow-up)`;
+			this._actionButton.set(
+				{
+					command: { id: 'git.sync', title: syncLabel },
+					secondaryCommands: [
+						[
+							{ id: 'git.sync', title: 'Sync' },
+							{ id: 'git.push', title: 'Push' },
+							{ id: 'git.pull', title: 'Pull' }
+						]
 					],
-				],
-				enabled: true,
-			}, undefined);
+					enabled: true
+				},
+				undefined
+			);
 		} else {
-			this._actionButton.set({
-				command: { id: 'git.commit', title: '$(check) Commit' },
-				secondaryCommands: [
-					[
-						{ id: 'git.commit', title: 'Commit' },
-						{ id: 'git.commitAmend', title: 'Commit (Amend)' },
+			this._actionButton.set(
+				{
+					command: { id: 'git.commit', title: '$(check) Commit' },
+					secondaryCommands: [
+						[
+							{ id: 'git.commit', title: 'Commit' },
+							{ id: 'git.commitAmend', title: 'Commit (Amend)' }
+						],
+						[
+							{ id: 'git.commitAndPush', title: 'Commit & Push' },
+							{ id: 'git.commitAndSync', title: 'Commit & Sync' }
+						]
 					],
-					[
-						{ id: 'git.commitAndPush', title: 'Commit & Push' },
-						{ id: 'git.commitAndSync', title: 'Commit & Sync' },
-					],
-				],
-				enabled: true,
-			}, undefined);
+					enabled: true
+				},
+				undefined
+			);
 		}
 
 		this._onDidChangeResources.fire();
@@ -801,21 +930,60 @@ class TauriGitSCMProvider extends Disposable implements ISCMProvider {
 
 // ─── Git Decoration Colors ──────────────────────────────────────────────────
 
-const gitDecorationModifiedFg = registerColor('gitDecoration.modifiedResourceForeground', { dark: '#E2C08D', light: '#895503', hcDark: '#E2C08D', hcLight: '#895503' }, 'Color for modified git resources.');
-const gitDecorationDeletedFg = registerColor('gitDecoration.deletedResourceForeground', { dark: '#c74e39', light: '#ad0707', hcDark: '#c74e39', hcLight: '#ad0707' }, 'Color for deleted git resources.');
-const gitDecorationUntrackedFg = registerColor('gitDecoration.untrackedResourceForeground', { dark: '#73C991', light: '#007100', hcDark: '#73C991', hcLight: '#007100' }, 'Color for untracked git resources.');
-const gitDecorationAddedFg = registerColor('gitDecoration.addedResourceForeground', { dark: '#81b88b', light: '#587c0c', hcDark: '#a1e3ad', hcLight: '#374e06' }, 'Color for added git resources.');
-const gitDecorationRenamedFg = registerColor('gitDecoration.renamedResourceForeground', { dark: '#73C991', light: '#007100', hcDark: '#73C991', hcLight: '#007100' }, 'Color for renamed git resources.');
-const gitDecorationIgnoredFg = registerColor('gitDecoration.ignoredResourceForeground', { dark: '#8C8C8C', light: '#8E8E90', hcDark: '#A7A8A9', hcLight: '#8e8e90' }, 'Color for ignored git resources.');
-const gitDecorationStageModifiedFg = registerColor('gitDecoration.stageModifiedResourceForeground', { dark: '#E2C08D', light: '#895503', hcDark: '#E2C08D', hcLight: '#895503' }, 'Color for staged modified git resources.');
-const gitDecorationStageDeletedFg = registerColor('gitDecoration.stageDeletedResourceForeground', { dark: '#c74e39', light: '#ad0707', hcDark: '#c74e39', hcLight: '#ad0707' }, 'Color for staged deleted git resources.');
-const gitDecorationConflictingFg = registerColor('gitDecoration.conflictingResourceForeground', { dark: '#e4676b', light: '#ad0707', hcDark: '#c74e39', hcLight: '#ad0707' }, 'Color for conflicting git resources.');
-const gitDecorationSubmoduleFg = registerColor('gitDecoration.submoduleResourceForeground', { dark: '#8db9e2', light: '#1258a7', hcDark: '#8db9e2', hcLight: '#1258a7' }, 'Color for submodule git resources.');
+const gitDecorationModifiedFg = registerColor(
+	'gitDecoration.modifiedResourceForeground',
+	{ dark: '#E2C08D', light: '#895503', hcDark: '#E2C08D', hcLight: '#895503' },
+	'Color for modified git resources.'
+);
+const gitDecorationDeletedFg = registerColor(
+	'gitDecoration.deletedResourceForeground',
+	{ dark: '#c74e39', light: '#ad0707', hcDark: '#c74e39', hcLight: '#ad0707' },
+	'Color for deleted git resources.'
+);
+const gitDecorationUntrackedFg = registerColor(
+	'gitDecoration.untrackedResourceForeground',
+	{ dark: '#73C991', light: '#007100', hcDark: '#73C991', hcLight: '#007100' },
+	'Color for untracked git resources.'
+);
+const gitDecorationAddedFg = registerColor(
+	'gitDecoration.addedResourceForeground',
+	{ dark: '#81b88b', light: '#587c0c', hcDark: '#a1e3ad', hcLight: '#374e06' },
+	'Color for added git resources.'
+);
+const gitDecorationRenamedFg = registerColor(
+	'gitDecoration.renamedResourceForeground',
+	{ dark: '#73C991', light: '#007100', hcDark: '#73C991', hcLight: '#007100' },
+	'Color for renamed git resources.'
+);
+const gitDecorationIgnoredFg = registerColor(
+	'gitDecoration.ignoredResourceForeground',
+	{ dark: '#8C8C8C', light: '#8E8E90', hcDark: '#A7A8A9', hcLight: '#8e8e90' },
+	'Color for ignored git resources.'
+);
+const gitDecorationStageModifiedFg = registerColor(
+	'gitDecoration.stageModifiedResourceForeground',
+	{ dark: '#E2C08D', light: '#895503', hcDark: '#E2C08D', hcLight: '#895503' },
+	'Color for staged modified git resources.'
+);
+const gitDecorationStageDeletedFg = registerColor(
+	'gitDecoration.stageDeletedResourceForeground',
+	{ dark: '#c74e39', light: '#ad0707', hcDark: '#c74e39', hcLight: '#ad0707' },
+	'Color for staged deleted git resources.'
+);
+const gitDecorationConflictingFg = registerColor(
+	'gitDecoration.conflictingResourceForeground',
+	{ dark: '#e4676b', light: '#ad0707', hcDark: '#c74e39', hcLight: '#ad0707' },
+	'Color for conflicting git resources.'
+);
+const gitDecorationSubmoduleFg = registerColor(
+	'gitDecoration.submoduleResourceForeground',
+	{ dark: '#8db9e2', light: '#1258a7', hcDark: '#8db9e2', hcLight: '#1258a7' },
+	'Color for submodule git resources.'
+);
 
 // ─── Git File Decoration Provider ───────────────────────────────────────────
 
 class TauriGitDecorationProvider implements IDecorationsProvider {
-
 	readonly label = 'Git';
 
 	private readonly _onDidChange = new Emitter<readonly URI[]>();
@@ -851,7 +1019,7 @@ class TauriGitDecorationProvider implements IDecorationsProvider {
 					color: entry.staged ? gitDecorationStageModifiedFg : gitDecorationModifiedFg,
 					tooltip: entry.staged ? 'Index Modified' : 'Modified',
 					strikethrough: false,
-					bubble: true,
+					bubble: true
 				};
 			case 'added':
 			case 'new file':
@@ -860,7 +1028,7 @@ class TauriGitDecorationProvider implements IDecorationsProvider {
 					color: gitDecorationAddedFg,
 					tooltip: entry.staged ? 'Index Added' : 'Added',
 					strikethrough: false,
-					bubble: true,
+					bubble: true
 				};
 			case 'deleted':
 				return {
@@ -868,7 +1036,7 @@ class TauriGitDecorationProvider implements IDecorationsProvider {
 					color: entry.staged ? gitDecorationStageDeletedFg : gitDecorationDeletedFg,
 					tooltip: entry.staged ? 'Index Deleted' : 'Deleted',
 					strikethrough: false,
-					bubble: false,
+					bubble: false
 				};
 			case 'renamed':
 				return {
@@ -876,7 +1044,7 @@ class TauriGitDecorationProvider implements IDecorationsProvider {
 					color: gitDecorationRenamedFg,
 					tooltip: 'Index Renamed',
 					strikethrough: false,
-					bubble: true,
+					bubble: true
 				};
 			case 'untracked':
 				return {
@@ -884,15 +1052,16 @@ class TauriGitDecorationProvider implements IDecorationsProvider {
 					color: gitDecorationUntrackedFg,
 					tooltip: 'Untracked',
 					strikethrough: false,
-					bubble: true,
+					bubble: true
 				};
 			case 'conflict':
+			case 'conflicted':
 				return {
 					letter: '!',
 					color: gitDecorationConflictingFg,
 					tooltip: 'Conflict',
 					strikethrough: false,
-					bubble: true,
+					bubble: true
 				};
 			default:
 				return undefined;
@@ -907,7 +1076,6 @@ class TauriGitDecorationProvider implements IDecorationsProvider {
 // ─── Workbench Contribution ─────────────────────────────────────────────────
 
 class TauriGitContribution extends Disposable implements IWorkbenchContribution {
-
 	static readonly ID = 'workbench.contrib.tauriGit';
 
 	private _pollHandle: ReturnType<typeof setInterval> | undefined;
@@ -921,7 +1089,7 @@ class TauriGitContribution extends Disposable implements IWorkbenchContribution 
 		@ILogService private readonly logService: ILogService,
 		@IFileService private readonly fileService: IFileService,
 		@IDecorationsService private readonly decorationsService: IDecorationsService,
-		@IQuickInputService quickInputService: IQuickInputService,
+		@IQuickInputService quickInputService: IQuickInputService
 	) {
 		super();
 		(globalThis as any).__sidex_quickInputService = quickInputService;
@@ -942,8 +1110,7 @@ class TauriGitContribution extends Disposable implements IWorkbenchContribution 
 		const originalProvider = new TauriGitOriginalFileProvider(rootPath);
 		try {
 			this._register(this.fileService.registerProvider(GIT_ORIGINAL_SCHEME, originalProvider));
-		} catch {
-		}
+		} catch {}
 
 		let isRepo: boolean | undefined;
 		try {
@@ -962,7 +1129,7 @@ class TauriGitContribution extends Disposable implements IWorkbenchContribution 
 			this.modelService,
 			this.languageService,
 			this.uriIdentityService,
-			this.logService,
+			this.logService
 		);
 
 		const repository = this.scmService.registerSCMProvider(provider);
@@ -990,7 +1157,7 @@ class TauriGitContribution extends Disposable implements IWorkbenchContribution 
 					allResources.push({
 						uri: tauriRes.sourceUri,
 						status: tauriRes.statusLabel,
-						staged: group.id === 'staged',
+						staged: group.id === 'staged'
 					});
 				}
 			}
@@ -1013,170 +1180,244 @@ class TauriGitContribution extends Disposable implements IWorkbenchContribution 
 	}
 
 	private _registerDiffCommands(provider: TauriGitSCMProvider, rootPath: string): void {
-		this._register(CommandsRegistry.registerCommand('git.openDiff', async (_accessor, ...args: any[]) => {
-			try {
-				const commandService = (globalThis as any).__sidex_commandService;
-				if (!commandService) { return; }
+		this._register(
+			CommandsRegistry.registerCommand('git.openDiff', async (_accessor, ...args: any[]) => {
+				try {
+					const commandService = (globalThis as any).__sidex_commandService;
+					if (!commandService) {
+						return;
+					}
 
-				const resource = args[0];
-				const sourceUri: URI | undefined = resource?.sourceUri ?? resource;
-				if (!sourceUri) { return; }
+					const resource = args[0];
+					const sourceUri: URI | undefined = resource?.sourceUri ?? resource;
+					if (!sourceUri) {
+						return;
+					}
 
-				const relPath = relativePath(provider.rootUri, sourceUri) ?? sourceUri.path;
-				const originalUri = URI.from({ scheme: GIT_ORIGINAL_SCHEME, path: `/${relPath}` });
-				const modifiedUri = sourceUri;
-				const fileName = basename(sourceUri);
-				const title = `${fileName} (Working Tree)`;
+					const relPath = relativePath(provider.rootUri, sourceUri) ?? sourceUri.path;
+					const originalUri = URI.from({ scheme: GIT_ORIGINAL_SCHEME, path: `/${relPath}` });
+					const modifiedUri = sourceUri;
+					const fileName = basename(sourceUri);
+					const title = `${fileName} (Working Tree)`;
 
-				await commandService.executeCommand('vscode.diff', originalUri, modifiedUri, title);
-			} catch (err) {
-				console.error('[TauriGit] open diff failed:', err);
-			}
-		}));
+					await commandService.executeCommand('vscode.diff', originalUri, modifiedUri, title);
+				} catch (err) {
+					console.error('[TauriGit] open diff failed:', err);
+				}
+			})
+		);
+
+		this._register(
+			CommandsRegistry.registerCommand('git.openChange', async (_accessor, ...args: any[]) => {
+				try {
+					const commandService = (globalThis as any).__sidex_commandService;
+					if (!commandService) {
+						return;
+					}
+
+					const resource = args[0];
+					const sourceUri: URI | undefined = resource?.sourceUri ?? resource;
+					if (!sourceUri) {
+						return;
+					}
+
+					const relPath = relativePath(provider.rootUri, sourceUri) ?? sourceUri.path;
+					const originalUri = URI.from({ scheme: GIT_ORIGINAL_SCHEME, path: `/${relPath}` });
+					const modifiedUri = sourceUri;
+					const fileName = basename(sourceUri);
+					const title = `${fileName} (Index)`;
+
+					await commandService.executeCommand('vscode.diff', originalUri, modifiedUri, title);
+				} catch (err) {
+					console.error('[TauriGit] open change failed:', err);
+				}
+			})
+		);
 	}
 
 	private _registerCommitCommand(provider: TauriGitSCMProvider, rootPath: string): void {
-		this._register(CommandsRegistry.registerCommand('git.commit', async () => {
-			const message = provider.inputBoxTextModel.getValue();
-			if (!message.trim()) {
-				return;
-			}
-			try {
-				const hash = await invokeGit<string>('git_commit', { path: rootPath, message });
-				this.logService.info(`[TauriGit] Committed: ${hash}`);
-				provider.inputBoxTextModel.setValue('');
-				await provider.refresh();
-			} catch (err) {
-				this.logService.error('[TauriGit] commit failed', err);
-			}
-		}));
-
-		this._register(CommandsRegistry.registerCommand('git.stageAll', async () => {
-			try {
-				await invokeGit('git_add', { path: rootPath, files: ['.'] });
-				await provider.refresh();
-			} catch (err) {
-				this.logService.error('[TauriGit] stage all failed', err);
-			}
-		}));
-
-		this._register(CommandsRegistry.registerCommand('git.unstageAll', async () => {
-			try {
-				const invoke = await getTauriInvoke();
-				if (invoke) {
-					await invoke('git_checkout', { path: rootPath, branch: 'HEAD' });
+		this._register(
+			CommandsRegistry.registerCommand('git.commit', async () => {
+				const message = provider.inputBoxTextModel.getValue();
+				if (!message.trim()) {
+					return;
 				}
-				await provider.refresh();
-			} catch (err) {
-				this.logService.error('[TauriGit] unstage all failed', err);
-			}
-		}));
-
-		this._register(CommandsRegistry.registerCommand('git.refresh', async () => {
-			await provider.refresh();
-		}));
-
-		this._register(CommandsRegistry.registerCommand('git.discardAll', async () => {
-			try {
-				const invoke = await getTauriInvoke();
-				if (invoke) {
-					await invoke('git_checkout', { path: rootPath, branch: '.' });
+				try {
+					const hash = await invokeGit<string>('git_commit', { path: rootPath, message });
+					this.logService.info(`[TauriGit] Committed: ${hash}`);
+					provider.inputBoxTextModel.setValue('');
+					await provider.refresh();
+				} catch (err) {
+					this.logService.error('[TauriGit] commit failed', err);
 				}
-				await provider.refresh();
-			} catch (err) {
-				this.logService.error('[TauriGit] discard all failed', err);
-			}
-		}));
+			})
+		);
 
-		this._register(CommandsRegistry.registerCommand('git.openAllChanges', async () => {
-			try {
-				const commandService = (globalThis as any).__sidex_commandService;
-				if (!commandService) { return; }
-				const status = await invokeGit<TauriGitStatus>('git_status', { path: rootPath });
-				if (!status) { return; }
-				for (const change of status.changes) {
-					const fileUri = URI.joinPath(provider.rootUri, change.path);
-					if (change.status === 'untracked' || change.status === 'added') {
-						await commandService.executeCommand('vscode.open', fileUri);
-					} else {
-						const relPath = change.path;
-						const originalUri = URI.from({ scheme: GIT_ORIGINAL_SCHEME, path: `/${relPath}` });
-						const fileName = basename(fileUri);
-						await commandService.executeCommand('vscode.diff', originalUri, fileUri, `${fileName} (Working Tree)`);
+		this._register(
+			CommandsRegistry.registerCommand('git.stageAll', async () => {
+				try {
+					await invokeGit('git_add', { path: rootPath, files: ['.'] });
+					await provider.refresh();
+				} catch (err) {
+					this.logService.error('[TauriGit] stage all failed', err);
+				}
+			})
+		);
+
+		this._register(
+			CommandsRegistry.registerCommand('git.refresh', async () => {
+				await provider.refresh();
+			})
+		);
+
+		this._register(
+			CommandsRegistry.registerCommand('git.discardAll', async () => {
+				try {
+					const invoke = await getTauriInvoke();
+					if (invoke) {
+						await invoke('git_restore', {
+							path: rootPath,
+							files: ['.'],
+							source: 'HEAD',
+							staged: false,
+							worktree: true
+						});
+						await invoke('git_clean', { path: rootPath, files: ['.'], dirs: true });
 					}
-				}
-			} catch (err) {
-				console.error('[TauriGit] open all changes failed', err);
-			}
-		}));
-
-		this._register(CommandsRegistry.registerCommand('git.stageFile', async (_accessor, ...args: any[]) => {
-			try {
-				const resource = args[0];
-				const uri = resource?.sourceUri ?? resource;
-				if (uri?.fsPath) {
-					await invokeGit('git_add', { path: rootPath, files: [uri.fsPath] });
 					await provider.refresh();
+				} catch (err) {
+					this.logService.error('[TauriGit] discard all failed', err);
 				}
-			} catch (err) {
-				console.error('[TauriGit] stage file failed', err);
-			}
-		}));
+			})
+		);
 
-		this._register(CommandsRegistry.registerCommand('git.discardFile', async (_accessor, ...args: any[]) => {
-			try {
-				const resource = args[0];
-				const uri = resource?.sourceUri ?? resource;
-				if (uri?.fsPath) {
-					await invokeGit('git_checkout', { path: rootPath, branch: '-- ' + uri.fsPath });
-					await provider.refresh();
-				}
-			} catch (err) {
-				console.error('[TauriGit] discard file failed', err);
-			}
-		}));
-
-		this._register(CommandsRegistry.registerCommand('git.openFile', async (_accessor, ...args: any[]) => {
-			try {
-				const resource = args[0];
-				const uri = resource?.sourceUri ?? resource;
-				if (uri) {
+		this._register(
+			CommandsRegistry.registerCommand('git.openAllChanges', async () => {
+				try {
 					const commandService = (globalThis as any).__sidex_commandService;
-					if (commandService) {
-						const status = (resource as any)?._status;
-						if (status && status !== 'untracked' && status !== 'added' && status !== 'deleted') {
-							await commandService.executeCommand('git.openDiff', resource);
+					if (!commandService) {
+						return;
+					}
+					const status = await invokeGit<TauriGitStatus>('git_status', { path: rootPath });
+					if (!status) {
+						return;
+					}
+					for (const change of status.changes) {
+						const fileUri = URI.joinPath(provider.rootUri, change.path);
+						if (change.status === 'untracked' || change.status === 'added') {
+							await commandService.executeCommand('vscode.open', fileUri);
 						} else {
-							await commandService.executeCommand('vscode.open', uri);
+							const relPath = change.path;
+							const originalUri = URI.from({ scheme: GIT_ORIGINAL_SCHEME, path: `/${relPath}` });
+							const fileName = basename(fileUri);
+							await commandService.executeCommand('vscode.diff', originalUri, fileUri, `${fileName} (Working Tree)`);
 						}
 					}
+				} catch (err) {
+					console.error('[TauriGit] open all changes failed', err);
 				}
-			} catch (err) {
-				console.error('[TauriGit] open file failed', err);
-			}
-		}));
+			})
+		);
 
-		this._register(CommandsRegistry.registerCommand('git.unstageFile', async (_accessor, ...args: any[]) => {
-			try {
-				const resource = args[0];
-				const uri = resource?.sourceUri ?? resource;
-				if (uri?.fsPath) {
-					await invokeGit('git_reset', { path: rootPath, files: [uri.fsPath] });
+		this._register(
+			CommandsRegistry.registerCommand('git.stageFile', async (_accessor, ...args: any[]) => {
+				try {
+					const resource = args[0];
+					const uri = resource?.sourceUri ?? resource;
+					if (uri?.fsPath) {
+						await invokeGit('git_add', { path: rootPath, files: [uri.fsPath] });
+						await provider.refresh();
+					}
+				} catch (err) {
+					console.error('[TauriGit] stage file failed', err);
+				}
+			})
+		);
+
+		this._register(
+			CommandsRegistry.registerCommand('git.discardFile', async (_accessor, ...args: any[]) => {
+				try {
+					const resource = args[0];
+					const uri: URI | undefined = resource?.sourceUri ?? resource;
+					if (!uri?.fsPath) {
+						return;
+					}
+
+					const status = (resource as any)?._status ?? '';
+					const isUntracked = typeof status === 'string' && (status === 'untracked' || status.includes('?'));
+
+					const relPath = uri.fsPath.startsWith(rootPath + '/')
+						? uri.fsPath.substring(rootPath.length + 1)
+						: uri.fsPath;
+
+					const invoke = await getTauriInvoke();
+					if (invoke) {
+						if (isUntracked) {
+							await invoke('git_clean', { path: rootPath, files: [relPath], dirs: false });
+						} else {
+							await invoke('git_restore', {
+								path: rootPath,
+								files: [relPath],
+								source: null,
+								staged: false,
+								worktree: true
+							});
+						}
+					}
 					await provider.refresh();
+				} catch (err) {
+					console.error('[TauriGit] discard file failed', err);
 				}
-			} catch (err) {
-				console.error('[TauriGit] unstage file failed', err);
-			}
-		}));
+			})
+		);
 
-		this._register(CommandsRegistry.registerCommand('git.unstageAll', async () => {
-			try {
-				await invokeGit('git_reset', { path: rootPath, files: ['.'] });
-				await provider.refresh();
-			} catch (err) {
-				console.error('[TauriGit] unstage all failed', err);
-			}
-		}));
+		this._register(
+			CommandsRegistry.registerCommand('git.openFile', async (_accessor, ...args: any[]) => {
+				try {
+					const resource = args[0];
+					const uri = resource?.sourceUri ?? resource;
+					if (uri) {
+						const commandService = (globalThis as any).__sidex_commandService;
+						if (commandService) {
+							const status = (resource as any)?._status;
+							if (status && status !== 'untracked' && status !== 'added' && status !== 'deleted') {
+								await commandService.executeCommand('git.openDiff', resource);
+							} else {
+								await commandService.executeCommand('vscode.open', uri);
+							}
+						}
+					}
+				} catch (err) {
+					console.error('[TauriGit] open file failed', err);
+				}
+			})
+		);
+
+		this._register(
+			CommandsRegistry.registerCommand('git.unstageFile', async (_accessor, ...args: any[]) => {
+				try {
+					const resource = args[0];
+					const uri = resource?.sourceUri ?? resource;
+					if (uri?.fsPath) {
+						await invokeGit('git_reset', { path: rootPath, files: [uri.fsPath] });
+						await provider.refresh();
+					}
+				} catch (err) {
+					console.error('[TauriGit] unstage file failed', err);
+				}
+			})
+		);
+
+		this._register(
+			CommandsRegistry.registerCommand('git.unstageAll', async () => {
+				try {
+					await invokeGit('git_reset', { path: rootPath, files: ['.'] });
+					await provider.refresh();
+				} catch (err) {
+					console.error('[TauriGit] unstage all failed', err);
+				}
+			})
+		);
 	}
 }
 
@@ -1184,7 +1425,9 @@ class TauriGitContribution extends Disposable implements IWorkbenchContribution 
 CommandsRegistry.registerCommand('git.init', async () => {
 	try {
 		const invoke = await getTauriInvoke();
-		if (!invoke) { return; }
+		if (!invoke) {
+			return;
+		}
 
 		const { open } = await import('@tauri-apps/plugin-dialog');
 		// Use the current workspace folder if available, otherwise ask
@@ -1200,7 +1443,9 @@ CommandsRegistry.registerCommand('git.init', async () => {
 			}
 		}
 
-		if (!targetPath) { return; }
+		if (!targetPath) {
+			return;
+		}
 
 		await invoke('git_init', { path: targetPath });
 		console.log('[TauriGit] Repository initialized at', targetPath);
@@ -1213,7 +1458,9 @@ CommandsRegistry.registerCommand('git.init', async () => {
 });
 
 CommandsRegistry.registerCommand('git.copyToClipboard', async (_accessor, content: string) => {
-	if (typeof content !== 'string') { return; }
+	if (typeof content !== 'string') {
+		return;
+	}
 	try {
 		await navigator.clipboard.writeText(content);
 	} catch {
@@ -1224,7 +1471,9 @@ CommandsRegistry.registerCommand('git.copyToClipboard', async (_accessor, conten
 CommandsRegistry.registerCommand('git.openOnGitHub', async (_accessor, remoteUrl: string, hash: string) => {
 	try {
 		const match = remoteUrl.match(/github\.com[:/]([^/]+\/[^/.]+)/);
-		if (!match) { return; }
+		if (!match) {
+			return;
+		}
 		const commitUrl = `https://github.com/${match[1]}/commit/${hash}`;
 		const openerService = (globalThis as any).__sidex_openerService;
 		if (openerService) {
@@ -1237,11 +1486,7 @@ CommandsRegistry.registerCommand('git.openOnGitHub', async (_accessor, remoteUrl
 	}
 });
 
-registerWorkbenchContribution2(
-	TauriGitContribution.ID,
-	TauriGitContribution,
-	WorkbenchPhase.BlockRestore,
-);
+registerWorkbenchContribution2(TauriGitContribution.ID, TauriGitContribution, WorkbenchPhase.BlockRestore);
 
 // ─── Repository-level commands ──────────────────────────────────────────────
 
@@ -1252,7 +1497,9 @@ function getWorkspacePath(): string | undefined {
 
 CommandsRegistry.registerCommand('git.pull', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	try {
 		const result = await invokeGit<string>('git_pull', { path });
 		console.log('[TauriGit] pull:', result);
@@ -1263,7 +1510,9 @@ CommandsRegistry.registerCommand('git.pull', async () => {
 
 CommandsRegistry.registerCommand('git.push', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	try {
 		const result = await invokeGit<string>('git_push', { path });
 		console.log('[TauriGit] push:', result);
@@ -1274,7 +1523,9 @@ CommandsRegistry.registerCommand('git.push', async () => {
 
 CommandsRegistry.registerCommand('git.fetch', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	try {
 		const result = await invokeGit<string>('git_fetch', { path });
 		console.log('[TauriGit] fetch:', result);
@@ -1286,14 +1537,22 @@ CommandsRegistry.registerCommand('git.fetch', async () => {
 async function doGitClone(): Promise<void> {
 	try {
 		const quickInputService = (globalThis as any).__sidex_quickInputService;
-		if (!quickInputService) { return; }
+		if (!quickInputService) {
+			return;
+		}
 
-		const url = await quickInputService.input({ placeHolder: 'Repository URL to clone (e.g. https://github.com/user/repo.git)' });
-		if (!url) { return; }
+		const url = await quickInputService.input({
+			placeHolder: 'Repository URL to clone (e.g. https://github.com/user/repo.git)'
+		});
+		if (!url) {
+			return;
+		}
 
 		const { open } = await import('@tauri-apps/plugin-dialog');
 		const dest = await open({ directory: true, title: 'Choose destination folder for clone' });
-		if (!dest || typeof dest !== 'string') { return; }
+		if (!dest || typeof dest !== 'string') {
+			return;
+		}
 
 		await invokeGit('git_clone', { url, path: dest });
 		console.log('[TauriGit] cloned', url, 'to', dest);
@@ -1310,29 +1569,52 @@ CommandsRegistry.registerCommand('git.clone', doGitClone);
 
 CommandsRegistry.registerCommand('git.checkoutTo', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	try {
 		const invoke = await getTauriInvoke();
-		if (!invoke) { return; }
+		if (!invoke) {
+			return;
+		}
 
 		const quickInputService = (globalThis as any).__sidex_quickInputService;
-		if (!quickInputService) { return; }
+		if (!quickInputService) {
+			return;
+		}
 
 		// Get local branches
 		let branchOutput = '';
 		try {
-			branchOutput = ((await invoke('git_run', {
-				path, args: ['branch', '--format=%(refname:short)|%(objectname:short)|%(committerdate:relative)|%(authorname)|%(subject)']
-			})) as string).trim();
-		} catch { /* no branches */ }
+			branchOutput = (
+				(await invoke('git_run', {
+					path,
+					args: [
+						'branch',
+						'--format=%(refname:short)|%(objectname:short)|%(committerdate:relative)|%(authorname)|%(subject)'
+					]
+				})) as string
+			).trim();
+		} catch {
+			/* no branches */
+		}
 
 		// Get remote branches
 		let remoteOutput = '';
 		try {
-			remoteOutput = ((await invoke('git_run', {
-				path, args: ['branch', '-r', '--format=%(refname:short)|%(objectname:short)|%(committerdate:relative)|%(authorname)|%(subject)']
-			})) as string).trim();
-		} catch { /* no remotes */ }
+			remoteOutput = (
+				(await invoke('git_run', {
+					path,
+					args: [
+						'branch',
+						'-r',
+						'--format=%(refname:short)|%(objectname:short)|%(committerdate:relative)|%(authorname)|%(subject)'
+					]
+				})) as string
+			).trim();
+		} catch {
+			/* no remotes */
+		}
 
 		const items: any[] = [];
 
@@ -1345,12 +1627,14 @@ CommandsRegistry.registerCommand('git.checkoutTo', async () => {
 			for (const line of branchOutput.split('\n')) {
 				const parts = line.split('|');
 				const name = parts[0] || '';
-				if (!name) { continue; }
+				if (!name) {
+					continue;
+				}
 				items.push({
 					label: `$(git-branch) ${name}`,
 					description: parts[2] || '',
 					detail: `${parts[3] || ''} • ${parts[1] || ''} • ${parts[4] || ''}`,
-					branch: name,
+					branch: name
 				});
 			}
 		}
@@ -1360,12 +1644,14 @@ CommandsRegistry.registerCommand('git.checkoutTo', async () => {
 			for (const line of remoteOutput.split('\n')) {
 				const parts = line.split('|');
 				const name = parts[0] || '';
-				if (!name || name.includes('HEAD')) { continue; }
+				if (!name || name.includes('HEAD')) {
+					continue;
+				}
 				items.push({
 					label: `$(cloud) ${name}`,
 					description: parts[2] || '',
 					detail: `${parts[3] || ''} • ${parts[1] || ''} • ${parts[4] || ''}`,
-					branch: name,
+					branch: name
 				});
 			}
 		}
@@ -1373,22 +1659,33 @@ CommandsRegistry.registerCommand('git.checkoutTo', async () => {
 		// Get tags
 		let tagsOutput = '';
 		try {
-			tagsOutput = ((await invoke('git_run', {
-				path, args: ['tag', '--sort=-creatordate', '--format=%(refname:short)|%(objectname:short)|%(creatordate:relative)|%(creatorname)|%(subject)']
-			})) as string).trim();
-		} catch { /* no tags */ }
+			tagsOutput = (
+				(await invoke('git_run', {
+					path,
+					args: [
+						'tag',
+						'--sort=-creatordate',
+						'--format=%(refname:short)|%(objectname:short)|%(creatordate:relative)|%(creatorname)|%(subject)'
+					]
+				})) as string
+			).trim();
+		} catch {
+			/* no tags */
+		}
 
 		if (tagsOutput) {
 			items.push({ type: 'separator', label: 'tags' });
 			for (const line of tagsOutput.split('\n')) {
 				const parts = line.split('|');
 				const name = parts[0] || '';
-				if (!name) { continue; }
+				if (!name) {
+					continue;
+				}
 				items.push({
 					label: `$(tag) ${name}`,
 					description: parts[2] || '',
 					detail: `${parts[3] || ''} • ${parts[1] || ''} • ${parts[4] || ''}`,
-					branch: name,
+					branch: name
 				});
 			}
 		}
@@ -1396,24 +1693,34 @@ CommandsRegistry.registerCommand('git.checkoutTo', async () => {
 		const picked = await quickInputService.pick(items, {
 			placeHolder: 'Select a branch or tag to checkout',
 			matchOnDescription: true,
-			matchOnDetail: true,
+			matchOnDetail: true
 		});
 
-		if (!picked || !picked.branch) { return; }
+		if (!picked || !picked.branch) {
+			return;
+		}
 
 		if (picked.branch === '__create__') {
 			const name = await quickInputService.input({ placeHolder: 'Branch name' });
-			if (!name) { return; }
+			if (!name) {
+				return;
+			}
 			await invoke('git_run', { path, args: ['checkout', '-b', name] });
 		} else if (picked.branch === '__create_from__') {
 			const base = await quickInputService.input({ placeHolder: 'Base branch or commit' });
-			if (!base) { return; }
+			if (!base) {
+				return;
+			}
 			const name = await quickInputService.input({ placeHolder: 'New branch name' });
-			if (!name) { return; }
+			if (!name) {
+				return;
+			}
 			await invoke('git_run', { path, args: ['checkout', '-b', name, base] });
 		} else if (picked.branch === '__detached__') {
 			const ref = await quickInputService.input({ placeHolder: 'Commit hash, tag, or ref to checkout' });
-			if (!ref) { return; }
+			if (!ref) {
+				return;
+			}
 			await invoke('git_run', { path, args: ['checkout', '--detach', ref] });
 		} else {
 			const branchName = picked.branch.replace(/^origin\//, '');
@@ -1428,9 +1735,13 @@ CommandsRegistry.registerCommand('git.checkoutTo', async () => {
 
 CommandsRegistry.registerCommand('git.createBranch', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	const name = window.prompt('New branch name:');
-	if (!name) { return; }
+	if (!name) {
+		return;
+	}
 	try {
 		await invokeGit('git_create_branch', { path, name });
 		console.log('[TauriGit] created branch', name);
@@ -1441,7 +1752,9 @@ CommandsRegistry.registerCommand('git.createBranch', async () => {
 
 CommandsRegistry.registerCommand('git.sync', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	try {
 		await invokeGit<string>('git_pull', { path });
 		await invokeGit<string>('git_push', { path });
@@ -1453,7 +1766,9 @@ CommandsRegistry.registerCommand('git.sync', async () => {
 
 CommandsRegistry.registerCommand('git.stash', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	try {
 		const invoke = await getTauriInvoke();
 		if (invoke) {
@@ -1467,7 +1782,9 @@ CommandsRegistry.registerCommand('git.stash', async () => {
 
 CommandsRegistry.registerCommand('git.stashPop', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	try {
 		const invoke = await getTauriInvoke();
 		if (invoke) {
@@ -1481,7 +1798,9 @@ CommandsRegistry.registerCommand('git.stashPop', async () => {
 
 CommandsRegistry.registerCommand('git.stashPopLatest', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	try {
 		const invoke = await getTauriInvoke();
 		if (invoke) {
@@ -1495,7 +1814,9 @@ CommandsRegistry.registerCommand('git.stashPopLatest', async () => {
 
 CommandsRegistry.registerCommand('git.commitAmend', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	try {
 		const invoke = await getTauriInvoke();
 		if (invoke) {
@@ -1509,12 +1830,16 @@ CommandsRegistry.registerCommand('git.commitAmend', async () => {
 
 CommandsRegistry.registerCommand('git.commitAndPush', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	try {
 		const invoke = await getTauriInvoke();
 		if (invoke) {
 			const message = (window as any).__sidex_scmInputValue?.() || '';
-			if (!message.trim()) { return; }
+			if (!message.trim()) {
+				return;
+			}
 			await invoke('git_run', { path, args: ['commit', '-m', message] });
 			await invokeGit<string>('git_push', { path });
 			console.log('[TauriGit] commit & push complete');
@@ -1526,12 +1851,16 @@ CommandsRegistry.registerCommand('git.commitAndPush', async () => {
 
 CommandsRegistry.registerCommand('git.commitAndSync', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	try {
 		const invoke = await getTauriInvoke();
 		if (invoke) {
 			const message = (window as any).__sidex_scmInputValue?.() || '';
-			if (!message.trim()) { return; }
+			if (!message.trim()) {
+				return;
+			}
 			await invoke('git_run', { path, args: ['commit', '-m', message] });
 			await invokeGit<string>('git_pull', { path });
 			await invokeGit<string>('git_push', { path });
@@ -1544,13 +1873,17 @@ CommandsRegistry.registerCommand('git.commitAndSync', async () => {
 
 CommandsRegistry.registerCommand('git.commitAll', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	try {
 		const invoke = await getTauriInvoke();
 		if (invoke) {
 			await invoke('git_run', { path, args: ['add', '.'] });
 			const message = (window as any).__sidex_scmInputValue?.() || '';
-			if (!message.trim()) { return; }
+			if (!message.trim()) {
+				return;
+			}
 			await invoke('git_run', { path, args: ['commit', '-m', message] });
 			console.log('[TauriGit] commit all complete');
 		}
@@ -1561,11 +1894,17 @@ CommandsRegistry.registerCommand('git.commitAll', async () => {
 
 CommandsRegistry.registerCommand('git.addRemote', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	const name = window.prompt('Remote name:');
-	if (!name) { return; }
+	if (!name) {
+		return;
+	}
 	const url = window.prompt('Remote URL:');
-	if (!url) { return; }
+	if (!url) {
+		return;
+	}
 	try {
 		const invoke = await getTauriInvoke();
 		if (invoke) {
@@ -1579,9 +1918,13 @@ CommandsRegistry.registerCommand('git.addRemote', async () => {
 
 CommandsRegistry.registerCommand('git.removeRemote', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	const name = window.prompt('Remote name to remove:');
-	if (!name) { return; }
+	if (!name) {
+		return;
+	}
 	try {
 		const invoke = await getTauriInvoke();
 		if (invoke) {
@@ -1595,9 +1938,13 @@ CommandsRegistry.registerCommand('git.removeRemote', async () => {
 
 CommandsRegistry.registerCommand('git.createTag', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	const name = window.prompt('Tag name:');
-	if (!name) { return; }
+	if (!name) {
+		return;
+	}
 	const message = window.prompt('Tag message (leave empty for lightweight tag):');
 	try {
 		const invoke = await getTauriInvoke();
@@ -1613,9 +1960,13 @@ CommandsRegistry.registerCommand('git.createTag', async () => {
 
 CommandsRegistry.registerCommand('git.deleteTag', async () => {
 	const path = getWorkspacePath();
-	if (!path) { return; }
+	if (!path) {
+		return;
+	}
 	const name = window.prompt('Tag name to delete:');
-	if (!name) { return; }
+	if (!name) {
+		return;
+	}
 	try {
 		const invoke = await getTauriInvoke();
 		if (invoke) {
@@ -1656,45 +2007,45 @@ MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	title: 'View & Sort',
 	submenu: SCMRepoViewSortMenu,
 	group: '0_view&sort',
-	order: 1,
+	order: 1
 });
 
 MenuRegistry.appendMenuItem(SCMRepoViewSortMenu, {
 	command: { id: 'workbench.scm.action.setListViewMode', title: 'View as List' },
 	group: '1_viewmode',
-	order: 1,
+	order: 1
 });
 MenuRegistry.appendMenuItem(SCMRepoViewSortMenu, {
 	command: { id: 'workbench.scm.action.setTreeViewMode', title: 'View as Tree' },
 	group: '1_viewmode',
-	order: 2,
+	order: 2
 });
 
 // Quick actions
 MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	command: { id: 'git.pull', title: 'Pull' },
 	group: '1_header',
-	order: 1,
+	order: 1
 });
 MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	command: { id: 'git.push', title: 'Push' },
 	group: '1_header',
-	order: 2,
+	order: 2
 });
 MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	command: { id: 'git.clone', title: 'Clone...' },
 	group: '1_header',
-	order: 3,
+	order: 3
 });
 MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	command: { id: 'git.checkoutTo', title: 'Checkout to...' },
 	group: '1_header',
-	order: 4,
+	order: 4
 });
 MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	command: { id: 'git.fetch', title: 'Fetch' },
 	group: '1_header',
-	order: 5,
+	order: 5
 });
 
 // Submenus
@@ -1702,169 +2053,82 @@ MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	title: 'Commit',
 	submenu: SCMGitCommitMenu,
 	group: '2_main',
-	order: 1,
+	order: 1
 });
 MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	title: 'Changes',
 	submenu: SCMGitChangesMenu,
 	group: '2_main',
-	order: 2,
+	order: 2
 });
 MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	title: 'Pull, Push',
 	submenu: SCMGitPullPushMenu,
 	group: '2_main',
-	order: 3,
+	order: 3
 });
 MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	title: 'Branch',
 	submenu: SCMGitBranchMenu,
 	group: '2_main',
-	order: 4,
+	order: 4
 });
 MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	title: 'Remote',
 	submenu: SCMGitRemoteMenu,
 	group: '2_main',
-	order: 5,
+	order: 5
 });
 MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	title: 'Stash',
 	submenu: SCMGitStashMenu,
 	group: '2_main',
-	order: 6,
+	order: 6
 });
 MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	title: 'Tags',
 	submenu: SCMGitTagsMenu,
 	group: '2_main',
-	order: 7,
+	order: 7
 });
 
 // Footer
 MenuRegistry.appendMenuItem(MenuId.SCMSourceControlInline, {
 	command: { id: 'git.showOutput', title: 'Show Git Output' },
 	group: '3_footer',
-	order: 1,
+	order: 1
 });
 
 // Navigation toolbar buttons
 MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
 	command: { id: 'git.commit', title: 'Commit', icon: ThemeIcon.fromId('check') },
 	group: 'navigation',
-	order: 1,
+	order: 1
 });
 
 MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
 	command: { id: 'git.refresh', title: 'Refresh', icon: ThemeIcon.fromId('refresh') },
 	group: 'navigation',
-	order: 2,
+	order: 2
 });
 
 // Graph view toolbar buttons
 MenuRegistry.appendMenuItem(MenuId.SCMHistoryTitle, {
 	command: { id: 'git.fetch', title: 'Fetch', icon: ThemeIcon.fromId('git-fetch') },
 	group: 'navigation',
-	order: 3,
+	order: 3
 });
 
 MenuRegistry.appendMenuItem(MenuId.SCMHistoryTitle, {
 	command: { id: 'git.pull', title: 'Pull', icon: ThemeIcon.fromId('repo-pull') },
 	group: 'navigation',
-	order: 4,
+	order: 4
 });
 
 MenuRegistry.appendMenuItem(MenuId.SCMHistoryTitle, {
 	command: { id: 'git.push', title: 'Push', icon: ThemeIcon.fromId('repo-push') },
 	group: 'navigation',
-	order: 5,
-});
-
-// Quick actions (1_header group - shown directly in overflow)
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	command: { id: 'git.pull', title: 'Pull' },
-	group: '1_header',
-	order: 1,
-});
-
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	command: { id: 'git.push', title: 'Push' },
-	group: '1_header',
-	order: 2,
-});
-
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	command: { id: 'git.clone', title: 'Clone...' },
-	group: '1_header',
-	order: 3,
-});
-
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	command: { id: 'git.checkoutTo', title: 'Checkout to...' },
-	group: '1_header',
-	order: 4,
-});
-
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	command: { id: 'git.fetch', title: 'Fetch' },
-	group: '1_header',
-	order: 5,
-});
-
-// Submenus (2_main group)
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	title: 'Commit',
-	submenu: SCMGitCommitMenu,
-	group: '2_main',
-	order: 1,
-});
-
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	title: 'Changes',
-	submenu: SCMGitChangesMenu,
-	group: '2_main',
-	order: 2,
-});
-
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	title: 'Pull, Push',
-	submenu: SCMGitPullPushMenu,
-	group: '2_main',
-	order: 3,
-});
-
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	title: 'Branch',
-	submenu: SCMGitBranchMenu,
-	group: '2_main',
-	order: 4,
-});
-
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	title: 'Stash',
-	submenu: SCMGitStashMenu,
-	group: '2_main',
-	order: 5,
-});
-
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	title: 'Remote',
-	submenu: SCMGitRemoteMenu,
-	group: '2_main',
-	order: 6,
-});
-
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	title: 'Tags',
-	submenu: SCMGitTagsMenu,
-	group: '2_main',
-	order: 7,
-});
-
-MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
-	command: { id: 'git.showOutput', title: 'Show Git Output' },
-	group: '3_footer',
-	order: 1,
+	order: 5
 });
 
 // ─── Commit submenu items ───────────────────────────────────────────────────
@@ -1872,19 +2136,19 @@ MenuRegistry.appendMenuItem(MenuId.SCMTitle, {
 MenuRegistry.appendMenuItem(SCMGitCommitMenu, {
 	command: { id: 'git.commit', title: 'Commit' },
 	group: '1_commit',
-	order: 1,
+	order: 1
 });
 
 MenuRegistry.appendMenuItem(SCMGitCommitMenu, {
 	command: { id: 'git.commitAll', title: 'Commit All' },
 	group: '1_commit',
-	order: 2,
+	order: 2
 });
 
 MenuRegistry.appendMenuItem(SCMGitCommitMenu, {
 	command: { id: 'git.commitAmend', title: 'Commit (Amend)' },
 	group: '2_amend',
-	order: 1,
+	order: 1
 });
 
 // ─── Changes submenu items ──────────────────────────────────────────────────
@@ -1892,19 +2156,19 @@ MenuRegistry.appendMenuItem(SCMGitCommitMenu, {
 MenuRegistry.appendMenuItem(SCMGitChangesMenu, {
 	command: { id: 'git.stageAll', title: 'Stage All Changes' },
 	group: 'changes',
-	order: 1,
+	order: 1
 });
 
 MenuRegistry.appendMenuItem(SCMGitChangesMenu, {
 	command: { id: 'git.unstageAll', title: 'Unstage All Changes' },
 	group: 'changes',
-	order: 2,
+	order: 2
 });
 
 MenuRegistry.appendMenuItem(SCMGitChangesMenu, {
 	command: { id: 'git.discardAll', title: 'Discard All Changes' },
 	group: 'changes',
-	order: 3,
+	order: 3
 });
 
 // ─── Pull, Push submenu items ───────────────────────────────────────────────
@@ -1912,25 +2176,25 @@ MenuRegistry.appendMenuItem(SCMGitChangesMenu, {
 MenuRegistry.appendMenuItem(SCMGitPullPushMenu, {
 	command: { id: 'git.sync', title: 'Sync' },
 	group: '1_sync',
-	order: 1,
+	order: 1
 });
 
 MenuRegistry.appendMenuItem(SCMGitPullPushMenu, {
 	command: { id: 'git.pull', title: 'Pull' },
 	group: '2_pull',
-	order: 1,
+	order: 1
 });
 
 MenuRegistry.appendMenuItem(SCMGitPullPushMenu, {
 	command: { id: 'git.push', title: 'Push' },
 	group: '3_push',
-	order: 1,
+	order: 1
 });
 
 MenuRegistry.appendMenuItem(SCMGitPullPushMenu, {
 	command: { id: 'git.fetch', title: 'Fetch' },
 	group: '4_fetch',
-	order: 1,
+	order: 1
 });
 
 // ─── Branch submenu items ───────────────────────────────────────────────────
@@ -1938,13 +2202,13 @@ MenuRegistry.appendMenuItem(SCMGitPullPushMenu, {
 MenuRegistry.appendMenuItem(SCMGitBranchMenu, {
 	command: { id: 'git.createBranch', title: 'Create Branch...' },
 	group: '1_branch',
-	order: 1,
+	order: 1
 });
 
 MenuRegistry.appendMenuItem(SCMGitBranchMenu, {
 	command: { id: 'git.checkoutTo', title: 'Checkout to...' },
 	group: '1_branch',
-	order: 2,
+	order: 2
 });
 
 // ─── Stash submenu items ────────────────────────────────────────────────────
@@ -1952,19 +2216,19 @@ MenuRegistry.appendMenuItem(SCMGitBranchMenu, {
 MenuRegistry.appendMenuItem(SCMGitStashMenu, {
 	command: { id: 'git.stash', title: 'Stash' },
 	group: '1_stash',
-	order: 1,
+	order: 1
 });
 
 MenuRegistry.appendMenuItem(SCMGitStashMenu, {
 	command: { id: 'git.stashPopLatest', title: 'Pop Latest Stash' },
 	group: '2_pop',
-	order: 1,
+	order: 1
 });
 
 MenuRegistry.appendMenuItem(SCMGitStashMenu, {
 	command: { id: 'git.stashPop', title: 'Pop Stash...' },
 	group: '2_pop',
-	order: 2,
+	order: 2
 });
 
 // ─── Remote submenu items ───────────────────────────────────────────────────
@@ -1972,13 +2236,13 @@ MenuRegistry.appendMenuItem(SCMGitStashMenu, {
 MenuRegistry.appendMenuItem(SCMGitRemoteMenu, {
 	command: { id: 'git.addRemote', title: 'Add Remote...' },
 	group: 'remote',
-	order: 1,
+	order: 1
 });
 
 MenuRegistry.appendMenuItem(SCMGitRemoteMenu, {
 	command: { id: 'git.removeRemote', title: 'Remove Remote...' },
 	group: 'remote',
-	order: 2,
+	order: 2
 });
 
 // ─── Tags submenu items ─────────────────────────────────────────────────────
@@ -1986,13 +2250,13 @@ MenuRegistry.appendMenuItem(SCMGitRemoteMenu, {
 MenuRegistry.appendMenuItem(SCMGitTagsMenu, {
 	command: { id: 'git.createTag', title: 'Create Tag...' },
 	group: 'tags',
-	order: 1,
+	order: 1
 });
 
 MenuRegistry.appendMenuItem(SCMGitTagsMenu, {
 	command: { id: 'git.deleteTag', title: 'Delete Tag...' },
 	group: 'tags',
-	order: 2,
+	order: 2
 });
 
 // Buttons on the "Changes" group header
@@ -2000,21 +2264,21 @@ MenuRegistry.appendMenuItem(MenuId.SCMResourceGroupContext, {
 	command: { id: 'git.stageAll', title: 'Stage All Changes', icon: ThemeIcon.fromId('add') },
 	group: 'inline',
 	order: 3,
-	when: ContextKeyExpr.equals('scmResourceGroup', 'changes'),
+	when: ContextKeyExpr.equals('scmResourceGroup', 'changes')
 });
 
 MenuRegistry.appendMenuItem(MenuId.SCMResourceGroupContext, {
 	command: { id: 'git.discardAll', title: 'Discard All Changes', icon: ThemeIcon.fromId('discard') },
 	group: 'inline',
 	order: 2,
-	when: ContextKeyExpr.equals('scmResourceGroup', 'changes'),
+	when: ContextKeyExpr.equals('scmResourceGroup', 'changes')
 });
 
 MenuRegistry.appendMenuItem(MenuId.SCMResourceGroupContext, {
 	command: { id: 'git.openAllChanges', title: 'Open Changes', icon: ThemeIcon.fromId('diff-multiple') },
 	group: 'inline',
 	order: 1,
-	when: ContextKeyExpr.equals('scmResourceGroup', 'changes'),
+	when: ContextKeyExpr.equals('scmResourceGroup', 'changes')
 });
 
 // Buttons on the "Staged Changes" group header
@@ -2022,14 +2286,14 @@ MenuRegistry.appendMenuItem(MenuId.SCMResourceGroupContext, {
 	command: { id: 'git.unstageAll', title: 'Unstage All Changes', icon: ThemeIcon.fromId('remove') },
 	group: 'inline',
 	order: 2,
-	when: ContextKeyExpr.equals('scmResourceGroup', 'staged'),
+	when: ContextKeyExpr.equals('scmResourceGroup', 'staged')
 });
 
 MenuRegistry.appendMenuItem(MenuId.SCMResourceGroupContext, {
 	command: { id: 'git.openAllChanges', title: 'Open Staged Changes', icon: ThemeIcon.fromId('diff-multiple') },
 	group: 'inline',
 	order: 1,
-	when: ContextKeyExpr.equals('scmResourceGroup', 'staged'),
+	when: ContextKeyExpr.equals('scmResourceGroup', 'staged')
 });
 
 // Register buttons on individual changed files (stage, discard, open)
@@ -2038,26 +2302,33 @@ MenuRegistry.appendMenuItem(MenuId.SCMResourceContext, {
 	command: { id: 'git.stageFile', title: 'Stage Changes', icon: ThemeIcon.fromId('add') },
 	group: 'inline',
 	order: 3,
-	when: ContextKeyExpr.equals('scmResourceGroup', 'changes'),
+	when: ContextKeyExpr.equals('scmResourceGroup', 'changes')
 });
 
 MenuRegistry.appendMenuItem(MenuId.SCMResourceContext, {
 	command: { id: 'git.discardFile', title: 'Discard Changes', icon: ThemeIcon.fromId('discard') },
 	group: 'inline',
 	order: 2,
-	when: ContextKeyExpr.equals('scmResourceGroup', 'changes'),
+	when: ContextKeyExpr.equals('scmResourceGroup', 'changes')
 });
 
 MenuRegistry.appendMenuItem(MenuId.SCMResourceContext, {
 	command: { id: 'git.openFile', title: 'Open File', icon: ThemeIcon.fromId('go-to-file') },
 	group: 'inline',
-	order: 1,
+	order: 1
 });
 
-// Buttons on staged files: Open File, Unstage
+// Buttons on staged files: Open File, Open Change, Unstage
 MenuRegistry.appendMenuItem(MenuId.SCMResourceContext, {
 	command: { id: 'git.unstageFile', title: 'Unstage Changes', icon: ThemeIcon.fromId('remove') },
 	group: 'inline',
 	order: 3,
-	when: ContextKeyExpr.equals('scmResourceGroup', 'staged'),
+	when: ContextKeyExpr.equals('scmResourceGroup', 'staged')
+});
+
+MenuRegistry.appendMenuItem(MenuId.SCMResourceContext, {
+	command: { id: 'git.openChange', title: 'Open Change', icon: ThemeIcon.fromId('git-compare') },
+	group: 'inline',
+	order: 1,
+	when: ContextKeyExpr.equals('scmResourceGroup', 'staged')
 });

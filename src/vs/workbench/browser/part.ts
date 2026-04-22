@@ -30,13 +30,19 @@ export interface ILayoutContentResult {
  * Parts are layed out in the workbench and have their own layout that
  * arranges an optional title and mandatory content area to show content.
  */
-export abstract class Part<MementoType extends object = object> extends Component<MementoType> implements ISerializableView {
-
+export abstract class Part<MementoType extends object = object>
+	extends Component<MementoType>
+	implements ISerializableView
+{
 	private _dimension: Dimension | undefined;
-	get dimension(): Dimension | undefined { return this._dimension; }
+	get dimension(): Dimension | undefined {
+		return this._dimension;
+	}
 
 	private _contentPosition: IDomPosition | undefined;
-	get contentPosition(): IDomPosition | undefined { return this._contentPosition; }
+	get contentPosition(): IDomPosition | undefined {
+		return this._contentPosition;
+	}
 
 	protected _onDidVisibilityChange = this._register(new Emitter<boolean>());
 	readonly onDidVisibilityChange = this._onDidVisibilityChange.event;
@@ -61,7 +67,6 @@ export abstract class Part<MementoType extends object = object> extends Componen
 	}
 
 	protected override onThemeChange(theme: IColorTheme): void {
-
 		// only call if our create() method has been called
 		if (this.parent) {
 			super.onThemeChange(theme);
@@ -176,7 +181,9 @@ export abstract class Part<MementoType extends object = object> extends Componen
 	//#region ISerializableView
 
 	protected _onDidChange = this._register(new Emitter<IViewSize | undefined>());
-	get onDidChange(): Event<IViewSize | undefined> { return this._onDidChange.event; }
+	get onDidChange(): Event<IViewSize | undefined> {
+		return this._onDidChange.event;
+	}
 
 	element!: HTMLElement;
 
@@ -200,7 +207,6 @@ export abstract class Part<MementoType extends object = object> extends Componen
 }
 
 class PartLayout {
-
 	private static readonly HEADER_HEIGHT = 35;
 	private static readonly TITLE_HEIGHT = 35;
 	private static readonly Footer_HEIGHT = 35;
@@ -208,10 +214,12 @@ class PartLayout {
 	private headerVisible: boolean = false;
 	private footerVisible: boolean = false;
 
-	constructor(private options: IPartOptions, private contentArea: HTMLElement | undefined) { }
+	constructor(
+		private options: IPartOptions,
+		private contentArea: HTMLElement | undefined
+	) {}
 
 	layout(width: number, height: number): ILayoutContentResult {
-
 		// Title Size: Width (Fill), Height (Variable)
 		let titleSize: Dimension;
 		if (this.options.hasTitle) {
@@ -265,10 +273,14 @@ export interface IMultiWindowPart {
 	readonly element: HTMLElement;
 }
 
-export abstract class MultiWindowParts<T extends IMultiWindowPart, MementoType extends object = object> extends Component<MementoType> {
-
+export abstract class MultiWindowParts<
+	T extends IMultiWindowPart,
+	MementoType extends object = object
+> extends Component<MementoType> {
 	protected readonly _parts = new Set<T>();
-	get parts() { return Array.from(this._parts); }
+	get parts() {
+		return Array.from(this._parts);
+	}
 
 	abstract readonly mainPart: T;
 

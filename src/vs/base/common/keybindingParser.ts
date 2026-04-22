@@ -7,7 +7,6 @@ import { KeyCodeUtils, ScanCodeUtils } from './keyCodes.js';
 import { KeyCodeChord, ScanCodeChord, Keybinding, Chord } from './keybindings.js';
 
 export class KeybindingParser {
-
 	private static _readModifiers(input: string) {
 		input = input.toLowerCase().trim();
 
@@ -97,6 +96,6 @@ export class KeybindingParser {
 			[chord, input] = this.parseChord(input);
 			chords.push(chord);
 		}
-		return (chords.length > 0 ? new Keybinding(chords) : null);
+		return chords.length > 0 ? new Keybinding(chords) : null;
 	}
 }

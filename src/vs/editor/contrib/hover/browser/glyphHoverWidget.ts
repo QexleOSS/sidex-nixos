@@ -6,18 +6,28 @@
 import * as dom from '../../../../base/browser/dom.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
 import { IMarkdownRendererService } from '../../../../platform/markdown/browser/markdownRenderer.js';
-import { ICodeEditor, IEditorMouseEvent, IOverlayWidget, IOverlayWidgetPosition, MouseTargetType } from '../../../browser/editorBrowser.js';
+import {
+	ICodeEditor,
+	IEditorMouseEvent,
+	IOverlayWidget,
+	IOverlayWidgetPosition,
+	MouseTargetType
+} from '../../../browser/editorBrowser.js';
 import { ConfigurationChangedEvent, EditorOption } from '../../../common/config/editorOptions.js';
 import { HoverOperation, HoverResult, HoverStartMode } from './hoverOperation.js';
 import { HoverWidget } from '../../../../base/browser/ui/hover/hoverWidget.js';
 import { IHoverWidget } from './hoverTypes.js';
-import { IHoverMessage, LaneOrLineNumber, GlyphHoverComputer, GlyphHoverComputerOptions } from './glyphHoverComputer.js';
+import {
+	IHoverMessage,
+	LaneOrLineNumber,
+	GlyphHoverComputer,
+	GlyphHoverComputerOptions
+} from './glyphHoverComputer.js';
 import { isMousePositionWithinElement } from './hoverUtils.js';
 
 const $ = dom.$;
 
 export class GlyphHoverWidget extends Disposable implements IOverlayWidget, IHoverWidget {
-
 	public static readonly ID = 'editor.contrib.modesGlyphHoverWidget';
 	public readonly allowEditorOverflow = true;
 
@@ -34,7 +44,7 @@ export class GlyphHoverWidget extends Disposable implements IOverlayWidget, IHov
 
 	constructor(
 		editor: ICodeEditor,
-		@IMarkdownRendererService private readonly _markdownRendererService: IMarkdownRendererService,
+		@IMarkdownRendererService private readonly _markdownRendererService: IMarkdownRendererService
 	) {
 		super();
 		this._editor = editor;
@@ -46,17 +56,21 @@ export class GlyphHoverWidget extends Disposable implements IOverlayWidget, IHov
 		this._hover.containerDomNode.classList.toggle('hidden', !this._isVisible);
 
 		this._hoverOperation = this._register(new HoverOperation(this._editor, new GlyphHoverComputer(this._editor)));
-		this._register(this._hoverOperation.onResult((result) => this._withResult(result)));
+		this._register(this._hoverOperation.onResult(result => this._withResult(result)));
 
 		this._register(this._editor.onDidChangeModelDecorations(() => this._onModelDecorationsChanged()));
-		this._register(this._editor.onDidChangeConfiguration((e: ConfigurationChangedEvent) => {
-			if (e.hasChanged(EditorOption.fontInfo)) {
-				this._updateFont();
-			}
-		}));
-		this._register(dom.addStandardDisposableListener(this._hover.containerDomNode, 'mouseleave', (e) => {
-			this._onMouseLeave(e);
-		}));
+		this._register(
+			this._editor.onDidChangeConfiguration((e: ConfigurationChangedEvent) => {
+				if (e.hasChanged(EditorOption.fontInfo)) {
+					this._updateFont();
+				}
+			})
+		);
+		this._register(
+			dom.addStandardDisposableListener(this._hover.containerDomNode, 'mouseleave', e => {
+				this._onMouseLeave(e);
+			})
+		);
 		this._editor.addOverlayWidget(this);
 	}
 
@@ -79,8 +93,9 @@ export class GlyphHoverWidget extends Disposable implements IOverlayWidget, IHov
 	}
 
 	private _updateFont(): void {
-		// eslint-disable-next-line no-restricted-syntax
-		const codeClasses: HTMLElement[] = Array.prototype.slice.call(this._hover.contentsDomNode.getElementsByClassName('code'));
+		const codeClasses: HTMLElement[] = Array.prototype.slice.call(
+			this._hover.contentsDomNode.getElementsByClassName('code')
+		);
 		codeClasses.forEach(node => this._editor.applyFontInfo(node));
 	}
 
@@ -107,9 +122,11 @@ export class GlyphHoverWidget extends Disposable implements IOverlayWidget, IHov
 	}
 
 	private _startShowingAt(lineNumber: number, laneOrLine: LaneOrLineNumber): void {
-		if (this._hoverComputerOptions
-			&& this._hoverComputerOptions.lineNumber === lineNumber
-			&& this._hoverComputerOptions.laneOrLine === laneOrLine) {
+		if (
+			this._hoverComputerOptions &&
+			this._hoverComputerOptions.lineNumber === lineNumber &&
+			this._hoverComputerOptions.laneOrLine === laneOrLine
+		) {
 			// We have to show the widget at the exact same line number as before, so no work is needed
 			return;
 		}
@@ -147,7 +164,9 @@ export class GlyphHoverWidget extends Disposable implements IOverlayWidget, IHov
 		for (const msg of messages) {
 			const markdownHoverElement = $('div.hover-row.markdown-hover');
 			const hoverContentsElement = dom.append(markdownHoverElement, $('div.hover-contents'));
-			const renderedContents = this._renderDisposeables.add(this._markdownRendererService.render(msg.value, { context: this._editor }));
+			const renderedContents = this._renderDisposeables.add(
+				this._markdownRendererService.render(msg.value, { context: this._editor })
+			);
 			hoverContentsElement.appendChild(renderedContents.element);
 			fragment.appendChild(markdownHoverElement);
 		}
@@ -173,8 +192,11 @@ export class GlyphHoverWidget extends Disposable implements IOverlayWidget, IHov
 		const editorScrollTop = this._editor.getScrollTop();
 		const lineHeight = this._editor.getOption(EditorOption.lineHeight);
 		const nodeHeight = this._hover.containerDomNode.clientHeight;
-		const top = topForLineNumber - editorScrollTop - ((nodeHeight - lineHeight) / 2);
-		const left = editorLayout.glyphMarginLeft + editorLayout.glyphMarginWidth + (laneOrLine === 'lineNo' ? editorLayout.lineNumbersWidth : 0);
+		const top = topForLineNumber - editorScrollTop - (nodeHeight - lineHeight) / 2;
+		const left =
+			editorLayout.glyphMarginLeft +
+			editorLayout.glyphMarginWidth +
+			(laneOrLine === 'lineNo' ? editorLayout.lineNumbersWidth : 0);
 
 		// Constrain the hover widget to stay within the editor bounds
 		const editorHeight = editorLayout.height;

@@ -16,7 +16,7 @@ export function observableValueOpts<T, TChange = void>(
 		lazy?: boolean;
 	},
 	initialValue: T,
-	debugLocation = DebugLocation.ofCaller(),
+	debugLocation = DebugLocation.ofCaller()
 ): ISettableObservable<T, TChange> {
 	if (options.lazy) {
 		return new LazyObservableValue(

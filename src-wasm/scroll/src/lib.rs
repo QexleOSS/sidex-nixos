@@ -1,5 +1,12 @@
 use wasm_bindgen::prelude::*;
 
+static mut OUT_BUF: [f64; 8] = [0.0; 8];
+
+#[wasm_bindgen]
+pub fn get_output_ptr() -> *const f64 {
+    unsafe { OUT_BUF.as_ptr() }
+}
+
 // --- Easing Functions ---
 
 #[wasm_bindgen]
@@ -290,6 +297,90 @@ impl WheelClassifier {
 fn is_almost_int(value: f64) -> bool {
     let delta = (value.round() - value).abs();
     delta < 0.01 + f64::EPSILON * 100.0
+}
+
+// --- Zero-alloc flat output variants for per-frame hot paths ---
+
+#[wasm_bindgen]
+pub fn smooth_scroll_tick_flat(
+    now: f64, start_time: f64, duration: f64,
+    from_left: f64, to_left: f64,
+    from_top: f64, to_top: f64,
+    viewport_width: f64, viewport_height: f64,
+) {
+    let r = smooth_scroll_tick(
+        now, start_time, duration,
+        from_left, to_left, from_top, to_top,
+        viewport_width, viewport_height,
+    );
+    unsafe {
+        OUT_BUF[0] = r.scroll_left;
+        OUT_BUF[1] = r.scroll_top;
+        OUT_BUF[2] = if r.is_done { 1.0 } else { 0.0 };
+    }
+}
+
+#[wasm_bindgen]
+pub fn inertial_tick_flat(speed_x: f64, speed_y: f64, decay: f64, threshold: f64) {
+    let r = inertial_tick(speed_x, speed_y, decay, threshold);
+    unsafe {
+        OUT_BUF[0] = r.speed_x;
+        OUT_BUF[1] = r.speed_y;
+        OUT_BUF[2] = if r.active { 1.0 } else { 0.0 };
+    }
+}
+
+#[wasm_bindgen]
+pub fn compute_scrollbar_state_flat(
+    arrow_size: f64, scrollbar_size: f64, opposite_scrollbar_size: f64,
+    visible_size: f64, scroll_size: f64, scroll_position: f64,
+    min_slider_size: f64,
+) {
+    let r = compute_scrollbar_state(
+        arrow_size, scrollbar_size, opposite_scrollbar_size,
+        visible_size, scroll_size, scroll_position, min_slider_size,
+    );
+    unsafe {
+        OUT_BUF[0] = r.slider_size;
+        OUT_BUF[1] = r.slider_position;
+        OUT_BUF[2] = r.slider_ratio;
+    }
+}
+
+#[wasm_bindgen]
+pub fn process_wheel_delta_flat(
+    raw_delta_x: f64, raw_delta_y: f64,
+    sensitivity: f64, scroll_predominant_axis: bool,
+    flip_axes: bool, scroll_y_to_x: bool,
+    is_shift: bool, is_alt: bool,
+    fast_sensitivity: f64, is_mac: bool,
+) {
+    let r = process_wheel_delta(
+        raw_delta_x, raw_delta_y, sensitivity,
+        scroll_predominant_axis, flip_axes, scroll_y_to_x,
+        is_shift, is_alt, fast_sensitivity, is_mac,
+    );
+    unsafe {
+        OUT_BUF[0] = r.delta_x;
+        OUT_BUF[1] = r.delta_y;
+    }
+}
+
+#[wasm_bindgen]
+pub fn validate_scroll_state_flat(
+    width: f64, scroll_width: f64, scroll_left: f64,
+    height: f64, scroll_height: f64, scroll_top: f64,
+    force_int: bool,
+) {
+    let r = validate_scroll_state(width, scroll_width, scroll_left, height, scroll_height, scroll_top, force_int);
+    unsafe {
+        OUT_BUF[0] = r.width;
+        OUT_BUF[1] = r.scroll_width;
+        OUT_BUF[2] = r.scroll_left;
+        OUT_BUF[3] = r.height;
+        OUT_BUF[4] = r.scroll_height;
+        OUT_BUF[5] = r.scroll_top;
+    }
 }
 
 // --- Batch Scrollbar State Computation ---

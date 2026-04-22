@@ -15,7 +15,12 @@ import { CursorChangeReason, ICursorSelectionChangedEvent } from '../../../commo
 import { IPosition, Position } from '../../../common/core/position.js';
 import { Selection } from '../../../common/core/selection.js';
 import { ITextModel } from '../../../common/model.js';
-import { CompletionContext, CompletionItemKind, CompletionItemProvider, CompletionTriggerKind } from '../../../common/languages.js';
+import {
+	CompletionContext,
+	CompletionItemKind,
+	CompletionItemProvider,
+	CompletionTriggerKind
+} from '../../../common/languages.js';
 import { IEditorWorkerService } from '../../../common/services/editorWorker.js';
 import { WordDistance } from './wordDistance.js';
 import { IClipboardService } from '../../../../platform/clipboard/common/clipboardService.js';
@@ -24,7 +29,15 @@ import { IContextKeyService } from '../../../../platform/contextkey/common/conte
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { CompletionModel } from './completionModel.js';
-import { CompletionDurations, CompletionItem, CompletionOptions, getSnippetSuggestSupport, provideSuggestionItems, QuickSuggestionsOptions, SnippetSortOrder } from './suggest.js';
+import {
+	CompletionDurations,
+	CompletionItem,
+	CompletionOptions,
+	getSnippetSuggestSupport,
+	provideSuggestionItems,
+	QuickSuggestionsOptions,
+	SnippetSortOrder
+} from './suggest.js';
 import { IWordAtPosition } from '../../../common/core/wordHelper.js';
 import { ILanguageFeaturesService } from '../../../common/services/languageFeatures.js';
 import { FuzzyScoreOptions } from '../../../../base/common/filters.js';
@@ -63,7 +76,6 @@ export interface SuggestTriggerOptions {
 }
 
 export class LineContext {
-
 	static shouldAutoTrigger(editor: ICodeEditor): boolean {
 		if (!editor.hasModel()) {
 			return false;
@@ -76,8 +88,10 @@ export class LineContext {
 		if (!word) {
 			return false;
 		}
-		if (word.endColumn !== pos.column &&
-			word.startColumn + 1 !== pos.column /* after typing a single character before a word */) {
+		if (
+			word.endColumn !== pos.column &&
+			word.startColumn + 1 !== pos.column /* after typing a single character before a word */
+		) {
 			return false;
 		}
 		if (!isNaN(Number(word.word))) {
@@ -107,24 +121,36 @@ export const enum State {
 	Auto = 2
 }
 
-function canShowQuickSuggest(editor: ICodeEditor, contextKeyService: IContextKeyService, configurationService: IConfigurationService): boolean {
+function canShowQuickSuggest(
+	editor: ICodeEditor,
+	contextKeyService: IContextKeyService,
+	configurationService: IConfigurationService
+): boolean {
 	if (!Boolean(contextKeyService.getContextKeyValue(InlineCompletionContextKeys.inlineSuggestionVisible.key))) {
 		// Allow if there is no inline suggestion.
 		return true;
 	}
-	const suppressSuggestions = contextKeyService.getContextKeyValue<boolean | undefined>(InlineCompletionContextKeys.suppressSuggestions.key);
+	const suppressSuggestions = contextKeyService.getContextKeyValue<boolean | undefined>(
+		InlineCompletionContextKeys.suppressSuggestions.key
+	);
 	if (suppressSuggestions !== undefined) {
 		return !suppressSuggestions;
 	}
 	return !editor.getOption(EditorOption.inlineSuggest).suppressSuggestions;
 }
 
-function canShowSuggestOnTriggerCharacters(editor: ICodeEditor, contextKeyService: IContextKeyService, configurationService: IConfigurationService): boolean {
+function canShowSuggestOnTriggerCharacters(
+	editor: ICodeEditor,
+	contextKeyService: IContextKeyService,
+	configurationService: IConfigurationService
+): boolean {
 	if (!Boolean(contextKeyService.getContextKeyValue('inlineSuggestionVisible'))) {
 		// Allow if there is no inline suggestion.
 		return true;
 	}
-	const suppressSuggestions = contextKeyService.getContextKeyValue<boolean | undefined>(InlineCompletionContextKeys.suppressSuggestions.key);
+	const suppressSuggestions = contextKeyService.getContextKeyValue<boolean | undefined>(
+		InlineCompletionContextKeys.suppressSuggestions.key
+	);
 	if (suppressSuggestions !== undefined) {
 		return !suppressSuggestions;
 	}
@@ -132,7 +158,6 @@ function canShowSuggestOnTriggerCharacters(editor: ICodeEditor, contextKeyServic
 }
 
 export class SuggestModel implements IDisposable {
-
 	private readonly _toDispose = new DisposableStore();
 	private readonly _triggerCharacterListener = new DisposableStore();
 	private readonly _triggerQuickSuggest = new TimeoutTimer();
@@ -162,49 +187,65 @@ export class SuggestModel implements IDisposable {
 		@IContextKeyService private readonly _contextKeyService: IContextKeyService,
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@ILanguageFeaturesService private readonly _languageFeaturesService: ILanguageFeaturesService,
-		@IEnvironmentService private readonly _envService: IEnvironmentService,
+		@IEnvironmentService private readonly _envService: IEnvironmentService
 	) {
 		this._currentSelection = this._editor.getSelection() || new Selection(1, 1, 1, 1);
 
 		// wire up various listeners
-		this._toDispose.add(this._editor.onDidChangeModel(() => {
-			this._updateTriggerCharacters();
-			this.cancel();
-		}));
-		this._toDispose.add(this._editor.onDidChangeModelLanguage(() => {
-			this._updateTriggerCharacters();
-			this.cancel();
-		}));
-		this._toDispose.add(this._editor.onDidChangeConfiguration(() => {
-			this._updateTriggerCharacters();
-		}));
-		this._toDispose.add(this._languageFeaturesService.completionProvider.onDidChange(() => {
-			this._updateTriggerCharacters();
-			this._updateActiveSuggestSession();
-		}));
+		this._toDispose.add(
+			this._editor.onDidChangeModel(() => {
+				this._updateTriggerCharacters();
+				this.cancel();
+			})
+		);
+		this._toDispose.add(
+			this._editor.onDidChangeModelLanguage(() => {
+				this._updateTriggerCharacters();
+				this.cancel();
+			})
+		);
+		this._toDispose.add(
+			this._editor.onDidChangeConfiguration(() => {
+				this._updateTriggerCharacters();
+			})
+		);
+		this._toDispose.add(
+			this._languageFeaturesService.completionProvider.onDidChange(() => {
+				this._updateTriggerCharacters();
+				this._updateActiveSuggestSession();
+			})
+		);
 
 		let editorIsComposing = false;
-		this._toDispose.add(this._editor.onDidCompositionStart(() => {
-			editorIsComposing = true;
-		}));
-		this._toDispose.add(this._editor.onDidCompositionEnd(() => {
-			editorIsComposing = false;
-			this._onCompositionEnd();
-		}));
-		this._toDispose.add(this._editor.onDidChangeCursorSelection(e => {
-			// only trigger suggest when the editor isn't composing a character
-			if (!editorIsComposing) {
-				this._onCursorChange(e);
-			}
-		}));
-		this._toDispose.add(this._editor.onDidChangeModelContent(() => {
-			// only filter completions when the editor isn't composing a character
-			// allow-any-unicode-next-line
-			// e.g. ¨ + u makes ü but just ¨ cannot be used for filtering
-			if (!editorIsComposing && this._triggerState !== undefined) {
-				this._refilterCompletionItems();
-			}
-		}));
+		this._toDispose.add(
+			this._editor.onDidCompositionStart(() => {
+				editorIsComposing = true;
+			})
+		);
+		this._toDispose.add(
+			this._editor.onDidCompositionEnd(() => {
+				editorIsComposing = false;
+				this._onCompositionEnd();
+			})
+		);
+		this._toDispose.add(
+			this._editor.onDidChangeCursorSelection(e => {
+				// only trigger suggest when the editor isn't composing a character
+				if (!editorIsComposing) {
+					this._onCursorChange(e);
+				}
+			})
+		);
+		this._toDispose.add(
+			this._editor.onDidChangeModelContent(() => {
+				// only filter completions when the editor isn't composing a character
+				// allow-any-unicode-next-line
+				// e.g. ¨ + u makes ü but just ¨ cannot be used for filtering
+				if (!editorIsComposing && this._triggerState !== undefined) {
+					this._refilterCompletionItems();
+				}
+			})
+		);
 
 		this._updateTriggerCharacters();
 	}
@@ -221,10 +262,11 @@ export class SuggestModel implements IDisposable {
 	private _updateTriggerCharacters(): void {
 		this._triggerCharacterListener.clear();
 
-		if (this._editor.getOption(EditorOption.readOnly)
-			|| !this._editor.hasModel()
-			|| !this._editor.getOption(EditorOption.suggestOnTriggerCharacters)) {
-
+		if (
+			this._editor.getOption(EditorOption.readOnly) ||
+			!this._editor.hasModel() ||
+			!this._editor.getOption(EditorOption.suggestOnTriggerCharacters)
+		) {
 			return;
 		}
 
@@ -244,9 +286,7 @@ export class SuggestModel implements IDisposable {
 			}
 		}
 
-
 		const checkTriggerCharacter = (text?: string) => {
-
 			if (!canShowSuggestOnTriggerCharacters(this._editor, this._contextKeyService, this._configurationService)) {
 				return;
 			}
@@ -274,7 +314,6 @@ export class SuggestModel implements IDisposable {
 
 			const supports = supportsByTriggerCharacter.get(lastChar);
 			if (supports) {
-
 				// keep existing items that where not computed by the
 				// supports/providers that want to trigger now
 				const providerItemsToReuse = new Map<CompletionItemProvider, CompletionItem[]>();
@@ -343,7 +382,6 @@ export class SuggestModel implements IDisposable {
 	}
 
 	private _onCursorChange(e: ICursorSelectionChangedEvent): void {
-
 		if (!this._editor.hasModel()) {
 			return;
 		}
@@ -351,9 +389,10 @@ export class SuggestModel implements IDisposable {
 		const prevSelection = this._currentSelection;
 		this._currentSelection = this._editor.getSelection();
 
-		if (!e.selection.isEmpty()
-			|| (e.reason !== CursorChangeReason.NotSet && e.reason !== CursorChangeReason.Explicit)
-			|| (e.source !== 'keyboard' && e.source !== 'deleteLeft')
+		if (
+			!e.selection.isEmpty() ||
+			(e.reason !== CursorChangeReason.NotSet && e.reason !== CursorChangeReason.Explicit) ||
+			(e.source !== 'keyboard' && e.source !== 'deleteLeft')
 		) {
 			// Early exit if nothing needs to be done!
 			// Leave some form of early exit check here if you wish to continue being a cursor position change listener ;)
@@ -361,13 +400,14 @@ export class SuggestModel implements IDisposable {
 			return;
 		}
 
-
 		if (this._triggerState === undefined && e.reason === CursorChangeReason.NotSet) {
-			if (prevSelection.containsRange(this._currentSelection) || prevSelection.getEndPosition().isBeforeOrEqual(this._currentSelection.getPosition())) {
+			if (
+				prevSelection.containsRange(this._currentSelection) ||
+				prevSelection.getEndPosition().isBeforeOrEqual(this._currentSelection.getPosition())
+			) {
 				// cursor did move RIGHT due to typing -> trigger quick suggest
 				this._doTriggerQuickSuggest();
 			}
-
 		} else if (this._triggerState !== undefined && e.reason === CursorChangeReason.Explicit) {
 			// suggest is active and something like cursor keys are used to move
 			// the cursor. this means we can refilter at the new position
@@ -385,13 +425,15 @@ export class SuggestModel implements IDisposable {
 	}
 
 	private _doTriggerQuickSuggest(): void {
-
 		if (QuickSuggestionsOptions.isAllOff(this._editor.getOption(EditorOption.quickSuggestions))) {
 			// not enabled
 			return;
 		}
 
-		if (this._editor.getOption(EditorOption.suggest).snippetsPreventQuickSuggestions && SnippetController2.get(this._editor)?.isInSnippet()) {
+		if (
+			this._editor.getOption(EditorOption.suggest).snippetsPreventQuickSuggestions &&
+			SnippetController2.get(this._editor)?.isInSnippet()
+		) {
 			// no quick suggestion when in snippet mode
 			return;
 		}
@@ -425,14 +467,17 @@ export class SuggestModel implements IDisposable {
 				// Check the type of the token that triggered this
 				model.tokenization.tokenizeIfCheap(pos.lineNumber);
 				const lineTokens = model.tokenization.getLineTokens(pos.lineNumber);
-				const tokenType = lineTokens.getStandardTokenType(lineTokens.findTokenIndexAtOffset(Math.max(pos.column - 1 - 1, 0)));
+				const tokenType = lineTokens.getStandardTokenType(
+					lineTokens.findTokenIndexAtOffset(Math.max(pos.column - 1 - 1, 0))
+				);
 				const value = QuickSuggestionsOptions.valueFor(config, tokenType);
 				if (value === 'off' || value === 'inline') {
 					return;
 				}
 				if (value === 'offWhenInlineCompletions') {
-					waitForInlineCompletions = this._languageFeaturesService.inlineCompletionsProvider.has(model)
-						&& this._editor.getOption(EditorOption.inlineSuggest).enabled;
+					waitForInlineCompletions =
+						this._languageFeaturesService.inlineCompletionsProvider.has(model) &&
+						this._editor.getOption(EditorOption.inlineSuggest).enabled;
 				}
 			}
 
@@ -451,7 +496,6 @@ export class SuggestModel implements IDisposable {
 			} else {
 				this.trigger({ auto: true });
 			}
-
 		}, this._editor.getOption(EditorOption.quickSuggestionsDelay));
 	}
 
@@ -486,30 +530,37 @@ export class SuggestModel implements IDisposable {
 			}
 			const currentModel = this._editor.getModel();
 			const currentPosition = this._editor.getPosition();
-			if (currentModel === initialModel
-				&& currentModel.getVersionId() === initialModelVersion
-				&& currentPosition?.equals(initialPosition)
-				&& this._editor.hasWidgetFocus()
+			if (
+				currentModel === initialModel &&
+				currentModel.getVersionId() === initialModelVersion &&
+				currentPosition?.equals(initialPosition) &&
+				this._editor.hasWidgetFocus()
 			) {
 				this.trigger({ auto: true });
 			}
 		};
 
 		// Race: observe inline completions state vs 750ms timeout
-		disposableTimeout(() => {
-			triggerAndCleanUp(true);
-			inlineModel.stop('automatic');
-		}, 750, store);
+		disposableTimeout(
+			() => {
+				triggerAndCleanUp(true);
+				inlineModel.stop('automatic');
+			},
+			750,
+			store
+		);
 
-		store.add(autorun(reader => {
-			const status = inlineModel.status.read(reader);
-			const currentState = inlineModel.state.read(reader);
-			if (!currentState && status === 'loading') {
-				// Still loading
-				return;
-			}
-			triggerAndCleanUp(!currentState);
-		}));
+		store.add(
+			autorun(reader => {
+				const status = inlineModel.status.read(reader);
+				const currentState = inlineModel.state.read(reader);
+				if (!currentState && status === 'loading') {
+					// Still loading
+					return;
+				}
+				triggerAndCleanUp(!currentState);
+			})
+		);
 	}
 
 	private _refilterCompletionItems(): void {
@@ -566,7 +617,13 @@ export class SuggestModel implements IDisposable {
 		}
 
 		const { itemKind: itemKindFilter, showDeprecated } = SuggestModel.createSuggestFilter(this._editor);
-		const completionOptions = new CompletionOptions(snippetSortOrder, options.completionOptions?.kindFilter ?? itemKindFilter, options.completionOptions?.providerFilter, options.completionOptions?.providerItemsToReuse, showDeprecated);
+		const completionOptions = new CompletionOptions(
+			snippetSortOrder,
+			options.completionOptions?.kindFilter ?? itemKindFilter,
+			options.completionOptions?.providerFilter,
+			options.completionOptions?.providerItemsToReuse,
+			showDeprecated
+		);
 		const wordDistance = WordDistance.create(this._editorWorkerService, this._editor);
 
 		const completions = provideSuggestionItems(
@@ -578,67 +635,73 @@ export class SuggestModel implements IDisposable {
 			this._requestToken.token
 		);
 
-		Promise.all([completions, wordDistance]).then(async ([completions, wordDistance]) => {
+		Promise.all([completions, wordDistance])
+			.then(async ([completions, wordDistance]) => {
+				this._requestToken?.dispose();
 
-			this._requestToken?.dispose();
+				if (!this._editor.hasModel()) {
+					completions.disposable.dispose();
+					return;
+				}
 
-			if (!this._editor.hasModel()) {
-				completions.disposable.dispose();
-				return;
-			}
+				let clipboardText = options?.clipboardText;
+				if (!clipboardText && completions.needsClipboard) {
+					clipboardText = await this._clipboardService.readText();
+				}
 
-			let clipboardText = options?.clipboardText;
-			if (!clipboardText && completions.needsClipboard) {
-				clipboardText = await this._clipboardService.readText();
-			}
+				if (this._triggerState === undefined) {
+					completions.disposable.dispose();
+					return;
+				}
 
-			if (this._triggerState === undefined) {
-				completions.disposable.dispose();
-				return;
-			}
+				const model = this._editor.getModel();
+				// const items = completions.items;
 
-			const model = this._editor.getModel();
-			// const items = completions.items;
+				// if (existing) {
+				// 	const cmpFn = getSuggestionComparator(snippetSortOrder);
+				// 	items = items.concat(existing.items).sort(cmpFn);
+				// }
 
-			// if (existing) {
-			// 	const cmpFn = getSuggestionComparator(snippetSortOrder);
-			// 	items = items.concat(existing.items).sort(cmpFn);
-			// }
+				const ctx = new LineContext(model, this._editor.getPosition(), options);
+				const fuzzySearchOptions = {
+					...FuzzyScoreOptions.default,
+					firstMatchCanBeWeak: !this._editor.getOption(EditorOption.suggest).matchOnWordStartOnly
+				};
+				this._completionModel = new CompletionModel(
+					completions.items,
+					this._context!.column,
+					{
+						leadingLineContent: ctx.leadingLineContent,
+						characterCountDelta: ctx.column - this._context!.column
+					},
+					wordDistance,
+					this._editor.getOption(EditorOption.suggest),
+					this._editor.getOption(EditorOption.snippetSuggestions),
+					fuzzySearchOptions,
+					clipboardText
+				);
 
-			const ctx = new LineContext(model, this._editor.getPosition(), options);
-			const fuzzySearchOptions = {
-				...FuzzyScoreOptions.default,
-				firstMatchCanBeWeak: !this._editor.getOption(EditorOption.suggest).matchOnWordStartOnly
-			};
-			this._completionModel = new CompletionModel(completions.items, this._context!.column, {
-				leadingLineContent: ctx.leadingLineContent,
-				characterCountDelta: ctx.column - this._context!.column
-			},
-				wordDistance,
-				this._editor.getOption(EditorOption.suggest),
-				this._editor.getOption(EditorOption.snippetSuggestions),
-				fuzzySearchOptions,
-				clipboardText
-			);
+				// store containers so that they can be disposed later
+				this._completionDisposables.add(completions.disposable);
 
-			// store containers so that they can be disposed later
-			this._completionDisposables.add(completions.disposable);
+				this._onNewContext(ctx);
 
-			this._onNewContext(ctx);
+				// finally report telemetry about durations
+				this._reportDurationsTelemetry(completions.durations);
 
-			// finally report telemetry about durations
-			this._reportDurationsTelemetry(completions.durations);
-
-			// report invalid completions by source
-			if (!this._envService.isBuilt || this._envService.isExtensionDevelopment) {
-				for (const item of completions.items) {
-					if (item.isInvalid) {
-						this._logService.warn(`[suggest] did IGNORE invalid completion item from ${item.provider._debugDisplayName}`, item.completion);
+				// report invalid completions by source
+				if (!this._envService.isBuilt || this._envService.isExtensionDevelopment) {
+					for (const item of completions.items) {
+						if (item.isInvalid) {
+							this._logService.warn(
+								`[suggest] did IGNORE invalid completion item from ${item.provider._debugDisplayName}`,
+								item.completion
+							);
+						}
 					}
 				}
-			}
-
-		}).catch(onUnexpectedError);
+			})
+			.catch(onUnexpectedError);
 	}
 
 	/**
@@ -646,7 +709,8 @@ export class SuggestModel implements IDisposable {
 	 * The telemetry is reported only if a random number between 0 and 100 is less than or equal to 1.
 	 */
 	private _reportDurationsTelemetry(durations: CompletionDurations): void {
-		if (Math.random() > 0.0001) { // 0.01%
+		if (Math.random() > 0.0001) {
+			// 0.01%
 			return;
 		}
 
@@ -655,9 +719,15 @@ export class SuggestModel implements IDisposable {
 			type DurationsClassification = {
 				owner: 'jrieken';
 				comment: 'Completions performance numbers';
-				data: { comment: 'Durations per source and overall'; classification: 'SystemMetaData'; purpose: 'PerformanceAndHealth' };
+				data: {
+					comment: 'Durations per source and overall';
+					classification: 'SystemMetaData';
+					purpose: 'PerformanceAndHealth';
+				};
 			};
-			this._telemetryService.publicLog2<Durations, DurationsClassification>('suggest.durations.json', { data: JSON.stringify(durations) });
+			this._telemetryService.publicLog2<Durations, DurationsClassification>('suggest.durations.json', {
+				data: JSON.stringify(durations)
+			});
 			this._logService.debug('suggest.durations.json', durations);
 		});
 	}
@@ -674,40 +744,95 @@ export class SuggestModel implements IDisposable {
 
 		// type setting
 		const suggestOptions = editor.getOption(EditorOption.suggest);
-		if (!suggestOptions.showMethods) { result.add(CompletionItemKind.Method); }
-		if (!suggestOptions.showFunctions) { result.add(CompletionItemKind.Function); }
-		if (!suggestOptions.showConstructors) { result.add(CompletionItemKind.Constructor); }
-		if (!suggestOptions.showFields) { result.add(CompletionItemKind.Field); }
-		if (!suggestOptions.showVariables) { result.add(CompletionItemKind.Variable); }
-		if (!suggestOptions.showClasses) { result.add(CompletionItemKind.Class); }
-		if (!suggestOptions.showStructs) { result.add(CompletionItemKind.Struct); }
-		if (!suggestOptions.showInterfaces) { result.add(CompletionItemKind.Interface); }
-		if (!suggestOptions.showModules) { result.add(CompletionItemKind.Module); }
-		if (!suggestOptions.showProperties) { result.add(CompletionItemKind.Property); }
-		if (!suggestOptions.showEvents) { result.add(CompletionItemKind.Event); }
-		if (!suggestOptions.showOperators) { result.add(CompletionItemKind.Operator); }
-		if (!suggestOptions.showUnits) { result.add(CompletionItemKind.Unit); }
-		if (!suggestOptions.showValues) { result.add(CompletionItemKind.Value); }
-		if (!suggestOptions.showConstants) { result.add(CompletionItemKind.Constant); }
-		if (!suggestOptions.showEnums) { result.add(CompletionItemKind.Enum); }
-		if (!suggestOptions.showEnumMembers) { result.add(CompletionItemKind.EnumMember); }
-		if (!suggestOptions.showKeywords) { result.add(CompletionItemKind.Keyword); }
-		if (!suggestOptions.showWords) { result.add(CompletionItemKind.Text); }
-		if (!suggestOptions.showColors) { result.add(CompletionItemKind.Color); }
-		if (!suggestOptions.showFiles) { result.add(CompletionItemKind.File); }
-		if (!suggestOptions.showReferences) { result.add(CompletionItemKind.Reference); }
-		if (!suggestOptions.showColors) { result.add(CompletionItemKind.Customcolor); }
-		if (!suggestOptions.showFolders) { result.add(CompletionItemKind.Folder); }
-		if (!suggestOptions.showTypeParameters) { result.add(CompletionItemKind.TypeParameter); }
-		if (!suggestOptions.showSnippets) { result.add(CompletionItemKind.Snippet); }
-		if (!suggestOptions.showUsers) { result.add(CompletionItemKind.User); }
-		if (!suggestOptions.showIssues) { result.add(CompletionItemKind.Issue); }
+		if (!suggestOptions.showMethods) {
+			result.add(CompletionItemKind.Method);
+		}
+		if (!suggestOptions.showFunctions) {
+			result.add(CompletionItemKind.Function);
+		}
+		if (!suggestOptions.showConstructors) {
+			result.add(CompletionItemKind.Constructor);
+		}
+		if (!suggestOptions.showFields) {
+			result.add(CompletionItemKind.Field);
+		}
+		if (!suggestOptions.showVariables) {
+			result.add(CompletionItemKind.Variable);
+		}
+		if (!suggestOptions.showClasses) {
+			result.add(CompletionItemKind.Class);
+		}
+		if (!suggestOptions.showStructs) {
+			result.add(CompletionItemKind.Struct);
+		}
+		if (!suggestOptions.showInterfaces) {
+			result.add(CompletionItemKind.Interface);
+		}
+		if (!suggestOptions.showModules) {
+			result.add(CompletionItemKind.Module);
+		}
+		if (!suggestOptions.showProperties) {
+			result.add(CompletionItemKind.Property);
+		}
+		if (!suggestOptions.showEvents) {
+			result.add(CompletionItemKind.Event);
+		}
+		if (!suggestOptions.showOperators) {
+			result.add(CompletionItemKind.Operator);
+		}
+		if (!suggestOptions.showUnits) {
+			result.add(CompletionItemKind.Unit);
+		}
+		if (!suggestOptions.showValues) {
+			result.add(CompletionItemKind.Value);
+		}
+		if (!suggestOptions.showConstants) {
+			result.add(CompletionItemKind.Constant);
+		}
+		if (!suggestOptions.showEnums) {
+			result.add(CompletionItemKind.Enum);
+		}
+		if (!suggestOptions.showEnumMembers) {
+			result.add(CompletionItemKind.EnumMember);
+		}
+		if (!suggestOptions.showKeywords) {
+			result.add(CompletionItemKind.Keyword);
+		}
+		if (!suggestOptions.showWords) {
+			result.add(CompletionItemKind.Text);
+		}
+		if (!suggestOptions.showColors) {
+			result.add(CompletionItemKind.Color);
+		}
+		if (!suggestOptions.showFiles) {
+			result.add(CompletionItemKind.File);
+		}
+		if (!suggestOptions.showReferences) {
+			result.add(CompletionItemKind.Reference);
+		}
+		if (!suggestOptions.showColors) {
+			result.add(CompletionItemKind.Customcolor);
+		}
+		if (!suggestOptions.showFolders) {
+			result.add(CompletionItemKind.Folder);
+		}
+		if (!suggestOptions.showTypeParameters) {
+			result.add(CompletionItemKind.TypeParameter);
+		}
+		if (!suggestOptions.showSnippets) {
+			result.add(CompletionItemKind.Snippet);
+		}
+		if (!suggestOptions.showUsers) {
+			result.add(CompletionItemKind.User);
+		}
+		if (!suggestOptions.showIssues) {
+			result.add(CompletionItemKind.Issue);
+		}
 
 		return { itemKind: result, showDeprecated: suggestOptions.showDeprecated };
 	}
 
 	private _onNewContext(ctx: LineContext): void {
-
 		if (!this._context) {
 			// happens when 24x7 IntelliSense is enabled and still in its delay
 			return;
@@ -758,7 +883,11 @@ export class SuggestModel implements IDisposable {
 			return;
 		}
 
-		if (ctx.column > this._context.column && this._completionModel.getIncompleteProvider().size > 0 && ctx.leadingWord.word.length !== 0) {
+		if (
+			ctx.column > this._context.column &&
+			this._completionModel.getIncompleteProvider().size > 0 &&
+			ctx.leadingWord.word.length !== 0
+		) {
 			// typed -> moved cursor RIGHT & incomple model & still on a word -> retrigger
 
 			const providerItemsToReuse = new Map<CompletionItemProvider, CompletionItem[]>();
@@ -778,7 +907,6 @@ export class SuggestModel implements IDisposable {
 				clipboardText: this._completionModel.clipboardText,
 				completionOptions: { providerFilter, providerItemsToReuse }
 			});
-
 		} else {
 			// typed -> moved cursor RIGHT -> update UI
 			const oldLineContext = this._completionModel.lineContext;
@@ -790,7 +918,6 @@ export class SuggestModel implements IDisposable {
 			};
 
 			if (this._completionModel.items.length === 0) {
-
 				const shouldAutoTrigger = LineContext.shouldAutoTrigger(this._editor);
 				if (!this._context) {
 					// shouldAutoTrigger forces tokenization, which can cause pending cursor change events to be emitted, which can cause
@@ -816,7 +943,6 @@ export class SuggestModel implements IDisposable {
 						this.cancel();
 						return;
 					}
-
 				} else {
 					// nothing left
 					this.cancel();
@@ -827,7 +953,7 @@ export class SuggestModel implements IDisposable {
 			this._onDidSuggest.fire({
 				completionModel: this._completionModel,
 				triggerOptions: ctx.triggerOptions,
-				isFrozen,
+				isFrozen
 			});
 		}
 	}

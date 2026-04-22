@@ -14,10 +14,11 @@ export class ObservableLazy<T> {
 	 * The cached value.
 	 * Does not force a computation of the value.
 	 */
-	public get cachedValue(): IObservable<T | undefined> { return this._value; }
-
-	constructor(private readonly _computeValue: () => T) {
+	public get cachedValue(): IObservable<T | undefined> {
+		return this._value;
 	}
+
+	constructor(private readonly _computeValue: () => T) {}
 
 	/**
 	 * Returns the cached value.
@@ -59,19 +60,22 @@ export class ObservablePromise<T> {
 	public readonly promiseResult: IObservable<PromiseResult<T> | undefined> = this._value;
 
 	constructor(promise: Promise<T>) {
-		this.promise = promise.then(value => {
-			transaction(tx => {
-				/** @description onPromiseResolved */
-				this._value.set(new PromiseResult(value, undefined), tx);
-			});
-			return value;
-		}, error => {
-			transaction(tx => {
-				/** @description onPromiseRejected */
-				this._value.set(new PromiseResult<T>(undefined, error), tx);
-			});
-			throw error;
-		});
+		this.promise = promise.then(
+			value => {
+				transaction(tx => {
+					/** @description onPromiseResolved */
+					this._value.set(new PromiseResult(value, undefined), tx);
+				});
+				return value;
+			},
+			error => {
+				transaction(tx => {
+					/** @description onPromiseRejected */
+					this._value.set(new PromiseResult<T>(undefined, error), tx);
+				});
+				throw error;
+			}
+		);
 	}
 
 	public readonly resolvedValue = derived(this, reader => {
@@ -95,9 +99,8 @@ export class PromiseResult<T> {
 		 * The error in case of a rejected promise.
 		 * Undefined if the promise resolved.
 		 */
-		public readonly error: unknown | undefined,
-	) {
-	}
+		public readonly error: unknown | undefined
+	) {}
 
 	/**
 	 * Returns the value if the promise resolved, otherwise throws the error.
@@ -120,10 +123,11 @@ export class ObservableLazyPromise<T> {
 	 * Does not enforce evaluation of the promise compute function.
 	 * Is undefined if the promise has not been computed yet.
 	 */
-	public readonly cachedPromiseResult = derived(this, reader => this._lazyValue.cachedValue.read(reader)?.promiseResult.read(reader));
+	public readonly cachedPromiseResult = derived(this, reader =>
+		this._lazyValue.cachedValue.read(reader)?.promiseResult.read(reader)
+	);
 
-	constructor(private readonly _computePromise: () => Promise<T>) {
-	}
+	constructor(private readonly _computePromise: () => Promise<T>) {}
 
 	public getPromise(): Promise<T> {
 		return this._lazyValue.getValue().promise;

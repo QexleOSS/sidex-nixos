@@ -14,12 +14,11 @@ export interface ILink {
 export type LinkedTextNode = string | ILink;
 
 export class LinkedText {
-
-	constructor(readonly nodes: LinkedTextNode[]) { }
+	constructor(readonly nodes: LinkedTextNode[]) {}
 
 	@memoize
 	toString(): string {
-		return this.nodes.map(node => typeof node === 'string' ? node : node.label).join('');
+		return this.nodes.map(node => (typeof node === 'string' ? node : node.label)).join('');
 	}
 }
 
@@ -31,7 +30,7 @@ export function parseLinkedText(text: string): LinkedText {
 	let index = 0;
 	let match: RegExpExecArray | null;
 
-	while (match = LINK_REGEX.exec(text)) {
+	while ((match = LINK_REGEX.exec(text))) {
 		if (match.index - index > 0) {
 			result.push(text.substring(index, match.index));
 		}

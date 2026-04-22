@@ -11,14 +11,14 @@ import { createBracketOrRegExp } from './richEditBrackets.js';
 /**
  * Captures all bracket related configurations for a single language.
  * Immutable.
-*/
+ */
 export class LanguageBracketsConfiguration {
 	private readonly _openingBrackets: ReadonlyMap<string, OpeningBracketKind>;
 	private readonly _closingBrackets: ReadonlyMap<string, ClosingBracketKind>;
 
 	constructor(
 		public readonly languageId: string,
-		config: LanguageConfiguration,
+		config: LanguageConfiguration
 	) {
 		const bracketPairs = config.brackets ? filterValidBrackets(config.brackets) : [];
 		const openingBracketInfos = new CachedFunction((bracket: string) => {
@@ -26,7 +26,7 @@ export class LanguageBracketsConfiguration {
 
 			return {
 				info: new OpeningBracketKind(this, bracket, closing),
-				closing,
+				closing
 			};
 		});
 		const closingBracketInfos = new CachedFunction((bracket: string) => {
@@ -35,7 +35,7 @@ export class LanguageBracketsConfiguration {
 			return {
 				info: new ClosingBracketKind(this, bracket, opening, openingColorized),
 				opening,
-				openingColorized,
+				openingColorized
 			};
 		});
 
@@ -50,11 +50,11 @@ export class LanguageBracketsConfiguration {
 		// Treat colorized brackets as brackets, and mark them as colorized.
 		const colorizedBracketPairs = config.colorizedBracketPairs
 			? filterValidBrackets(config.colorizedBracketPairs)
-			// If not configured: Take all brackets except `<` ... `>`
-			// Many languages set < ... > as bracket pair, even though they also use it as comparison operator.
-			// This leads to problems when colorizing this bracket, so we exclude it if not explicitly configured otherwise.
-			// https://github.com/microsoft/vscode/issues/132476
-			: bracketPairs.filter((p) => !(p[0] === '<' && p[1] === '>'));
+			: // If not configured: Take all brackets except `<` ... `>`
+				// Many languages set < ... > as bracket pair, even though they also use it as comparison operator.
+				// This leads to problems when colorizing this bracket, so we exclude it if not explicitly configured otherwise.
+				// https://github.com/microsoft/vscode/issues/132476
+				bracketPairs.filter(p => !(p[0] === '<' && p[1] === '>'));
 		for (const [open, close] of colorizedBracketPairs) {
 			const opening = openingBracketInfos.get(open);
 			const closing = closingBracketInfos.get(close);
@@ -70,14 +70,14 @@ export class LanguageBracketsConfiguration {
 
 	/**
 	 * No two brackets have the same bracket text.
-	*/
+	 */
 	public get openingBrackets(): readonly OpeningBracketKind[] {
 		return [...this._openingBrackets.values()];
 	}
 
 	/**
 	 * No two brackets have the same bracket text.
-	*/
+	 */
 	public get closingBrackets(): readonly ClosingBracketKind[] {
 		return [...this._closingBrackets.values()];
 	}
@@ -109,8 +109,8 @@ export type BracketKind = OpeningBracketKind | ClosingBracketKind;
 export class BracketKindBase {
 	constructor(
 		protected readonly config: LanguageBracketsConfiguration,
-		public readonly bracketText: string,
-	) { }
+		public readonly bracketText: string
+	) {}
 
 	public get languageId(): string {
 		return this.config.languageId;
@@ -123,7 +123,7 @@ export class OpeningBracketKind extends BracketKindBase {
 	constructor(
 		config: LanguageBracketsConfiguration,
 		bracketText: string,
-		public readonly openedBrackets: ReadonlySet<ClosingBracketKind>,
+		public readonly openedBrackets: ReadonlySet<ClosingBracketKind>
 	) {
 		super(config, bracketText);
 	}
@@ -137,9 +137,9 @@ export class ClosingBracketKind extends BracketKindBase {
 		bracketText: string,
 		/**
 		 * Non empty array of all opening brackets this bracket closes.
-		*/
+		 */
 		public readonly openingBrackets: ReadonlySet<OpeningBracketKind>,
-		private readonly openingColorizedBrackets: ReadonlySet<OpeningBracketKind>,
+		private readonly openingColorizedBrackets: ReadonlySet<OpeningBracketKind>
 	) {
 		super(config, bracketText);
 	}
@@ -147,7 +147,7 @@ export class ClosingBracketKind extends BracketKindBase {
 	/**
 	 * Checks if this bracket closes the given other bracket.
 	 * If the bracket infos come from different configurations, this method will return false.
-	*/
+	 */
 	public closes(other: OpeningBracketKind): boolean {
 		if (other['config'] !== this.config) {
 			return false;

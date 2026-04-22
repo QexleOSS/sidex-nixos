@@ -5,7 +5,12 @@
 
 import { IMarkerService, IMarkerData, type IMarker } from '../../../platform/markers/common/markers.js';
 import { URI, UriComponents } from '../../../base/common/uri.js';
-import { MainThreadDiagnosticsShape, MainContext, ExtHostDiagnosticsShape, ExtHostContext } from '../common/extHost.protocol.js';
+import {
+	MainThreadDiagnosticsShape,
+	MainContext,
+	ExtHostDiagnosticsShape,
+	ExtHostContext
+} from '../common/extHost.protocol.js';
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
 import { IDisposable } from '../../../base/common/lifecycle.js';
 import { IUriIdentityService } from '../../../platform/uriIdentity/common/uriIdentity.js';
@@ -13,7 +18,6 @@ import { ResourceMap } from '../../../base/common/map.js';
 
 @extHostNamedCustomer(MainContext.MainThreadDiagnostics)
 export class MainThreadDiagnostics implements MainThreadDiagnosticsShape {
-
 	private readonly _activeOwners = new Set<string>();
 
 	private readonly _proxy: ExtHostDiagnosticsShape;
@@ -25,7 +29,7 @@ export class MainThreadDiagnostics implements MainThreadDiagnosticsShape {
 	constructor(
 		extHostContext: IExtHostContext,
 		@IMarkerService private readonly _markerService: IMarkerService,
-		@IUriIdentityService private readonly _uriIdentService: IUriIdentityService,
+		@IUriIdentityService private readonly _uriIdentService: IUriIdentityService
 	) {
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostDiagnostics);
 

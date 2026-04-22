@@ -23,15 +23,16 @@ export enum DiagnosticSeverity {
 
 @es5ClassCompat
 export class DiagnosticRelatedInformation {
-
 	static is(thing: unknown): thing is DiagnosticRelatedInformation {
 		if (!thing) {
 			return false;
 		}
-		return typeof (<DiagnosticRelatedInformation>thing).message === 'string'
-			&& (<DiagnosticRelatedInformation>thing).location
-			&& Range.isRange((<DiagnosticRelatedInformation>thing).location.range)
-			&& URI.isUri((<DiagnosticRelatedInformation>thing).location.uri);
+		return (
+			typeof (<DiagnosticRelatedInformation>thing).message === 'string' &&
+			(<DiagnosticRelatedInformation>thing).location &&
+			Range.isRange((<DiagnosticRelatedInformation>thing).location.range) &&
+			URI.isUri((<DiagnosticRelatedInformation>thing).location.uri)
+		);
 	}
 
 	location: Location;
@@ -49,15 +50,16 @@ export class DiagnosticRelatedInformation {
 		if (!a || !b) {
 			return false;
 		}
-		return a.message === b.message
-			&& a.location.range.isEqual(b.location.range)
-			&& a.location.uri.toString() === b.location.uri.toString();
+		return (
+			a.message === b.message &&
+			a.location.range.isEqual(b.location.range) &&
+			a.location.uri.toString() === b.location.uri.toString()
+		);
 	}
 }
 
 @es5ClassCompat
 export class Diagnostic {
-
 	range: Range;
 	message: string;
 	severity: DiagnosticSeverity;
@@ -84,7 +86,7 @@ export class Diagnostic {
 			message: this.message,
 			range: this.range,
 			source: this.source,
-			code: this.code,
+			code: this.code
 		};
 	}
 
@@ -95,13 +97,15 @@ export class Diagnostic {
 		if (!a || !b) {
 			return false;
 		}
-		return a.message === b.message
-			&& a.severity === b.severity
-			&& a.code === b.code
-			&& a.severity === b.severity
-			&& a.source === b.source
-			&& a.range.isEqual(b.range)
-			&& equals(a.tags, b.tags)
-			&& equals(a.relatedInformation, b.relatedInformation, DiagnosticRelatedInformation.isEqual);
+		return (
+			a.message === b.message &&
+			a.severity === b.severity &&
+			a.code === b.code &&
+			a.severity === b.severity &&
+			a.source === b.source &&
+			a.range.isEqual(b.range) &&
+			equals(a.tags, b.tags) &&
+			equals(a.relatedInformation, b.relatedInformation, DiagnosticRelatedInformation.isEqual)
+		);
 	}
 }

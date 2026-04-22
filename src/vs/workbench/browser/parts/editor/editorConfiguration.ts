@@ -7,9 +7,18 @@ import { localize } from '../../../../nls.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
 import { IWorkbenchContribution } from '../../../common/contributions.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
-import { IConfigurationRegistry, Extensions as ConfigurationExtensions, IConfigurationNode, ConfigurationScope } from '../../../../platform/configuration/common/configurationRegistry.js';
+import {
+	IConfigurationRegistry,
+	Extensions as ConfigurationExtensions,
+	IConfigurationNode,
+	ConfigurationScope
+} from '../../../../platform/configuration/common/configurationRegistry.js';
 import { workbenchConfigurationNodeBase } from '../../../common/configuration.js';
-import { IEditorResolverService, RegisteredEditorInfo, RegisteredEditorPriority } from '../../../services/editor/common/editorResolverService.js';
+import {
+	IEditorResolverService,
+	RegisteredEditorInfo,
+	RegisteredEditorPriority
+} from '../../../services/editor/common/editorResolverService.js';
 import { IJSONSchemaMap } from '../../../../base/common/jsonSchema.js';
 import { IExtensionService } from '../../../services/extensions/common/extensions.js';
 import { coalesce } from '../../../../base/common/arrays.js';
@@ -18,7 +27,6 @@ import { IWorkbenchEnvironmentService } from '../../../services/environment/comm
 import { ByteSize, getLargeFileConfirmationLimit } from '../../../../platform/files/common/files.js';
 
 export class DynamicEditorConfigurations extends Disposable implements IWorkbenchContribution {
-
 	static readonly ID = 'workbench.contrib.dynamicEditorConfigurations';
 
 	private static readonly AUTO_LOCK_DEFAULT_ENABLED = new Set<string>([
@@ -29,7 +37,6 @@ export class DynamicEditorConfigurations extends Disposable implements IWorkbenc
 	]);
 
 	private static readonly AUTO_LOCK_EXTRA_EDITORS: RegisteredEditorInfo[] = [
-
 		// List some editor input identifiers that are not
 		// registered yet via the editor resolver infrastructure
 
@@ -40,23 +47,22 @@ export class DynamicEditorConfigurations extends Disposable implements IWorkbenc
 		},
 		{
 			id: 'mainThreadWebview-markdown.preview',
-			label: localize('markdownPreview', "Markdown Preview"),
+			label: localize('markdownPreview', 'Markdown Preview'),
 			priority: RegisteredEditorPriority.builtin
 		},
 		{
 			id: 'mainThreadWebview-simpleBrowser.view',
-			label: localize('simpleBrowser', "Simple Browser"),
+			label: localize('simpleBrowser', 'Simple Browser'),
 			priority: RegisteredEditorPriority.builtin
 		},
 		{
 			id: 'mainThreadWebview-browserPreview',
-			label: localize('livePreview', "Live Preview"),
+			label: localize('livePreview', 'Live Preview'),
 			priority: RegisteredEditorPriority.builtin
 		}
 	];
 
 	private static readonly AUTO_LOCK_REMOVE_EDITORS = new Set<string>([
-
 		// List some editor types that the above `AUTO_LOCK_EXTRA_EDITORS`
 		// already covers to avoid duplicates.
 
@@ -92,14 +98,24 @@ export class DynamicEditorConfigurations extends Disposable implements IWorkbenc
 	}
 
 	private registerListeners(): void {
-
 		// Registered editors (debounced to reduce perf overhead)
-		this._register(Event.debounce(this.editorResolverService.onDidChangeEditorRegistrations, (_, e) => e)(() => this.updateDynamicEditorConfigurations()));
+		this._register(
+			Event.debounce(
+				this.editorResolverService.onDidChangeEditorRegistrations,
+				(_, e) => e
+			)(() => this.updateDynamicEditorConfigurations())
+		);
 	}
 
 	private updateDynamicEditorConfigurations(): void {
-		const lockableEditors = [...this.editorResolverService.getEditors(), ...DynamicEditorConfigurations.AUTO_LOCK_EXTRA_EDITORS].filter(e => !DynamicEditorConfigurations.AUTO_LOCK_REMOVE_EDITORS.has(e.id));
-		const binaryEditorCandidates = this.editorResolverService.getEditors().filter(e => e.priority !== RegisteredEditorPriority.exclusive).map(e => e.id);
+		const lockableEditors = [
+			...this.editorResolverService.getEditors(),
+			...DynamicEditorConfigurations.AUTO_LOCK_EXTRA_EDITORS
+		].filter(e => !DynamicEditorConfigurations.AUTO_LOCK_REMOVE_EDITORS.has(e.id));
+		const binaryEditorCandidates = this.editorResolverService
+			.getEditors()
+			.filter(e => e.priority !== RegisteredEditorPriority.exclusive)
+			.map(e => e.id);
 
 		// Build config from registered editors
 		const autoLockGroupConfiguration: IJSONSchemaMap = Object.create(null);
@@ -114,7 +130,9 @@ export class DynamicEditorConfigurations extends Disposable implements IWorkbenc
 		// Build default config too
 		const defaultAutoLockGroupConfiguration = Object.create(null);
 		for (const editor of lockableEditors) {
-			defaultAutoLockGroupConfiguration[editor.id] = DynamicEditorConfigurations.AUTO_LOCK_DEFAULT_ENABLED.has(editor.id);
+			defaultAutoLockGroupConfiguration[editor.id] = DynamicEditorConfigurations.AUTO_LOCK_DEFAULT_ENABLED.has(
+				editor.id
+			);
 		}
 
 		// Register setting for auto locking groups
@@ -124,7 +142,10 @@ export class DynamicEditorConfigurations extends Disposable implements IWorkbenc
 			properties: {
 				'workbench.editor.autoLockGroups': {
 					type: 'object',
-					description: localize('workbench.editor.autoLockGroups', "If an editor matching one of the listed types is opened as the first in an editor group and more than one group is open, the group is automatically locked. Locked groups will only be used for opening editors when explicitly chosen by a user gesture (for example drag and drop), but not by default. Consequently, the active editor in a locked group is less likely to be replaced accidentally with a different editor."),
+					description: localize(
+						'workbench.editor.autoLockGroups',
+						'If an editor matching one of the listed types is opened as the first in an editor group and more than one group is open, the group is automatically locked. Locked groups will only be used for opening editors when explicitly chosen by a user gesture (for example drag and drop), but not by default. Consequently, the active editor in a locked group is less likely to be replaced accidentally with a different editor.'
+					),
 					properties: autoLockGroupConfiguration,
 					default: defaultAutoLockGroupConfiguration,
 					additionalProperties: false
@@ -142,7 +163,10 @@ export class DynamicEditorConfigurations extends Disposable implements IWorkbenc
 					default: '',
 					// This allows for intellisense autocompletion
 					enum: [...binaryEditorCandidates, ''],
-					description: localize('workbench.editor.defaultBinaryEditor', "The default editor for files detected as binary. If undefined, the user will be presented with a picker."),
+					description: localize(
+						'workbench.editor.defaultBinaryEditor',
+						'The default editor for files detected as binary. If undefined, the user will be presented with a picker.'
+					)
 				}
 			}
 		};
@@ -154,11 +178,14 @@ export class DynamicEditorConfigurations extends Disposable implements IWorkbenc
 			properties: {
 				'workbench.editorAssociations': {
 					type: 'object',
-					markdownDescription: localize('editor.editorAssociations', "Configure [glob patterns](https://aka.ms/vscode-glob-patterns) to editors (for example `\"*.hex\": \"hexEditor.hexedit\"`). These have precedence over the default behavior."),
+					markdownDescription: localize(
+						'editor.editorAssociations',
+						'Configure [glob patterns](https://aka.ms/vscode-glob-patterns) to editors (for example `"*.hex": "hexEditor.hexedit"`). These have precedence over the default behavior.'
+					),
 					patternProperties: {
 						'.*': {
 							type: 'string',
-							enum: binaryEditorCandidates,
+							enum: binaryEditorCandidates
 						}
 					}
 				}
@@ -175,7 +202,10 @@ export class DynamicEditorConfigurations extends Disposable implements IWorkbenc
 					default: getLargeFileConfirmationLimit(this.environmentService.remoteAuthority) / ByteSize.MB,
 					minimum: 1,
 					scope: ConfigurationScope.RESOURCE,
-					markdownDescription: localize('editorLargeFileSizeConfirmation', "Controls the minimum size of a file in MB before asking for confirmation when opening in the editor. Note that this setting may not apply to all editor types and environments."),
+					markdownDescription: localize(
+						'editorLargeFileSizeConfirmation',
+						'Controls the minimum size of a file in MB before asking for confirmation when opening in the editor. Note that this setting may not apply to all editor types and environments.'
+					)
 				}
 			}
 		};

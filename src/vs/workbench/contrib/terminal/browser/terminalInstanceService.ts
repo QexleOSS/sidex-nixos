@@ -6,7 +6,14 @@
 import { ITerminalInstance, ITerminalInstanceService } from './terminal.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
-import { IShellLaunchConfig, ITerminalBackend, ITerminalBackendRegistry, ITerminalProfile, TerminalExtensions, TerminalLocation } from '../../../../platform/terminal/common/terminal.js';
+import {
+	IShellLaunchConfig,
+	ITerminalBackend,
+	ITerminalBackendRegistry,
+	ITerminalProfile,
+	TerminalExtensions,
+	TerminalLocation
+} from '../../../../platform/terminal/common/terminal.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { TerminalInstance } from './terminalInstance.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
@@ -24,15 +31,19 @@ export class TerminalInstanceService extends Disposable implements ITerminalInst
 	private _backendRegistration = new Map<string | undefined, { promise: Promise<void>; resolve: () => void }>();
 
 	private readonly _onDidCreateInstance = this._register(new Emitter<ITerminalInstance>());
-	get onDidCreateInstance(): Event<ITerminalInstance> { return this._onDidCreateInstance.event; }
+	get onDidCreateInstance(): Event<ITerminalInstance> {
+		return this._onDidCreateInstance.event;
+	}
 
 	private readonly _onDidRegisterBackend = this._register(new Emitter<ITerminalBackend>());
-	get onDidRegisterBackend(): Event<ITerminalBackend> { return this._onDidRegisterBackend.event; }
+	get onDidRegisterBackend(): Event<ITerminalBackend> {
+		return this._onDidRegisterBackend.event;
+	}
 
 	constructor(
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
 		@IContextKeyService private readonly _contextKeyService: IContextKeyService,
-		@IWorkbenchEnvironmentService environmentService: IWorkbenchEnvironmentService,
+		@IWorkbenchEnvironmentService environmentService: IWorkbenchEnvironmentService
 	) {
 		super();
 		this._terminalShellTypeContextKey = TerminalContextKeys.shellType.bindTo(this._contextKeyService);
@@ -47,13 +58,20 @@ export class TerminalInstanceService extends Disposable implements ITerminalInst
 	createInstance(shellLaunchConfig: IShellLaunchConfig, target: TerminalLocation): ITerminalInstance;
 	createInstance(config: IShellLaunchConfig | ITerminalProfile, target: TerminalLocation): ITerminalInstance {
 		const shellLaunchConfig = this.convertProfileToShellLaunchConfig(config);
-		const instance = this._instantiationService.createInstance(TerminalInstance, this._terminalShellTypeContextKey, shellLaunchConfig);
+		const instance = this._instantiationService.createInstance(
+			TerminalInstance,
+			this._terminalShellTypeContextKey,
+			shellLaunchConfig
+		);
 		instance.target = target;
 		this._onDidCreateInstance.fire(instance);
 		return instance;
 	}
 
-	convertProfileToShellLaunchConfig(shellLaunchConfigOrProfile?: IShellLaunchConfig | ITerminalProfile, cwd?: string | URI): IShellLaunchConfig {
+	convertProfileToShellLaunchConfig(
+		shellLaunchConfigOrProfile?: IShellLaunchConfig | ITerminalProfile,
+		cwd?: string | URI
+	): IShellLaunchConfig {
 		// Profile was provided
 		if (shellLaunchConfigOrProfile && hasKey(shellLaunchConfigOrProfile, { profileName: true })) {
 			const profile = shellLaunchConfigOrProfile;

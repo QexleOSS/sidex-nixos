@@ -15,7 +15,7 @@ export const enum ExtensionRecommendationReason {
 	WorkspaceConfig,
 	DynamicWorkspace,
 	Experimental,
-	Application,
+	Application
 }
 
 export interface IExtensionRecommendationReason {
@@ -23,7 +23,9 @@ export interface IExtensionRecommendationReason {
 	reasonText: string;
 }
 
-export const IExtensionRecommendationsService = createDecorator<IExtensionRecommendationsService>('extensionRecommendationsService');
+export const IExtensionRecommendationsService = createDecorator<IExtensionRecommendationsService>(
+	'extensionRecommendationsService'
+);
 
 export interface IExtensionRecommendationsService {
 	readonly _serviceBrand: undefined;
@@ -47,7 +49,9 @@ export type IgnoredRecommendationChangeNotification = {
 	isRecommended: boolean;
 };
 
-export const IExtensionIgnoredRecommendationsService = createDecorator<IExtensionIgnoredRecommendationsService>('IExtensionIgnoredRecommendationsService');
+export const IExtensionIgnoredRecommendationsService = createDecorator<IExtensionIgnoredRecommendationsService>(
+	'IExtensionIgnoredRecommendationsService'
+);
 
 export interface IExtensionIgnoredRecommendationsService {
 	readonly _serviceBrand: undefined;
@@ -59,5 +63,3 @@ export interface IExtensionIgnoredRecommendationsService {
 	readonly globalIgnoredRecommendations: string[];
 	toggleGlobalIgnoredRecommendation(extensionId: string, ignore: boolean): void;
 }
-
-

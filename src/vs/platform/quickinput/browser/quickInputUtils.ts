@@ -35,8 +35,14 @@ function getIconClass(iconPath: { dark: URI; light?: URI } | undefined): string 
 		iconClass = iconPathToClass[key];
 	} else {
 		iconClass = iconClassGenerator.nextId();
-		domStylesheetsJs.createCSSRule(`.${iconClass}, .hc-light .${iconClass}`, `background-image: ${cssJs.asCSSUrl(iconPath.light || iconPath.dark)}`);
-		domStylesheetsJs.createCSSRule(`.vs-dark .${iconClass}, .hc-black .${iconClass}`, `background-image: ${cssJs.asCSSUrl(iconPath.dark)}`);
+		domStylesheetsJs.createCSSRule(
+			`.${iconClass}, .hc-light .${iconClass}`,
+			`background-image: ${cssJs.asCSSUrl(iconPath.light || iconPath.dark)}`
+		);
+		domStylesheetsJs.createCSSRule(
+			`.vs-dark .${iconClass}, .hc-black .${iconClass}`,
+			`background-image: ${cssJs.asCSSUrl(iconPath.dark)}`
+		);
 		iconPathToClass[key] = iconClass;
 	}
 
@@ -88,23 +94,15 @@ export function quickInputButtonToAction(button: IQuickInputButton, id: string, 
 	};
 
 	const action = button.toggle
-		? new QuickInputToggleButtonAction(
-			id,
-			button.tooltip || '',
-			'',
-			cssClasses,
-			true,
-			button.toggle.checked,
-			handler
-		)
+		? new QuickInputToggleButtonAction(id, button.tooltip || '', '', cssClasses, true, button.toggle.checked, handler)
 		: {
-			id,
-			label: '',
-			tooltip: button.tooltip || '',
-			class: cssClasses,
-			enabled: true,
-			run: handler,
-		};
+				id,
+				label: '',
+				tooltip: button.tooltip || '',
+				class: cssClasses,
+				enabled: true,
+				run: handler
+			};
 
 	return action;
 }
@@ -118,11 +116,7 @@ export function quickInputButtonsToActionArrays(
 	const secondary: IAction[] = [];
 
 	buttons.forEach((button, index) => {
-		const action = quickInputButtonToAction(
-			button,
-			`${idPrefix}-${index}`,
-			async () => onTrigger(button)
-		);
+		const action = quickInputButtonToAction(button, `${idPrefix}-${index}`, async () => onTrigger(button));
 
 		if (button.label) {
 			action.label = button.label;
@@ -138,7 +132,11 @@ export function quickInputButtonsToActionArrays(
 	return { primary, secondary };
 }
 
-export function renderQuickInputDescription(description: string, container: HTMLElement, actionHandler: { callback: (content: string) => void; disposables: DisposableStore }) {
+export function renderQuickInputDescription(
+	description: string,
+	container: HTMLElement,
+	actionHandler: { callback: (content: string) => void; disposables: DisposableStore }
+) {
 	dom.reset(container);
 	const parsed = parseLinkedText(description);
 	let tabIndex = 0;
@@ -166,11 +164,13 @@ export function renderQuickInputDescription(description: string, container: HTML
 
 			const onClick = actionHandler.disposables.add(new DomEmitter(anchor, dom.EventType.CLICK)).event;
 			const onKeydown = actionHandler.disposables.add(new DomEmitter(anchor, dom.EventType.KEY_DOWN)).event;
-			const onSpaceOrEnter = Event.chain(onKeydown, $ => $.filter(e => {
-				const event = new StandardKeyboardEvent(e);
+			const onSpaceOrEnter = Event.chain(onKeydown, $ =>
+				$.filter(e => {
+					const event = new StandardKeyboardEvent(e);
 
-				return event.equals(KeyCode.Space) || event.equals(KeyCode.Enter);
-			}));
+					return event.equals(KeyCode.Space) || event.equals(KeyCode.Enter);
+				})
+			);
 
 			actionHandler.disposables.add(Gesture.addTarget(anchor));
 			const onTap = actionHandler.disposables.add(new DomEmitter(anchor, GestureEventType.Tap)).event;

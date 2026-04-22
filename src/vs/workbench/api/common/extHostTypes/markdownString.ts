@@ -4,12 +4,14 @@
  *--------------------------------------------------------------------------------------------*/
 
 import type * as vscode from 'vscode';
-import { MarkdownString as BaseMarkdownString, MarkdownStringTrustedOptions } from '../../../../base/common/htmlContent.js';
+import {
+	MarkdownString as BaseMarkdownString,
+	MarkdownStringTrustedOptions
+} from '../../../../base/common/htmlContent.js';
 import { es5ClassCompat } from './es5ClassCompat.js';
 
 @es5ClassCompat
 export class MarkdownString implements vscode.MarkdownString {
-
 	readonly #delegate: BaseMarkdownString;
 
 	static isMarkdownString(thing: unknown): thing is vscode.MarkdownString {
@@ -19,7 +21,12 @@ export class MarkdownString implements vscode.MarkdownString {
 		if (!thing || typeof thing !== 'object') {
 			return false;
 		}
-		return (thing as vscode.MarkdownString).appendCodeblock && (thing as vscode.MarkdownString).appendMarkdown && (thing as vscode.MarkdownString).appendText && ((thing as vscode.MarkdownString).value !== undefined);
+		return (
+			(thing as vscode.MarkdownString).appendCodeblock &&
+			(thing as vscode.MarkdownString).appendMarkdown &&
+			(thing as vscode.MarkdownString).appendText &&
+			(thing as vscode.MarkdownString).value !== undefined
+		);
 	}
 
 	constructor(value?: string, supportThemeIcons: boolean = false) {

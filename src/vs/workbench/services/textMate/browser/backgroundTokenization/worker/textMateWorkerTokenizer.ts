@@ -21,14 +21,29 @@ import { ICreateGrammarResult } from '../../../common/TMGrammarFactory.js';
 import { StateDeltas } from './textMateTokenizationWorker.worker.js';
 import { Disposable } from '../../../../../../base/common/lifecycle.js';
 import { IFontTokenOption, serializeFontTokenOptions } from '../../../../../../editor/common/textModelEvents.js';
-import { AnnotationsUpdate, IAnnotationUpdate, ISerializedAnnotation } from '../../../../../../editor/common/model/tokens/annotations.js';
+import {
+	AnnotationsUpdate,
+	IAnnotationUpdate,
+	ISerializedAnnotation
+} from '../../../../../../editor/common/model/tokens/annotations.js';
 import { OffsetRange } from '../../../../../../editor/common/core/ranges/offsetRange.js';
 import { EncodedTokenizationResult } from '../../../../../../editor/common/languages.js';
 
 export interface TextMateModelTokenizerHost {
 	getOrCreateGrammar(languageId: string, encodedLanguageId: LanguageId): Promise<ICreateGrammarResult | null>;
-	setTokensAndStates(versionId: number, tokens: Uint8Array, fontTokens: ISerializedAnnotation<IFontTokenOption>[], stateDeltas: StateDeltas[]): void;
-	reportTokenizationTime(timeMs: number, languageId: string, sourceExtensionId: string | undefined, lineLength: number, isRandomSample: boolean): void;
+	setTokensAndStates(
+		versionId: number,
+		tokens: Uint8Array,
+		fontTokens: ISerializedAnnotation<IFontTokenOption>[],
+		stateDeltas: StateDeltas[]
+	): void;
+	reportTokenizationTime(
+		timeMs: number,
+		languageId: string,
+		sourceExtensionId: string | undefined,
+		lineLength: number,
+		isRandomSample: boolean
+	): void;
 }
 
 export class TextMateWorkerTokenizer extends MirrorTextModel {
@@ -46,7 +61,7 @@ export class TextMateWorkerTokenizer extends MirrorTextModel {
 		private readonly _host: TextMateModelTokenizerHost,
 		private _languageId: string,
 		private _encodedLanguageId: LanguageId,
-		maxTokenizationLineLength: number,
+		maxTokenizationLineLength: number
 	) {
 		super(uri, lines, eol, versionId);
 		this._maxTokenizationLineLength.set(maxTokenizationLineLength, undefined);
@@ -78,7 +93,9 @@ export class TextMateWorkerTokenizer extends MirrorTextModel {
 
 	public retokenize(startLineNumber: number, endLineNumberExclusive: number) {
 		if (this._tokenizerWithStateStore) {
-			this._tokenizerWithStateStore.store.invalidateEndStateRange(new LineRange(startLineNumber, endLineNumberExclusive));
+			this._tokenizerWithStateStore.store.invalidateEndStateRange(
+				new LineRange(startLineNumber, endLineNumberExclusive)
+			);
 			this._tokenizeDebouncer.schedule();
 		}
 	}
@@ -98,7 +115,12 @@ export class TextMateWorkerTokenizer extends MirrorTextModel {
 		if (r.grammar) {
 			const tokenizationSupport = new TokenizationSupportWithLineLimit(
 				this._encodedLanguageId,
-				new TextMateTokenizationSupport(r.grammar, r.initialState, false, undefined, () => false,
+				new TextMateTokenizationSupport(
+					r.grammar,
+					r.initialState,
+					false,
+					undefined,
+					() => false,
 					(timeMs, lineLength, isRandomSample) => {
 						this._host.reportTokenizationTime(timeMs, languageId, r.sourceExtensionId, lineLength, isRandomSample);
 					},
@@ -120,7 +142,10 @@ export class TextMateWorkerTokenizer extends MirrorTextModel {
 		}
 
 		if (!this._diffStateStacksRefEqFn) {
-			const { diffStateStacksRefEq } = await importAMDNodeModule<typeof import('vscode-textmate')>('vscode-textmate', 'release/main.js');
+			const { diffStateStacksRefEq } = await importAMDNodeModule<typeof import('vscode-textmate')>(
+				'vscode-textmate',
+				'release/main.js'
+			);
 			this._diffStateStacksRefEqFn = diffStateStacksRefEq;
 		}
 
@@ -141,7 +166,11 @@ export class TextMateWorkerTokenizer extends MirrorTextModel {
 				tokenizedLines++;
 
 				const text = this._lines[lineToTokenize.lineNumber - 1];
-				const r = this._tokenizerWithStateStore.tokenizationSupport.tokenizeEncoded(text, true, lineToTokenize.startState);
+				const r = this._tokenizerWithStateStore.tokenizationSupport.tokenizeEncoded(
+					text,
+					true,
+					lineToTokenize.startState
+				);
 				if (this._tokenizerWithStateStore.store.setEndState(lineToTokenize.lineNumber, r.endState as StateStack)) {
 					const delta = this._diffStateStacksRefEqFn(lineToTokenize.startState, r.endState as StateStack);
 					stateDeltaBuilder.setState(lineToTokenize.lineNumber, delta);
@@ -167,12 +196,7 @@ export class TextMateWorkerTokenizer extends MirrorTextModel {
 			const fontUpdate = AnnotationsUpdate.create<IFontTokenOption>(fontTokensUpdate);
 			const serializedFontUpdate = fontUpdate.serialize<IFontTokenOption>(serializeFontTokenOptions());
 			const stateDeltas = stateDeltaBuilder.getStateDeltas();
-			this._host.setTokensAndStates(
-				this._versionId,
-				tokenBuilder.serialize(),
-				serializedFontUpdate,
-				stateDeltas
-			);
+			this._host.setTokensAndStates(this._versionId, tokenBuilder.serialize(), serializedFontUpdate, stateDeltas);
 
 			const deltaMs = new Date().getTime() - startTime;
 			if (deltaMs > 20) {
@@ -183,7 +207,10 @@ export class TextMateWorkerTokenizer extends MirrorTextModel {
 		}
 	}
 
-	private _getFontTokensUpdate(lineNumber: number, r: EncodedTokenizationResult): IAnnotationUpdate<IFontTokenOption>[] {
+	private _getFontTokensUpdate(
+		lineNumber: number,
+		r: EncodedTokenizationResult
+	): IAnnotationUpdate<IFontTokenOption>[] {
 		const fontTokens: IAnnotationUpdate<IFontTokenOption>[] = [];
 		const offsetAtLineStart = this._getOffsetAtLineStart(lineNumber);
 		const offsetAtNextLineStart = this._getOffsetAtLineStart(lineNumber + 1);

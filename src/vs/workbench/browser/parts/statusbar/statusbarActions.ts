@@ -19,8 +19,11 @@ import { getActiveWindow } from '../../../../base/browser/dom.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 
 export class ToggleStatusbarEntryVisibilityAction extends Action {
-
-	constructor(id: string, label: string, private model: StatusbarViewModel) {
+	constructor(
+		id: string,
+		label: string,
+		private model: StatusbarViewModel
+	) {
 		super(id, label, undefined, true);
 
 		this.checked = !model.isHidden(id);
@@ -36,8 +39,11 @@ export class ToggleStatusbarEntryVisibilityAction extends Action {
 }
 
 export class HideStatusbarEntryAction extends Action {
-
-	constructor(id: string, name: string, private model: StatusbarViewModel) {
+	constructor(
+		id: string,
+		name: string,
+		private model: StatusbarViewModel
+	) {
 		super(id, localize('hide', "Hide '{0}'", name), undefined, true);
 	}
 
@@ -47,12 +53,11 @@ export class HideStatusbarEntryAction extends Action {
 }
 
 export class ManageExtensionAction extends Action {
-
 	constructor(
 		private readonly extensionId: string,
 		@ICommandService private readonly commandService: ICommandService
 	) {
-		super('statusbar.manage.extension', localize('manageExtension', "Manage Extension"));
+		super('statusbar.manage.extension', localize('manageExtension', 'Manage Extension'));
 	}
 
 	override run(): Promise<void> {
@@ -125,7 +130,6 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 });
 
 class FocusStatusBarAction extends Action2 {
-
 	constructor() {
 		super({
 			id: 'workbench.action.focusStatusBar',

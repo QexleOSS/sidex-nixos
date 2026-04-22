@@ -69,7 +69,10 @@ export interface IMacKeyboardLayoutInfo {
 	localizedName?: string;
 }
 
-export type IKeyboardLayoutInfo = (IWindowsKeyboardLayoutInfo | ILinuxKeyboardLayoutInfo | IMacKeyboardLayoutInfo) & { isUserKeyboardLayout?: boolean; isUSStandard?: true };
+export type IKeyboardLayoutInfo = (IWindowsKeyboardLayoutInfo | ILinuxKeyboardLayoutInfo | IMacKeyboardLayoutInfo) & {
+	isUserKeyboardLayout?: boolean;
+	isUSStandard?: true;
+};
 
 export interface IKeyboardLayoutService {
 	readonly _serviceBrand: undefined;
@@ -88,15 +91,24 @@ export function areKeyboardLayoutsEqual(a: IKeyboardLayoutInfo | null, b: IKeybo
 		return false;
 	}
 
-	if ((<IWindowsKeyboardLayoutInfo>a).name && (<IWindowsKeyboardLayoutInfo>b).name && (<IWindowsKeyboardLayoutInfo>a).name === (<IWindowsKeyboardLayoutInfo>b).name) {
+	if (
+		(<IWindowsKeyboardLayoutInfo>a).name &&
+		(<IWindowsKeyboardLayoutInfo>b).name &&
+		(<IWindowsKeyboardLayoutInfo>a).name === (<IWindowsKeyboardLayoutInfo>b).name
+	) {
 		return true;
 	}
 
-	if ((<IMacKeyboardLayoutInfo>a).id && (<IMacKeyboardLayoutInfo>b).id && (<IMacKeyboardLayoutInfo>a).id === (<IMacKeyboardLayoutInfo>b).id) {
+	if (
+		(<IMacKeyboardLayoutInfo>a).id &&
+		(<IMacKeyboardLayoutInfo>b).id &&
+		(<IMacKeyboardLayoutInfo>a).id === (<IMacKeyboardLayoutInfo>b).id
+	) {
 		return true;
 	}
 
-	if ((<ILinuxKeyboardLayoutInfo>a).model &&
+	if (
+		(<ILinuxKeyboardLayoutInfo>a).model &&
 		(<ILinuxKeyboardLayoutInfo>b).model &&
 		(<ILinuxKeyboardLayoutInfo>a).model === (<ILinuxKeyboardLayoutInfo>b).model &&
 		(<ILinuxKeyboardLayoutInfo>a).layout === (<ILinuxKeyboardLayoutInfo>b).layout
@@ -107,7 +119,10 @@ export function areKeyboardLayoutsEqual(a: IKeyboardLayoutInfo | null, b: IKeybo
 	return false;
 }
 
-export function parseKeyboardLayoutDescription(layout: IKeyboardLayoutInfo | null): { label: string; description: string } {
+export function parseKeyboardLayoutDescription(layout: IKeyboardLayoutInfo | null): {
+	label: string;
+	description: string;
+} {
 	if (!layout) {
 		return { label: '', description: '' };
 	}
@@ -177,15 +192,18 @@ function windowsKeyMappingEquals(a: IWindowsKeyMapping, b: IWindowsKeyMapping): 
 		return false;
 	}
 	return (
-		a.vkey === b.vkey
-		&& a.value === b.value
-		&& a.withShift === b.withShift
-		&& a.withAltGr === b.withAltGr
-		&& a.withShiftAltGr === b.withShiftAltGr
+		a.vkey === b.vkey &&
+		a.value === b.value &&
+		a.withShift === b.withShift &&
+		a.withAltGr === b.withAltGr &&
+		a.withShiftAltGr === b.withShiftAltGr
 	);
 }
 
-export function windowsKeyboardMappingEquals(a: IWindowsKeyboardMapping | null, b: IWindowsKeyboardMapping | null): boolean {
+export function windowsKeyboardMappingEquals(
+	a: IWindowsKeyboardMapping | null,
+	b: IWindowsKeyboardMapping | null
+): boolean {
 	if (!a && !b) {
 		return true;
 	}
@@ -211,14 +229,17 @@ function macLinuxKeyMappingEquals(a: IMacLinuxKeyMapping, b: IMacLinuxKeyMapping
 		return false;
 	}
 	return (
-		a.value === b.value
-		&& a.withShift === b.withShift
-		&& a.withAltGr === b.withAltGr
-		&& a.withShiftAltGr === b.withShiftAltGr
+		a.value === b.value &&
+		a.withShift === b.withShift &&
+		a.withAltGr === b.withAltGr &&
+		a.withShiftAltGr === b.withShiftAltGr
 	);
 }
 
-export function macLinuxKeyboardMappingEquals(a: IMacLinuxKeyboardMapping | null, b: IMacLinuxKeyboardMapping | null): boolean {
+export function macLinuxKeyboardMappingEquals(
+	a: IMacLinuxKeyboardMapping | null,
+	b: IMacLinuxKeyboardMapping | null
+): boolean {
 	if (!a && !b) {
 		return true;
 	}

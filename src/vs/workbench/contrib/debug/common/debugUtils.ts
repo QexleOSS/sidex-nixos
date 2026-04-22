@@ -27,9 +27,7 @@ export function formatPII(value: string, excludePII: boolean, args: { [key: stri
 			return match;
 		}
 
-		return args && args.hasOwnProperty(group) ?
-			args[group] :
-			match;
+		return args && args.hasOwnProperty(group) ? args[group] : match;
 	});
 }
 
@@ -48,9 +46,12 @@ export function filterExceptionsFromTelemetry<T extends { [key: string]: unknown
 	return output;
 }
 
-
 export function isSessionAttach(session: IDebugSession): boolean {
-	return session.configuration.request === 'attach' && !getExtensionHostDebugSession(session) && (!session.parentSession || isSessionAttach(session.parentSession));
+	return (
+		session.configuration.request === 'attach' &&
+		!getExtensionHostDebugSession(session) &&
+		(!session.parentSession || isSessionAttach(session.parentSession))
+	);
 }
 
 /**
@@ -64,7 +65,9 @@ export function getExtensionHostDebugSession(session: IDebugSession): IDebugSess
 	}
 
 	if (type === 'vslsShare') {
-		type = (session.configuration as { adapterProxy?: { configuration?: { type?: string } } }).adapterProxy?.configuration?.type || type;
+		type =
+			(session.configuration as { adapterProxy?: { configuration?: { type?: string } } }).adapterProxy?.configuration
+				?.type || type;
 	}
 
 	if (equalsIgnoreCase(type, 'extensionhost') || equalsIgnoreCase(type, 'pwa-extensionhost')) {
@@ -82,7 +85,11 @@ export function isDebuggerMainContribution(dbg: IDebuggerContribution) {
 /**
  * Note- uses 1-indexed numbers
  */
-export function getExactExpressionStartAndEnd(lineContent: string, looseStart: number, looseEnd: number): { start: number; end: number } {
+export function getExactExpressionStartAndEnd(
+	lineContent: string,
+	looseStart: number,
+	looseEnd: number
+): { start: number; end: number } {
 	let matchingExpression: string | undefined = undefined;
 	let startOffset = 0;
 
@@ -92,7 +99,7 @@ export function getExactExpressionStartAndEnd(lineContent: string, looseStart: n
 	let result: RegExpExecArray | null = null;
 
 	// First find the full expression under the cursor
-	while (result = expression.exec(lineContent)) {
+	while ((result = expression.exec(lineContent))) {
 		const start = result.index + 1;
 		const end = start + result[0].length;
 
@@ -117,7 +124,7 @@ export function getExactExpressionStartAndEnd(lineContent: string, looseStart: n
 	if (matchingExpression) {
 		const subExpression: RegExp = /(\w|\p{L})+/gu;
 		let subExpressionResult: RegExpExecArray | null = null;
-		while (subExpressionResult = subExpression.exec(matchingExpression)) {
+		while ((subExpressionResult = subExpression.exec(matchingExpression))) {
 			const subEnd = subExpressionResult.index + 1 + startOffset + subExpressionResult[0].length;
 			if (subEnd >= looseEnd) {
 				break;
@@ -129,22 +136,31 @@ export function getExactExpressionStartAndEnd(lineContent: string, looseStart: n
 		}
 	}
 
-	return matchingExpression ?
-		{ start: startOffset, end: startOffset + matchingExpression.length - 1 } :
-		{ start: 0, end: 0 };
+	return matchingExpression
+		? { start: startOffset, end: startOffset + matchingExpression.length - 1 }
+		: { start: 0, end: 0 };
 }
 
-export async function getEvaluatableExpressionAtPosition(languageFeaturesService: ILanguageFeaturesService, model: ITextModel, position: Position, token?: CancellationToken): Promise<{ range: IRange; matchingExpression: string } | null> {
+export async function getEvaluatableExpressionAtPosition(
+	languageFeaturesService: ILanguageFeaturesService,
+	model: ITextModel,
+	position: Position,
+	token?: CancellationToken
+): Promise<{ range: IRange; matchingExpression: string } | null> {
 	if (languageFeaturesService.evaluatableExpressionProvider.has(model)) {
 		const supports = languageFeaturesService.evaluatableExpressionProvider.ordered(model);
 
-		const results = coalesce(await Promise.all(supports.map(async support => {
-			try {
-				return await support.provideEvaluatableExpression(model, position, token ?? CancellationToken.None);
-			} catch (err) {
-				return undefined;
-			}
-		})));
+		const results = coalesce(
+			await Promise.all(
+				supports.map(async support => {
+					try {
+						return await support.provideEvaluatableExpression(model, position, token ?? CancellationToken.None);
+					} catch (err) {
+						return undefined;
+					}
+				})
+			)
+		);
 
 		if (results.length > 0) {
 			let matchingExpression = results[0].expression;
@@ -157,7 +173,8 @@ export async function getEvaluatableExpressionAtPosition(languageFeaturesService
 
 			return { range, matchingExpression };
 		}
-	} else { // old one-size-fits-all strategy
+	} else {
+		// old one-size-fits-all strategy
 		const lineContent = model.getLineContent(position.lineNumber);
 		const { start, end } = getExactExpressionStartAndEnd(lineContent, position.column, position.column);
 
@@ -187,11 +204,11 @@ function stringToUri(source: PathContainer): string | undefined {
 			// if there is a source reference, don't touch path
 		} else {
 			if (isUriString(source.path)) {
-				return <string><unknown>uri.parse(source.path);
+				return <string>(<unknown>uri.parse(source.path));
 			} else {
 				// assume path
 				if (isAbsolute(source.path)) {
-					return <string><unknown>uri.file(source.path);
+					return <string>(<unknown>uri.file(source.path));
 				} else {
 					// leave relative path as is
 				}
@@ -222,8 +239,10 @@ interface PathContainer {
 	sourceReference?: number;
 }
 
-export function convertToDAPaths(message: DebugProtocol.ProtocolMessage, toUri: boolean): DebugProtocol.ProtocolMessage {
-
+export function convertToDAPaths(
+	message: DebugProtocol.ProtocolMessage,
+	toUri: boolean
+): DebugProtocol.ProtocolMessage {
 	const fixPath = toUri ? stringToUri : uriToString;
 
 	// since we modify Source.paths in the message in place, we need to make a copy of it (see #61129)
@@ -237,8 +256,10 @@ export function convertToDAPaths(message: DebugProtocol.ProtocolMessage, toUri: 
 	return msg;
 }
 
-export function convertToVSCPaths(message: DebugProtocol.ProtocolMessage, toUri: boolean): DebugProtocol.ProtocolMessage {
-
+export function convertToVSCPaths(
+	message: DebugProtocol.ProtocolMessage,
+	toUri: boolean
+): DebugProtocol.ProtocolMessage {
 	const fixPath = toUri ? stringToUri : uriToString;
 
 	// since we modify Source.paths in the message in place, we need to make a copy of it (see #61129)
@@ -252,8 +273,10 @@ export function convertToVSCPaths(message: DebugProtocol.ProtocolMessage, toUri:
 	return msg;
 }
 
-function convertPaths(msg: DebugProtocol.ProtocolMessage, fixSourcePath: (toDA: boolean, source: PathContainer | undefined) => void): void {
-
+function convertPaths(
+	msg: DebugProtocol.ProtocolMessage,
+	fixSourcePath: (toDA: boolean, source: PathContainer | undefined) => void
+): void {
 	switch (msg.type) {
 		case 'event': {
 			const event = <DebugProtocol.Event>msg;
@@ -300,19 +323,27 @@ function convertPaths(msg: DebugProtocol.ProtocolMessage, fixSourcePath: (toDA: 
 			if (response.success && response.body) {
 				switch (response.command) {
 					case 'stackTrace':
-						(<DebugProtocol.StackTraceResponse>response).body.stackFrames.forEach(frame => fixSourcePath(false, frame.source));
+						(<DebugProtocol.StackTraceResponse>response).body.stackFrames.forEach(frame =>
+							fixSourcePath(false, frame.source)
+						);
 						break;
 					case 'loadedSources':
-						(<DebugProtocol.LoadedSourcesResponse>response).body.sources.forEach(source => fixSourcePath(false, source));
+						(<DebugProtocol.LoadedSourcesResponse>response).body.sources.forEach(source =>
+							fixSourcePath(false, source)
+						);
 						break;
 					case 'scopes':
 						(<DebugProtocol.ScopesResponse>response).body.scopes.forEach(scope => fixSourcePath(false, scope.source));
 						break;
 					case 'setFunctionBreakpoints':
-						(<DebugProtocol.SetFunctionBreakpointsResponse>response).body.breakpoints.forEach(bp => fixSourcePath(false, bp.source));
+						(<DebugProtocol.SetFunctionBreakpointsResponse>response).body.breakpoints.forEach(bp =>
+							fixSourcePath(false, bp.source)
+						);
 						break;
 					case 'setBreakpoints':
-						(<DebugProtocol.SetBreakpointsResponse>response).body.breakpoints.forEach(bp => fixSourcePath(false, bp.source));
+						(<DebugProtocol.SetBreakpointsResponse>response).body.breakpoints.forEach(bp =>
+							fixSourcePath(false, bp.source)
+						);
 						break;
 					case 'disassemble':
 						{
@@ -332,31 +363,33 @@ function convertPaths(msg: DebugProtocol.ProtocolMessage, fixSourcePath: (toDA: 
 	}
 }
 export function getVisibleAndSorted<T extends { presentation?: IConfigPresentation }>(array: T[]): T[] {
-	return array.filter(config => !config.presentation?.hidden).sort((first, second) => {
-		if (!first.presentation) {
+	return array
+		.filter(config => !config.presentation?.hidden)
+		.sort((first, second) => {
+			if (!first.presentation) {
+				if (!second.presentation) {
+					return 0;
+				}
+				return 1;
+			}
 			if (!second.presentation) {
-				return 0;
+				return -1;
 			}
-			return 1;
-		}
-		if (!second.presentation) {
-			return -1;
-		}
-		if (!first.presentation.group) {
+			if (!first.presentation.group) {
+				if (!second.presentation.group) {
+					return compareOrders(first.presentation.order, second.presentation.order);
+				}
+				return 1;
+			}
 			if (!second.presentation.group) {
-				return compareOrders(first.presentation.order, second.presentation.order);
+				return -1;
 			}
-			return 1;
-		}
-		if (!second.presentation.group) {
-			return -1;
-		}
-		if (first.presentation.group !== second.presentation.group) {
-			return first.presentation.group.localeCompare(second.presentation.group);
-		}
+			if (first.presentation.group !== second.presentation.group) {
+				return first.presentation.group.localeCompare(second.presentation.group);
+			}
 
-		return compareOrders(first.presentation.order, second.presentation.order);
-	});
+			return compareOrders(first.presentation.order, second.presentation.order);
+		});
 }
 
 function compareOrders(first: number | undefined, second: number | undefined): number {
@@ -374,8 +407,13 @@ function compareOrders(first: number | undefined, second: number | undefined): n
 	return first - second;
 }
 
-export async function saveAllBeforeDebugStart(configurationService: IConfigurationService, editorService: IEditorService): Promise<void> {
-	const saveBeforeStartConfig: string = configurationService.getValue('debug.saveBeforeStart', { overrideIdentifier: editorService.activeTextEditorLanguageId });
+export async function saveAllBeforeDebugStart(
+	configurationService: IConfigurationService,
+	editorService: IEditorService
+): Promise<void> {
+	const saveBeforeStartConfig: string = configurationService.getValue('debug.saveBeforeStart', {
+		overrideIdentifier: editorService.activeTextEditorLanguageId
+	});
 	if (saveBeforeStartConfig !== 'none') {
 		await editorService.saveAll();
 		if (saveBeforeStartConfig === 'allEditorsInActiveGroup') {
@@ -436,10 +474,15 @@ export function getEffectiveConfigForPlatform(config: IConfig, os: OperatingSyst
 	return {
 		...config,
 		...platformConfig,
-		presentation: platformConfig.presentation ? { ...config.presentation, ...platformConfig.presentation } : config.presentation,
+		presentation: platformConfig.presentation
+			? { ...config.presentation, ...platformConfig.presentation }
+			: config.presentation
 	};
 }
 
-export function getEffectivePresentationForConfig(config: IConfig, os: OperatingSystem = OS): IConfigPresentation | undefined {
+export function getEffectivePresentationForConfig(
+	config: IConfig,
+	os: OperatingSystem = OS
+): IConfigPresentation | undefined {
 	return getEffectiveConfigForPlatform(config, os).presentation;
 }

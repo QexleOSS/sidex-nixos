@@ -27,22 +27,54 @@ function navigateToFolder(folderUri: string) {
 
 async function boot() {
 	// Load locale translations before any VS Code module imports
-    await loadNlsMessages();
+	await loadNlsMessages();
 
-	const stages = [
-		['common',       () => import('./vs/workbench/workbench.common.main.js')],
-		['web.main',     () => import('./vs/workbench/browser/web.main.js')],
-		['web-dialog',   () => import('./vs/workbench/browser/parts/dialogs/dialog.web.contribution.js')],
-		['web-services', () => import('./vs/workbench/workbench.web.main.js')],
-	] as const;
-
-	for (const [label, loader] of stages) {
-		try {
-			await loader();
-		} catch (e) {
-			console.error(`[SideX] Barrel stage "${label}" failed:`, e);
+	await Promise.all([
+		import('./vs/workbench/workbench.common.main.js').catch(e => {
+			console.error('[SideX] Barrel "common" failed:', e);
 			throw e;
-		}
+		}),
+		import('./vs/workbench/browser/web.main.js').catch(e => {
+			console.error('[SideX] Barrel "web.main" failed:', e);
+			throw e;
+		}),
+		import('./vs/workbench/browser/parts/dialogs/dialog.web.contribution.js').catch(e => {
+			console.error('[SideX] Barrel "web-dialog" failed:', e);
+			throw e;
+		}),
+		import('./vs/workbench/workbench.web.main.js').catch(e => {
+			console.error('[SideX] Barrel "web-services" failed:', e);
+			throw e;
+		})
+	]);
+
+	// SideX Rust bridge initialization — make services available before workbench creation
+	if ((globalThis as any).__SIDEX_TAURI__) {
+		const {
+			SideXEditorBridge,
+			SideXSyntaxService,
+			SideXGitService,
+			SideXSearchService,
+			SideXSettingsService,
+			SideXThemeService,
+			SideXExtensionService,
+			SideXKeymapService,
+			SideXFileSystemProvider
+		} = await import('./vs/platform/sidex/common/sidexServices.js');
+
+		(globalThis as any).__SIDEX_SERVICES__ = {
+			editor: SideXEditorBridge.getInstance(),
+			syntax: new SideXSyntaxService(),
+			git: new SideXGitService(),
+			search: new SideXSearchService(),
+			settings: new SideXSettingsService(),
+			theme: new SideXThemeService(),
+			extensions: new SideXExtensionService(),
+			keymap: new SideXKeymapService(),
+			fileSystem: new SideXFileSystemProvider()
+		};
+
+		console.log('[SideX] Rust bridge services initialized');
 	}
 
 	const { create } = await import('./vs/workbench/browser/web.factory.js');
@@ -65,14 +97,10 @@ async function boot() {
 
 	const options: any = {
 		initialColorTheme: {
-			themeType: 'dark',
+			themeType: 'dark'
 		},
 
-		additionalTrustedDomains: [
-			'https://github.com',
-			'https://*.github.com',
-			'https://*.githubusercontent.com',
-		],
+		additionalTrustedDomains: ['https://github.com', 'https://*.github.com', 'https://*.githubusercontent.com'],
 
 		// The workspace provider tells VSCode what folder/workspace to open
 		workspaceProvider: {
@@ -84,12 +112,12 @@ async function boot() {
 					navigateToFolder(_workspace.folderUri.toString());
 				}
 				return true;
-			},
+			}
 		},
 		windowIndicator: {
 			label: folderParam ? decodeURIComponent(folderParam.split('/').pop() || 'SideX') : 'SideX',
 			tooltip: 'SideX — Tauri Code Editor',
-			command: undefined,
+			command: undefined
 		},
 		productConfiguration: {
 			nameShort: 'SideX',
@@ -97,27 +125,23 @@ async function boot() {
 			applicationName: 'sidex',
 			dataFolderName: '.sidex',
 			version: '1.110.0',
-			linkProtectionTrustedDomains: [
-				'https://github.com',
-				'https://*.github.com',
-				'https://*.githubusercontent.com',
-			],
+			linkProtectionTrustedDomains: ['https://github.com', 'https://*.github.com', 'https://*.githubusercontent.com']
 		},
 		settingsSyncOptions: {
-			enabled: false,
+			enabled: false
 		},
 		additionalBuiltinExtensions: [],
 		configurationDefaults: {
 			'workbench.startupEditor': 'welcomePage',
 			'workbench.enableExperiments': false,
 			'workbench.iconTheme': 'vs-seti',
-			'workbench.colorTheme': 'Default Dark Modern',
+			'workbench.colorTheme': 'Dark Modern',
 			'editor.experimentalGpuAcceleration': 'auto',
 			'workbench.productIconTheme': 'Default',
 			'workbench.editor.showTabs': 'multiple',
 			'workbench.editor.enablePreview': false,
 			'workbench.editor.tabCloseButton': 'right',
-			'window.menuBarVisibility': 'hidden',
+			'window.menuBarVisibility': navigator.userAgent.includes('Mac') ? 'hidden' : 'classic',
 			'window.titleBarStyle': 'custom',
 			'window.commandCenter': true,
 			'scm.defaultViewMode': 'list',
@@ -140,18 +164,18 @@ async function boot() {
 			'terminal.integrated.defaultProfile.osx': 'zsh',
 			'terminal.integrated.defaultProfile.linux': 'bash',
 			'terminal.integrated.profiles.osx': {
-				'zsh': { 'path': 'zsh', 'args': ['-l'] },
-				'bash': { 'path': 'bash', 'args': ['-l'], 'icon': 'terminal-bash' },
-				'fish': { 'path': 'fish', 'args': ['-l'] },
-				'tmux': { 'path': 'tmux', 'icon': 'terminal-tmux' },
-				'pwsh': { 'path': 'pwsh', 'icon': 'terminal-powershell' },
+				zsh: { path: 'zsh', args: ['-l'] },
+				bash: { path: 'bash', args: ['-l'], icon: 'terminal-bash' },
+				fish: { path: 'fish', args: ['-l'] },
+				tmux: { path: 'tmux', icon: 'terminal-tmux' },
+				pwsh: { path: 'pwsh', icon: 'terminal-powershell' }
 			},
 			'terminal.integrated.profiles.linux': {
-				'bash': { 'path': 'bash', 'args': ['-l'], 'icon': 'terminal-bash' },
-				'zsh': { 'path': 'zsh', 'args': ['-l'] },
-				'fish': { 'path': 'fish', 'args': ['-l'] },
-				'tmux': { 'path': 'tmux', 'icon': 'terminal-tmux' },
-				'pwsh': { 'path': 'pwsh', 'icon': 'terminal-powershell' },
+				bash: { path: 'bash', args: ['-l'], icon: 'terminal-bash' },
+				zsh: { path: 'zsh', args: ['-l'] },
+				fish: { path: 'fish', args: ['-l'] },
+				tmux: { path: 'tmux', icon: 'terminal-tmux' },
+				pwsh: { path: 'pwsh', icon: 'terminal-powershell' }
 			},
 			'terminal.integrated.enablePersistentSessions': false,
 			'editor.formatOnPaste': false,
@@ -177,8 +201,8 @@ async function boot() {
 			'workbench.tree.renderIndentGuides': 'always',
 			'security.workspace.trust.startupPrompt': 'never',
 			'security.workspace.trust.banner': 'never',
-			'security.workspace.trust.enabled': false,
-		},
+			'security.workspace.trust.enabled': false
+		}
 	};
 
 	create(document.body, options);
@@ -188,131 +212,139 @@ async function boot() {
 	setupWindowStateSave();
 	setupNativeWindowDragging();
 
-	console.log('[SideX] Workbench created' + (folderParam ? ` (folder: ${folderParam})` : ' (no folder)'), 'workspace:', workspace);
+	console.log(
+		'[SideX] Workbench created' + (folderParam ? ` (folder: ${folderParam})` : ' (no folder)'),
+		'workspace:',
+		workspace
+	);
 }
 
 function setupTauriExternalOpener() {
-	import('@tauri-apps/plugin-shell').then(shell => {
-		const origOpen = window.open.bind(window);
-		(window as any).__sidex_shellOpen = (url: string) => {
-			shell.open(url).catch(() => origOpen(url, '_blank'));
-		};
-
-		const handler = (e: MouseEvent) => {
-			const target = (e.target as HTMLElement)?.closest?.('a');
-			if (!target) { return; }
-			const href = target.getAttribute('href') || target.dataset?.href;
-			if (href && (href.startsWith('mailto:') || href.startsWith('http://') || href.startsWith('https://'))) {
-				e.preventDefault();
-				e.stopPropagation();
-				shell.open(href).catch(() => {});
-			}
-		};
-		document.addEventListener('click', handler, true);
-	}).catch(() => {});
+	import('@tauri-apps/plugin-shell')
+		.then(shell => {
+			(window as any).__sidex_shellOpen = (url: string) => {
+				shell.open(url).catch(() => {});
+			};
+		})
+		.catch(() => {});
 }
 
 function setupWindowStateSave() {
-	import('@tauri-apps/api/core').then(({ invoke }) => {
-		let saveTimer: ReturnType<typeof setTimeout> | null = null;
-		const debouncedSave = () => {
-			if (saveTimer) { clearTimeout(saveTimer); }
-			saveTimer = setTimeout(() => {
-				invoke('save_window_state', { label: 'main' }).catch(() => {});
-			}, 500);
-		};
+	import('@tauri-apps/api/core')
+		.then(({ invoke }) => {
+			let saveTimer: ReturnType<typeof setTimeout> | null = null;
+			const debouncedSave = () => {
+				if (saveTimer) {
+					clearTimeout(saveTimer);
+				}
+				saveTimer = setTimeout(() => {
+					invoke('save_window_state', { label: 'main' }).catch(() => {});
+				}, 500);
+			};
 
-		window.addEventListener('resize', debouncedSave);
-		window.addEventListener('beforeunload', () => {
-			invoke('save_window_state', { label: 'main' }).catch(() => {});
-		});
-	}).catch(() => {});
+			window.addEventListener('resize', debouncedSave);
+			window.addEventListener('beforeunload', () => {
+				invoke('save_window_state', { label: 'main' }).catch(() => {});
+			});
+		})
+		.catch(() => {});
 }
 
 function setupNativeWindowDragging() {
 	let appWindow: { startDragging(): Promise<void> } | null = null;
 	import('@tauri-apps/api/window')
-		.then(mod => { appWindow = mod.getCurrentWindow(); })
+		.then(mod => {
+			appWindow = mod.getCurrentWindow();
+		})
 		.catch(() => {});
 
-	document.addEventListener('mousedown', (e: MouseEvent) => {
-		if (e.button !== 0 || !appWindow) {
-			return;
-		}
-		const target = e.target as HTMLElement | null;
-		if (!target?.closest('.part.titlebar')) {
-			return;
-		}
-		if (target.closest('a, button, input, select, textarea, .action-item, .command-center, .window-controls-container')) {
-			return;
-		}
-		appWindow.startDragging().catch(() => {});
-	}, true);
+	document.addEventListener(
+		'mousedown',
+		(e: MouseEvent) => {
+			if (e.button !== 0 || !appWindow) {
+				return;
+			}
+			const target = e.target as HTMLElement | null;
+			if (!target?.closest('.part.titlebar')) {
+				return;
+			}
+			if (
+				target.closest('a, button, input, select, textarea, .action-item, .command-center, .window-controls-container')
+			) {
+				return;
+			}
+			if (target.closest('[draggable="true"]') || target.getAttribute('draggable') === 'true') {
+				return;
+			}
+			appWindow.startDragging().catch(() => {});
+		},
+		true
+	);
 }
 
 function setupMenuActions() {
 	const menuToCommand: Record<string, string> = {
 		// File
-		'new_file': 'workbench.action.files.newUntitledFile',
-		'new_window': 'workbench.action.newWindow',
-		'open_file': 'workbench.action.files.openFile',
-		'open_folder': 'workbench.action.files.openFolder',
-		'save': 'workbench.action.files.save',
-		'save_as': 'workbench.action.files.saveAs',
-		'save_all': 'workbench.action.files.saveAll',
-		'close_editor': 'workbench.action.closeActiveEditor',
-		'close_window': 'workbench.action.closeWindow',
+		new_file: 'workbench.action.files.newUntitledFile',
+		new_window: 'workbench.action.newWindow',
+		open_file: 'workbench.action.files.openFile',
+		open_folder: 'workbench.action.files.openFolder',
+		save: 'workbench.action.files.save',
+		save_as: 'workbench.action.files.saveAs',
+		save_all: 'workbench.action.files.saveAll',
+		close_editor: 'workbench.action.closeActiveEditor',
+		close_window: 'workbench.action.closeWindow',
 		// Edit
-		'find': 'actions.find',
-		'replace': 'editor.action.startFindReplaceAction',
-		'find_in_files': 'workbench.action.findInFiles',
-		'replace_in_files': 'workbench.action.replaceInFiles',
+		find: 'actions.find',
+		replace: 'editor.action.startFindReplaceAction',
+		find_in_files: 'workbench.action.findInFiles',
+		replace_in_files: 'workbench.action.replaceInFiles',
 		// Selection
-		'expand_selection': 'editor.action.smartSelect.expand',
-		'shrink_selection': 'editor.action.smartSelect.shrink',
-		'copy_line_up': 'editor.action.copyLinesUpAction',
-		'copy_line_down': 'editor.action.copyLinesDownAction',
-		'move_line_up': 'editor.action.moveLinesUpAction',
-		'move_line_down': 'editor.action.moveLinesDownAction',
-		'add_cursor_above': 'editor.action.insertCursorAbove',
-		'add_cursor_below': 'editor.action.insertCursorBelow',
-		'select_all_occurrences': 'editor.action.selectHighlights',
+		expand_selection: 'editor.action.smartSelect.expand',
+		shrink_selection: 'editor.action.smartSelect.shrink',
+		copy_line_up: 'editor.action.copyLinesUpAction',
+		copy_line_down: 'editor.action.copyLinesDownAction',
+		move_line_up: 'editor.action.moveLinesUpAction',
+		move_line_down: 'editor.action.moveLinesDownAction',
+		add_cursor_above: 'editor.action.insertCursorAbove',
+		add_cursor_below: 'editor.action.insertCursorBelow',
+		select_all_occurrences: 'editor.action.selectHighlights',
 		// View
-		'command_palette': 'workbench.action.showCommands',
-		'explorer': 'workbench.view.explorer',
-		'search': 'workbench.view.search',
-		'source_control': 'workbench.view.scm',
-		'debug': 'workbench.view.debug',
-		'extensions': 'workbench.view.extensions',
-		'problems': 'workbench.actions.view.problems',
-		'output': 'workbench.action.output.toggleOutput',
-		'terminal': 'workbench.action.terminal.toggleTerminal',
-		'debug_console': 'workbench.debug.action.toggleRepl',
-		'toggle_fullscreen': 'workbench.action.toggleFullScreen',
-		'zoom_in': 'workbench.action.zoomIn',
-		'zoom_out': 'workbench.action.zoomOut',
-		'reset_zoom': 'workbench.action.zoomReset',
+		command_palette: 'workbench.action.showCommands',
+		explorer: 'workbench.view.explorer',
+		search: 'workbench.view.search',
+		source_control: 'workbench.view.scm',
+		debug: 'workbench.view.debug',
+		extensions: 'workbench.view.extensions',
+		problems: 'workbench.actions.view.problems',
+		output: 'workbench.action.output.toggleOutput',
+		terminal: 'workbench.action.terminal.toggleTerminal',
+		debug_console: 'workbench.debug.action.toggleRepl',
+		toggle_fullscreen: 'workbench.action.toggleFullScreen',
+		zoom_in: 'workbench.action.zoomIn',
+		zoom_out: 'workbench.action.zoomOut',
+		reset_zoom: 'workbench.action.zoomReset',
 		// Go
-		'back': 'workbench.action.navigateBack',
-		'forward': 'workbench.action.navigateForward',
-		'go_to_file': 'workbench.action.quickOpen',
-		'go_to_symbol': 'workbench.action.showAllSymbols',
-		'go_to_line': 'workbench.action.gotoLine',
-		'go_to_definition': 'editor.action.revealDefinition',
-		'go_to_references': 'editor.action.goToReferences',
+		back: 'workbench.action.navigateBack',
+		forward: 'workbench.action.navigateForward',
+		go_to_file: 'workbench.action.quickOpen',
+		go_to_symbol: 'workbench.action.showAllSymbols',
+		go_to_line: 'workbench.action.gotoLine',
+		go_to_definition: 'editor.action.revealDefinition',
+		go_to_references: 'editor.action.goToReferences',
 		// Run
-		'start_debugging': 'workbench.action.debug.start',
-		'run_without_debugging': 'workbench.action.debug.run',
-		'stop_debugging': 'workbench.action.debug.stop',
-		'restart_debugging': 'workbench.action.debug.restart',
-		'toggle_breakpoint': 'editor.debug.action.toggleBreakpoint',
+		start_debugging: 'workbench.action.debug.start',
+		run_without_debugging: 'workbench.action.debug.run',
+		stop_debugging: 'workbench.action.debug.stop',
+		restart_debugging: 'workbench.action.debug.restart',
+		toggle_breakpoint: 'editor.debug.action.toggleBreakpoint',
 		// Terminal
-		'new_terminal': 'workbench.action.terminal.new',
-		'split_terminal': 'workbench.action.terminal.split',
-		'run_task': 'workbench.action.tasks.runTask',
-		'run_build_task': 'workbench.action.tasks.build',
+		new_terminal: 'workbench.action.terminal.new',
+		split_terminal: 'workbench.action.terminal.split',
+		run_task: 'workbench.action.tasks.runTask',
+		run_build_task: 'workbench.action.tasks.build',
 		// Help
-		'keyboard_shortcuts': 'workbench.action.keybindingsEditor',
+		keyboard_shortcuts: 'workbench.action.keybindingsEditor'
 	};
 
 	(window as any).__sidex_menu_action = async (menuId: string) => {
@@ -326,7 +358,7 @@ function setupMenuActions() {
 			if (editorService?.activeEditor?.typeId === 'workbench.editors.webviewInput') {
 				try {
 					await (window as any).__sidex_commandService?.executeCommand('editor.action.webvieweditor.showFind');
-				} catch { }
+				} catch {}
 				return;
 			}
 		}
@@ -355,8 +387,13 @@ function setupMenuActions() {
 	// Listen for command execution via keyboard shortcuts forwarded from native menu
 	window.addEventListener('sidex-command', async (e: any) => {
 		const commandId = e.detail?.commandId;
-		if (!commandId) return;
-		if (commandId === 'workbench.action.files.openFolder' || commandId === 'workbench.action.files.openFolderViaWorkspace') {
+		if (!commandId) {
+			return;
+		}
+		if (
+			commandId === 'workbench.action.files.openFolder' ||
+			commandId === 'workbench.action.files.openFolderViaWorkspace'
+		) {
 			sidexOpenFolder();
 			return;
 		}
@@ -373,7 +410,7 @@ function setupMenuActions() {
 	});
 }
 
-boot().catch((err) => {
+boot().catch(err => {
 	console.error('[SideX] Fatal:', err);
 	const container = document.createElement('div');
 	container.style.cssText = 'padding:40px;color:#ccc;font-family:system-ui';

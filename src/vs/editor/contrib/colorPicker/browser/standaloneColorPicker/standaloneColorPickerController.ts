@@ -12,7 +12,6 @@ import { StandaloneColorPickerWidget } from './standaloneColorPickerWidget.js';
 import { Disposable } from '../../../../../base/common/lifecycle.js';
 
 export class StandaloneColorPickerController extends Disposable implements IEditorContribution {
-
 	public static ID = 'editor.contrib.standaloneColorPickerController';
 	private _standaloneColorPickerWidget: StandaloneColorPickerWidget | null = null;
 	private _standaloneColorPickerVisible: IContextKey<boolean>;
@@ -21,7 +20,7 @@ export class StandaloneColorPickerController extends Disposable implements IEdit
 	constructor(
 		private readonly _editor: ICodeEditor,
 		@IContextKeyService _contextKeyService: IContextKeyService,
-		@IInstantiationService private readonly _instantiationService: IInstantiationService,
+		@IInstantiationService private readonly _instantiationService: IInstantiationService
 	) {
 		super();
 		this._standaloneColorPickerVisible = EditorContextKeys.standaloneColorPickerVisible.bindTo(_contextKeyService);
@@ -60,4 +59,3 @@ export class StandaloneColorPickerController extends Disposable implements IEdit
 		return editor.getContribution<StandaloneColorPickerController>(StandaloneColorPickerController.ID);
 	}
 }
-

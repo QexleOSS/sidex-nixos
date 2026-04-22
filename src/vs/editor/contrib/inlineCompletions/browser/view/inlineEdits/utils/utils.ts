@@ -4,11 +4,24 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { getDomNodePagePosition, h } from '../../../../../../../base/browser/dom.js';
-import { KeybindingLabel, unthemedKeybindingLabelOptions } from '../../../../../../../base/browser/ui/keybindingLabel/keybindingLabel.js';
+import {
+	KeybindingLabel,
+	unthemedKeybindingLabelOptions
+} from '../../../../../../../base/browser/ui/keybindingLabel/keybindingLabel.js';
 import { numberComparator } from '../../../../../../../base/common/arrays.js';
 import { findFirstMin } from '../../../../../../../base/common/arraysFind.js';
 import { DisposableStore, toDisposable } from '../../../../../../../base/common/lifecycle.js';
-import { DebugLocation, derived, derivedObservableWithCache, derivedOpts, IObservable, IReader, observableSignalFromEvent, observableValue, transaction } from '../../../../../../../base/common/observable.js';
+import {
+	DebugLocation,
+	derived,
+	derivedObservableWithCache,
+	derivedOpts,
+	IObservable,
+	IReader,
+	observableSignalFromEvent,
+	observableValue,
+	transaction
+} from '../../../../../../../base/common/observable.js';
 import { OS } from '../../../../../../../base/common/platform.js';
 import { splitLines } from '../../../../../../../base/common/strings.js';
 import { URI } from '../../../../../../../base/common/uri.js';
@@ -32,10 +45,16 @@ import { Size2D } from '../../../../../../common/core/2d/size.js';
 
 /**
  * Warning: might return 0.
-*/
-export function maxContentWidthInRange(editor: ObservableCodeEditor, range: LineRange, reader: IReader | undefined): number {
+ */
+export function maxContentWidthInRange(
+	editor: ObservableCodeEditor,
+	range: LineRange,
+	reader: IReader | undefined
+): number {
 	const model = editor.model.read(reader);
-	if (!model) { return 0; }
+	if (!model) {
+		return 0;
+	}
 	let maxContentWidth = 0;
 
 	for (let i = range.startLineNumber; i < range.endLineNumberExclusive; i++) {
@@ -50,11 +69,17 @@ export function maxContentWidthInRange(editor: ObservableCodeEditor, range: Line
 	return maxContentWidth;
 }
 
-export function getContentSizeOfLines(editor: ObservableCodeEditor, range: LineRange, reader: IReader | undefined): Size2D[] {
+export function getContentSizeOfLines(
+	editor: ObservableCodeEditor,
+	range: LineRange,
+	reader: IReader | undefined
+): Size2D[] {
 	observableSignalFromEvent(editor, editor.editor.onDidChangeLineHeight).read(reader);
 
 	const model = editor.model.read(reader);
-	if (!model) { throw new BugIndicatingError('Model is required'); }
+	if (!model) {
+		throw new BugIndicatingError('Model is required');
+	}
 
 	const sizes: Size2D[] = [];
 
@@ -63,7 +88,9 @@ export function getContentSizeOfLines(editor: ObservableCodeEditor, range: LineR
 		if (lineContentWidth === -1) {
 			// approximation
 			const column = model.getLineMaxColumn(i);
-			const typicalHalfwidthCharacterWidth = editor.editor.getOption(EditorOption.fontInfo).typicalHalfwidthCharacterWidth;
+			const typicalHalfwidthCharacterWidth = editor.editor.getOption(
+				EditorOption.fontInfo
+			).typicalHalfwidthCharacterWidth;
 			const approximation = column * typicalHalfwidthCharacterWidth;
 			lineContentWidth = approximation;
 		}
@@ -80,7 +107,9 @@ export function getOffsetForPos(editor: ObservableCodeEditor, pos: Position, rea
 	editor.value.read(reader);
 
 	const model = editor.model.read(reader);
-	if (!model) { return 0; }
+	if (!model) {
+		return 0;
+	}
 
 	editor.scrollTop.read(reader);
 	const lineContentWidth = editor.editor.getOffsetForColumn(pos.lineNumber, pos.column);
@@ -88,13 +117,19 @@ export function getOffsetForPos(editor: ObservableCodeEditor, pos: Position, rea
 	return lineContentWidth;
 }
 
-export function getPrefixTrim(diffRanges: Range[], originalLinesRange: LineRange, modifiedLines: string[], editor: ICodeEditor, reader: IReader | undefined = undefined): { prefixTrim: number; prefixLeftOffset: number } {
+export function getPrefixTrim(
+	diffRanges: Range[],
+	originalLinesRange: LineRange,
+	modifiedLines: string[],
+	editor: ICodeEditor,
+	reader: IReader | undefined = undefined
+): { prefixTrim: number; prefixLeftOffset: number } {
 	const textModel = editor.getModel();
 	if (!textModel) {
 		return { prefixTrim: 0, prefixLeftOffset: 0 };
 	}
 
-	const replacementStart = diffRanges.map(r => r.isSingleLine() ? r.startColumn - 1 : 0);
+	const replacementStart = diffRanges.map(r => (r.isSingleLine() ? r.startColumn - 1 : 0));
 	const originalIndents = originalLinesRange.mapToLineArray(line => indentOfLine(textModel.getLineContent(line)));
 	const modifiedIndents = modifiedLines.filter(line => line !== '').map(line => indentOfLine(line));
 	const prefixTrim = Math.min(...replacementStart, ...originalIndents, ...modifiedIndents);
@@ -134,22 +169,30 @@ export function getEditorValidOverlayRect(editor: ObservableCodeEditor): IObserv
 		const editorWidth = Math.max(0, editor.layoutInfoWidth.read(r) - contentLeft.read(r));
 
 		if (hasMinimapOnTheRight) {
-			const minimapAndScrollbarWidth = editor.layoutInfoMinimap.read(r).minimapWidth + editor.layoutInfoVerticalScrollbarWidth.read(r);
+			const minimapAndScrollbarWidth =
+				editor.layoutInfoMinimap.read(r).minimapWidth + editor.layoutInfoVerticalScrollbarWidth.read(r);
 			return Math.max(0, editorWidth - minimapAndScrollbarWidth);
 		}
 
 		return editorWidth;
 	});
 
-	const height = derived({ name: 'editor.validOverlay.height' }, r => editor.layoutInfoHeight.read(r) + editor.contentHeight.read(r));
+	const height = derived(
+		{ name: 'editor.validOverlay.height' },
+		r => editor.layoutInfoHeight.read(r) + editor.contentHeight.read(r)
+	);
 
-	return derived({ name: 'editor.validOverlay' }, r => Rect.fromLeftTopWidthHeight(contentLeft.read(r), 0, width.read(r), height.read(r)));
+	return derived({ name: 'editor.validOverlay' }, r =>
+		Rect.fromLeftTopWidthHeight(contentLeft.read(r), 0, width.read(r), height.read(r))
+	);
 }
 
 export class StatusBarViewItem extends MenuEntryActionViewItem {
-	protected readonly _updateLabelListener = this._register(this._contextKeyService.onDidChangeContext(() => {
-		this.updateLabel();
-	}));
+	protected readonly _updateLabelListener = this._register(
+		this._contextKeyService.onDidChangeContext(() => {
+			this.updateLabel();
+		})
+	);
 
 	protected override updateLabel() {
 		const kb = this._keybindingService.lookupKeybinding(this._action.id, this._contextKeyService, true);
@@ -158,7 +201,9 @@ export class StatusBarViewItem extends MenuEntryActionViewItem {
 		}
 		if (this.label) {
 			const div = h('div.keybinding').root;
-			const keybindingLabel = this._register(new KeybindingLabel(div, OS, { disableTitle: true, ...unthemedKeybindingLabelOptions }));
+			const keybindingLabel = this._register(
+				new KeybindingLabel(div, OS, { disableTitle: true, ...unthemedKeybindingLabelOptions })
+			);
 			keybindingLabel.set(kb);
 			this.label.textContent = this._action.label;
 			this.label.appendChild(div);
@@ -174,9 +219,7 @@ export class StatusBarViewItem extends MenuEntryActionViewItem {
 export class UniqueUriGenerator {
 	private static _modelId = 0;
 
-	constructor(
-		public readonly scheme: string
-	) { }
+	constructor(public readonly scheme: string) {}
 
 	public getUniqueUri(): URI {
 		return URI.from({ scheme: this.scheme, path: new Date().toString() + String(UniqueUriGenerator._modelId++) });
@@ -191,7 +234,6 @@ export function applyEditToModifiedRangeMappings(rangeMapping: RangeMapping[], e
 	return updatedMappings;
 }
 
-
 export function classNames(...classes: (string | false | undefined | null)[]) {
 	return classes.filter(c => typeof c === 'string').join(' ');
 }
@@ -201,7 +243,7 @@ function offsetRangeToRange(columnOffsetRange: OffsetRange, startPos: Position):
 		startPos.lineNumber,
 		startPos.column + columnOffsetRange.start,
 		startPos.lineNumber,
-		startPos.column + columnOffsetRange.endExclusive,
+		startPos.column + columnOffsetRange.endExclusive
 	);
 }
 
@@ -213,9 +255,14 @@ function getIndentationSize(line: string, tabSize: number): number {
 	let currentSize = 0;
 	loop: for (let i = 0, len = line.length; i < len; i++) {
 		switch (line.charCodeAt(i)) {
-			case CharCode.Tab: currentSize += tabSize; break;
-			case CharCode.Space: currentSize++; break;
-			default: break loop;
+			case CharCode.Tab:
+				currentSize += tabSize;
+				break;
+			case CharCode.Space:
+				currentSize++;
+				break;
+			default:
+				break loop;
 		}
 	}
 	// if currentSize % tabSize !== 0,
@@ -235,9 +282,14 @@ function indentSizeToIndentLength(line: string, indentSize: number, tabSize: num
 			break;
 		}
 		switch (line.charCodeAt(i)) {
-			case CharCode.Tab: remainingSize -= tabSize; break;
-			case CharCode.Space: remainingSize--; break;
-			default: throw new BugIndicatingError('Unexpected character found while calculating indent length');
+			case CharCode.Tab:
+				remainingSize -= tabSize;
+				break;
+			case CharCode.Space:
+				remainingSize--;
+				break;
+			default:
+				throw new BugIndicatingError('Unexpected character found while calculating indent length');
 		}
 	}
 	return i;
@@ -246,10 +298,15 @@ function indentSizeToIndentLength(line: string, indentSize: number, tabSize: num
 export function createReindentEdit(text: string, range: LineRange, tabSize: number): TextEdit {
 	const newLines = splitLines(text);
 	const edits: TextReplacement[] = [];
-	const minIndentSize = findFirstMin(range.mapToLineArray(l => getIndentationSize(newLines[l - 1], tabSize)), numberComparator)!;
+	const minIndentSize = findFirstMin(
+		range.mapToLineArray(l => getIndentationSize(newLines[l - 1], tabSize)),
+		numberComparator
+	)!;
 	range.forEach(lineNumber => {
 		const indentLength = indentSizeToIndentLength(newLines[lineNumber - 1], minIndentSize, tabSize);
-		edits.push(new TextReplacement(offsetRangeToRange(new OffsetRange(0, indentLength), new Position(lineNumber, 1)), ''));
+		edits.push(
+			new TextReplacement(offsetRangeToRange(new OffsetRange(0, indentLength), new Position(lineNumber, 1)), '')
+		);
 	});
 	return new TextEdit(edits);
 }
@@ -289,21 +346,28 @@ export function createRectangle(
 	borderRadius: number | { topLeft: number; topRight: number; bottomLeft: number; bottomRight: number },
 	options: { hideLeft?: boolean; hideRight?: boolean; hideTop?: boolean; hideBottom?: boolean } = {}
 ): string {
-
 	const topLeftInner = layout.topLeft;
 	const topRightInner = topLeftInner.deltaX(layout.width);
 	const bottomLeftInner = topLeftInner.deltaY(layout.height);
 	const bottomRightInner = bottomLeftInner.deltaX(layout.width);
 
 	// padding
-	const { top: paddingTop, bottom: paddingBottom, left: paddingLeft, right: paddingRight } = typeof padding === 'number' ?
-		{ top: padding, bottom: padding, left: padding, right: padding }
-		: padding;
+	const {
+		top: paddingTop,
+		bottom: paddingBottom,
+		left: paddingLeft,
+		right: paddingRight
+	} = typeof padding === 'number' ? { top: padding, bottom: padding, left: padding, right: padding } : padding;
 
 	// corner radius
-	const { topLeft: radiusTL, topRight: radiusTR, bottomLeft: radiusBL, bottomRight: radiusBR } = typeof borderRadius === 'number' ?
-		{ topLeft: borderRadius, topRight: borderRadius, bottomLeft: borderRadius, bottomRight: borderRadius } :
-		borderRadius;
+	const {
+		topLeft: radiusTL,
+		topRight: radiusTR,
+		bottomLeft: radiusBL,
+		bottomRight: radiusBR
+	} = typeof borderRadius === 'number'
+		? { topLeft: borderRadius, topRight: borderRadius, bottomLeft: borderRadius, bottomRight: borderRadius }
+		: borderRadius;
 
 	const totalHeight = layout.height + paddingTop + paddingBottom;
 	const totalWidth = layout.width + paddingLeft + paddingRight;
@@ -374,19 +438,25 @@ type RemoveFalsy<T> = T extends false | undefined | null ? never : T;
 type Falsy<T> = T extends false | undefined | null ? T : never;
 
 export function mapOutFalsy<T>(obs: IObservable<T>): IObservable<IObservable<RemoveFalsy<T>> | Falsy<T>> {
-	const nonUndefinedObs = derivedObservableWithCache<T | undefined | null | false>(undefined, (reader, lastValue) => obs.read(reader) || lastValue);
+	const nonUndefinedObs = derivedObservableWithCache<T | undefined | null | false>(
+		undefined,
+		(reader, lastValue) => obs.read(reader) || lastValue
+	);
 
-	return derivedOpts({
-		debugName: () => `${obs.debugName}.mapOutFalsy`
-	}, reader => {
-		nonUndefinedObs.read(reader);
-		const val = obs.read(reader);
-		if (!val) {
-			return undefined as Falsy<T>;
+	return derivedOpts(
+		{
+			debugName: () => `${obs.debugName}.mapOutFalsy`
+		},
+		reader => {
+			nonUndefinedObs.read(reader);
+			const val = obs.read(reader);
+			if (!val) {
+				return undefined as Falsy<T>;
+			}
+
+			return nonUndefinedObs as IObservable<RemoveFalsy<T>>;
 		}
-
-		return nonUndefinedObs as IObservable<RemoveFalsy<T>>;
-	});
+	);
 }
 
 export function observeElementPosition(element: HTMLElement, store: DisposableStore) {
@@ -412,37 +482,56 @@ export function observeElementPosition(element: HTMLElement, store: DisposableSt
 	};
 }
 
-export function rectToProps(fn: (reader: IReader) => Rect | undefined, debugLocation: DebugLocation = DebugLocation.ofCaller()) {
+export function rectToProps(
+	fn: (reader: IReader) => Rect | undefined,
+	debugLocation: DebugLocation = DebugLocation.ofCaller()
+) {
 	return {
-		left: derived({ name: 'editor.validOverlay.left' }, reader => /** @description left */ fn(reader)?.left, debugLocation),
+		left: derived(
+			{ name: 'editor.validOverlay.left' },
+			reader => /** @description left */ fn(reader)?.left,
+			debugLocation
+		),
 		top: derived({ name: 'editor.validOverlay.top' }, reader => /** @description top */ fn(reader)?.top, debugLocation),
-		width: derived({ name: 'editor.validOverlay.width' }, reader => {
-			/** @description width */
-			const val = fn(reader);
-			if (!val) {
-				return undefined;
-			}
-			return val.width;
-		}, debugLocation),
-		height: derived({ name: 'editor.validOverlay.height' }, reader => {
-			/** @description height */
-			const val = fn(reader);
-			if (!val) {
-				return undefined;
-			}
-			return val.height;
-		}, debugLocation),
+		width: derived(
+			{ name: 'editor.validOverlay.width' },
+			reader => {
+				/** @description width */
+				const val = fn(reader);
+				if (!val) {
+					return undefined;
+				}
+				return val.width;
+			},
+			debugLocation
+		),
+		height: derived(
+			{ name: 'editor.validOverlay.height' },
+			reader => {
+				/** @description height */
+				const val = fn(reader);
+				if (!val) {
+					return undefined;
+				}
+				return val.height;
+			},
+			debugLocation
+		)
 	};
 }
 
 export type FirstFnArg<T> = T extends (arg: infer U) => any ? U : never;
 
-
-export function observeEditorBoundingClientRect(editor: ICodeEditor, store: DisposableStore): IObservable<DOMRectReadOnly> {
+export function observeEditorBoundingClientRect(
+	editor: ICodeEditor,
+	store: DisposableStore
+): IObservable<DOMRectReadOnly> {
 	const dom = editor.getContainerDomNode()!;
 	const initialDomRect = observableValue('domRect', dom.getBoundingClientRect());
-	store.add(editor.onDidLayoutChange(e => {
-		initialDomRect.set(dom.getBoundingClientRect(), undefined);
-	}));
+	store.add(
+		editor.onDidLayoutChange(e => {
+			initialDomRect.set(dom.getBoundingClientRect(), undefined);
+		})
+	);
 	return initialDomRect;
 }

@@ -6,7 +6,13 @@
 import { distinct } from '../../../../base/common/arrays.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { IStringDictionary } from '../../../../base/common/collections.js';
-import { IMatch, matchesBaseContiguousSubString, matchesContiguousSubString, matchesSubString, matchesWords } from '../../../../base/common/filters.js';
+import {
+	IMatch,
+	matchesBaseContiguousSubString,
+	matchesContiguousSubString,
+	matchesSubString,
+	matchesWords
+} from '../../../../base/common/filters.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import * as strings from '../../../../base/common/strings.js';
 import { TfIdfCalculator, TfIdfDocument } from '../../../../base/common/tfIdf.js';
@@ -14,9 +20,27 @@ import { IRange } from '../../../../editor/common/core/range.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
-import { IGroupFilter, ISearchResult, ISetting, ISettingMatch, ISettingMatcher, ISettingsEditorModel, ISettingsGroup, SettingKeyMatchTypes, SettingMatchType } from '../../../services/preferences/common/preferences.js';
+import {
+	IGroupFilter,
+	ISearchResult,
+	ISetting,
+	ISettingMatch,
+	ISettingMatcher,
+	ISettingsEditorModel,
+	ISettingsGroup,
+	SettingKeyMatchTypes,
+	SettingMatchType
+} from '../../../services/preferences/common/preferences.js';
 import { nullRange } from '../../../services/preferences/common/preferencesModels.js';
-import { IAiSearchProvider, IPreferencesSearchService, IRemoteSearchProvider, ISearchProvider, IWorkbenchSettingsConfiguration, STRING_MATCH_SEARCH_PROVIDER_NAME, TF_IDF_SEARCH_PROVIDER_NAME } from '../common/preferences.js';
+import {
+	IAiSearchProvider,
+	IPreferencesSearchService,
+	IRemoteSearchProvider,
+	ISearchProvider,
+	IWorkbenchSettingsConfiguration,
+	STRING_MATCH_SEARCH_PROVIDER_NAME,
+	TF_IDF_SEARCH_PROVIDER_NAME
+} from '../common/preferences.js';
 
 export interface IEndpointDetails {
 	urlBase?: string;
@@ -30,7 +54,7 @@ export class PreferencesSearchService extends Disposable implements IPreferences
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
+		@IConfigurationService private readonly configurationService: IConfigurationService
 	) {
 		super();
 	}
@@ -62,10 +86,7 @@ export class PreferencesSearchService extends Disposable implements IPreferences
 function cleanFilter(filter: string): string {
 	// Remove " and : which are likely to be copypasted as part of a setting name.
 	// Leave other special characters which the user might want to search for.
-	return filter
-		.replace(/[":]/g, ' ')
-		.replace(/  /g, ' ')
-		.trim();
+	return filter.replace(/[":]/g, ' ').replace(/  /g, ' ').trim();
 }
 
 export class LocalSearchProvider implements ISearchProvider {
@@ -102,14 +123,23 @@ export class LocalSearchProvider implements ISearchProvider {
 			};
 		};
 
-		const filterMatches = preferencesModel.filterSettings(this._filter, this.getGroupFilter(this._filter), settingMatcher);
+		const filterMatches = preferencesModel.filterSettings(
+			this._filter,
+			this.getGroupFilter(this._filter),
+			settingMatcher
+		);
 
 		// Check the top key match type.
-		const topKeyMatchType = Math.max(...filterMatches.map(m => (m.matchType & SettingKeyMatchTypes)));
+		const topKeyMatchType = Math.max(...filterMatches.map(m => m.matchType & SettingKeyMatchTypes));
 		// Always allow description matches as part of https://github.com/microsoft/vscode/issues/239936.
 		const alwaysAllowedMatchTypes = SettingMatchType.DescriptionOrValueMatch | SettingMatchType.LanguageTagSettingMatch;
 		const filteredMatches = filterMatches
-			.filter(m => (m.matchType & topKeyMatchType) || (m.matchType & alwaysAllowedMatchTypes) || m.matchType === SettingMatchType.ExactMatch)
+			.filter(
+				m =>
+					m.matchType & topKeyMatchType ||
+					m.matchType & alwaysAllowedMatchTypes ||
+					m.matchType === SettingMatchType.ExactMatch
+			)
 			.map(m => ({ ...m, providerName: STRING_MATCH_SEARCH_PROVIDER_NAME }));
 		return Promise.resolve({
 			filterMatches: filteredMatches,
@@ -140,7 +170,10 @@ export class SettingMatches {
 		private searchDescription: boolean,
 		private readonly configurationService: IConfigurationService
 	) {
-		this.matches = distinct(this._findMatchesInSetting(searchString, setting), (match) => `${match.startLineNumber}_${match.startColumn}_${match.endLineNumber}_${match.endColumn}_`);
+		this.matches = distinct(
+			this._findMatchesInSetting(searchString, setting),
+			match => `${match.startLineNumber}_${match.startColumn}_${match.endLineNumber}_${match.endColumn}_`
+		);
 	}
 
 	private _findMatchesInSetting(searchString: string, setting: ISetting): IRange[] {
@@ -175,7 +208,10 @@ export class SettingMatches {
 			// Check if the key contains the word. Use contiguous search.
 			const keyMatches = matchesWords(word, settingKeyAsWords, true);
 			if (keyMatches?.length) {
-				keyMatchingWords.set(word, keyMatches.map(match => this.toKeyRange(setting, match)));
+				keyMatchingWords.set(
+					word,
+					keyMatches.map(match => this.toKeyRange(setting, match))
+				);
 			}
 		}
 		if (keyMatchingWords.size === queryWords.size) {
@@ -193,7 +229,10 @@ export class SettingMatches {
 		const keyIdMatches = matchesContiguousSubString(searchStringAlphaNumeric, keyAlphaNumeric);
 		if (keyIdMatches?.length) {
 			// Matches "editorformatonp" to "editor.formatonpaste".
-			keyMatchingWords.set(setting.key, keyIdMatches.map(match => this.toKeyRange(setting, match)));
+			keyMatchingWords.set(
+				setting.key,
+				keyIdMatches.map(match => this.toKeyRange(setting, match))
+			);
 			this.matchType |= SettingMatchType.ContiguousQueryInSettingId;
 		}
 
@@ -203,7 +242,10 @@ export class SettingMatches {
 			for (const word of queryWords) {
 				const keyMatches = matchesWords(word, settingKeyAsWords, false);
 				if (keyMatches?.length) {
-					keyMatchingWords.set(word, keyMatches.map(match => this.toKeyRange(setting, match)));
+					keyMatchingWords.set(
+						word,
+						keyMatches.map(match => this.toKeyRange(setting, match))
+					);
 				}
 			}
 			if (keyMatchingWords.size >= 2 || (keyMatchingWords.size === 1 && queryWords.size === 1)) {
@@ -215,7 +257,10 @@ export class SettingMatches {
 				const keyIdMatches = matchesSubString(searchStringAlphaNumeric, keyAlphaNumeric);
 				if (keyIdMatches?.length) {
 					// Matches "edfmonpas" to "editor.formatOnPaste".
-					keyMatchingWords.set(setting.key, keyIdMatches.map(match => this.toKeyRange(setting, match)));
+					keyMatchingWords.set(
+						setting.key,
+						keyIdMatches.map(match => this.toKeyRange(setting, match))
+					);
 					this.matchType |= SettingMatchType.NonContiguousQueryInSettingId;
 				}
 			}
@@ -223,10 +268,9 @@ export class SettingMatches {
 
 		// Check if the match was for a language tag group setting such as [markdown].
 		// In such a case, move that setting to be last.
-		if (setting.overrides?.length && (this.matchType !== SettingMatchType.None)) {
+		if (setting.overrides?.length && this.matchType !== SettingMatchType.None) {
 			this.matchType = SettingMatchType.LanguageTagSettingMatch;
-			const keyRanges = keyMatchingWords.size ?
-				Array.from(keyMatchingWords.values()).flat() : [];
+			const keyRanges = keyMatchingWords.size ? Array.from(keyMatchingWords.values()).flat() : [];
 			return [...keyRanges];
 		}
 
@@ -242,7 +286,10 @@ export class SettingMatches {
 				for (let lineIndex = 0; lineIndex < searchableLines.length; lineIndex++) {
 					const descriptionMatches = matchesBaseContiguousSubString(word, searchableLines[lineIndex]);
 					if (descriptionMatches?.length) {
-						descriptionMatchingWords.set(word, descriptionMatches.map(match => this.toDescriptionRange(setting, match, lineIndex)));
+						descriptionMatchingWords.set(
+							word,
+							descriptionMatches.map(match => this.toDescriptionRange(setting, match, lineIndex))
+						);
 					}
 				}
 			}
@@ -268,7 +315,10 @@ export class SettingMatches {
 					for (const word of queryWords) {
 						const valueMatches = matchesContiguousSubString(word, option);
 						if (valueMatches?.length) {
-							valueMatchingWords.set(word, valueMatches.map(match => this.toValueRange(setting, match)));
+							valueMatchingWords.set(
+								word,
+								valueMatches.map(match => this.toValueRange(setting, match))
+							);
 						}
 					}
 					if (valueMatchingWords.size === queryWords.size) {
@@ -286,7 +336,10 @@ export class SettingMatches {
 					for (const word of queryWords) {
 						const valueMatches = matchesContiguousSubString(word, settingValue);
 						if (valueMatches?.length) {
-							valueMatchingWords.set(word, valueMatches.map(match => this.toValueRange(setting, match)));
+							valueMatchingWords.set(
+								word,
+								valueMatches.map(match => this.toValueRange(setting, match))
+							);
 						}
 					}
 					if (valueMatchingWords.size === queryWords.size) {
@@ -299,12 +352,9 @@ export class SettingMatches {
 			}
 		}
 
-		const descriptionRanges = descriptionMatchingWords.size ?
-			Array.from(descriptionMatchingWords.values()).flat() : [];
-		const keyRanges = keyMatchingWords.size ?
-			Array.from(keyMatchingWords.values()).flat() : [];
-		const valueRanges = valueMatchingWords.size ?
-			Array.from(valueMatchingWords.values()).flat() : [];
+		const descriptionRanges = descriptionMatchingWords.size ? Array.from(descriptionMatchingWords.values()).flat() : [];
+		const keyRanges = keyMatchingWords.size ? Array.from(keyMatchingWords.values()).flat() : [];
+		const valueRanges = valueMatchingWords.size ? Array.from(valueMatchingWords.values()).flat() : [];
 		return [...descriptionRanges, ...keyRanges, ...valueRanges];
 	}
 
@@ -352,8 +402,7 @@ class TfIdfSearchProvider implements IRemoteSearchProvider {
 	private _documents: TfIdfDocument[] = [];
 	private _settingsRecord: IStringDictionary<ISetting> = {};
 
-	constructor() {
-	}
+	constructor() {}
 
 	setFilter(filter: string) {
 		this._filter = cleanFilter(filter);
@@ -422,7 +471,10 @@ class TfIdfSearchProvider implements IRemoteSearchProvider {
 		}
 
 		for (const info of tfIdfRankings) {
-			if (info.score / maxScore < TfIdfSearchProvider.TF_IDF_POST_NORMALIZE_THRESHOLD || filterMatches.length === TfIdfSearchProvider.TF_IDF_MAX_PICKS) {
+			if (
+				info.score / maxScore < TfIdfSearchProvider.TF_IDF_POST_NORMALIZE_THRESHOLD ||
+				filterMatches.length === TfIdfSearchProvider.TF_IDF_MAX_PICKS
+			) {
 				break;
 			}
 			const pick = info.key;

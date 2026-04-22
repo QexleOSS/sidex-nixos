@@ -5,7 +5,11 @@
 
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { Event } from '../../../../base/common/event.js';
-import { EnvironmentVariableScope, IEnvironmentVariableCollection, IMergedEnvironmentVariableCollection } from '../../../../platform/terminal/common/environmentVariable.js';
+import {
+	EnvironmentVariableScope,
+	IEnvironmentVariableCollection,
+	IMergedEnvironmentVariableCollection
+} from '../../../../platform/terminal/common/environmentVariable.js';
 import { ITerminalStatus } from './terminal.js';
 
 export const IEnvironmentVariableService = createDecorator<IEnvironmentVariableService>('environmentVariableService');

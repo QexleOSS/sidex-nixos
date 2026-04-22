@@ -8,37 +8,96 @@ import { localize, localize2 } from '../../../../nls.js';
 import { MultiWindowParts, Part } from '../../part.js';
 import { ITitleService } from '../../../services/title/browser/titleService.js';
 import { getWCOTitlebarAreaRect, getZoomFactor, isWCOEnabled } from '../../../../base/browser/browser.js';
-import { MenuBarVisibility, getTitleBarStyle, getMenuBarVisibility, hasCustomTitlebar, hasNativeTitlebar, DEFAULT_CUSTOM_TITLEBAR_HEIGHT, getWindowControlsStyle, WindowControlsStyle, TitlebarStyle, MenuSettings, hasNativeMenu } from '../../../../platform/window/common/window.js';
+import {
+	MenuBarVisibility,
+	getTitleBarStyle,
+	getMenuBarVisibility,
+	hasCustomTitlebar,
+	hasNativeTitlebar,
+	DEFAULT_CUSTOM_TITLEBAR_HEIGHT,
+	getWindowControlsStyle,
+	WindowControlsStyle,
+	TitlebarStyle,
+	MenuSettings,
+	hasNativeMenu
+} from '../../../../platform/window/common/window.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { StandardMouseEvent } from '../../../../base/browser/mouseEvent.js';
-import { IConfigurationService, IConfigurationChangeEvent } from '../../../../platform/configuration/common/configuration.js';
+import {
+	IConfigurationService,
+	IConfigurationChangeEvent
+} from '../../../../platform/configuration/common/configuration.js';
 import { DisposableStore, IDisposable, MutableDisposable } from '../../../../base/common/lifecycle.js';
 import { IBrowserWorkbenchEnvironmentService } from '../../../services/environment/browser/environmentService.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
-import { TITLE_BAR_ACTIVE_BACKGROUND, TITLE_BAR_ACTIVE_FOREGROUND, TITLE_BAR_INACTIVE_FOREGROUND, TITLE_BAR_INACTIVE_BACKGROUND, TITLE_BAR_BORDER, WORKBENCH_BACKGROUND } from '../../../common/theme.js';
+import {
+	TITLE_BAR_ACTIVE_BACKGROUND,
+	TITLE_BAR_ACTIVE_FOREGROUND,
+	TITLE_BAR_INACTIVE_FOREGROUND,
+	TITLE_BAR_INACTIVE_BACKGROUND,
+	TITLE_BAR_BORDER,
+	WORKBENCH_BACKGROUND
+} from '../../../common/theme.js';
 import { isMacintosh, isWindows, isLinux, isWeb, isNative, platformLocale } from '../../../../base/common/platform.js';
 import { Color } from '../../../../base/common/color.js';
-import { EventType, EventHelper, Dimension, append, $, addDisposableListener, prepend, reset, getWindow, getWindowId, isAncestor, getActiveDocument, isHTMLElement } from '../../../../base/browser/dom.js';
+import {
+	EventType,
+	EventHelper,
+	Dimension,
+	append,
+	$,
+	addDisposableListener,
+	prepend,
+	reset,
+	getWindow,
+	getWindowId,
+	isAncestor,
+	getActiveDocument,
+	isHTMLElement
+} from '../../../../base/browser/dom.js';
 import { CustomMenubarControl } from './menubarControl.js';
 import { IInstantiationService, ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { IStorageService, StorageScope } from '../../../../platform/storage/common/storage.js';
-import { Parts, IWorkbenchLayoutService, ActivityBarPosition, LayoutSettings, EditorActionsLocation, EditorTabsMode } from '../../../services/layout/browser/layoutService.js';
-import { createActionViewItem, fillInActionBarActions } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
+import {
+	Parts,
+	IWorkbenchLayoutService,
+	ActivityBarPosition,
+	LayoutSettings,
+	EditorActionsLocation,
+	EditorTabsMode
+} from '../../../services/layout/browser/layoutService.js';
+import {
+	createActionViewItem,
+	fillInActionBarActions
+} from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
 import { Action2, IMenu, IMenuService, MenuId, registerAction2 } from '../../../../platform/actions/common/actions.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IHostService } from '../../../services/host/browser/host.js';
 import { WindowTitle } from './windowTitle.js';
 import { CommandCenterControl } from './commandCenterControl.js';
 import { Categories } from '../../../../platform/action/common/actionCommonCategories.js';
-import { HiddenItemStrategy, MenuWorkbenchToolBar, WorkbenchToolBar } from '../../../../platform/actions/browser/toolbar.js';
+import {
+	HiddenItemStrategy,
+	MenuWorkbenchToolBar,
+	WorkbenchToolBar
+} from '../../../../platform/actions/browser/toolbar.js';
 import { ACCOUNTS_ACTIVITY_ID, GLOBAL_ACTIVITY_ID } from '../../../common/activity.js';
-import { AccountsActivityActionViewItem, isAccountsActionVisible, SimpleAccountActivityActionViewItem, SimpleGlobalActivityActionViewItem } from '../globalCompositeBar.js';
+import {
+	AccountsActivityActionViewItem,
+	isAccountsActionVisible,
+	SimpleAccountActivityActionViewItem,
+	SimpleGlobalActivityActionViewItem
+} from '../globalCompositeBar.js';
 import { HoverPosition } from '../../../../base/browser/ui/hover/hoverWidget.js';
 import { IEditorGroupsContainer, IEditorGroupsService } from '../../../services/editor/common/editorGroupsService.js';
 import { ActionRunner, IAction } from '../../../../base/common/actions.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
-import { ActionsOrientation, IActionViewItem, prepareActions } from '../../../../base/browser/ui/actionbar/actionbar.js';
+import {
+	ActionsOrientation,
+	IActionViewItem,
+	prepareActions
+} from '../../../../base/browser/ui/actionbar/actionbar.js';
 import { EDITOR_CORE_NAVIGATION_COMMANDS } from '../editor/editorCommands.js';
 import { AnchorAlignment } from '../../../../base/browser/ui/contextview/contextview.js';
 import { EditorPane } from '../editor/editorPane.js';
@@ -69,7 +128,6 @@ export interface ITitleProperties {
 }
 
 export interface ITitlebarPart extends IDisposable {
-
 	/**
 	 * An event when the menubar visibility changes.
 	 */
@@ -87,7 +145,6 @@ export interface ITitlebarPart extends IDisposable {
 }
 
 export class BrowserTitleService extends MultiWindowParts<BrowserTitlebarPart> implements ITitleService {
-
 	declare _serviceBrand: undefined;
 
 	readonly mainPart: BrowserTitlebarPart;
@@ -112,56 +169,77 @@ export class BrowserTitleService extends MultiWindowParts<BrowserTitlebarPart> i
 	}
 
 	private registerActions(): void {
-
 		// Focus action
 		const that = this;
-		this._register(registerAction2(class FocusTitleBar extends Action2 {
+		this._register(
+			registerAction2(
+				class FocusTitleBar extends Action2 {
+					constructor() {
+						super({
+							id: `workbench.action.focusTitleBar`,
+							title: localize2('focusTitleBar', 'Focus Title Bar'),
+							category: Categories.View,
+							f1: true,
+							precondition: TitleBarVisibleContext
+						});
+					}
 
-			constructor() {
-				super({
-					id: `workbench.action.focusTitleBar`,
-					title: localize2('focusTitleBar', 'Focus Title Bar'),
-					category: Categories.View,
-					f1: true,
-					precondition: TitleBarVisibleContext
-				});
-			}
-
-			run(): void {
-				that.getPartByDocument(getActiveDocument())?.focus();
-			}
-		}));
+					run(): void {
+						that.getPartByDocument(getActiveDocument())?.focus();
+					}
+				}
+			)
+		);
 	}
 
 	private registerAPICommands(): void {
-		this._register(CommandsRegistry.registerCommand({
-			id: 'registerWindowTitleVariable',
-			handler: (accessor: ServicesAccessor, name: string, contextKey: string) => {
-				this.registerVariables([{ name, contextKey }]);
-			},
-			metadata: {
-				description: 'Registers a new title variable',
-				args: [
-					{ name: 'name', schema: { type: 'string' }, description: 'The name of the variable to register' },
-					{ name: 'contextKey', schema: { type: 'string' }, description: 'The context key to use for the value of the variable' }
-				]
-			}
-		}));
+		this._register(
+			CommandsRegistry.registerCommand({
+				id: 'registerWindowTitleVariable',
+				handler: (accessor: ServicesAccessor, name: string, contextKey: string) => {
+					this.registerVariables([{ name, contextKey }]);
+				},
+				metadata: {
+					description: 'Registers a new title variable',
+					args: [
+						{ name: 'name', schema: { type: 'string' }, description: 'The name of the variable to register' },
+						{
+							name: 'contextKey',
+							schema: { type: 'string' },
+							description: 'The context key to use for the value of the variable'
+						}
+					]
+				}
+			})
+		);
 	}
 
 	//#region Auxiliary Titlebar Parts
 
-	createAuxiliaryTitlebarPart(container: HTMLElement, editorGroupsContainer: IEditorGroupsContainer, instantiationService: IInstantiationService): IAuxiliaryTitlebarPart {
+	createAuxiliaryTitlebarPart(
+		container: HTMLElement,
+		editorGroupsContainer: IEditorGroupsContainer,
+		instantiationService: IInstantiationService
+	): IAuxiliaryTitlebarPart {
 		const titlebarPartContainer = $('.part.titlebar', { role: 'none' });
 		titlebarPartContainer.style.position = 'relative';
 		container.insertBefore(titlebarPartContainer, container.firstChild); // ensure we are first element
 
 		const disposables = new DisposableStore();
 
-		const titlebarPart = this.doCreateAuxiliaryTitlebarPart(titlebarPartContainer, editorGroupsContainer, instantiationService);
+		const titlebarPart = this.doCreateAuxiliaryTitlebarPart(
+			titlebarPartContainer,
+			editorGroupsContainer,
+			instantiationService
+		);
 		disposables.add(this.registerPart(titlebarPart));
 
-		disposables.add(Event.runAndSubscribe(titlebarPart.onDidChange, () => titlebarPartContainer.style.height = `${titlebarPart.height}px`));
+		disposables.add(
+			Event.runAndSubscribe(
+				titlebarPart.onDidChange,
+				() => (titlebarPartContainer.style.height = `${titlebarPart.height}px`)
+			)
+		);
 		titlebarPart.create(titlebarPartContainer);
 
 		if (this.properties) {
@@ -177,12 +255,20 @@ export class BrowserTitleService extends MultiWindowParts<BrowserTitlebarPart> i
 		return titlebarPart;
 	}
 
-	protected doCreateAuxiliaryTitlebarPart(container: HTMLElement, editorGroupsContainer: IEditorGroupsContainer, instantiationService: IInstantiationService): BrowserTitlebarPart & IAuxiliaryTitlebarPart {
-		return instantiationService.createInstance(AuxiliaryBrowserTitlebarPart, container, editorGroupsContainer, this.mainPart);
+	protected doCreateAuxiliaryTitlebarPart(
+		container: HTMLElement,
+		editorGroupsContainer: IEditorGroupsContainer,
+		instantiationService: IInstantiationService
+	): BrowserTitlebarPart & IAuxiliaryTitlebarPart {
+		return instantiationService.createInstance(
+			AuxiliaryBrowserTitlebarPart,
+			container,
+			editorGroupsContainer,
+			this.mainPart
+		);
 	}
 
 	//#endregion
-
 
 	//#region Service Implementation
 
@@ -219,7 +305,6 @@ export class BrowserTitleService extends MultiWindowParts<BrowserTitlebarPart> i
 }
 
 export class BrowserTitlebarPart extends Part implements ITitlebarPart {
-
 	//#region IView
 
 	readonly minimumWidth: number = 0;
@@ -235,7 +320,9 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		return value / (this.preventZoom ? getZoomFactor(getWindow(this.element)) : 1);
 	}
 
-	get maximumHeight(): number { return this.minimumHeight; }
+	get maximumHeight(): number {
+		return this.minimumHeight;
+	}
 
 	//#endregion
 
@@ -315,9 +402,9 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		super(id, { hasTitle: false }, themeService, storageService, layoutService);
 
 		const scopedEditorService = editorService.createScoped(editorGroupsContainer, this._store);
-		this.instantiationService = this._register(instantiationService.createChild(new ServiceCollection(
-			[IEditorService, scopedEditorService]
-		)));
+		this.instantiationService = this._register(
+			instantiationService.createChild(new ServiceCollection([IEditorService, scopedEditorService]))
+		);
 
 		this.isAuxiliary = targetWindow.vscodeWindowId !== mainWindow.vscodeWindowId;
 
@@ -333,10 +420,16 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 	}
 
 	private registerListeners(targetWindowId: number): void {
-		this._register(this.hostService.onDidChangeFocus(focused => focused ? this.onFocus() : this.onBlur()));
-		this._register(this.hostService.onDidChangeActiveWindow(windowId => windowId === targetWindowId ? this.onFocus() : this.onBlur()));
+		this._register(this.hostService.onDidChangeFocus(focused => (focused ? this.onFocus() : this.onBlur())));
+		this._register(
+			this.hostService.onDidChangeActiveWindow(windowId =>
+				windowId === targetWindowId ? this.onFocus() : this.onBlur()
+			)
+		);
 		this._register(this.configurationService.onDidChangeConfiguration(e => this.onConfigurationChanged(e)));
-		this._register(this.editorGroupsContainer.onDidChangeEditorPartOptions(e => this.onEditorPartConfigurationChange(e)));
+		this._register(
+			this.editorGroupsContainer.onDidChangeEditorPartOptions(e => this.onEditorPartConfigurationChange(e))
+		);
 	}
 
 	private onBlur(): void {
@@ -365,7 +458,6 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 	}
 
 	protected onConfigurationChanged(event: IConfigurationChangeEvent): void {
-
 		// Custom menu bar (disabled if auxiliary)
 		if (!this.isAuxiliary && !hasNativeMenu(this.configurationService, this.titleBarStyle) && (!isMacintosh || isWeb)) {
 			if (event.affectsConfiguration(MenuSettings.MenuBarVisibility)) {
@@ -470,6 +562,22 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 
 		// Draggable region that we can manipulate for #52522
 		this.dragRegion = prepend(this.rootContainer, $('div.titlebar-drag-region'));
+		if ((globalThis as any).__SIDEX_TAURI__) {
+			this.dragRegion.style.setProperty('-webkit-app-region', 'no-drag');
+			this.dragRegion.style.pointerEvents = 'none';
+
+			this._register(
+				addDisposableListener(this.rootContainer, EventType.MOUSE_DOWN, e => {
+					const target = e.target as HTMLElement;
+					if (target === this.dragRegion || target === this.rootContainer) {
+						e.preventDefault();
+						import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+							getCurrentWindow().startDragging();
+						});
+					}
+				})
+			);
+		}
 
 		// Menubar: install a custom menu bar depending on configuration
 		if (
@@ -489,15 +597,23 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		// Center-Adjacent Toolbar (e.g., update indicator)
 		if (hasCustomTitlebar(this.configurationService, this.titleBarStyle)) {
 			const centerAdjacentToolBarElement = append(this.rightContent, $('div.center-adjacent-toolbar-container'));
-			this.centerAdjacentToolBarDisposable.add(this.instantiationService.createInstance(MenuWorkbenchToolBar, centerAdjacentToolBarElement, MenuId.TitleBarAdjacentCenter, {
-				contextMenu: MenuId.TitleBarContext,
-				hiddenItemStrategy: HiddenItemStrategy.NoHide,
-				toolbarOptions: {
-					primaryGroup: () => true,
-				},
-				actionViewItemProvider: (action, options) => createActionViewItem(this.instantiationService, action, options),
-				hoverDelegate: this.hoverDelegate
-			}));
+			this.centerAdjacentToolBarDisposable.add(
+				this.instantiationService.createInstance(
+					MenuWorkbenchToolBar,
+					centerAdjacentToolBarElement,
+					MenuId.TitleBarAdjacentCenter,
+					{
+						contextMenu: MenuId.TitleBarContext,
+						hiddenItemStrategy: HiddenItemStrategy.NoHide,
+						toolbarOptions: {
+							primaryGroup: () => true
+						},
+						actionViewItemProvider: (action, options) =>
+							createActionViewItem(this.instantiationService, action, options),
+						hoverDelegate: this.hoverDelegate
+					}
+				)
+			);
 		}
 
 		// Create Toolbar Actions
@@ -511,7 +627,6 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		if (!hasNativeTitlebar(this.configurationService, this.titleBarStyle)) {
 			let primaryWindowControlsLocation = isMacintosh ? 'left' : 'right';
 			if (isMacintosh && isNative) {
-
 				// Check if the locale is RTL, macOS will move traffic lights in RTL locales
 				// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/textInfo
 
@@ -530,15 +645,65 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			} else if (getWindowControlsStyle(this.configurationService) === WindowControlsStyle.HIDDEN) {
 				// Linux/Windows: controls are explicitly disabled
 			} else {
-				this.windowControlsContainer = append(primaryWindowControlsLocation === 'left' ? this.leftContent : this.rightContent, $('div.window-controls-container'));
+				this.windowControlsContainer = append(
+					primaryWindowControlsLocation === 'left' ? this.leftContent : this.rightContent,
+					$('div.window-controls-container')
+				);
 				if (isWeb) {
 					// Web: its possible to have control overlays on both sides, for example on macOS
 					// with window controls on the left and PWA controls on the right.
-					append(primaryWindowControlsLocation === 'left' ? this.rightContent : this.leftContent, $('div.window-controls-container'));
+					append(
+						primaryWindowControlsLocation === 'left' ? this.rightContent : this.leftContent,
+						$('div.window-controls-container')
+					);
 				}
 
 				if (isWCOEnabled()) {
 					this.windowControlsContainer.classList.add('wco-enabled');
+				}
+
+				if (!isMacintosh && (globalThis as any).__SIDEX_TAURI__) {
+					const minBtn = append(this.windowControlsContainer, $('div.window-icon.window-min'));
+					const minIcon = append(minBtn, $('span.codicon.codicon-chrome-minimize'));
+					minIcon.setAttribute('aria-hidden', 'true');
+
+					const maxBtn = append(this.windowControlsContainer, $('div.window-icon.window-max'));
+					const maxIcon = append(maxBtn, $('span.codicon.codicon-chrome-maximize'));
+					maxIcon.setAttribute('aria-hidden', 'true');
+
+					const closeBtn = append(this.windowControlsContainer, $('div.window-icon.window-close'));
+					const closeIcon = append(closeBtn, $('span.codicon.codicon-chrome-close'));
+					closeIcon.setAttribute('aria-hidden', 'true');
+
+					import('@tauri-apps/api/window')
+						.then(({ getCurrentWindow }) => {
+							const win = getCurrentWindow();
+
+							this._register(addDisposableListener(minBtn, EventType.CLICK, () => win.minimize()));
+							this._register(addDisposableListener(maxBtn, EventType.CLICK, () => win.toggleMaximize()));
+							this._register(addDisposableListener(closeBtn, EventType.CLICK, () => win.close()));
+
+							const updateMaxIcon = async () => {
+								const maximized = await win.isMaximized();
+								if (maximized) {
+									maxIcon.classList.remove('codicon-chrome-maximize');
+									maxIcon.classList.add('codicon-chrome-restore');
+								} else {
+									maxIcon.classList.remove('codicon-chrome-restore');
+									maxIcon.classList.add('codicon-chrome-maximize');
+								}
+							};
+
+							updateMaxIcon();
+							win
+								.onResized(() => updateMaxIcon())
+								.then(unlisten => {
+									this._register({ dispose: () => unlisten() });
+								});
+						})
+						.catch(() => {
+							/* not in Tauri context */
+						});
 				}
 			}
 		}
@@ -549,27 +714,36 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		// macOS: we support both the overall context menu and the title context menu.
 		//        in addition, we allow Cmd+click to bring up the title context menu.
 		{
-			this._register(addDisposableListener(this.rootContainer, EventType.CONTEXT_MENU, e => {
-				EventHelper.stop(e);
+			this._register(
+				addDisposableListener(this.rootContainer, EventType.CONTEXT_MENU, e => {
+					EventHelper.stop(e);
 
-				let targetMenu: MenuId;
-				if (isMacintosh && isHTMLElement(e.target) && isAncestor(e.target, this.title)) {
-					targetMenu = MenuId.TitleBarTitleContext;
-				} else {
-					targetMenu = MenuId.TitleBarContext;
-				}
+					let targetMenu: MenuId;
+					if (isMacintosh && isHTMLElement(e.target) && isAncestor(e.target, this.title)) {
+						targetMenu = MenuId.TitleBarTitleContext;
+					} else {
+						targetMenu = MenuId.TitleBarContext;
+					}
 
-				this.onContextMenu(e, targetMenu);
-			}));
+					this.onContextMenu(e, targetMenu);
+				})
+			);
 
 			if (isMacintosh) {
-				this._register(addDisposableListener(this.title, EventType.MOUSE_DOWN, e => {
-					if (e.metaKey) {
-						EventHelper.stop(e, true /* stop bubbling to prevent command center from opening */);
+				this._register(
+					addDisposableListener(
+						this.title,
+						EventType.MOUSE_DOWN,
+						e => {
+							if (e.metaKey) {
+								EventHelper.stop(e, true /* stop bubbling to prevent command center from opening */);
 
-						this.onContextMenu(e, MenuId.TitleBarTitleContext);
-					}
-				}, true /* capture phase to prevent command center from opening */));
+								this.onContextMenu(e, MenuId.TitleBarTitleContext);
+							}
+						},
+						true /* capture phase to prevent command center from opening */
+					)
+				);
 			}
 		}
 
@@ -587,12 +761,14 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		if (!this.isCommandCenterVisible) {
 			if (!isShowingTitleInNativeTitlebar) {
 				this.title.textContent = this.windowTitle.value;
-				this.titleDisposables.add(this.windowTitle.onDidChange(() => {
-					this.title.textContent = this.windowTitle.value;
-					if (this.lastLayoutDimensions) {
-						this.updateLayout(this.lastLayoutDimensions); // layout menubar and other renderings in the titlebar
-					}
-				}));
+				this.titleDisposables.add(
+					this.windowTitle.onDidChange(() => {
+						this.title.textContent = this.windowTitle.value;
+						if (this.lastLayoutDimensions) {
+							this.updateLayout(this.lastLayoutDimensions); // layout menubar and other renderings in the titlebar
+						}
+					})
+				);
 			} else {
 				reset(this.title);
 			}
@@ -600,21 +776,32 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 
 		// Menu Title
 		else {
-			const commandCenter = this.instantiationService.createInstance(CommandCenterControl, this.windowTitle, this.hoverDelegate);
+			const commandCenter = this.instantiationService.createInstance(
+				CommandCenterControl,
+				this.windowTitle,
+				this.hoverDelegate
+			);
 			reset(this.title, commandCenter.element);
 			this.titleDisposables.add(commandCenter);
 		}
 	}
 
 	private actionViewItemProvider(action: IAction, options: IBaseActionViewItemOptions): IActionViewItem | undefined {
-
 		// --- Activity Actions
 		if (!this.isAuxiliary) {
 			if (action.id === GLOBAL_ACTIVITY_ID) {
-				return this.instantiationService.createInstance(SimpleGlobalActivityActionViewItem, { position: () => HoverPosition.BELOW }, options);
+				return this.instantiationService.createInstance(
+					SimpleGlobalActivityActionViewItem,
+					{ position: () => HoverPosition.BELOW },
+					options
+				);
 			}
 			if (action.id === ACCOUNTS_ACTIVITY_ID) {
-				return this.instantiationService.createInstance(SimpleAccountActivityActionViewItem, { position: () => HoverPosition.BELOW }, options);
+				return this.instantiationService.createInstance(
+					SimpleAccountActivityActionViewItem,
+					{ position: () => HoverPosition.BELOW },
+					options
+				);
 			}
 		}
 
@@ -633,37 +820,48 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 	}
 
 	private getKeybinding(action: IAction): ResolvedKeybinding | undefined {
-		const editorPaneAwareContextKeyService = this.editorGroupsContainer.activeGroup?.activeEditorPane?.scopedContextKeyService ?? this.contextKeyService;
+		const editorPaneAwareContextKeyService =
+			this.editorGroupsContainer.activeGroup?.activeEditorPane?.scopedContextKeyService ?? this.contextKeyService;
 
 		return this.keybindingService.lookupKeybinding(action.id, editorPaneAwareContextKeyService);
 	}
 
 	private createActionToolBar(): void {
-
 		// Creates the action tool bar. Depends on the configuration of the title bar menus
 		// Requires to be recreated whenever editor actions enablement changes
 
 		this.actionToolBarDisposable.clear();
 
-		this.actionToolBar = this.actionToolBarDisposable.add(this.instantiationService.createInstance(WorkbenchToolBar, this.actionToolBarElement, {
-			contextMenu: MenuId.TitleBarContext,
-			orientation: ActionsOrientation.HORIZONTAL,
-			ariaLabel: localize('ariaLabelTitleActions', "Title actions"),
-			getKeyBinding: action => this.getKeybinding(action),
-			overflowBehavior: { maxItems: 9, exempted: [ACCOUNTS_ACTIVITY_ID, GLOBAL_ACTIVITY_ID, ...EDITOR_CORE_NAVIGATION_COMMANDS] },
-			anchorAlignmentProvider: () => AnchorAlignment.RIGHT,
-			telemetrySource: 'titlePart',
-			highlightToggledItems: this.editorActionsEnabled || this.isAuxiliary, // Only show toggled state for editor actions or auxiliary title bars
-			actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
-			hoverDelegate: this.hoverDelegate
-		}));
+		this.actionToolBar = this.actionToolBarDisposable.add(
+			this.instantiationService.createInstance(WorkbenchToolBar, this.actionToolBarElement, {
+				contextMenu: MenuId.TitleBarContext,
+				orientation: ActionsOrientation.HORIZONTAL,
+				ariaLabel: localize('ariaLabelTitleActions', 'Title actions'),
+				getKeyBinding: action => this.getKeybinding(action),
+				overflowBehavior: {
+					maxItems: 9,
+					exempted: [ACCOUNTS_ACTIVITY_ID, GLOBAL_ACTIVITY_ID, ...EDITOR_CORE_NAVIGATION_COMMANDS]
+				},
+				anchorAlignmentProvider: () => AnchorAlignment.RIGHT,
+				telemetrySource: 'titlePart',
+				highlightToggledItems: this.editorActionsEnabled || this.isAuxiliary, // Only show toggled state for editor actions or auxiliary title bars
+				actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
+				hoverDelegate: this.hoverDelegate
+			})
+		);
 
 		if (this.editorActionsEnabled) {
-			this.actionToolBarDisposable.add(this.editorGroupsContainer.onDidChangeActiveGroup(() => this.createActionToolBarMenus({ editorActions: true })));
+			this.actionToolBarDisposable.add(
+				this.editorGroupsContainer.onDidChangeActiveGroup(() => this.createActionToolBarMenus({ editorActions: true }))
+			);
 		}
 	}
 
-	private createActionToolBarMenus(update: true | { editorActions?: boolean; layoutActions?: boolean; globalActions?: boolean; activityActions?: boolean } = true): void {
+	private createActionToolBarMenus(
+		update:
+			| true
+			| { editorActions?: boolean; layoutActions?: boolean; globalActions?: boolean; activityActions?: boolean } = true
+	): void {
 		if (update === true) {
 			update = { editorActions: true, layoutActions: true, globalActions: true, activityActions: true };
 		}
@@ -677,7 +875,10 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 
 				const activeGroup = this.editorGroupsContainer.activeGroup;
 				if (activeGroup) {
-					const editorActions = activeGroup.createEditorActions(this.editorActionsChangeDisposable, this.isAuxiliary && this.isCompact ? MenuId.CompactWindowEditorTitle : MenuId.EditorTitle);
+					const editorActions = activeGroup.createEditorActions(
+						this.editorActionsChangeDisposable,
+						this.isAuxiliary && this.isCompact ? MenuId.CompactWindowEditorTitle : MenuId.EditorTitle
+					);
 
 					actions.primary.push(...editorActions.actions.primary);
 					actions.secondary.push(...editorActions.actions.secondary);
@@ -697,10 +898,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 
 			// --- Global Actions (after layout so e.g. notification bell appears to the right of layout controls)
 			if (this.globalToolbarMenu) {
-				fillInActionBarActions(
-					this.globalToolbarMenu.getActions(),
-					actions
-				);
+				fillInActionBarActions(this.globalToolbarMenu.getActions(), actions);
 			}
 
 			// --- Activity Actions (always at the end)
@@ -725,7 +923,9 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			if (this.editorActionsEnabled && this.editorGroupsContainer.activeGroup?.activeEditor) {
 				const context: IEditorCommandsContext = { groupId: this.editorGroupsContainer.activeGroup.id };
 
-				this.actionToolBar.actionRunner = this.editorToolbarMenuDisposables.add(new EditorCommandsContextActionRunner(context));
+				this.actionToolBar.actionRunner = this.editorToolbarMenuDisposables.add(
+					new EditorCommandsContextActionRunner(context)
+				);
 				this.actionToolBar.context = context;
 			} else {
 				this.actionToolBar.actionRunner = this.editorToolbarMenuDisposables.add(new ActionRunner());
@@ -762,7 +962,13 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		if (update.activityActions) {
 			this.activityToolbarDisposables.clear();
 			if (this.activityActionsEnabled) {
-				this.activityToolbarDisposables.add(this.storageService.onDidChangeValue(StorageScope.PROFILE, AccountsActivityActionViewItem.ACCOUNTS_VISIBILITY_PREFERENCE_KEY, this._store)(() => updateToolBarActions()));
+				this.activityToolbarDisposables.add(
+					this.storageService.onDidChangeValue(
+						StorageScope.PROFILE,
+						AccountsActivityActionViewItem.ACCOUNTS_VISIBILITY_PREFERENCE_KEY,
+						this._store
+					)(() => updateToolBarActions())
+				);
 			}
 		}
 
@@ -780,13 +986,14 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 				this.element.classList.remove('inactive');
 			}
 
-			const titleBackground = this.getColor(this.isInactive ? TITLE_BAR_INACTIVE_BACKGROUND : TITLE_BAR_ACTIVE_BACKGROUND, (color, theme) => {
-				// LCD Rendering Support: the title bar part is a defining its own GPU layer.
-				// To benefit from LCD font rendering, we must ensure that we always set an
-				// opaque background color. As such, we compute an opaque color given we know
-				// the background color is the workbench background.
-				return color.isOpaque() ? color : color.makeOpaque(WORKBENCH_BACKGROUND(theme));
-			}) || '';
+			const titleBackground =
+				this.getColor(this.isInactive ? TITLE_BAR_INACTIVE_BACKGROUND : TITLE_BAR_ACTIVE_BACKGROUND, (color, theme) => {
+					// LCD Rendering Support: the title bar part is a defining its own GPU layer.
+					// To benefit from LCD font rendering, we must ensure that we always set an
+					// opaque background color. As such, we compute an opaque color given we know
+					// the background color is the workbench background.
+					return color.isOpaque() ? color : color.makeOpaque(WORKBENCH_BACKGROUND(theme));
+				}) || '';
 			this.element.style.backgroundColor = titleBackground;
 
 			if (this.appIconBadge) {
@@ -799,7 +1006,9 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 				this.element.classList.remove('light');
 			}
 
-			const titleForeground = this.getColor(this.isInactive ? TITLE_BAR_INACTIVE_FOREGROUND : TITLE_BAR_ACTIVE_FOREGROUND);
+			const titleForeground = this.getColor(
+				this.isInactive ? TITLE_BAR_INACTIVE_FOREGROUND : TITLE_BAR_ACTIVE_FOREGROUND
+			);
 			this.element.style.color = titleForeground || '';
 
 			const titleBorder = this.getColor(TITLE_BAR_BORDER);
@@ -836,16 +1045,22 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 	}
 
 	private get editorActionsEnabled(): boolean {
-		return (this.editorGroupsContainer.partOptions.editorActionsLocation === EditorActionsLocation.TITLEBAR ||
-			(
-				this.editorGroupsContainer.partOptions.editorActionsLocation === EditorActionsLocation.DEFAULT &&
-				this.editorGroupsContainer.partOptions.showTabs === EditorTabsMode.NONE
-			));
+		return (
+			this.editorGroupsContainer.partOptions.editorActionsLocation === EditorActionsLocation.TITLEBAR ||
+			(this.editorGroupsContainer.partOptions.editorActionsLocation === EditorActionsLocation.DEFAULT &&
+				this.editorGroupsContainer.partOptions.showTabs === EditorTabsMode.NONE)
+		);
 	}
 
 	private get activityActionsEnabled(): boolean {
-		const activityBarPosition = this.configurationService.getValue<ActivityBarPosition>(LayoutSettings.ACTIVITY_BAR_LOCATION);
-		return !this.isCompact && !this.isAuxiliary && (activityBarPosition === ActivityBarPosition.TOP || activityBarPosition === ActivityBarPosition.BOTTOM);
+		const activityBarPosition = this.configurationService.getValue<ActivityBarPosition>(
+			LayoutSettings.ACTIVITY_BAR_LOCATION
+		);
+		return (
+			!this.isCompact &&
+			!this.isAuxiliary &&
+			(activityBarPosition === ActivityBarPosition.TOP || activityBarPosition === ActivityBarPosition.BOTTOM)
+		);
 	}
 
 	private get globalActionsEnabled(): boolean {
@@ -853,9 +1068,17 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 	}
 
 	get hasZoomableElements(): boolean {
-		const hasMenubar = !(this.currentMenubarVisibility === 'hidden' || this.currentMenubarVisibility === 'compact' || (!isWeb && isMacintosh));
+		const hasMenubar = !(
+			this.currentMenubarVisibility === 'hidden' ||
+			this.currentMenubarVisibility === 'compact' ||
+			(!isWeb && isMacintosh)
+		);
 		const hasCommandCenter = this.isCommandCenterVisible;
-		const hasToolBarActions = this.globalActionsEnabled || this.layoutControlEnabled || this.editorActionsEnabled || this.activityActionsEnabled;
+		const hasToolBarActions =
+			this.globalActionsEnabled ||
+			this.layoutControlEnabled ||
+			this.editorActionsEnabled ||
+			this.activityActionsEnabled;
 		return hasMenubar || hasCommandCenter || hasToolBarActions;
 	}
 
@@ -898,7 +1121,6 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		if (this.customMenubar.value) {
 			this.customMenubar.value.toggleFocus();
 		} else {
-			// eslint-disable-next-line no-restricted-syntax
 			(this.element.querySelector('[tabindex]:not([tabindex="-1"])') as HTMLElement | null)?.focus();
 		}
 	}
@@ -917,7 +1139,6 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 }
 
 export class MainBrowserTitlebarPart extends BrowserTitlebarPart {
-
 	constructor(
 		@IContextMenuService contextMenuService: IContextMenuService,
 		@IConfigurationService configurationService: IConfigurationService,
@@ -931,9 +1152,25 @@ export class MainBrowserTitlebarPart extends BrowserTitlebarPart {
 		@IEditorGroupsService editorGroupService: IEditorGroupsService,
 		@IEditorService editorService: IEditorService,
 		@IMenuService menuService: IMenuService,
-		@IKeybindingService keybindingService: IKeybindingService,
+		@IKeybindingService keybindingService: IKeybindingService
 	) {
-		super(Parts.TITLEBAR_PART, mainWindow, editorGroupService.mainPart, contextMenuService, configurationService, environmentService, instantiationService, themeService, storageService, layoutService, contextKeyService, hostService, editorService, menuService, keybindingService);
+		super(
+			Parts.TITLEBAR_PART,
+			mainWindow,
+			editorGroupService.mainPart,
+			contextMenuService,
+			configurationService,
+			environmentService,
+			instantiationService,
+			themeService,
+			storageService,
+			layoutService,
+			contextKeyService,
+			hostService,
+			editorService,
+			menuService,
+			keybindingService
+		);
 	}
 }
 
@@ -945,10 +1182,11 @@ export interface IAuxiliaryTitlebarPart extends ITitlebarPart, IView {
 }
 
 export class AuxiliaryBrowserTitlebarPart extends BrowserTitlebarPart implements IAuxiliaryTitlebarPart {
-
 	private static COUNTER = 1;
 
-	get height() { return this.minimumHeight; }
+	get height() {
+		return this.minimumHeight;
+	}
 
 	constructor(
 		readonly container: HTMLElement,
@@ -966,14 +1204,29 @@ export class AuxiliaryBrowserTitlebarPart extends BrowserTitlebarPart implements
 		@IEditorGroupsService editorGroupService: IEditorGroupsService,
 		@IEditorService editorService: IEditorService,
 		@IMenuService menuService: IMenuService,
-		@IKeybindingService keybindingService: IKeybindingService,
+		@IKeybindingService keybindingService: IKeybindingService
 	) {
 		const id = AuxiliaryBrowserTitlebarPart.COUNTER++;
-		super(`workbench.parts.auxiliaryTitle.${id}`, getWindow(container), editorGroupsContainer, contextMenuService, configurationService, environmentService, instantiationService, themeService, storageService, layoutService, contextKeyService, hostService, editorService, menuService, keybindingService);
+		super(
+			`workbench.parts.auxiliaryTitle.${id}`,
+			getWindow(container),
+			editorGroupsContainer,
+			contextMenuService,
+			configurationService,
+			environmentService,
+			instantiationService,
+			themeService,
+			storageService,
+			layoutService,
+			contextKeyService,
+			hostService,
+			editorService,
+			menuService,
+			keybindingService
+		);
 	}
 
 	override get preventZoom(): boolean {
-
 		// Prevent zooming behavior if any of the following conditions are met:
 		// 1. Shrinking below the window control size (zoom < 1)
 		// 2. No custom items are present in the main title bar

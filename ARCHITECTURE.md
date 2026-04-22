@@ -69,7 +69,7 @@ Extension Host               →       Sidecar process (in progress)
 | `os.*` | `sysinfo` (Rust) | Ported |
 | `@vscode/sqlite3` | `rusqlite` | Ported |
 | `@vscode/spdlog` | `tracing` + `tracing-subscriber` | Partial |
-| `autoUpdater` | `@tauri-apps/plugin-updater` | Not started |
+| `autoUpdater` | `sidex-update` (native Rust) | Complete |
 | `powerMonitor` | Rust system-info crates | Not started |
 | `contentTracing` | Rust tracing crate | Not started |
 | `native-keymap` | Rust keyboard crate | Not started |

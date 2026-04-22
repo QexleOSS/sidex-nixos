@@ -15,7 +15,7 @@ class NullSandboxHelperService implements ISandboxHelperService {
 		// or block sandbox flows on an unavailable host-side capability.
 		return {
 			bubblewrapInstalled: true,
-			socatInstalled: true,
+			socatInstalled: true
 		};
 	}
 }

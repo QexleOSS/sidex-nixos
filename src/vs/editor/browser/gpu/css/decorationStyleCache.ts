@@ -40,11 +40,13 @@ export interface IDecorationStyleCacheEntry extends IDecorationStyleSet {
 }
 
 export class DecorationStyleCache {
-
 	private _nextId = 1;
 
 	private readonly _cacheById = new Map<number, IDecorationStyleCacheEntry>();
-	private readonly _cacheByStyle = new NKeyMap<IDecorationStyleCacheEntry, [number, number, string, number, string, number]>();
+	private readonly _cacheByStyle = new NKeyMap<
+		IDecorationStyleCacheEntry,
+		[number, number, string, number, string, number]
+	>();
 
 	getOrCreateEntry(
 		color: number | undefined,
@@ -54,7 +56,14 @@ export class DecorationStyleCache {
 		strikethroughThickness: number | undefined,
 		strikethroughColor: number | undefined
 	): number {
-		if (color === undefined && bold === undefined && opacity === undefined && strikethrough === undefined && strikethroughThickness === undefined && strikethroughColor === undefined) {
+		if (
+			color === undefined &&
+			bold === undefined &&
+			opacity === undefined &&
+			strikethrough === undefined &&
+			strikethroughThickness === undefined &&
+			strikethroughColor === undefined
+		) {
 			return 0;
 		}
 		const result = this._cacheByStyle.get(
@@ -76,10 +85,11 @@ export class DecorationStyleCache {
 			opacity,
 			strikethrough,
 			strikethroughThickness,
-			strikethroughColor,
+			strikethroughColor
 		};
 		this._cacheById.set(id, entry);
-		this._cacheByStyle.set(entry,
+		this._cacheByStyle.set(
+			entry,
 			color ?? 0,
 			bold ? 1 : 0,
 			opacity === undefined ? '' : opacity.toFixed(2),

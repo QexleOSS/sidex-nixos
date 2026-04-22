@@ -3,7 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AccessibleViewProviderId, AccessibleViewType, IAccessibleViewContentProvider, IAccessibleViewService } from '../../../../platform/accessibility/browser/accessibleView.js';
+import {
+	AccessibleViewProviderId,
+	AccessibleViewType,
+	IAccessibleViewContentProvider,
+	IAccessibleViewService
+} from '../../../../platform/accessibility/browser/accessibleView.js';
 import { AccessibilityVerbositySettingId } from '../../accessibility/browser/accessibilityConfiguration.js';
 import { IReplElement } from '../common/debug.js';
 import { IAccessibleViewImplementation } from '../../../../platform/accessibility/browser/accessibleViewRegistry.js';
@@ -52,7 +57,8 @@ class ReplOutputAccessibleViewProvider extends Disposable implements IAccessible
 	constructor(
 		private readonly _replView: Repl,
 		private readonly _focusedElement: IReplElement | undefined,
-		@IAccessibleViewService private readonly _accessibleViewService: IAccessibleViewService) {
+		@IAccessibleViewService private readonly _accessibleViewService: IAccessibleViewService
+	) {
 		super();
 		this._treeHadFocus = !!_focusedElement;
 	}
@@ -83,17 +89,19 @@ class ReplOutputAccessibleViewProvider extends Disposable implements IAccessible
 
 	public onOpen(): void {
 		// Children are resolved async, so we need to update the content when they are resolved.
-		this._register(this.onDidResolveChildren(() => {
-			this._onDidChangeContent.fire();
-			queueMicrotask(() => {
-				if (this._focusedElement) {
-					const position = this._elementPositionMap.get(this._focusedElement.getId());
-					if (position) {
-						this._accessibleViewService.setPosition(position, true);
+		this._register(
+			this.onDidResolveChildren(() => {
+				this._onDidChangeContent.fire();
+				queueMicrotask(() => {
+					if (this._focusedElement) {
+						const position = this._elementPositionMap.get(this._focusedElement.getId());
+						if (position) {
+							this._accessibleViewService.setPosition(position, true);
+						}
 					}
-				}
-			});
-		}));
+				});
+			})
+		);
 	}
 
 	private async _updateContent(elements: IReplElement[]) {

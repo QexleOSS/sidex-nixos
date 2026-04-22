@@ -12,7 +12,12 @@ import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { IInstantiationService } from '../../../instantiation/common/instantiation.js';
 import { WorkbenchObjectTree } from '../../../list/browser/listService.js';
-import { IQuickTreeCheckboxEvent, IQuickTreeItem, IQuickTreeItemButtonEvent, QuickPickFocus } from '../../common/quickInput.js';
+import {
+	IQuickTreeCheckboxEvent,
+	IQuickTreeItem,
+	IQuickTreeItemButtonEvent,
+	QuickPickFocus
+} from '../../common/quickInput.js';
 import { QuickInputTreeDelegate } from './quickInputDelegate.js';
 import { getParentNodeState, IQuickTreeFilterData } from './quickInputTree.js';
 import { QuickTreeAccessibilityProvider } from './quickInputTreeAccessibilityProvider.js';
@@ -65,7 +70,7 @@ export class QuickInputTreeController extends Disposable {
 	private readonly _onLeave = this._register(new Emitter<void>());
 	/**
 	 * Event that is fired when the tree would no longer have focus.
-	*/
+	 */
 	readonly onLeave: Event<void> = this._onLeave.event;
 
 	private readonly _onDidAccept = this._register(new Emitter<void>());
@@ -80,46 +85,52 @@ export class QuickInputTreeController extends Disposable {
 		container: HTMLElement,
 		hoverDelegate: IHoverDelegate | undefined,
 		styles: IQuickInputStyles,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService
 	) {
 		super();
 		this._container = dom.append(container, $('.quick-input-tree'));
 		this._checkboxStateHandler = this._register(new QuickInputCheckboxStateHandler<IQuickTreeItem>());
-		this._renderer = this._register(this.instantiationService.createInstance(
-			QuickInputTreeRenderer,
-			hoverDelegate,
-			this._onDidTriggerButton,
-			this.onDidChangeCheckboxState,
-			this._checkboxStateHandler,
-			styles.toggle
-		));
+		this._renderer = this._register(
+			this.instantiationService.createInstance(
+				QuickInputTreeRenderer,
+				hoverDelegate,
+				this._onDidTriggerButton,
+				this.onDidChangeCheckboxState,
+				this._checkboxStateHandler,
+				styles.toggle
+			)
+		);
 		this._filter = this.instantiationService.createInstance(QuickInputTreeFilter);
 		this._sorter = this._register(new QuickInputTreeSorter());
-		this._tree = this._register(this.instantiationService.createInstance(
-			WorkbenchObjectTree<IQuickTreeItem, IQuickTreeFilterData>,
-			'QuickInputTree',
-			this._container,
-			new QuickInputTreeDelegate(),
-			[this._renderer],
-			{
-				accessibilityProvider: new QuickTreeAccessibilityProvider(this.onDidChangeCheckboxState),
-				horizontalScrolling: false,
-				multipleSelectionSupport: false,
-				findWidgetEnabled: false,
-				alwaysConsumeMouseWheel: true,
-				hideTwistiesOfChildlessElements: true,
-				renderIndentGuides: RenderIndentGuides.None,
-				expandOnDoubleClick: true,
-				expandOnlyOnTwistieClick: true,
-				disableExpandOnSpacebar: true,
-				sorter: this._sorter,
-				filter: this._filter,
-				identityProvider: new QuickInputTreeIdentityProvider()
-			}
-		));
-		this._register(this._renderer.onDidDisposeFocusedElement(() => {
-			this._tree.domFocus();
-		}));
+		this._tree = this._register(
+			this.instantiationService.createInstance(
+				WorkbenchObjectTree<IQuickTreeItem, IQuickTreeFilterData>,
+				'QuickInputTree',
+				this._container,
+				new QuickInputTreeDelegate(),
+				[this._renderer],
+				{
+					accessibilityProvider: new QuickTreeAccessibilityProvider(this.onDidChangeCheckboxState),
+					horizontalScrolling: false,
+					multipleSelectionSupport: false,
+					findWidgetEnabled: false,
+					alwaysConsumeMouseWheel: true,
+					hideTwistiesOfChildlessElements: true,
+					renderIndentGuides: RenderIndentGuides.None,
+					expandOnDoubleClick: true,
+					expandOnlyOnTwistieClick: true,
+					disableExpandOnSpacebar: true,
+					sorter: this._sorter,
+					filter: this._filter,
+					identityProvider: new QuickInputTreeIdentityProvider()
+				}
+			)
+		);
+		this._register(
+			this._renderer.onDidDisposeFocusedElement(() => {
+				this._tree.domFocus();
+			})
+		);
 		this.registerCheckboxStateListeners();
 		this.registerOnDidChangeFocus();
 	}
@@ -158,10 +169,7 @@ export class QuickInputTreeController extends Disposable {
 		this._tree.refilter();
 	}
 
-	updateFilterOptions(options: {
-		matchOnLabel?: boolean;
-		matchOnDescription?: boolean;
-	}): void {
+	updateFilterOptions(options: { matchOnLabel?: boolean; matchOnDescription?: boolean }): void {
 		if (options.matchOnLabel !== undefined) {
 			this._filter.matchOnLabel = options.matchOnLabel;
 		}
@@ -184,9 +192,9 @@ export class QuickInputTreeController extends Disposable {
 				element: item,
 				children,
 				collapsible: !!children,
-				collapsed: item.collapsed ?
-					ObjectTreeElementCollapseState.PreserveOrCollapsed :
-					ObjectTreeElementCollapseState.PreserveOrExpanded
+				collapsed: item.collapsed
+					? ObjectTreeElementCollapseState.PreserveOrCollapsed
+					: ObjectTreeElementCollapseState.PreserveOrExpanded
 			};
 		};
 
@@ -196,12 +204,14 @@ export class QuickInputTreeController extends Disposable {
 	}
 
 	layout(maxHeight?: number): void {
-		this._tree.getHTMLElement().style.maxHeight = maxHeight ? `${
-			// Make sure height aligns with list item heights
-			Math.floor(maxHeight / 44) * 44
-			// Add some extra height so that it's clear there's more to scroll
-			+ 6
-			}px` : '';
+		this._tree.getHTMLElement().style.maxHeight = maxHeight
+			? `${
+					// Make sure height aligns with list item heights
+					Math.floor(maxHeight / 44) * 44 +
+					// Add some extra height so that it's clear there's more to scroll
+					6
+				}px`
+			: '';
 		this._tree.layout();
 	}
 
@@ -214,7 +224,7 @@ export class QuickInputTreeController extends Disposable {
 			case QuickPickFocus.Second: {
 				this._tree.scrollTop = 0;
 				let isSecondItem = false;
-				this._tree.focusFirst(undefined, (e) => {
+				this._tree.focusFirst(undefined, e => {
 					if (isSecondItem) {
 						return true;
 					}
@@ -229,7 +239,7 @@ export class QuickInputTreeController extends Disposable {
 				break;
 			case QuickPickFocus.Next: {
 				const prevFocus = this._tree.getFocus();
-				this._tree.focusNext(undefined, false, undefined, (e) => {
+				this._tree.focusNext(undefined, false, undefined, e => {
 					this._tree.reveal(e.element);
 					return true;
 				});
@@ -241,7 +251,7 @@ export class QuickInputTreeController extends Disposable {
 			}
 			case QuickPickFocus.Previous: {
 				const prevFocus = this._tree.getFocus();
-				this._tree.focusPrevious(undefined, false, undefined, (e) => {
+				this._tree.focusPrevious(undefined, false, undefined, e => {
 					// do we want to reveal the parent?
 					this._tree.reveal(e.element);
 					return true;
@@ -253,13 +263,13 @@ export class QuickInputTreeController extends Disposable {
 				break;
 			}
 			case QuickPickFocus.NextPage:
-				this._tree.focusNextPage(undefined, (e) => {
+				this._tree.focusNextPage(undefined, e => {
 					this._tree.reveal(e.element);
 					return true;
 				});
 				break;
 			case QuickPickFocus.PreviousPage:
-				this._tree.focusPreviousPage(undefined, (e) => {
+				this._tree.focusPreviousPage(undefined, e => {
 					// do we want to reveal the parent?
 					this._tree.reveal(e.element);
 					return true;
@@ -273,37 +283,41 @@ export class QuickInputTreeController extends Disposable {
 	}
 
 	registerCheckboxStateListeners() {
-		this._register(this._tree.onDidOpen(e => {
-			const item = e.element;
-			if (!item) {
-				return;
-			}
+		this._register(
+			this._tree.onDidOpen(e => {
+				const item = e.element;
+				if (!item) {
+					return;
+				}
 
-			if (item.disabled) {
-				return;
-			}
+				if (item.disabled) {
+					return;
+				}
 
-			// Check if the item is pickable (defaults to true if not specified)
-			if (item.pickable === false) {
-				// For non-pickable items, set it as the active item and fire the accept event
-				this._tree.setFocus([item]);
-				this._onDidAccept.fire();
-				return;
-			}
+				// Check if the item is pickable (defaults to true if not specified)
+				if (item.pickable === false) {
+					// For non-pickable items, set it as the active item and fire the accept event
+					this._tree.setFocus([item]);
+					this._onDidAccept.fire();
+					return;
+				}
 
-			const target = e.browserEvent?.target as HTMLElement | undefined;
-			if (target && target.classList.contains(Checkbox.CLASS_NAME)) {
-				return;
-			}
+				const target = e.browserEvent?.target as HTMLElement | undefined;
+				if (target && target.classList.contains(Checkbox.CLASS_NAME)) {
+					return;
+				}
 
-			this.updateCheckboxState(item, item.checked === true);
-		}));
+				this.updateCheckboxState(item, item.checked === true);
+			})
+		);
 
-		this._register(this._checkboxStateHandler.onDidChangeCheckboxState(e => {
-			this.updateCheckboxState(e.item, e.checked === true, true);
-			this._tree.setFocus([e.item]);
-			this._tree.setSelection([e.item]);
-		}));
+		this._register(
+			this._checkboxStateHandler.onDidChangeCheckboxState(e => {
+				this.updateCheckboxState(e.item, e.checked === true, true);
+				this._tree.setFocus([e.item]);
+				this._tree.setSelection([e.item]);
+			})
+		);
 	}
 
 	private updateCheckboxState(item: IQuickTreeItem, newState: boolean, skipItemRerender = false): void {
@@ -354,10 +368,12 @@ export class QuickInputTreeController extends Disposable {
 
 	registerOnDidChangeFocus() {
 		// Ensure that selection follows focus
-		this._register(this._tree.onDidChangeFocus(e => {
-			const item = this._tree.getFocus().findLast(item => item !== null);
-			this._tree.setSelection(item ? [item] : [], e.browserEvent);
-		}));
+		this._register(
+			this._tree.onDidChangeFocus(e => {
+				const item = this._tree.getFocus().findLast(item => item !== null);
+				this._tree.setSelection(item ? [item] : [], e.browserEvent);
+			})
+		);
 	}
 
 	getCheckedLeafItems() {

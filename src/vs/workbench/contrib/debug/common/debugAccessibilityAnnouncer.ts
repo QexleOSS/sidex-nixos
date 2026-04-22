@@ -22,17 +22,19 @@ export class DebugWatchAccessibilityAnnouncer extends Disposable implements IWor
 	) {
 		super();
 		this._setListener();
-		this._register(_configurationService.onDidChangeConfiguration(e => {
-			if (e.affectsConfiguration('accessibility.debugWatchVariableAnnouncements')) {
-				this._setListener();
-			}
-		}));
+		this._register(
+			_configurationService.onDidChangeConfiguration(e => {
+				if (e.affectsConfiguration('accessibility.debugWatchVariableAnnouncements')) {
+					this._setListener();
+				}
+			})
+		);
 	}
 
 	private _setListener(): void {
 		const value = this._configurationService.getValue('accessibility.debugWatchVariableAnnouncements');
 		if (value && !this._listener.value) {
-			this._listener.value = this._debugService.getModel().onDidChangeWatchExpressionValue((e) => {
+			this._listener.value = this._debugService.getModel().onDidChangeWatchExpressionValue(e => {
 				if (!e || e.value === Expression.DEFAULT_VALUE) {
 					return;
 				}

@@ -15,11 +15,10 @@ import * as nls from '../../../../nls.js';
 import { KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
 
 class TransposeLettersAction extends EditorAction {
-
 	constructor() {
 		super({
 			id: 'editor.action.transposeLetters',
-			label: nls.localize2('transposeLetters.label', "Transpose Letters"),
+			label: nls.localize2('transposeLetters.label', 'Transpose Letters'),
 			precondition: EditorContextKeys.writable,
 			kbOpts: {
 				kbExpr: EditorContextKeys.textInputFocus,
@@ -58,9 +57,10 @@ class TransposeLettersAction extends EditorAction {
 
 			// handle special case: when at end of line, transpose left two chars
 			// otherwise, transpose left and right chars
-			const endPosition = (column === lastColumn) ?
-				selection.getPosition() :
-				MoveOperations.rightPosition(model, selection.getPosition().lineNumber, selection.getPosition().column);
+			const endPosition =
+				column === lastColumn
+					? selection.getPosition()
+					: MoveOperations.rightPosition(model, selection.getPosition().lineNumber, selection.getPosition().column);
 
 			const middlePosition = MoveOperations.leftPosition(model, endPosition);
 			const beginPosition = MoveOperations.leftPosition(model, middlePosition);

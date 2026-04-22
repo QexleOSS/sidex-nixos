@@ -12,25 +12,30 @@ import { EditorWorkerHost } from './common/services/editorWorkerHost.js';
  * @skipMangle
  * @internal
  */
-export function start<THost extends object, TClient extends object>(createClient: (ctx: IWorkerContext<THost>) => TClient): TClient {
+export function start<THost extends object, TClient extends object>(
+	createClient: (ctx: IWorkerContext<THost>) => TClient
+): TClient {
 	let client: TClient | undefined;
-	const webWorkerServer = initialize((workerServer) => {
+	const webWorkerServer = initialize(workerServer => {
 		const editorWorkerHost = EditorWorkerHost.getChannel(workerServer);
 
-		const host = new Proxy({}, {
-			get(target, prop, receiver) {
-				if (prop === 'then') {
-					// Don't forward the call when the proxy is returned in an async function and the runtime tries to .then it.
-					return undefined;
+		const host = new Proxy(
+			{},
+			{
+				get(target, prop, receiver) {
+					if (prop === 'then') {
+						// Don't forward the call when the proxy is returned in an async function and the runtime tries to .then it.
+						return undefined;
+					}
+					if (typeof prop !== 'string') {
+						throw new Error(`Not supported`);
+					}
+					return (...args: unknown[]) => {
+						return editorWorkerHost.$fhr(prop, args);
+					};
 				}
-				if (typeof prop !== 'string') {
-					throw new Error(`Not supported`);
-				}
-				return (...args: unknown[]) => {
-					return editorWorkerHost.$fhr(prop, args);
-				};
 			}
-		});
+		);
 
 		const ctx: IWorkerContext<THost> = {
 			host: host as THost,

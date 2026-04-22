@@ -1,10 +1,10 @@
-use globset::{Glob, GlobSet, GlobSetBuilder};
-use rayon::prelude::*;
-use regex::RegexBuilder;
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::sync::{Arc, Mutex};
-use walkdir::WalkDir;
+use std::path::Path;
+
+use sidex_workspace::search::{
+    search_files as crate_search_files, FileSearchOptions as CrateFileSearchOptions, SearchEngine,
+    SearchOptions as CrateSearchOptions, SearchQuery as CrateSearchQuery,
+};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct FileMatch {
@@ -35,301 +35,305 @@ pub struct SearchTextOptions {
     pub max_results: Option<usize>,
     pub case_sensitive: Option<bool>,
     pub is_regex: Option<bool>,
+    #[allow(dead_code)]
     pub include_hidden: Option<bool>,
     pub include: Option<Vec<String>>,
     pub exclude: Option<Vec<String>>,
     pub max_file_size: Option<u64>,
 }
 
-const DEFAULT_MAX_RESULTS: usize = 500;
-const DEFAULT_MAX_FILE_SIZE: u64 = 5 * 1024 * 1024; // 5 MB
-
-static ALWAYS_SKIP: &[&str] = &[
-    "node_modules",
-    "target",
-    ".git",
-    "dist",
-    "build",
-    "out",
-    "__pycache__",
-    ".next",
-    ".cache",
-];
-
-fn build_globset(patterns: &[String]) -> Option<GlobSet> {
-    if patterns.is_empty() {
-        return None;
-    }
-    let mut builder = GlobSetBuilder::new();
-    for p in patterns {
-        if let Ok(g) = Glob::new(p) {
-            builder.add(g);
-        }
-    }
-    builder.build().ok()
-}
-
-fn should_skip(entry: &walkdir::DirEntry, include_hidden: bool) -> bool {
-    let name = entry.file_name().to_string_lossy();
-    if !include_hidden && name.starts_with('.') {
-        return true;
-    }
-    if entry.file_type().is_dir() && ALWAYS_SKIP.contains(&name.as_ref()) {
-        return true;
-    }
-    false
-}
-
-fn fuzzy_score(pattern: &str, target: &str) -> Option<i64> {
-    if pattern.is_empty() {
-        return Some(0);
-    }
-    let pat: Vec<char> = pattern.chars().collect();
-    let tgt: Vec<char> = target.chars().collect();
-    let mut pi = 0;
-    let mut score: i64 = 0;
-    let mut prev_match = false;
-    let mut consecutive = 0i64;
-
-    for (ti, &tc) in tgt.iter().enumerate() {
-        if pi < pat.len() && tc.to_ascii_lowercase() == pat[pi].to_ascii_lowercase() {
-            score += 1;
-            if ti == 0 || !tgt[ti - 1].is_alphanumeric() {
-                score += 5; // word boundary
-            }
-            if tc == pat[pi] {
-                score += 1; // exact case
-            }
-            if prev_match {
-                consecutive += 1;
-                score += consecutive * 2;
-            } else {
-                consecutive = 0;
-            }
-            prev_match = true;
-            pi += 1;
-        } else {
-            prev_match = false;
-            consecutive = 0;
-        }
-    }
-
-    if pi == pat.len() {
-        let len_penalty = (tgt.len() as i64 - pat.len() as i64).min(20);
-        Some(score * 100 - len_penalty)
-    } else {
-        None
-    }
-}
-
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value, clippy::unnecessary_wraps)]
 pub fn search_files(
     root: String,
     pattern: String,
     options: Option<SearchFileOptions>,
 ) -> Result<Vec<FileMatch>, String> {
-    let max_results = options
-        .as_ref()
-        .and_then(|o| o.max_results)
-        .unwrap_or(DEFAULT_MAX_RESULTS);
-    let include_hidden = options
-        .as_ref()
-        .and_then(|o| o.include_hidden)
-        .unwrap_or(false);
-    let include_set = options
-        .as_ref()
-        .and_then(|o| o.include.as_deref())
-        .and_then(|v| {
-            if v.is_empty() {
-                None
-            } else {
-                Some(build_globset(v))
-            }
-        })
-        .flatten();
-    let exclude_set = options
-        .as_ref()
-        .and_then(|o| o.exclude.as_deref())
-        .and_then(|v| {
-            if v.is_empty() {
-                None
-            } else {
-                Some(build_globset(v))
-            }
-        })
-        .flatten();
+    let crate_opts = options.map(|o| CrateFileSearchOptions {
+        max_results: o.max_results,
+        include_hidden: o.include_hidden,
+        include: o.include,
+        exclude: o.exclude,
+    });
 
-    let mut scored: Vec<FileMatch> = Vec::new();
+    let matches = crate_search_files(Path::new(&root), &pattern, crate_opts.as_ref());
 
-    for entry in WalkDir::new(&root)
-        .follow_links(false)
-        .max_depth(20)
+    Ok(matches
         .into_iter()
-        .filter_entry(|e| !should_skip(e, include_hidden))
-        .filter_map(|e| e.ok())
-    {
-        if entry.file_type().is_dir() {
-            continue;
-        }
-
-        let path = entry.path();
-        let name = entry.file_name().to_string_lossy().to_string();
-
-        if let Some(ref inc) = include_set {
-            if !inc.is_match(path) {
-                continue;
-            }
-        }
-        if let Some(ref exc) = exclude_set {
-            if exc.is_match(path) {
-                continue;
-            }
-        }
-
-        let score = match fuzzy_score(&pattern, &name) {
-            Some(s) => s,
-            None => continue,
-        };
-
-        scored.push(FileMatch {
-            path: path.to_string_lossy().to_string(),
-            name,
-            score,
-        });
-    }
-
-    scored.sort_by(|a, b| b.score.cmp(&a.score));
-    scored.truncate(max_results);
-    Ok(scored)
+        .map(|m| FileMatch {
+            path: m.path,
+            name: m.name,
+            score: m.score,
+        })
+        .collect())
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn search_text(
     root: String,
     query: String,
     options: Option<SearchTextOptions>,
 ) -> Result<Vec<TextMatch>, String> {
-    let max_results = options
-        .as_ref()
-        .and_then(|o| o.max_results)
-        .unwrap_or(DEFAULT_MAX_RESULTS);
-    let case_sensitive = options
-        .as_ref()
-        .and_then(|o| o.case_sensitive)
-        .unwrap_or(false);
-    let is_regex = options.as_ref().and_then(|o| o.is_regex).unwrap_or(false);
-    let include_hidden = options
-        .as_ref()
-        .and_then(|o| o.include_hidden)
-        .unwrap_or(false);
-    let max_file_size = options
-        .as_ref()
-        .and_then(|o| o.max_file_size)
-        .unwrap_or(DEFAULT_MAX_FILE_SIZE);
-    let include_set = options
-        .as_ref()
-        .and_then(|o| o.include.as_deref())
-        .and_then(|v| {
-            if v.is_empty() {
-                None
-            } else {
-                Some(build_globset(v))
-            }
-        })
-        .flatten();
-    let exclude_set = options
-        .as_ref()
-        .and_then(|o| o.exclude.as_deref())
-        .and_then(|v| {
-            if v.is_empty() {
-                None
-            } else {
-                Some(build_globset(v))
-            }
-        })
-        .flatten();
+    let opts_ref = options.as_ref();
+    let query_len = query.len();
 
-    let pattern = if is_regex {
-        query.clone()
-    } else {
-        regex::escape(&query)
+    let crate_query = CrateSearchQuery {
+        pattern: query,
+        is_regex: opts_ref.and_then(|o| o.is_regex).unwrap_or(false),
+        case_sensitive: opts_ref.and_then(|o| o.case_sensitive).unwrap_or(false),
+        whole_word: false,
+        max_results: opts_ref.and_then(|o| o.max_results),
     };
 
-    let re = RegexBuilder::new(&pattern)
-        .case_insensitive(!case_sensitive)
-        .build()
-        .map_err(|e| format!("Invalid search pattern: {e}"))?;
+    let crate_opts = CrateSearchOptions {
+        include_patterns: opts_ref.and_then(|o| o.include.clone()).unwrap_or_default(),
+        exclude_patterns: opts_ref.and_then(|o| o.exclude.clone()).unwrap_or_default(),
+        max_results: opts_ref.and_then(|o| o.max_results),
+        max_file_size: opts_ref.and_then(|o| o.max_file_size),
+        context_lines: None,
+    };
 
-    let files: Vec<_> = WalkDir::new(&root)
-        .follow_links(false)
-        .max_depth(20)
+    let results = SearchEngine::search_with_options(Path::new(&root), &crate_query, &crate_opts)
+        .map_err(|e| e.to_string())?;
+
+    Ok(results
         .into_iter()
-        .filter_entry(|e| !should_skip(e, include_hidden))
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
-        .filter(|e| {
-            let path = e.path();
-            if let Some(ref inc) = include_set {
-                if !inc.is_match(path) {
-                    return false;
-                }
-            }
-            if let Some(ref exc) = exclude_set {
-                if exc.is_match(path) {
-                    return false;
-                }
-            }
-            if let Ok(meta) = e.metadata() {
-                if meta.len() > max_file_size {
-                    return false;
-                }
-            }
-            true
+        .map(|r| TextMatch {
+            path: r.path.to_string_lossy().into_owned(),
+            line_number: r.line_number,
+            line_content: r.line_text,
+            column: r.match_start,
+            match_length: r.match_end.saturating_sub(r.match_start).max(query_len),
         })
-        .collect();
+        .collect())
+}
 
-    let results = Arc::new(Mutex::new(Vec::<TextMatch>::new()));
+// ---------------------------------------------------------------------------
+// Commands backed directly by sidex-workspace::SearchEngine (grouped / replace)
+// ---------------------------------------------------------------------------
 
-    files.par_iter().for_each(|entry| {
-        {
-            let r = results.lock().unwrap();
-            if r.len() >= max_results {
-                return;
-            }
-        }
+#[derive(Debug, Deserialize)]
+pub struct WorkspaceSearchOptions {
+    pub case_sensitive: Option<bool>,
+    pub is_regex: Option<bool>,
+    pub whole_word: Option<bool>,
+    pub max_results: Option<usize>,
+    pub max_file_size: Option<u64>,
+    pub include_patterns: Option<Vec<String>>,
+    pub exclude_patterns: Option<Vec<String>>,
+    pub context_lines: Option<usize>,
+}
 
-        let content = match fs::read_to_string(entry.path()) {
-            Ok(c) => c,
-            Err(_) => return,
-        };
+#[derive(Debug, Clone, Serialize)]
+pub struct WsSearchMatch {
+    pub path: String,
+    pub line_number: usize,
+    pub line_text: String,
+    pub match_start: usize,
+    pub match_end: usize,
+}
 
-        let path_str = entry.path().to_string_lossy().to_string();
-        let mut local_matches = Vec::new();
+#[derive(Debug, Clone, Serialize)]
+pub struct WsContextLine {
+    pub line_number: usize,
+    pub text: String,
+}
 
-        for (line_idx, line) in content.lines().enumerate() {
-            for m in re.find_iter(line) {
-                local_matches.push(TextMatch {
-                    path: path_str.clone(),
-                    line_number: line_idx + 1,
-                    line_content: line.to_string(),
-                    column: m.start(),
-                    match_length: m.end() - m.start(),
-                });
-                if local_matches.len() >= max_results {
-                    break;
-                }
-            }
-            if local_matches.len() >= max_results {
-                break;
-            }
-        }
+#[derive(Debug, Clone, Serialize)]
+pub struct WsMatchWithContext {
+    pub line_number: usize,
+    pub line_text: String,
+    pub match_start: usize,
+    pub match_end: usize,
+    pub before_context: Vec<WsContextLine>,
+    pub after_context: Vec<WsContextLine>,
+}
 
-        if !local_matches.is_empty() {
-            let mut r = results.lock().unwrap();
-            let remaining = max_results.saturating_sub(r.len());
-            r.extend(local_matches.into_iter().take(remaining));
-        }
-    });
+#[derive(Debug, Clone, Serialize)]
+pub struct WsSearchGroup {
+    pub file_path: String,
+    pub matches: Vec<WsMatchWithContext>,
+    pub line_count: usize,
+}
 
-    Ok(Arc::try_unwrap(results).unwrap().into_inner().unwrap())
+#[derive(Debug, Clone, Serialize)]
+pub struct WsReplacementEdit {
+    pub line_number: usize,
+    pub match_start: usize,
+    pub match_end: usize,
+    pub original: String,
+    pub replacement: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct WsFileReplacement {
+    pub path: String,
+    pub edits: Vec<WsReplacementEdit>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct WsReplaceReport {
+    pub files_modified: u32,
+    pub replacements_made: u32,
+    pub errors: Vec<(String, String)>,
+}
+
+fn build_ws_query(query: &str, options: Option<&WorkspaceSearchOptions>) -> CrateSearchQuery {
+    CrateSearchQuery {
+        pattern: query.to_string(),
+        is_regex: options.and_then(|o| o.is_regex).unwrap_or(false),
+        case_sensitive: options.and_then(|o| o.case_sensitive).unwrap_or(false),
+        whole_word: options.and_then(|o| o.whole_word).unwrap_or(false),
+        max_results: options.and_then(|o| o.max_results),
+    }
+}
+
+fn build_ws_options(options: Option<&WorkspaceSearchOptions>) -> CrateSearchOptions {
+    CrateSearchOptions {
+        include_patterns: options
+            .and_then(|o| o.include_patterns.clone())
+            .unwrap_or_default(),
+        exclude_patterns: options
+            .and_then(|o| o.exclude_patterns.clone())
+            .unwrap_or_default(),
+        max_results: options.and_then(|o| o.max_results),
+        max_file_size: options.and_then(|o| o.max_file_size),
+        context_lines: options.and_then(|o| o.context_lines),
+    }
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn search_workspace(
+    root: String,
+    query: String,
+    options: Option<WorkspaceSearchOptions>,
+) -> Result<Vec<WsSearchMatch>, String> {
+    let ws_query = build_ws_query(&query, options.as_ref());
+    let ws_opts = build_ws_options(options.as_ref());
+
+    let results = SearchEngine::search_with_options(Path::new(&root), &ws_query, &ws_opts)
+        .map_err(|e| e.to_string())?;
+
+    Ok(results
+        .into_iter()
+        .map(|r| WsSearchMatch {
+            path: r.path.to_string_lossy().into_owned(),
+            line_number: r.line_number,
+            line_text: r.line_text,
+            match_start: r.match_start,
+            match_end: r.match_end,
+        })
+        .collect())
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn search_workspace_grouped(
+    root: String,
+    query: String,
+    options: Option<WorkspaceSearchOptions>,
+) -> Result<Vec<WsSearchGroup>, String> {
+    let ws_query = build_ws_query(&query, options.as_ref());
+    let ws_opts = build_ws_options(options.as_ref());
+
+    let groups = SearchEngine::search_grouped(Path::new(&root), &ws_query, &ws_opts)
+        .map_err(|e| e.to_string())?;
+
+    Ok(groups
+        .into_iter()
+        .map(|g| WsSearchGroup {
+            file_path: g.file_path.to_string_lossy().into_owned(),
+            line_count: g.line_count,
+            matches: g
+                .matches
+                .into_iter()
+                .map(|m| WsMatchWithContext {
+                    line_number: m.line_number,
+                    line_text: m.line_text,
+                    match_start: m.match_start,
+                    match_end: m.match_end,
+                    before_context: m
+                        .before_context
+                        .into_iter()
+                        .map(|c| WsContextLine {
+                            line_number: c.line_number,
+                            text: c.text,
+                        })
+                        .collect(),
+                    after_context: m
+                        .after_context
+                        .into_iter()
+                        .map(|c| WsContextLine {
+                            line_number: c.line_number,
+                            text: c.text,
+                        })
+                        .collect(),
+                })
+                .collect(),
+        })
+        .collect())
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn search_workspace_replace_preview(
+    root: String,
+    query: String,
+    replacement: String,
+    options: Option<WorkspaceSearchOptions>,
+) -> Result<Vec<WsFileReplacement>, String> {
+    let ws_query = build_ws_query(&query, options.as_ref());
+
+    let replacements = SearchEngine::replace_in_files(Path::new(&root), &ws_query, &replacement)
+        .map_err(|e| e.to_string())?;
+
+    Ok(replacements
+        .into_iter()
+        .map(|fr| WsFileReplacement {
+            path: fr.path.to_string_lossy().into_owned(),
+            edits: fr
+                .edits
+                .into_iter()
+                .map(|e| WsReplacementEdit {
+                    line_number: e.line_number,
+                    match_start: e.match_start,
+                    match_end: e.match_end,
+                    original: e.original,
+                    replacement: e.replacement,
+                })
+                .collect(),
+        })
+        .collect())
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn search_workspace_replace_apply(
+    root: String,
+    query: String,
+    replacement: String,
+) -> Result<WsReplaceReport, String> {
+    let ws_query = CrateSearchQuery {
+        pattern: query,
+        is_regex: false,
+        case_sensitive: true,
+        whole_word: false,
+        max_results: None,
+    };
+
+    let report =
+        SearchEngine::replace_in_files_with_report(Path::new(&root), &ws_query, &replacement)
+            .map_err(|e| e.to_string())?;
+
+    Ok(WsReplaceReport {
+        files_modified: report.files_modified,
+        replacements_made: report.replacements_made,
+        errors: report
+            .errors
+            .into_iter()
+            .map(|(p, e)| (p.to_string_lossy().into_owned(), e))
+            .collect(),
+    })
 }

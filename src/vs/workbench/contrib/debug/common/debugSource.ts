@@ -17,7 +17,7 @@ import { TextEditorSelectionRevealType } from '../../../../platform/editor/commo
 import { IUriIdentityService } from '../../../../platform/uriIdentity/common/uriIdentity.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 
-export const UNKNOWN_SOURCE_LABEL = nls.localize('unknownSource', "Unknown Source");
+export const UNKNOWN_SOURCE_LABEL = nls.localize('unknownSource', 'Unknown Source');
 
 /**
  * Debug URI format
@@ -33,12 +33,16 @@ export const UNKNOWN_SOURCE_LABEL = nls.localize('unknownSource', "Unknown Sourc
  */
 
 export class Source {
-
 	readonly uri: URI;
 	available: boolean;
 	raw: DebugProtocol.Source;
 
-	constructor(raw_: DebugProtocol.Source | undefined, sessionId: string, uriIdentityService: IUriIdentityService, logService: ILogService) {
+	constructor(
+		raw_: DebugProtocol.Source | undefined,
+		sessionId: string,
+		uriIdentityService: IUriIdentityService,
+		logService: ILogService
+	) {
 		let path: string;
 		if (raw_) {
 			this.raw = raw_;
@@ -73,21 +77,37 @@ export class Source {
 		return this.uri.scheme === DEBUG_SCHEME;
 	}
 
-	openInEditor(editorService: IEditorService, selection: IRange, preserveFocus?: boolean, sideBySide?: boolean, pinned?: boolean): Promise<IEditorPane | undefined> {
-		return !this.available ? Promise.resolve(undefined) : editorService.openEditor({
-			resource: this.uri,
-			description: this.origin,
-			options: {
-				preserveFocus,
-				selection,
-				revealIfOpened: true,
-				selectionRevealType: TextEditorSelectionRevealType.CenterIfOutsideViewport,
-				pinned
-			}
-		}, sideBySide ? SIDE_GROUP : ACTIVE_GROUP);
+	openInEditor(
+		editorService: IEditorService,
+		selection: IRange,
+		preserveFocus?: boolean,
+		sideBySide?: boolean,
+		pinned?: boolean
+	): Promise<IEditorPane | undefined> {
+		return !this.available
+			? Promise.resolve(undefined)
+			: editorService.openEditor(
+					{
+						resource: this.uri,
+						description: this.origin,
+						options: {
+							preserveFocus,
+							selection,
+							revealIfOpened: true,
+							selectionRevealType: TextEditorSelectionRevealType.CenterIfOutsideViewport,
+							pinned
+						}
+					},
+					sideBySide ? SIDE_GROUP : ACTIVE_GROUP
+				);
 	}
 
-	static getEncodedDebugData(modelUri: URI): { name: string; path: string; sessionId?: string; sourceReference?: number } {
+	static getEncodedDebugData(modelUri: URI): {
+		name: string;
+		path: string;
+		sessionId?: string;
+		sourceReference?: number;
+	} {
 		let path: string;
 		let sourceReference: number | undefined;
 		let sessionId: string | undefined;
@@ -129,7 +149,13 @@ export class Source {
 	}
 }
 
-export function getUriFromSource(raw: DebugProtocol.Source, path: string | undefined, sessionId: string, uriIdentityService: IUriIdentityService, logService: ILogService): URI {
+export function getUriFromSource(
+	raw: DebugProtocol.Source,
+	path: string | undefined,
+	sessionId: string,
+	uriIdentityService: IUriIdentityService,
+	logService: ILogService
+): URI {
 	const _getUriFromSource = (path: string | undefined) => {
 		if (typeof raw.sourceReference === 'number' && raw.sourceReference > 0) {
 			return URI.from({
@@ -139,7 +165,8 @@ export function getUriFromSource(raw: DebugProtocol.Source, path: string | undef
 			});
 		}
 
-		if (path && isUriString(path)) {	// path looks like a uri
+		if (path && isUriString(path)) {
+			// path looks like a uri
 			return uriIdentityService.asCanonicalUri(URI.parse(path));
 		}
 		// assume a filesystem path
@@ -148,13 +175,14 @@ export function getUriFromSource(raw: DebugProtocol.Source, path: string | undef
 		}
 		// path is relative: since VS Code cannot deal with this by itself
 		// create a debug url that will result in a DAP 'source' request when the url is resolved.
-		return uriIdentityService.asCanonicalUri(URI.from({
-			scheme: DEBUG_SCHEME,
-			path,
-			query: `session=${sessionId}`
-		}));
+		return uriIdentityService.asCanonicalUri(
+			URI.from({
+				scheme: DEBUG_SCHEME,
+				path,
+				query: `session=${sessionId}`
+			})
+		);
 	};
-
 
 	try {
 		return _getUriFromSource(path);

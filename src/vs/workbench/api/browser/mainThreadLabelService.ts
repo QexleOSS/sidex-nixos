@@ -10,7 +10,6 @@ import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions
 
 @extHostNamedCustomer(MainContext.MainThreadLabelService)
 export class MainThreadLabelService extends Disposable implements MainThreadLabelServiceShape {
-
 	private readonly _resourceLabelFormatters = this._register(new DisposableMap<number>());
 
 	constructor(

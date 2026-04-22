@@ -27,7 +27,6 @@ export interface ISingleEditOperation {
 }
 
 export class EditOperation {
-
 	public static insert(position: Position, text: string): ISingleEditOperation {
 		return {
 			range: new Range(position.lineNumber, position.column, position.lineNumber, position.column),

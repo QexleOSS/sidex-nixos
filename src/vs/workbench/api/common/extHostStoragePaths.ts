@@ -22,7 +22,6 @@ export interface IExtensionStoragePaths {
 }
 
 export class ExtensionStoragePaths implements IExtensionStoragePaths {
-
 	readonly _serviceBrand: undefined;
 
 	private readonly _workspace?: IStaticWorkspaceData;
@@ -38,7 +37,7 @@ export class ExtensionStoragePaths implements IExtensionStoragePaths {
 	) {
 		this._workspace = initData.workspace ?? undefined;
 		this._environment = initData.environment;
-		this.whenReady = this._getOrCreateWorkspaceStoragePath().then(value => this._value = value);
+		this.whenReady = this._getOrCreateWorkspaceStoragePath().then(value => (this._value = value));
 	}
 
 	protected async _getWorkspaceStorageURI(storageName: string): Promise<URI> {
@@ -65,14 +64,19 @@ export class ExtensionStoragePaths implements IExtensionStoragePaths {
 			await this._extHostFileSystem.value.createDirectory(storageUri);
 			await this._extHostFileSystem.value.writeFile(
 				URI.joinPath(storageUri, 'meta.json'),
-				new TextEncoder().encode(JSON.stringify({
-					id: this._workspace.id,
-					configuration: URI.revive(this._workspace.configuration)?.toString(),
-					name: this._workspace.name
-				}, undefined, 2))
+				new TextEncoder().encode(
+					JSON.stringify(
+						{
+							id: this._workspace.id,
+							configuration: URI.revive(this._workspace.configuration)?.toString(),
+							name: this._workspace.name
+						},
+						undefined,
+						2
+					)
+				)
 			);
 			return storageUri;
-
 		} catch (e) {
 			this._logService.error('[ExtHostStorage]', e);
 			return undefined;
@@ -90,6 +94,5 @@ export class ExtensionStoragePaths implements IExtensionStoragePaths {
 		return URI.joinPath(this._environment.globalStorageHome, extension.identifier.value.toLowerCase());
 	}
 
-	onWillDeactivateAll(): void {
-	}
+	onWillDeactivateAll(): void {}
 }

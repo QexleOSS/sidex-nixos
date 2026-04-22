@@ -5,12 +5,18 @@
 
 import { IDragAndDropData } from '../../dnd.js';
 import { IMouseEvent } from '../../mouseEvent.js';
-import { IListDragAndDrop, IListDragOverReaction, IListElementRenderDetails, IListRenderer, ListDragOverEffectPosition, ListDragOverEffectType } from '../list/list.js';
+import {
+	IListDragAndDrop,
+	IListDragOverReaction,
+	IListElementRenderDetails,
+	IListRenderer,
+	ListDragOverEffectPosition,
+	ListDragOverEffectType
+} from '../list/list.js';
 import { ListViewTargetSector } from '../list/listView.js';
 import { Event } from '../../../common/event.js';
 
 export const enum TreeVisibility {
-
 	/**
 	 * The tree node should be hidden.
 	 */
@@ -32,7 +38,6 @@ export const enum TreeVisibility {
  * metadata.
  */
 export interface ITreeFilterDataResult<TFilterData> {
-
 	/**
 	 * Whether the node should be visible.
 	 */
@@ -58,7 +63,6 @@ export type TreeFilterResult<TFilterData> = boolean | TreeVisibility | ITreeFilt
  * elements in a tree.
  */
 export interface ITreeFilter<T, TFilterData = void> {
-
 	/**
 	 * Returns whether this elements should be visible and, if affirmative,
 	 * additional metadata which gets forwarded to the renderer once the element
@@ -92,7 +96,7 @@ export enum ObjectTreeElementCollapseState {
 	/**
 	 * If the element is already in the tree, preserve its current state. Else, collapse it.
 	 */
-	PreserveOrCollapsed,
+	PreserveOrCollapsed
 }
 
 export interface IObjectTreeElement<T> {
@@ -163,9 +167,22 @@ export interface ITreeElementRenderDetails extends IListElementRenderDetails {
 	readonly indent: number;
 }
 
-export interface ITreeRenderer<T, TFilterData = void, TTemplateData = void> extends IListRenderer<ITreeNode<T, TFilterData>, TTemplateData> {
-	renderElement(element: ITreeNode<T, TFilterData>, index: number, templateData: TTemplateData, details?: ITreeElementRenderDetails): void;
-	disposeElement?(element: ITreeNode<T, TFilterData>, index: number, templateData: TTemplateData, details?: ITreeElementRenderDetails): void;
+export interface ITreeRenderer<T, TFilterData = void, TTemplateData = void> extends IListRenderer<
+	ITreeNode<T, TFilterData>,
+	TTemplateData
+> {
+	renderElement(
+		element: ITreeNode<T, TFilterData>,
+		index: number,
+		templateData: TTemplateData,
+		details?: ITreeElementRenderDetails
+	): void;
+	disposeElement?(
+		element: ITreeNode<T, TFilterData>,
+		index: number,
+		templateData: TTemplateData,
+		details?: ITreeElementRenderDetails
+	): void;
 	renderTwistie?(element: T, twistieElement: HTMLElement): boolean;
 	readonly onDidChangeTwistieState?: Event<T>;
 }
@@ -225,26 +242,47 @@ export interface ITreeDragOverReaction extends IListDragOverReaction {
 }
 
 export const TreeDragOverReactions = {
-	acceptBubbleUp(): ITreeDragOverReaction { return { accept: true, bubble: TreeDragOverBubble.Up }; },
-	acceptBubbleDown(autoExpand = false): ITreeDragOverReaction { return { accept: true, bubble: TreeDragOverBubble.Down, autoExpand }; },
-	acceptCopyBubbleUp(): ITreeDragOverReaction { return { accept: true, bubble: TreeDragOverBubble.Up, effect: { type: ListDragOverEffectType.Copy, position: ListDragOverEffectPosition.Over } }; },
-	acceptCopyBubbleDown(autoExpand = false): ITreeDragOverReaction { return { accept: true, bubble: TreeDragOverBubble.Down, effect: { type: ListDragOverEffectType.Copy, position: ListDragOverEffectPosition.Over }, autoExpand }; }
+	acceptBubbleUp(): ITreeDragOverReaction {
+		return { accept: true, bubble: TreeDragOverBubble.Up };
+	},
+	acceptBubbleDown(autoExpand = false): ITreeDragOverReaction {
+		return { accept: true, bubble: TreeDragOverBubble.Down, autoExpand };
+	},
+	acceptCopyBubbleUp(): ITreeDragOverReaction {
+		return {
+			accept: true,
+			bubble: TreeDragOverBubble.Up,
+			effect: { type: ListDragOverEffectType.Copy, position: ListDragOverEffectPosition.Over }
+		};
+	},
+	acceptCopyBubbleDown(autoExpand = false): ITreeDragOverReaction {
+		return {
+			accept: true,
+			bubble: TreeDragOverBubble.Down,
+			effect: { type: ListDragOverEffectType.Copy, position: ListDragOverEffectPosition.Over },
+			autoExpand
+		};
+	}
 };
 
 export interface ITreeDragAndDrop<T> extends IListDragAndDrop<T> {
-	onDragOver(data: IDragAndDropData, targetElement: T | undefined, targetIndex: number | undefined, targetSector: ListViewTargetSector | undefined, originalEvent: DragEvent): boolean | ITreeDragOverReaction;
+	onDragOver(
+		data: IDragAndDropData,
+		targetElement: T | undefined,
+		targetIndex: number | undefined,
+		targetSector: ListViewTargetSector | undefined,
+		originalEvent: DragEvent
+	): boolean | ITreeDragOverReaction;
 }
 
 export class TreeError extends Error {
-
 	constructor(user: string, message: string) {
 		super(`TreeError [${user}] ${message}`);
 	}
 }
 
 export class WeakMapper<K extends object, V> {
-
-	constructor(private fn: (k: K) => V) { }
+	constructor(private fn: (k: K) => V) {}
 
 	private _map = new WeakMap<K, V>();
 

@@ -5,7 +5,13 @@
 
 import { USUAL_WORD_SEPARATORS } from '../../../common/core/wordHelper.js';
 import { ILanguageFeaturesService } from '../../../common/services/languageFeatures.js';
-import { DocumentHighlight, DocumentHighlightKind, DocumentHighlightProvider, MultiDocumentHighlightProvider, ProviderResult } from '../../../common/languages.js';
+import {
+	DocumentHighlight,
+	DocumentHighlightKind,
+	DocumentHighlightProvider,
+	MultiDocumentHighlightProvider,
+	ProviderResult
+} from '../../../common/languages.js';
 import { ITextModel } from '../../../common/model.js';
 import { Position } from '../../../common/core/position.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
@@ -13,12 +19,14 @@ import { Disposable } from '../../../../base/common/lifecycle.js';
 import { ResourceMap } from '../../../../base/common/map.js';
 import { LanguageFilter } from '../../../common/languageSelector.js';
 
-
 class TextualDocumentHighlightProvider implements DocumentHighlightProvider, MultiDocumentHighlightProvider {
-
 	selector: LanguageFilter = { language: '*' };
 
-	provideDocumentHighlights(model: ITextModel, position: Position, token: CancellationToken): ProviderResult<DocumentHighlight[]> {
+	provideDocumentHighlights(
+		model: ITextModel,
+		position: Position,
+		token: CancellationToken
+	): ProviderResult<DocumentHighlight[]> {
 		const result: DocumentHighlight[] = [];
 
 		const word = model.getWordAtPosition({
@@ -41,8 +49,12 @@ class TextualDocumentHighlightProvider implements DocumentHighlightProvider, Mul
 		}));
 	}
 
-	provideMultiDocumentHighlights(primaryModel: ITextModel, position: Position, otherModels: ITextModel[], token: CancellationToken): ProviderResult<ResourceMap<DocumentHighlight[]>> {
-
+	provideMultiDocumentHighlights(
+		primaryModel: ITextModel,
+		position: Position,
+		otherModels: ITextModel[],
+		token: CancellationToken
+	): ProviderResult<ResourceMap<DocumentHighlight[]>> {
 		const result = new ResourceMap<DocumentHighlight[]>();
 
 		const word = primaryModel.getWordAtPosition({
@@ -52,7 +64,6 @@ class TextualDocumentHighlightProvider implements DocumentHighlightProvider, Mul
 		if (!word) {
 			return Promise.resolve(result);
 		}
-
 
 		for (const model of [primaryModel, ...otherModels]) {
 			if (model.isDisposed()) {
@@ -72,15 +83,16 @@ class TextualDocumentHighlightProvider implements DocumentHighlightProvider, Mul
 
 		return result;
 	}
-
 }
 
 export class TextualMultiDocumentHighlightFeature extends Disposable {
-	constructor(
-		@ILanguageFeaturesService languageFeaturesService: ILanguageFeaturesService,
-	) {
+	constructor(@ILanguageFeaturesService languageFeaturesService: ILanguageFeaturesService) {
 		super();
-		this._register(languageFeaturesService.documentHighlightProvider.register('*', new TextualDocumentHighlightProvider()));
-		this._register(languageFeaturesService.multiDocumentHighlightProvider.register('*', new TextualDocumentHighlightProvider()));
+		this._register(
+			languageFeaturesService.documentHighlightProvider.register('*', new TextualDocumentHighlightProvider())
+		);
+		this._register(
+			languageFeaturesService.multiDocumentHighlightProvider.register('*', new TextualDocumentHighlightProvider())
+		);
 	}
 }

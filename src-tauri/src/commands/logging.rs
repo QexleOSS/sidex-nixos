@@ -29,6 +29,7 @@ impl Default for LoggerStore {
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn log_create_logger(
     state: tauri::State<'_, std::sync::Arc<LoggerStore>>,
@@ -45,7 +46,7 @@ pub fn log_create_logger(
 
     let mut counter = state.counter.lock().map_err(|e| e.to_string())?;
     *counter += 1;
-    let id = format!("log-{}-{}", name, counter);
+    let id = format!("log-{name}-{counter}");
 
     let mut loggers = state.loggers.lock().map_err(|e| e.to_string())?;
     loggers.insert(
@@ -59,6 +60,7 @@ pub fn log_create_logger(
     Ok(id)
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn log_write(
     state: tauri::State<'_, std::sync::Arc<LoggerStore>>,
@@ -78,10 +80,11 @@ pub fn log_write(
         .open(&logger.filepath)
         .map_err(|e| format!("open log: {e}"))?;
 
-    writeln!(file, "{}", message).map_err(|e| format!("write log: {e}"))?;
+    writeln!(file, "{message}").map_err(|e| format!("write log: {e}"))?;
     Ok(())
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn log_set_level(
     state: tauri::State<'_, std::sync::Arc<LoggerStore>>,
@@ -94,6 +97,7 @@ pub fn log_set_level(
     Ok(())
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn log_flush(
     state: tauri::State<'_, std::sync::Arc<LoggerStore>>,
@@ -104,6 +108,7 @@ pub fn log_flush(
     Ok(())
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn log_drop(
     state: tauri::State<'_, std::sync::Arc<LoggerStore>>,

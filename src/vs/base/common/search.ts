@@ -6,7 +6,7 @@
 import * as strings from './strings.js';
 
 export function buildReplaceStringWithCasePreserved(matches: string[] | null, pattern: string): string {
-	if (matches && (matches[0] !== '')) {
+	if (matches && matches[0] !== '') {
 		const containsHyphens = validateSpecificSpecialCharacter(matches, pattern, '-');
 		const containsUnderscores = validateSpecificSpecialCharacter(matches, pattern, '_');
 		if (containsHyphens && !containsUnderscores) {
@@ -32,16 +32,24 @@ export function buildReplaceStringWithCasePreserved(matches: string[] | null, pa
 }
 
 function validateSpecificSpecialCharacter(matches: string[], pattern: string, specialCharacter: string): boolean {
-	const doesContainSpecialCharacter = matches[0].indexOf(specialCharacter) !== -1 && pattern.indexOf(specialCharacter) !== -1;
-	return doesContainSpecialCharacter && matches[0].split(specialCharacter).length === pattern.split(specialCharacter).length;
+	const doesContainSpecialCharacter =
+		matches[0].indexOf(specialCharacter) !== -1 && pattern.indexOf(specialCharacter) !== -1;
+	return (
+		doesContainSpecialCharacter && matches[0].split(specialCharacter).length === pattern.split(specialCharacter).length
+	);
 }
 
-function buildReplaceStringForSpecificSpecialCharacter(matches: string[], pattern: string, specialCharacter: string): string {
+function buildReplaceStringForSpecificSpecialCharacter(
+	matches: string[],
+	pattern: string,
+	specialCharacter: string
+): string {
 	const splitPatternAtSpecialCharacter = pattern.split(specialCharacter);
 	const splitMatchAtSpecialCharacter = matches[0].split(specialCharacter);
 	let replaceString: string = '';
 	splitPatternAtSpecialCharacter.forEach((splitValue, index) => {
-		replaceString += buildReplaceStringWithCasePreserved([splitMatchAtSpecialCharacter[index]], splitValue) + specialCharacter;
+		replaceString +=
+			buildReplaceStringWithCasePreserved([splitMatchAtSpecialCharacter[index]], splitValue) + specialCharacter;
 	});
 
 	return replaceString.slice(0, -1);

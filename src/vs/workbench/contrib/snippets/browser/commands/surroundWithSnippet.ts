@@ -17,31 +17,34 @@ import { Snippet } from '../snippetsFile.js';
 import { ISnippetsService } from '../snippets.js';
 import { localize2 } from '../../../../../nls.js';
 
-export async function getSurroundableSnippets(snippetsService: ISnippetsService, model: ITextModel, position: Position, includeDisabledSnippets: boolean): Promise<Snippet[]> {
-
+export async function getSurroundableSnippets(
+	snippetsService: ISnippetsService,
+	model: ITextModel,
+	position: Position,
+	includeDisabledSnippets: boolean
+): Promise<Snippet[]> {
 	const { lineNumber, column } = position;
 	model.tokenization.tokenizeIfCheap(lineNumber);
 	const languageId = model.getLanguageIdAtPosition(lineNumber, column);
 
-	const allSnippets = await snippetsService.getSnippets(languageId, model.uri, { includeNoPrefixSnippets: true, includeDisabledSnippets });
+	const allSnippets = await snippetsService.getSnippets(languageId, model.uri, {
+		includeNoPrefixSnippets: true,
+		includeDisabledSnippets
+	});
 	return allSnippets.filter(snippet => snippet.usesSelection);
 }
 
 export class SurroundWithSnippetEditorAction extends SnippetEditorAction {
-
 	static readonly options = {
 		id: 'editor.action.surroundWithSnippet',
-		title: localize2('label', "Surround with Snippet...")
+		title: localize2('label', 'Surround with Snippet...')
 	};
 
 	constructor() {
 		super({
 			...SurroundWithSnippetEditorAction.options,
-			precondition: ContextKeyExpr.and(
-				EditorContextKeys.writable,
-				EditorContextKeys.hasNonEmptySelection
-			),
-			f1: true,
+			precondition: ContextKeyExpr.and(EditorContextKeys.writable, EditorContextKeys.hasNonEmptySelection),
+			f1: true
 		});
 	}
 

@@ -21,9 +21,12 @@ export interface IExtensionRecommendations {
 
 export function RecommendationSourceToString(source: RecommendationSource) {
 	switch (source) {
-		case RecommendationSource.FILE: return 'file';
-		case RecommendationSource.WORKSPACE: return 'workspace';
-		case RecommendationSource.EXE: return 'exe';
+		case RecommendationSource.FILE:
+			return 'file';
+		case RecommendationSource.WORKSPACE:
+			return 'workspace';
+		case RecommendationSource.EXE:
+			return 'exe';
 	}
 }
 
@@ -32,10 +35,12 @@ export const enum RecommendationsNotificationResult {
 	Cancelled = 'cancelled',
 	TooMany = 'toomany',
 	IncompatibleWindow = 'incompatibleWindow',
-	Accepted = 'reacted',
+	Accepted = 'reacted'
 }
 
-export const IExtensionRecommendationNotificationService = createDecorator<IExtensionRecommendationNotificationService>('IExtensionRecommendationNotificationService');
+export const IExtensionRecommendationNotificationService = createDecorator<IExtensionRecommendationNotificationService>(
+	'IExtensionRecommendationNotificationService'
+);
 
 export interface IExtensionRecommendationNotificationService {
 	readonly _serviceBrand: undefined;
@@ -43,7 +48,8 @@ export interface IExtensionRecommendationNotificationService {
 	readonly ignoredRecommendations: string[];
 	hasToIgnoreRecommendationNotifications(): boolean;
 
-	promptImportantExtensionsInstallNotification(recommendations: IExtensionRecommendations): Promise<RecommendationsNotificationResult>;
+	promptImportantExtensionsInstallNotification(
+		recommendations: IExtensionRecommendations
+	): Promise<RecommendationsNotificationResult>;
 	promptWorkspaceRecommendations(recommendations: Array<string | URI>): Promise<void>;
 }
-

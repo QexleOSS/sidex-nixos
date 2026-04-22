@@ -11,8 +11,7 @@ import { ITextModel } from '../../../common/model.js';
 import { SelectionRange, SelectionRangeProvider } from '../../../common/languages.js';
 
 export class WordSelectionRangeProvider implements SelectionRangeProvider {
-
-	constructor(private readonly selectSubwords = true) { }
+	constructor(private readonly selectSubwords = true) {}
 
 	provideSelectionRanges(model: ITextModel, positions: Position[]): SelectionRange[][] {
 		const result: SelectionRange[][] = [];
@@ -44,7 +43,7 @@ export class WordSelectionRangeProvider implements SelectionRangeProvider {
 		// LEFT anchor (start)
 		for (; start >= 0; start--) {
 			const ch = word.charCodeAt(start);
-			if ((start !== offset) && (ch === CharCode.Underline || ch === CharCode.Dash)) {
+			if (start !== offset && (ch === CharCode.Underline || ch === CharCode.Dash)) {
 				// foo-bar OR foo_bar
 				break;
 			} else if (isLowerAsciiLetter(ch) && isUpperAsciiLetter(lastCh)) {
@@ -81,9 +80,10 @@ export class WordSelectionRangeProvider implements SelectionRangeProvider {
 	}
 
 	private _addWhitespaceLine(bucket: SelectionRange[], model: ITextModel, pos: Position): void {
-		if (model.getLineLength(pos.lineNumber) > 0
-			&& model.getLineFirstNonWhitespaceColumn(pos.lineNumber) === 0
-			&& model.getLineLastNonWhitespaceColumn(pos.lineNumber) === 0
+		if (
+			model.getLineLength(pos.lineNumber) > 0 &&
+			model.getLineFirstNonWhitespaceColumn(pos.lineNumber) === 0 &&
+			model.getLineLastNonWhitespaceColumn(pos.lineNumber) === 0
 		) {
 			bucket.push({ range: new Range(pos.lineNumber, 1, pos.lineNumber, model.getLineMaxColumn(pos.lineNumber)) });
 		}

@@ -19,20 +19,25 @@ export class ReplAccessibilityAnnouncer extends Disposable implements IWorkbench
 		super();
 		const viewModel = debugService.getViewModel();
 		const mutableDispoable = this._register(new MutableDisposable());
-		this._register(viewModel.onDidFocusSession((session) => {
-			mutableDispoable.clear();
-			if (!session) {
-				return;
-			}
-			mutableDispoable.value = session.onDidChangeReplElements((element) => {
-				if (!element || !('originalExpression' in element)) {
-					// element was removed or hasn't been resolved yet
+		this._register(
+			viewModel.onDidFocusSession(session => {
+				mutableDispoable.clear();
+				if (!session) {
 					return;
 				}
-				const value = element.toString();
-				accessibilityService.status(value);
-				logService.trace('ReplAccessibilityAnnouncer#onDidChangeReplElements', element.originalExpression + ': ' + value);
-			});
-		}));
+				mutableDispoable.value = session.onDidChangeReplElements(element => {
+					if (!element || !('originalExpression' in element)) {
+						// element was removed or hasn't been resolved yet
+						return;
+					}
+					const value = element.toString();
+					accessibilityService.status(value);
+					logService.trace(
+						'ReplAccessibilityAnnouncer#onDidChangeReplElements',
+						element.originalExpression + ': ' + value
+					);
+				});
+			})
+		);
 	}
 }

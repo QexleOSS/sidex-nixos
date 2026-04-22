@@ -47,7 +47,11 @@ export interface IExtensionOwnedEnvironmentDescriptionMutator extends IEnvironme
 }
 
 /** [extension, collection, description] */
-export type ISerializableEnvironmentVariableCollections = [string, ISerializableEnvironmentVariableCollection, ISerializableEnvironmentDescriptionMap][];
+export type ISerializableEnvironmentVariableCollections = [
+	string,
+	ISerializableEnvironmentVariableCollection,
+	ISerializableEnvironmentDescriptionMap
+][];
 
 export interface IExtensionOwnedEnvironmentVariableMutator extends IEnvironmentVariableMutator {
 	readonly extensionIdentifier: string;
@@ -83,11 +87,18 @@ export interface IMergedEnvironmentVariableCollection {
 	 * @param variableResolver An optional function to use to resolve variables within the
 	 * environment values.
 	 */
-	applyToProcessEnvironment(env: IProcessEnvironment, scope: EnvironmentVariableScope | undefined, variableResolver?: VariableResolver): Promise<void>;
+	applyToProcessEnvironment(
+		env: IProcessEnvironment,
+		scope: EnvironmentVariableScope | undefined,
+		variableResolver?: VariableResolver
+	): Promise<void>;
 
 	/**
 	 * Generates a diff of this collection against another. Returns undefined if the collections are
 	 * the same.
 	 */
-	diff(other: IMergedEnvironmentVariableCollection, scope: EnvironmentVariableScope | undefined): IMergedEnvironmentVariableCollectionDiff | undefined;
+	diff(
+		other: IMergedEnvironmentVariableCollection,
+		scope: EnvironmentVariableScope | undefined
+	): IMergedEnvironmentVariableCollectionDiff | undefined;
 }

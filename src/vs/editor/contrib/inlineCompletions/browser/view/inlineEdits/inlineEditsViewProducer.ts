@@ -17,17 +17,24 @@ import { InlineEditsView } from './inlineEditsView.js';
 import { InlineEditTabAction } from './inlineEditsViewInterface.js';
 import { InlineSuggestionGutterMenuData, SimpleInlineSuggestModel } from './components/gutterIndicatorView.js';
 
-export class InlineEditsViewAndDiffProducer extends Disposable { // TODO: This class is no longer a diff producer. Rename it or get rid of it
+export class InlineEditsViewAndDiffProducer extends Disposable {
+	// TODO: This class is no longer a diff producer. Rename it or get rid of it
 	private readonly _editorObs: ObservableCodeEditor;
 
-	private readonly _inlineEdit = derived<InlineEditWithChanges | undefined>(this, (reader) => {
+	private readonly _inlineEdit = derived<InlineEditWithChanges | undefined>(this, reader => {
 		const model = this._model.read(reader);
-		if (!model) { return undefined; }
+		if (!model) {
+			return undefined;
+		}
 		const textModel = this._editor.getModel();
-		if (!textModel) { return undefined; }
+		if (!textModel) {
+			return undefined;
+		}
 
 		const state = model.inlineEditState.read(reader);
-		if (!state) { return undefined; }
+		if (!state) {
+			return undefined;
+		}
 		const action = state.inlineSuggestion.action;
 
 		let diffEdits: TextEdit | undefined;
@@ -60,15 +67,23 @@ export class InlineEditsViewAndDiffProducer extends Disposable { // TODO: This c
 
 	public readonly _inlineEditModel = derived<ModelPerInlineEdit | undefined>(this, reader => {
 		const model = this._model.read(reader);
-		if (!model) { return undefined; }
+		if (!model) {
+			return undefined;
+		}
 		const edit = this._inlineEdit.read(reader);
-		if (!edit) { return undefined; }
+		if (!edit) {
+			return undefined;
+		}
 
 		const tabAction = derived<InlineEditTabAction>(this, reader => {
 			/** @description tabAction */
 			if (this._editorObs.isFocused.read(reader)) {
-				if (model.tabShouldJumpToInlineEdit.read(reader)) { return InlineEditTabAction.Jump; }
-				if (model.tabShouldAcceptInlineEdit.read(reader)) { return InlineEditTabAction.Accept; }
+				if (model.tabShouldJumpToInlineEdit.read(reader)) {
+					return InlineEditTabAction.Jump;
+				}
+				if (model.tabShouldAcceptInlineEdit.read(reader)) {
+					return InlineEditTabAction.Accept;
+				}
 			}
 			return InlineEditTabAction.Inactive;
 		});
@@ -82,16 +97,23 @@ export class InlineEditsViewAndDiffProducer extends Disposable { // TODO: This c
 		private readonly _editor: ICodeEditor,
 		private readonly _model: IObservable<InlineCompletionsModel | undefined>,
 		private readonly _showCollapsed: IObservable<boolean>,
-		@IInstantiationService instantiationService: IInstantiationService,
+		@IInstantiationService instantiationService: IInstantiationService
 	) {
 		super();
 
 		this._editorObs = observableCodeEditor(this._editor);
 
-		this.view = this._register(instantiationService.createInstance(InlineEditsView, this._editor, this._inlineEditModel,
-			this._model.map(model => model ? SimpleInlineSuggestModel.fromInlineCompletionModel(model) : undefined),
-			this._inlineEdit.map(e => e ? InlineSuggestionGutterMenuData.fromInlineSuggestion(e.inlineCompletion) : undefined),
-			this._showCollapsed,
-		));
+		this.view = this._register(
+			instantiationService.createInstance(
+				InlineEditsView,
+				this._editor,
+				this._inlineEditModel,
+				this._model.map(model => (model ? SimpleInlineSuggestModel.fromInlineCompletionModel(model) : undefined)),
+				this._inlineEdit.map(e =>
+					e ? InlineSuggestionGutterMenuData.fromInlineSuggestion(e.inlineCompletion) : undefined
+				),
+				this._showCollapsed
+			)
+		);
 	}
 }

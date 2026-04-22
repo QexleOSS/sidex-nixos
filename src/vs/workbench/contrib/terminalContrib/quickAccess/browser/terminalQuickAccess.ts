@@ -5,9 +5,18 @@
 
 import { localize } from '../../../../../nls.js';
 import { IQuickPickSeparator } from '../../../../../platform/quickinput/common/quickInput.js';
-import { IPickerQuickAccessItem, PickerQuickAccessProvider, TriggerAction } from '../../../../../platform/quickinput/browser/pickerQuickAccess.js';
+import {
+	IPickerQuickAccessItem,
+	PickerQuickAccessProvider,
+	TriggerAction
+} from '../../../../../platform/quickinput/browser/pickerQuickAccess.js';
 import { matchesFuzzy } from '../../../../../base/common/filters.js';
-import { ITerminalEditorService, ITerminalGroupService, ITerminalInstance, ITerminalService } from '../../../terminal/browser/terminal.js';
+import {
+	ITerminalEditorService,
+	ITerminalGroupService,
+	ITerminalInstance,
+	ITerminalService
+} from '../../../terminal/browser/terminal.js';
 import { ICommandService } from '../../../../../platform/commands/common/commands.js';
 import { TerminalCommandId } from '../../../terminal/common/terminal.js';
 import { IThemeService } from '../../../../../platform/theme/common/themeService.js';
@@ -21,7 +30,6 @@ import { IInstantiationService } from '../../../../../platform/instantiation/com
 let terminalPicks: Array<IPickerQuickAccessItem | IQuickPickSeparator> = [];
 
 export class TerminalQuickAccessProvider extends PickerQuickAccessProvider<IPickerQuickAccessItem> {
-
 	static PREFIX = 'term ';
 
 	constructor(
@@ -31,7 +39,7 @@ export class TerminalQuickAccessProvider extends PickerQuickAccessProvider<IPick
 		@ITerminalEditorService private readonly _terminalEditorService: ITerminalEditorService,
 		@ITerminalGroupService private readonly _terminalGroupService: ITerminalGroupService,
 		@ITerminalService private readonly _terminalService: ITerminalService,
-		@IThemeService private readonly _themeService: IThemeService,
+		@IThemeService private readonly _themeService: IThemeService
 	) {
 		super(TerminalQuickAccessProvider.PREFIX, { canAcceptInBackground: true });
 	}
@@ -44,7 +52,10 @@ export class TerminalQuickAccessProvider extends PickerQuickAccessProvider<IPick
 			const terminalGroup = terminalGroups[groupIndex];
 			for (let terminalIndex = 0; terminalIndex < terminalGroup.terminalInstances.length; terminalIndex++) {
 				const terminal = terminalGroup.terminalInstances[terminalIndex];
-				const pick = this._createPick(terminal, terminalIndex, filter, { groupIndex, groupSize: terminalGroup.terminalInstances.length });
+				const pick = this._createPick(terminal, terminalIndex, filter, {
+					groupIndex,
+					groupSize: terminalGroup.terminalInstances.length
+				});
 				if (pick) {
 					terminalPicks.push(pick);
 				}
@@ -69,13 +80,16 @@ export class TerminalQuickAccessProvider extends PickerQuickAccessProvider<IPick
 			terminalPicks.push({ type: 'separator' });
 		}
 
-		const createTerminalLabel = localize("workbench.action.terminal.newplus", "Create New Terminal");
+		const createTerminalLabel = localize('workbench.action.terminal.newplus', 'Create New Terminal');
 		terminalPicks.push({
 			label: `$(plus) ${createTerminalLabel}`,
 			ariaLabel: createTerminalLabel,
 			accept: () => this._commandService.executeCommand(TerminalCommandId.New)
 		});
-		const createWithProfileLabel = localize("workbench.action.terminal.newWithProfilePlus", "Create New Terminal With Profile...");
+		const createWithProfileLabel = localize(
+			'workbench.action.terminal.newWithProfilePlus',
+			'Create New Terminal With Profile...'
+		);
 		terminalPicks.push({
 			label: `$(plus) ${createWithProfileLabel}`,
 			ariaLabel: createWithProfileLabel,
@@ -84,12 +98,17 @@ export class TerminalQuickAccessProvider extends PickerQuickAccessProvider<IPick
 		return terminalPicks;
 	}
 
-	private _createPick(terminal: ITerminalInstance, terminalIndex: number, filter: string, groupInfo?: { groupIndex: number; groupSize: number }): IPickerQuickAccessItem | undefined {
+	private _createPick(
+		terminal: ITerminalInstance,
+		terminalIndex: number,
+		filter: string,
+		groupInfo?: { groupIndex: number; groupSize: number }
+	): IPickerQuickAccessItem | undefined {
 		const iconId = this._instantiationService.invokeFunction(getIconId, terminal);
 		const index = groupInfo
-			? (groupInfo.groupSize > 1
+			? groupInfo.groupSize > 1
 				? `${groupInfo.groupIndex + 1}.${terminalIndex + 1}`
-				: `${groupInfo.groupIndex + 1}`)
+				: `${groupInfo.groupIndex + 1}`
 			: `${terminalIndex + 1}`;
 		const label = `$(${iconId}) ${index}: ${terminal.title}`;
 		const iconClasses: string[] = [];
@@ -110,7 +129,7 @@ export class TerminalQuickAccessProvider extends PickerQuickAccessProvider<IPick
 				buttons: [
 					{
 						iconClass: ThemeIcon.asClassName(renameTerminalIcon),
-						tooltip: localize('renameTerminal', "Rename Terminal")
+						tooltip: localize('renameTerminal', 'Rename Terminal')
 					},
 					{
 						iconClass: ThemeIcon.asClassName(killTerminalIcon),

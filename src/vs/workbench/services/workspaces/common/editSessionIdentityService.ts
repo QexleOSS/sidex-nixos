@@ -8,7 +8,12 @@ import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
-import { EditSessionIdentityMatch, IEditSessionIdentityCreateParticipant, IEditSessionIdentityProvider, IEditSessionIdentityService } from '../../../../platform/workspace/common/editSessions.js';
+import {
+	EditSessionIdentityMatch,
+	IEditSessionIdentityCreateParticipant,
+	IEditSessionIdentityProvider,
+	IEditSessionIdentityService
+} from '../../../../platform/workspace/common/editSessions.js';
 import { IWorkspaceFolder } from '../../../../platform/workspace/common/workspace.js';
 import { IExtensionService } from '../../extensions/common/extensions.js';
 
@@ -19,8 +24,8 @@ export class EditSessionIdentityService implements IEditSessionIdentityService {
 
 	constructor(
 		@IExtensionService private readonly _extensionService: IExtensionService,
-		@ILogService private readonly _logService: ILogService,
-	) { }
+		@ILogService private readonly _logService: ILogService
+	) {}
 
 	registerEditSessionIdentityProvider(provider: IEditSessionIdentityProvider): IDisposable {
 		if (this._editSessionIdentifierProviders.get(provider.scheme)) {
@@ -33,7 +38,10 @@ export class EditSessionIdentityService implements IEditSessionIdentityService {
 		});
 	}
 
-	async getEditSessionIdentifier(workspaceFolder: IWorkspaceFolder, token: CancellationToken): Promise<string | undefined> {
+	async getEditSessionIdentifier(
+		workspaceFolder: IWorkspaceFolder,
+		token: CancellationToken
+	): Promise<string | undefined> {
 		const { scheme } = workspaceFolder.uri;
 
 		const provider = await this.activateProvider(scheme);
@@ -42,7 +50,12 @@ export class EditSessionIdentityService implements IEditSessionIdentityService {
 		return provider?.getEditSessionIdentifier(workspaceFolder, token);
 	}
 
-	async provideEditSessionIdentityMatch(workspaceFolder: IWorkspaceFolder, identity1: string, identity2: string, cancellationToken: CancellationToken): Promise<EditSessionIdentityMatch | undefined> {
+	async provideEditSessionIdentityMatch(
+		workspaceFolder: IWorkspaceFolder,
+		identity1: string,
+		identity2: string,
+		cancellationToken: CancellationToken
+	): Promise<EditSessionIdentityMatch | undefined> {
 		const { scheme } = workspaceFolder.uri;
 
 		const provider = await this.activateProvider(scheme);
@@ -51,7 +64,10 @@ export class EditSessionIdentityService implements IEditSessionIdentityService {
 		return provider?.provideEditSessionIdentityMatch?.(workspaceFolder, identity1, identity2, cancellationToken);
 	}
 
-	async onWillCreateEditSessionIdentity(workspaceFolder: IWorkspaceFolder, cancellationToken: CancellationToken): Promise<void> {
+	async onWillCreateEditSessionIdentity(
+		workspaceFolder: IWorkspaceFolder,
+		cancellationToken: CancellationToken
+	): Promise<void> {
 		this._logService.debug('Running onWillCreateEditSessionIdentity participants...');
 
 		// TODO@joyceerhl show progress notification?

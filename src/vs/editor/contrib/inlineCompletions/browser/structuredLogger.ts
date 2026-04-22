@@ -48,13 +48,16 @@ interface IFetchResult {
 	source: string;
 }
 
-
 /**
  * The sourceLabel must not contain '@'!
-*/
+ */
 export function formatRecordableLogEntry<T extends IRecordableLogEntry>(entry: T): string {
 	// eslint-disable-next-line local/code-no-any-casts
-	return entry.sourceId + ' @@ ' + JSON.stringify({ ...entry, modelUri: (entry as any).modelUri?.toString(), sourceId: undefined });
+	return (
+		entry.sourceId +
+		' @@ ' +
+		JSON.stringify({ ...entry, modelUri: (entry as any).modelUri?.toString(), sourceId: undefined })
+	);
 }
 
 export class StructuredLogger<T extends IRecordableLogEntry> extends Disposable {
@@ -68,10 +71,13 @@ export class StructuredLogger<T extends IRecordableLogEntry> extends Disposable 
 	constructor(
 		private readonly _key: string,
 		@IContextKeyService private readonly _contextKeyService: IContextKeyService,
-		@IDataChannelService private readonly _dataChannelService: IDataChannelService,
+		@IDataChannelService private readonly _dataChannelService: IDataChannelService
 	) {
 		super();
-		this._isEnabledContextKeyValue = observableContextKey<boolean>('structuredLogger.enabled:' + this._key, this._contextKeyService).recomputeInitiallyAndOnChange(this._store);
+		this._isEnabledContextKeyValue = observableContextKey<boolean>(
+			'structuredLogger.enabled:' + this._key,
+			this._contextKeyService
+		).recomputeInitiallyAndOnChange(this._store);
 		this.isEnabled = this._isEnabledContextKeyValue.map(v => v !== undefined);
 	}
 

@@ -16,7 +16,20 @@ import { OffsetRange } from '../../../../common/core/ranges/offsetRange.js';
 import { Position } from '../../../../common/core/position.js';
 import { Range } from '../../../../common/core/range.js';
 import { TextReplacement } from '../../../../common/core/edits/textEdit.js';
-import { InlineCompletionEndOfLifeReason, InlineCompletionEndOfLifeReasonKind, InlineCompletion, InlineCompletionContext, InlineCompletions, InlineCompletionsProvider, PartialAcceptInfo, InlineCompletionsDisposeReason, LifetimeSummary, ProviderId, IInlineCompletionHint, InlineCompletionTriggerKind } from '../../../../common/languages.js';
+import {
+	InlineCompletionEndOfLifeReason,
+	InlineCompletionEndOfLifeReasonKind,
+	InlineCompletion,
+	InlineCompletionContext,
+	InlineCompletions,
+	InlineCompletionsProvider,
+	PartialAcceptInfo,
+	InlineCompletionsDisposeReason,
+	LifetimeSummary,
+	ProviderId,
+	IInlineCompletionHint,
+	InlineCompletionTriggerKind
+} from '../../../../common/languages.js';
 import { ILanguageConfigurationService } from '../../../../common/languages/languageConfigurationRegistry.js';
 import { ITextModel } from '../../../../common/model.js';
 import { fixBracketsInLine } from '../../../../common/model/bracketPairsTextModelPart/fixBrackets.js';
@@ -41,7 +54,7 @@ export function provideInlineCompletions(
 	model: ITextModel,
 	context: InlineCompletionContextWithoutUuid,
 	requestInfo: InlineSuggestRequestInfo,
-	languageConfigurationService?: ILanguageConfigurationService,
+	languageConfigurationService?: ILanguageConfigurationService
 ): IInlineCompletionProviderResult {
 	const requestUuid = prefixedUuid('icr');
 
@@ -58,84 +71,108 @@ export function provideInlineCompletions(
 	});
 	const { foundCycles } = yieldsToGraph.removeCycles();
 	if (foundCycles.length > 0) {
-		onUnexpectedExternalError(new Error(`Inline completions: cyclic yield-to dependency detected.`
-			+ ` Path: ${foundCycles.map(s => s.toString ? s.toString() : ('' + s)).join(' -> ')}`));
+		onUnexpectedExternalError(
+			new Error(
+				`Inline completions: cyclic yield-to dependency detected.` +
+					` Path: ${foundCycles.map(s => (s.toString ? s.toString() : '' + s)).join(' -> ')}`
+			)
+		);
 	}
 
 	let runningCount = 0;
 
-	const queryProvider = new CachedFunction(async (provider: InlineCompletionsProvider<InlineCompletions>): Promise<InlineSuggestionList | undefined> => {
-		try {
-			runningCount++;
-			if (cancellationTokenSource.token.isCancellationRequested) {
-				return undefined;
-			}
+	const queryProvider = new CachedFunction(
+		async (provider: InlineCompletionsProvider<InlineCompletions>): Promise<InlineSuggestionList | undefined> => {
+			try {
+				runningCount++;
+				if (cancellationTokenSource.token.isCancellationRequested) {
+					return undefined;
+				}
 
-			const yieldsTo = yieldsToGraph.getOutgoing(provider);
-			for (const p of yieldsTo) {
-				// We know there is no cycle, so no recursion here
-				const result = await queryProvider.get(p);
-				if (result) {
-					for (const item of result.inlineSuggestions.items) {
-						if (item.isInlineEdit || typeof item.insertText !== 'string' && item.insertText !== undefined) {
-							return undefined;
-						}
-						if (item.insertText !== undefined) {
-							const t = new TextReplacement(Range.lift(item.range) ?? defaultReplaceRange, item.insertText);
-							if (inlineCompletionIsVisible(t, undefined, model, position)) {
+				const yieldsTo = yieldsToGraph.getOutgoing(provider);
+				for (const p of yieldsTo) {
+					// We know there is no cycle, so no recursion here
+					const result = await queryProvider.get(p);
+					if (result) {
+						for (const item of result.inlineSuggestions.items) {
+							if (item.isInlineEdit || (typeof item.insertText !== 'string' && item.insertText !== undefined)) {
 								return undefined;
 							}
-						}
+							if (item.insertText !== undefined) {
+								const t = new TextReplacement(Range.lift(item.range) ?? defaultReplaceRange, item.insertText);
+								if (inlineCompletionIsVisible(t, undefined, model, position)) {
+									return undefined;
+								}
+							}
 
-						// else: inline completion is not visible, so lets not block
+							// else: inline completion is not visible, so lets not block
+						}
 					}
 				}
-			}
 
-			let result: InlineCompletions | null | undefined;
-			const providerStartTime = Date.now();
-			try {
-				result = await provider.provideInlineCompletions(model, position, contextWithUuid, cancellationTokenSource.token);
-			} catch (e) {
-				onUnexpectedExternalError(e);
-				return undefined;
-			}
-			const providerEndTime = Date.now();
-
-			if (!result) {
-				return undefined;
-			}
-
-			const data: InlineSuggestData[] = [];
-			const list = new InlineSuggestionList(result, data, provider);
-			list.addRef();
-			runWhenCancelled(cancellationTokenSource.token, () => {
-				return list.removeRef(cancelReason);
-			});
-			if (cancellationTokenSource.token.isCancellationRequested) {
-				return undefined; // The list is disposed now, so we cannot return the items!
-			}
-
-			for (const item of result.items) {
-				const r = toInlineSuggestData(item, list, defaultReplaceRange, model, languageConfigurationService, contextWithUuid, requestInfo, { startTime: providerStartTime, endTime: providerEndTime });
-				if (ErrorResult.is(r)) {
-					r.logError();
-					continue;
+				let result: InlineCompletions | null | undefined;
+				const providerStartTime = Date.now();
+				try {
+					result = await provider.provideInlineCompletions(
+						model,
+						position,
+						contextWithUuid,
+						cancellationTokenSource.token
+					);
+				} catch (e) {
+					onUnexpectedExternalError(e);
+					return undefined;
 				}
-				data.push(r);
+				const providerEndTime = Date.now();
+
+				if (!result) {
+					return undefined;
+				}
+
+				const data: InlineSuggestData[] = [];
+				const list = new InlineSuggestionList(result, data, provider);
+				list.addRef();
+				runWhenCancelled(cancellationTokenSource.token, () => {
+					return list.removeRef(cancelReason);
+				});
+				if (cancellationTokenSource.token.isCancellationRequested) {
+					return undefined; // The list is disposed now, so we cannot return the items!
+				}
+
+				for (const item of result.items) {
+					const r = toInlineSuggestData(
+						item,
+						list,
+						defaultReplaceRange,
+						model,
+						languageConfigurationService,
+						contextWithUuid,
+						requestInfo,
+						{ startTime: providerStartTime, endTime: providerEndTime }
+					);
+					if (ErrorResult.is(r)) {
+						r.logError();
+						continue;
+					}
+					data.push(r);
+				}
+
+				return list;
+			} finally {
+				runningCount--;
 			}
-
-			return list;
-		} finally {
-			runningCount--;
 		}
-	});
+	);
 
-	const inlineCompletionLists = AsyncIterableProducer.fromPromisesResolveOrder(providers.map(p => queryProvider.get(p))).filter(isDefined);
+	const inlineCompletionLists = AsyncIterableProducer.fromPromisesResolveOrder(
+		providers.map(p => queryProvider.get(p))
+	).filter(isDefined);
 
 	return {
 		contextWithUuid,
-		get didAllProvidersReturn() { return runningCount === 0; },
+		get didAllProvidersReturn() {
+			return runningCount === 0;
+		},
 		lists: inlineCompletionLists,
 		cancelAndDispose: reason => {
 			if (cancelReason !== undefined) {
@@ -179,9 +216,8 @@ function toInlineSuggestData(
 	languageConfigurationService: ILanguageConfigurationService | undefined,
 	context: InlineCompletionContext,
 	requestInfo: InlineSuggestRequestInfo,
-	providerRequestInfo: InlineSuggestProviderRequestInfo,
+	providerRequestInfo: InlineSuggestProviderRequestInfo
 ): InlineSuggestData | ErrorResult {
-
 	let action: IInlineSuggestDataAction | undefined;
 	const uri = inlineCompletion.uri ? URI.revive(inlineCompletion.uri) : undefined;
 
@@ -189,7 +225,7 @@ function toInlineSuggestData(
 		action = {
 			kind: 'jumpTo',
 			position: Position.lift(inlineCompletion.jumpToPosition),
-			uri,
+			uri
 		};
 	} else if (inlineCompletion.insertText !== undefined) {
 		let insertText: string;
@@ -200,12 +236,7 @@ function toInlineSuggestData(
 			insertText = inlineCompletion.insertText;
 
 			if (languageConfigurationService && inlineCompletion.completeBracketPairs) {
-				insertText = closeBrackets(
-					insertText,
-					range.getStartPosition(),
-					textModel,
-					languageConfigurationService
-				);
+				insertText = closeBrackets(insertText, range.getStartPosition(), textModel, languageConfigurationService);
 
 				// Modify range depending on if brackets are added or removed
 				const diff = insertText.length - inlineCompletion.insertText.length;
@@ -254,7 +285,7 @@ function toInlineSuggestData(
 			insertText,
 			snippetInfo,
 			uri,
-			alternativeAction: undefined,
+			alternativeAction: undefined
 		};
 	} else {
 		action = undefined;
@@ -274,7 +305,7 @@ function toInlineSuggestData(
 		inlineCompletion.supportsRename ?? false,
 		requestInfo,
 		providerRequestInfo,
-		inlineCompletion.correlationId,
+		inlineCompletion.correlationId
 	);
 }
 
@@ -338,17 +369,13 @@ export class InlineSuggestData {
 		const mockInlineCompletion: InlineCompletion = {
 			insertText: action?.kind === 'edit' ? action.insertText : '',
 			range: action?.kind === 'edit' ? action.range : undefined,
-			isInlineEdit: true,
+			isInlineEdit: true
 		};
 		const mockProvider: InlineCompletionsProvider = {
 			provideInlineCompletions: () => ({ items: [] }),
-			disposeInlineCompletions: () => { },
+			disposeInlineCompletions: () => {}
 		};
-		const mockSource = new InlineSuggestionList(
-			{ items: [mockInlineCompletion] },
-			[],
-			mockProvider
-		);
+		const mockSource = new InlineSuggestionList({ items: [mockInlineCompletion] }, [], mockProvider);
 		const mockContext: InlineCompletionContext = {
 			triggerKind: InlineCompletionTriggerKind.Explicit,
 			selectedSuggestionInfo: undefined,
@@ -356,7 +383,7 @@ export class InlineSuggestData {
 			earliestShownDateTime: 0,
 			includeInlineCompletions: true,
 			includeInlineEdits: false,
-			requestIssuedDateTime: Date.now(),
+			requestIssuedDateTime: Date.now()
 		};
 		const mockRequestInfo: InlineSuggestRequestInfo = {
 			startTime: Date.now(),
@@ -366,11 +393,11 @@ export class InlineSuggestData {
 			availableProviders: [],
 			reason: '',
 			typingInterval: 0,
-			typingIntervalCharacterCount: 0,
+			typingIntervalCharacterCount: 0
 		};
 		const mockProviderRequestInfo: InlineSuggestProviderRequestInfo = {
 			startTime: Date.now(),
-			endTime: Date.now(),
+			endTime: Date.now()
 		};
 
 		return new InlineSuggestData(
@@ -421,17 +448,27 @@ export class InlineSuggestData {
 		public readonly supportsRename: boolean,
 		private readonly _requestInfo: InlineSuggestRequestInfo,
 		private readonly _providerRequestInfo: InlineSuggestProviderRequestInfo,
-		private readonly _correlationId: string | undefined,
+		private readonly _correlationId: string | undefined
 	) {
 		this._viewData = { editorType: _requestInfo.editorType };
 	}
 
-	public get showInlineEditMenu() { return this.sourceInlineCompletion.showInlineEditMenu ?? false; }
+	public get showInlineEditMenu() {
+		return this.sourceInlineCompletion.showInlineEditMenu ?? false;
+	}
 
-	public get partialAccepts(): PartialAcceptance { return this._partiallyAcceptedSinceOriginal; }
+	public get partialAccepts(): PartialAcceptance {
+		return this._partiallyAcceptedSinceOriginal;
+	}
 
-
-	public async reportInlineEditShown(commandService: ICommandService, updatedInsertText: string, viewKind: InlineCompletionViewKind, viewData: InlineCompletionViewData, editKind: InlineSuggestionEditKind | undefined, timeWhenShown: number): Promise<void> {
+	public async reportInlineEditShown(
+		commandService: ICommandService,
+		updatedInsertText: string,
+		viewKind: InlineCompletionViewKind,
+		viewData: InlineCompletionViewData,
+		editKind: InlineSuggestionEditKind | undefined,
+		timeWhenShown: number
+	): Promise<void> {
 		this.updateShownDuration(viewKind);
 
 		if (this._didShow || this._didReportEndOfLife) {
@@ -445,18 +482,39 @@ export class InlineSuggestData {
 		this._timeUntilShown = timeWhenShown - this._requestInfo.startTime;
 		this._timeUntilActuallyShown = Date.now() - this._requestInfo.startTime;
 
-		const editDeltaInfo = new EditDeltaInfo(viewData.lineCountModified, viewData.lineCountOriginal, viewData.characterCountModified, viewData.characterCountOriginal);
-		this.source.provider.handleItemDidShow?.(this.source.inlineSuggestions, this.sourceInlineCompletion, updatedInsertText, editDeltaInfo);
+		const editDeltaInfo = new EditDeltaInfo(
+			viewData.lineCountModified,
+			viewData.lineCountOriginal,
+			viewData.characterCountModified,
+			viewData.characterCountOriginal
+		);
+		this.source.provider.handleItemDidShow?.(
+			this.source.inlineSuggestions,
+			this.sourceInlineCompletion,
+			updatedInsertText,
+			editDeltaInfo
+		);
 
 		if (this.sourceInlineCompletion.shownCommand) {
-			await commandService.executeCommand(this.sourceInlineCompletion.shownCommand.id, ...(this.sourceInlineCompletion.shownCommand.arguments || []));
+			await commandService.executeCommand(
+				this.sourceInlineCompletion.shownCommand.id,
+				...(this.sourceInlineCompletion.shownCommand.arguments || [])
+			);
 		}
 	}
 
-	public reportPartialAccept(acceptedCharacters: number, info: PartialAcceptInfo, partialAcceptance: PartialAcceptance) {
+	public reportPartialAccept(
+		acceptedCharacters: number,
+		info: PartialAcceptInfo,
+		partialAcceptance: PartialAcceptance
+	) {
 		this._partiallyAcceptedCount++;
 		this._partiallyAcceptedSinceOriginal.characters += partialAcceptance.characters;
-		this._partiallyAcceptedSinceOriginal.ratio = Math.min(this._partiallyAcceptedSinceOriginal.ratio + (1 - this._partiallyAcceptedSinceOriginal.ratio) * partialAcceptance.ratio, 1);
+		this._partiallyAcceptedSinceOriginal.ratio = Math.min(
+			this._partiallyAcceptedSinceOriginal.ratio +
+				(1 - this._partiallyAcceptedSinceOriginal.ratio) * partialAcceptance.ratio,
+			1
+		);
 		this._partiallyAcceptedSinceOriginal.count += partialAcceptance.count;
 
 		this.source.provider.handlePartialAccept?.(
@@ -471,7 +529,7 @@ export class InlineSuggestData {
 	 * Sends the end of life event to the provider.
 	 * If no reason is provided, the last set reason is used.
 	 * If no reason was set, the default reason is used.
-	*/
+	 */
 	public reportEndOfLife(reason?: InlineCompletionEndOfLifeReason): void {
 		if (this._didReportEndOfLife) {
 			return;
@@ -480,13 +538,21 @@ export class InlineSuggestData {
 		this.reportInlineEditHidden();
 
 		if (!reason) {
-			reason = this._lastSetEndOfLifeReason ?? { kind: InlineCompletionEndOfLifeReasonKind.Ignored, userTypingDisagreed: false, supersededBy: undefined };
+			reason = this._lastSetEndOfLifeReason ?? {
+				kind: InlineCompletionEndOfLifeReasonKind.Ignored,
+				userTypingDisagreed: false,
+				supersededBy: undefined
+			};
 		}
 
 		// A suggestion can only be "rejected" if it was actually shown to the user.
 		// If the suggestion was never shown, downgrade to "ignored".
 		if (reason.kind === InlineCompletionEndOfLifeReasonKind.Rejected && !this._didShow) {
-			reason = { kind: InlineCompletionEndOfLifeReasonKind.Ignored, userTypingDisagreed: false, supersededBy: undefined };
+			reason = {
+				kind: InlineCompletionEndOfLifeReasonKind.Ignored,
+				userTypingDisagreed: false,
+				supersededBy: undefined
+			};
 		}
 
 		if (reason.kind === InlineCompletionEndOfLifeReasonKind.Rejected && this.source.provider.handleRejection) {
@@ -527,17 +593,28 @@ export class InlineSuggestData {
 				skuPlan: this._requestInfo.sku?.plan,
 				skuType: this._requestInfo.sku?.type,
 				availableProviders: this._requestInfo.availableProviders.map(p => p.toString()).join(','),
-				...this._viewData.renderData?.getData(),
+				...this._viewData.renderData?.getData()
 			};
-			this.source.provider.handleEndOfLifetime(this.source.inlineSuggestions, this.sourceInlineCompletion, reason, summary);
+			this.source.provider.handleEndOfLifetime(
+				this.source.inlineSuggestions,
+				this.sourceInlineCompletion,
+				reason,
+				summary
+			);
 		}
 	}
 
 	public setIsPreceeded(partialAccepts: PartialAcceptance): void {
 		this._isPreceeded = true;
 
-		if (this._partiallyAcceptedSinceOriginal.characters !== 0 || this._partiallyAcceptedSinceOriginal.ratio !== 0 || this._partiallyAcceptedSinceOriginal.count !== 0) {
-			console.warn('Expected partiallyAcceptedCountSinceOriginal to be { characters: 0, rate: 0, partialAcceptances: 0 } before setIsPreceeded.');
+		if (
+			this._partiallyAcceptedSinceOriginal.characters !== 0 ||
+			this._partiallyAcceptedSinceOriginal.ratio !== 0 ||
+			this._partiallyAcceptedSinceOriginal.count !== 0
+		) {
+			console.warn(
+				'Expected partiallyAcceptedCountSinceOriginal to be { characters: 0, rate: 0, partialAcceptances: 0 } before setIsPreceeded.'
+			);
 		}
 		this._partiallyAcceptedSinceOriginal = partialAccepts;
 	}
@@ -548,7 +625,7 @@ export class InlineSuggestData {
 
 	/**
 	 * Sets the end of life reason, but does not send the event to the provider yet.
-	*/
+	 */
 	public setEndOfLifeReason(reason: InlineCompletionEndOfLifeReason): void {
 		this.reportInlineEditHidden();
 		this._lastSetEndOfLifeReason = reason;
@@ -632,7 +709,7 @@ export interface SnippetInfo {
 export enum InlineCompletionEditorType {
 	TextEditor = 'textEditor',
 	DiffEditor = 'diffEditor',
-	Notebook = 'notebook',
+	Notebook = 'notebook'
 }
 
 /**
@@ -644,8 +721,8 @@ export class InlineSuggestionList {
 	constructor(
 		public readonly inlineSuggestions: InlineCompletions,
 		public readonly inlineSuggestionsData: readonly InlineSuggestData[],
-		public readonly provider: InlineCompletionsProvider,
-	) { }
+		public readonly provider: InlineCompletionsProvider
+	) {}
 
 	addRef(): void {
 		this.refCount++;
@@ -673,7 +750,12 @@ function getDefaultRange(position: Position, model: ITextModel): Range {
 		: Range.fromPositions(position, position.with(undefined, maxColumn));
 }
 
-function closeBrackets(text: string, position: Position, model: ITextModel, languageConfigurationService: ILanguageConfigurationService): string {
+function closeBrackets(
+	text: string,
+	position: Position,
+	model: ITextModel,
+	languageConfigurationService: ILanguageConfigurationService
+): string {
 	const currentLine = model.getLineContent(position.lineNumber);
 	const edit = StringReplacement.replace(new OffsetRange(position.column - 1, currentLine.length), text);
 

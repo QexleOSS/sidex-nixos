@@ -25,14 +25,24 @@ import { RenderLineNumbersType } from '../../../editor/common/config/editorOptio
 import { IPosition } from '../../../editor/common/core/position.js';
 import * as editorRange from '../../../editor/common/core/range.js';
 import { ISelection } from '../../../editor/common/core/selection.js';
-import { IContentDecorationRenderOptions, IDecorationOptions, IDecorationRenderOptions, IThemeDecorationRenderOptions } from '../../../editor/common/editorCommon.js';
+import {
+	IContentDecorationRenderOptions,
+	IDecorationOptions,
+	IDecorationRenderOptions,
+	IThemeDecorationRenderOptions
+} from '../../../editor/common/editorCommon.js';
 import * as encodedTokenAttributes from '../../../editor/common/encodedTokenAttributes.js';
 import * as languageSelector from '../../../editor/common/languageSelector.js';
 import * as languages from '../../../editor/common/languages.js';
 import { EndOfLineSequence, TrackedRangeStickiness } from '../../../editor/common/model.js';
 import { ITextEditorOptions } from '../../../platform/editor/common/editor.js';
 import { IExtensionDescription } from '../../../platform/extensions/common/extensions.js';
-import { IMarkerData, IRelatedInformation, MarkerSeverity, MarkerTag } from '../../../platform/markers/common/markers.js';
+import {
+	IMarkerData,
+	IRelatedInformation,
+	MarkerSeverity,
+	MarkerTag
+} from '../../../platform/markers/common/markers.js';
 import { ProgressLocation as MainProgressLocation } from '../../../platform/progress/common/progress.js';
 import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from '../../common/editor.js';
 import { IViewBadge } from '../../common/views.js';
@@ -43,7 +53,22 @@ import { ICellRange } from '../../contrib/notebook/common/notebookRange.js';
 import { InputValidationType } from '../../contrib/scm/common/scm.js';
 import * as search from '../../contrib/search/common/search.js';
 import { TestId } from '../../contrib/testing/common/testId.js';
-import { CoverageDetails, DetailType, ICoverageCount, IFileCoverage, ISerializedTestResults, ITestErrorMessage, ITestItem, ITestRunProfileReference, ITestTag, TestMessageType, TestResultItem, TestRunProfileBitset, denamespaceTestTag, namespaceTestTag } from '../../contrib/testing/common/testTypes.js';
+import {
+	CoverageDetails,
+	DetailType,
+	ICoverageCount,
+	IFileCoverage,
+	ISerializedTestResults,
+	ITestErrorMessage,
+	ITestItem,
+	ITestRunProfileReference,
+	ITestTag,
+	TestMessageType,
+	TestResultItem,
+	TestRunProfileBitset,
+	denamespaceTestTag,
+	namespaceTestTag
+} from '../../contrib/testing/common/testTypes.js';
 import { EditorGroupColumn } from '../../services/editor/common/editorGroupColumn.js';
 import { ACTIVE_GROUP, SIDE_GROUP } from '../../services/editor/common/editorService.js';
 import { Dto } from '../../services/extensions/common/proxyIdentifier.js';
@@ -53,10 +78,12 @@ import { getPrivateApiFor } from './extHostTestingPrivateApi.js';
 import * as types from './extHostTypes.js';
 
 export namespace Command {
-
 	export interface ICommandsConverter {
 		fromInternal(command: extHostProtocol.ICommandDto): vscode.Command | undefined;
-		toInternal(command: vscode.Command | undefined, disposables: DisposableStore): extHostProtocol.ICommandDto | undefined;
+		toInternal(
+			command: vscode.Command | undefined,
+			disposables: DisposableStore
+		): extHostProtocol.ICommandDto | undefined;
 	}
 }
 
@@ -75,7 +102,6 @@ export interface SelectionLike extends RangeLike {
 	active: PositionLike;
 }
 export namespace Selection {
-
 	export function to(selection: ISelection): types.Selection {
 		const { selectionStartLineNumber, selectionStartColumn, positionLineNumber, positionColumn } = selection;
 		const start = new types.Position(selectionStartLineNumber - 1, selectionStartColumn - 1);
@@ -94,7 +120,6 @@ export namespace Selection {
 	}
 }
 export namespace Range {
-
 	export function from(range: undefined): undefined;
 	export function from(range: RangeLike): editorRange.IRange;
 	export function from(range: RangeLike | undefined): editorRange.IRange | undefined;
@@ -124,7 +149,6 @@ export namespace Range {
 }
 
 export namespace Location {
-
 	export function from(location: vscode.Location): Dto<languages.Location> {
 		return {
 			uri: location.uri,
@@ -140,10 +164,14 @@ export namespace Location {
 export namespace TokenType {
 	export function to(type: encodedTokenAttributes.StandardTokenType): types.StandardTokenType {
 		switch (type) {
-			case encodedTokenAttributes.StandardTokenType.Comment: return types.StandardTokenType.Comment;
-			case encodedTokenAttributes.StandardTokenType.Other: return types.StandardTokenType.Other;
-			case encodedTokenAttributes.StandardTokenType.RegEx: return types.StandardTokenType.RegEx;
-			case encodedTokenAttributes.StandardTokenType.String: return types.StandardTokenType.String;
+			case encodedTokenAttributes.StandardTokenType.Comment:
+				return types.StandardTokenType.Comment;
+			case encodedTokenAttributes.StandardTokenType.Other:
+				return types.StandardTokenType.Other;
+			case encodedTokenAttributes.StandardTokenType.RegEx:
+				return types.StandardTokenType.RegEx;
+			case encodedTokenAttributes.StandardTokenType.String:
+				return types.StandardTokenType.String;
 		}
 	}
 }
@@ -158,17 +186,24 @@ export namespace Position {
 }
 
 export namespace DocumentSelector {
-
-	export function from(value: vscode.DocumentSelector, uriTransformer?: IURITransformer, extension?: IExtensionDescription): extHostProtocol.IDocumentFilterDto[] {
+	export function from(
+		value: vscode.DocumentSelector,
+		uriTransformer?: IURITransformer,
+		extension?: IExtensionDescription
+	): extHostProtocol.IDocumentFilterDto[] {
 		return coalesce(asArray(value).map(sel => _doTransformDocumentSelector(sel, uriTransformer, extension)));
 	}
 
-	function _doTransformDocumentSelector(selector: string | vscode.DocumentFilter, uriTransformer: IURITransformer | undefined, extension: IExtensionDescription | undefined): extHostProtocol.IDocumentFilterDto | undefined {
+	function _doTransformDocumentSelector(
+		selector: string | vscode.DocumentFilter,
+		uriTransformer: IURITransformer | undefined,
+		extension: IExtensionDescription | undefined
+	): extHostProtocol.IDocumentFilterDto | undefined {
 		if (typeof selector === 'string') {
 			return {
 				$serialized: true,
 				language: selector,
-				isBuiltin: extension?.isBuiltin,
+				isBuiltin: extension?.isBuiltin
 			};
 		}
 
@@ -187,7 +222,10 @@ export namespace DocumentSelector {
 		return undefined;
 	}
 
-	function _transformScheme(scheme: string | undefined, uriTransformer: IURITransformer | undefined): string | undefined {
+	function _transformScheme(
+		scheme: string | undefined,
+		uriTransformer: IURITransformer | undefined
+	): string | undefined {
 		if (uriTransformer && typeof scheme === 'string') {
 			return uriTransformer.transformOutgoingScheme(scheme);
 		}
@@ -227,7 +265,7 @@ export namespace Diagnostic {
 			} else {
 				code = {
 					value: String(value.code.value),
-					target: value.code.target,
+					target: value.code.target
 				};
 			}
 		}
@@ -239,7 +277,7 @@ export namespace Diagnostic {
 			code,
 			severity: DiagnosticSeverity.from(value.severity),
 			relatedInformation: value.relatedInformation && value.relatedInformation.map(DiagnosticRelatedInformation.from),
-			tags: Array.isArray(value.tags) ? coalesce(value.tags.map(DiagnosticTag.from)) : undefined,
+			tags: Array.isArray(value.tags) ? coalesce(value.tags.map(DiagnosticTag.from)) : undefined
 		};
 	}
 
@@ -266,7 +304,6 @@ export namespace DiagnosticRelatedInformation {
 	}
 }
 export namespace DiagnosticSeverity {
-
 	export function from(value: number): MarkerSeverity {
 		switch (value) {
 			case types.DiagnosticSeverity.Error:
@@ -320,10 +357,12 @@ export namespace ViewColumn {
 }
 
 function isDecorationOptions(something: any): something is vscode.DecorationOptions {
-	return (typeof something.range !== 'undefined');
+	return typeof something.range !== 'undefined';
 }
 
-export function isDecorationOptionsArr(something: vscode.Range[] | vscode.DecorationOptions[]): something is vscode.DecorationOptions[] {
+export function isDecorationOptionsArr(
+	something: vscode.Range[] | vscode.DecorationOptions[]
+): something is vscode.DecorationOptions[] {
 	if (something.length === 0) {
 		return true;
 	}
@@ -331,7 +370,6 @@ export function isDecorationOptionsArr(something: vscode.Range[] | vscode.Decora
 }
 
 export namespace MarkdownString {
-
 	export function fromMany(markup: (vscode.MarkdownString | vscode.MarkedString)[]): htmlContent.IMarkdownString[] {
 		return markup.map(MarkdownString.from);
 	}
@@ -342,9 +380,12 @@ export namespace MarkdownString {
 	}
 
 	function isCodeblock(thing: any): thing is Codeblock {
-		return thing && typeof thing === 'object'
-			&& typeof (<Codeblock>thing).language === 'string'
-			&& typeof (<Codeblock>thing).value === 'string';
+		return (
+			thing &&
+			typeof thing === 'object' &&
+			typeof (<Codeblock>thing).language === 'string' &&
+			typeof (<Codeblock>thing).value === 'string'
+		);
 	}
 
 	export function from(markup: vscode.MarkdownString | vscode.MarkedString): htmlContent.IMarkdownString {
@@ -353,7 +394,14 @@ export namespace MarkdownString {
 			const { language, value } = markup;
 			res = { value: '```' + language + '\n' + value + '\n```\n' };
 		} else if (types.MarkdownString.isMarkdownString(markup)) {
-			res = { value: markup.value, isTrusted: markup.isTrusted, supportThemeIcons: markup.supportThemeIcons, supportHtml: markup.supportHtml, supportAlertSyntax: markup.supportAlertSyntax, baseUri: markup.baseUri };
+			res = {
+				value: markup.value,
+				isTrusted: markup.isTrusted,
+				supportThemeIcons: markup.supportThemeIcons,
+				supportHtml: markup.supportHtml,
+				supportAlertSyntax: markup.supportAlertSyntax,
+				baseUri: markup.baseUri
+			};
 		} else if (typeof markup === 'string') {
 			res = { value: markup };
 		} else {
@@ -429,7 +477,9 @@ export namespace MarkdownString {
 		return result;
 	}
 
-	export function fromStrict(value: string | vscode.MarkdownString | undefined | null): undefined | string | htmlContent.IMarkdownString {
+	export function fromStrict(
+		value: string | vscode.MarkdownString | undefined | null
+	): undefined | string | htmlContent.IMarkdownString {
 		if (!value) {
 			return undefined;
 		}
@@ -444,9 +494,11 @@ export function fromRangeOrRangeWithMessage(ranges: vscode.Range[] | vscode.Deco
 				range: Range.from(r.range),
 				hoverMessage: Array.isArray(r.hoverMessage)
 					? MarkdownString.fromMany(r.hoverMessage)
-					: (r.hoverMessage ? MarkdownString.from(r.hoverMessage) : undefined),
+					: r.hoverMessage
+						? MarkdownString.from(r.hoverMessage)
+						: undefined,
 				// eslint-disable-next-line local/code-no-any-casts
-				renderOptions: <any> /* URI vs Uri */r.renderOptions
+				renderOptions: <any>/* URI vs Uri */ r.renderOptions
 			};
 		});
 	} else {
@@ -486,7 +538,7 @@ export namespace ThemableDecorationAttachmentRenderOptions {
 			backgroundColor: <string | types.ThemeColor>options.backgroundColor,
 			margin: options.margin,
 			width: options.width,
-			height: options.height,
+			height: options.height
 		};
 	}
 }
@@ -519,7 +571,7 @@ export namespace ThemableDecorationRenderOptions {
 			gutterIconSize: options.gutterIconSize,
 			overviewRulerColor: <string | types.ThemeColor>options.overviewRulerColor,
 			before: options.before ? ThemableDecorationAttachmentRenderOptions.from(options.before) : undefined,
-			after: options.after ? ThemableDecorationAttachmentRenderOptions.from(options.after) : undefined,
+			after: options.after ? ThemableDecorationAttachmentRenderOptions.from(options.after) : undefined
 		};
 	}
 }
@@ -573,13 +625,12 @@ export namespace DecorationRenderOptions {
 			gutterIconSize: options.gutterIconSize,
 			overviewRulerColor: <string | types.ThemeColor>options.overviewRulerColor,
 			before: options.before ? ThemableDecorationAttachmentRenderOptions.from(options.before) : undefined,
-			after: options.after ? ThemableDecorationAttachmentRenderOptions.from(options.after) : undefined,
+			after: options.after ? ThemableDecorationAttachmentRenderOptions.from(options.after) : undefined
 		};
 	}
 }
 
 export namespace TextEdit {
-
 	export function from(edit: vscode.TextEdit): languages.TextEdit {
 		return {
 			text: edit.newText,
@@ -596,19 +647,20 @@ export namespace TextEdit {
 }
 
 export namespace WorkspaceEdit {
-
 	export interface IVersionInformationProvider {
 		getTextDocumentVersion(uri: URI): number | undefined;
 		getNotebookDocumentVersion(uri: URI): number | undefined;
 	}
 
-	export function from(value: vscode.WorkspaceEdit, versionInfo?: IVersionInformationProvider): extHostProtocol.IWorkspaceEditDto {
+	export function from(
+		value: vscode.WorkspaceEdit,
+		versionInfo?: IVersionInformationProvider
+	): extHostProtocol.IWorkspaceEditDto {
 		const result: extHostProtocol.IWorkspaceEditDto = {
 			edits: []
 		};
 
 		if (value instanceof types.WorkspaceEdit) {
-
 			// collect all files that are to be created so that their version
 			// information (in case they exist as text model already) can be ignored
 			const toCreate = new ResourceSet();
@@ -619,7 +671,6 @@ export namespace WorkspaceEdit {
 			}
 
 			for (const entry of value._allEntries()) {
-
 				if (entry._type === types.FileEditType.File) {
 					let contents: { type: 'base64'; value: string } | { type: 'dataTransferItem'; id: string } | undefined;
 					if (entry.options?.contents) {
@@ -637,7 +688,6 @@ export namespace WorkspaceEdit {
 						options: { ...entry.options, contents },
 						metadata: entry.metadata
 					});
-
 				} else if (entry._type === types.FileEditType.Text) {
 					// text edits
 					result.edits.push({
@@ -658,7 +708,6 @@ export namespace WorkspaceEdit {
 						versionId: !toCreate.has(entry.uri) ? versionInfo?.getTextDocumentVersion(entry.uri) : undefined,
 						metadata: entry.metadata
 					});
-
 				} else if (entry._type === types.FileEditType.Cell) {
 					// cell edit
 					result.edits.push({
@@ -667,7 +716,6 @@ export namespace WorkspaceEdit {
 						cellEdit: entry.edit,
 						notebookVersionId: versionInfo?.getNotebookDocumentVersion(entry.uri)
 					});
-
 				} else if (entry._type === types.FileEditType.CellReplace) {
 					// cell replace
 					result.edits.push({
@@ -692,7 +740,6 @@ export namespace WorkspaceEdit {
 		const edits = new ResourceMap<(types.TextEdit | types.SnippetTextEdit)[]>();
 		for (const edit of value.edits) {
 			if ((<extHostProtocol.IWorkspaceTextEditDto>edit).textEdit) {
-
 				const item = <extHostProtocol.IWorkspaceTextEditDto>edit;
 				const uri = URI.revive(item.resource);
 				const range = Range.to(item.textEdit.range);
@@ -712,7 +759,6 @@ export namespace WorkspaceEdit {
 				} else {
 					array.push(editOrSnippetTest);
 				}
-
 			} else {
 				result.renameFile(
 					URI.revive((<extHostProtocol.IWorkspaceFileEditDto>edit).oldResource!),
@@ -729,9 +775,7 @@ export namespace WorkspaceEdit {
 	}
 }
 
-
 export namespace SymbolKind {
-
 	const _fromMapping: { [kind: number]: languages.SymbolKind } = Object.create(null);
 	_fromMapping[types.SymbolKind.File] = languages.SymbolKind.File;
 	_fromMapping[types.SymbolKind.Module] = languages.SymbolKind.Module;
@@ -775,16 +819,17 @@ export namespace SymbolKind {
 }
 
 export namespace SymbolTag {
-
 	export function from(kind: types.SymbolTag): languages.SymbolTag {
 		switch (kind) {
-			case types.SymbolTag.Deprecated: return languages.SymbolTag.Deprecated;
+			case types.SymbolTag.Deprecated:
+				return languages.SymbolTag.Deprecated;
 		}
 	}
 
 	export function to(kind: languages.SymbolTag): types.SymbolTag {
 		switch (kind) {
-			case languages.SymbolTag.Deprecated: return types.SymbolTag.Deprecated;
+			case languages.SymbolTag.Deprecated:
+				return types.SymbolTag.Deprecated;
 		}
 	}
 }
@@ -832,7 +877,7 @@ export namespace DocumentSymbol {
 			info.detail,
 			SymbolKind.to(info.kind),
 			Range.to(info.range),
-			Range.to(info.selectionRange),
+			Range.to(info.selectionRange)
 		);
 		if (isNonEmptyArray(info.tags)) {
 			result.tags = info.tags.map(SymbolTag.to);
@@ -846,7 +891,6 @@ export namespace DocumentSymbol {
 }
 
 export namespace CallHierarchyItem {
-
 	export function to(item: extHostProtocol.ICallHierarchyItemDto): types.CallHierarchyItem {
 		const result = new types.CallHierarchyItem(
 			SymbolKind.to(item.kind),
@@ -863,8 +907,11 @@ export namespace CallHierarchyItem {
 		return result;
 	}
 
-	export function from(item: vscode.CallHierarchyItem, sessionId?: string, itemId?: string): extHostProtocol.ICallHierarchyItemDto {
-
+	export function from(
+		item: vscode.CallHierarchyItem,
+		sessionId?: string,
+		itemId?: string
+	): extHostProtocol.ICallHierarchyItemDto {
 		sessionId = sessionId ?? (<types.CallHierarchyItem>item)._sessionId;
 		itemId = itemId ?? (<types.CallHierarchyItem>item)._itemId;
 
@@ -887,7 +934,6 @@ export namespace CallHierarchyItem {
 }
 
 export namespace CallHierarchyIncomingCall {
-
 	export function to(item: extHostProtocol.IIncomingCallDto): types.CallHierarchyIncomingCall {
 		return new types.CallHierarchyIncomingCall(
 			CallHierarchyItem.to(item.from),
@@ -897,7 +943,6 @@ export namespace CallHierarchyIncomingCall {
 }
 
 export namespace CallHierarchyOutgoingCall {
-
 	export function to(item: extHostProtocol.IOutgoingCallDto): types.CallHierarchyOutgoingCall {
 		return new types.CallHierarchyOutgoingCall(
 			CallHierarchyItem.to(item.to),
@@ -905,7 +950,6 @@ export namespace CallHierarchyOutgoingCall {
 		);
 	}
 }
-
 
 export namespace location {
 	export function from(value: vscode.Location): languages.Location {
@@ -932,19 +976,15 @@ export namespace DefinitionLink {
 			range: Range.from(definitionLink.targetRange ? definitionLink.targetRange : location.range),
 			targetSelectionRange: definitionLink.targetSelectionRange
 				? Range.from(definitionLink.targetSelectionRange)
-				: undefined,
+				: undefined
 		};
 	}
 	export function to(value: extHostProtocol.ILocationLinkDto): vscode.LocationLink {
 		return {
 			targetUri: URI.revive(value.uri),
 			targetRange: Range.to(value.range),
-			targetSelectionRange: value.targetSelectionRange
-				? Range.to(value.targetSelectionRange)
-				: undefined,
-			originSelectionRange: value.originSelectionRange
-				? Range.to(value.originSelectionRange)
-				: undefined
+			targetSelectionRange: value.targetSelectionRange ? Range.to(value.targetSelectionRange) : undefined,
+			originSelectionRange: value.originSelectionRange ? Range.to(value.originSelectionRange) : undefined
 		};
 	}
 }
@@ -955,7 +995,7 @@ export namespace Hover {
 			range: Range.from(hover.range),
 			contents: MarkdownString.fromMany(hover.contents),
 			canIncreaseVerbosity: hover.canIncreaseVerbosity,
-			canDecreaseVerbosity: hover.canDecreaseVerbosity,
+			canDecreaseVerbosity: hover.canDecreaseVerbosity
 		};
 		return convertedHover;
 	}
@@ -1064,7 +1104,10 @@ export namespace MultiDocumentHighlight {
 	}
 
 	export function to(multiDocumentHighlight: languages.MultiDocumentHighlight): types.MultiDocumentHighlight {
-		return new types.MultiDocumentHighlight(URI.revive(multiDocumentHighlight.uri), multiDocumentHighlight.highlights.map(DocumentHighlight.to));
+		return new types.MultiDocumentHighlight(
+			URI.revive(multiDocumentHighlight.uri),
+			multiDocumentHighlight.highlights.map(DocumentHighlight.to)
+		);
 	}
 }
 
@@ -1092,22 +1135,27 @@ export namespace CompletionContext {
 }
 
 export namespace CompletionItemTag {
-
 	export function from(kind: types.CompletionItemTag): languages.CompletionItemTag {
 		switch (kind) {
-			case types.CompletionItemTag.Deprecated: return languages.CompletionItemTag.Deprecated;
+			case types.CompletionItemTag.Deprecated:
+				return languages.CompletionItemTag.Deprecated;
 		}
 	}
 
 	export function to(kind: languages.CompletionItemTag): types.CompletionItemTag {
 		switch (kind) {
-			case languages.CompletionItemTag.Deprecated: return types.CompletionItemTag.Deprecated;
+			case languages.CompletionItemTag.Deprecated:
+				return types.CompletionItemTag.Deprecated;
 		}
 	}
 }
 
 export namespace CompletionCommand {
-	export function from(c: vscode.Command | { command: vscode.Command; icon: vscode.ThemeIcon }, converter: CommandsConverter, disposables: DisposableStore): { command: extHostProtocol.ICommandDto; icon?: languages.IconPath } {
+	export function from(
+		c: vscode.Command | { command: vscode.Command; icon: vscode.ThemeIcon },
+		converter: CommandsConverter,
+		disposables: DisposableStore
+	): { command: extHostProtocol.ICommandDto; icon?: languages.IconPath } {
 		if ('icon' in c && 'command' in c) {
 			return {
 				command: converter.toInternal(c.command, disposables),
@@ -1119,7 +1167,6 @@ export namespace CompletionCommand {
 }
 
 export namespace CompletionItemKind {
-
 	const _from = new Map<types.CompletionItemKind, languages.CompletionItemKind>([
 		[types.CompletionItemKind.Method, languages.CompletionItemKind.Method],
 		[types.CompletionItemKind.Function, languages.CompletionItemKind.Function],
@@ -1147,7 +1194,7 @@ export namespace CompletionItemKind {
 		[types.CompletionItemKind.Operator, languages.CompletionItemKind.Operator],
 		[types.CompletionItemKind.TypeParameter, languages.CompletionItemKind.TypeParameter],
 		[types.CompletionItemKind.Issue, languages.CompletionItemKind.Issue],
-		[types.CompletionItemKind.User, languages.CompletionItemKind.User],
+		[types.CompletionItemKind.User, languages.CompletionItemKind.User]
 	]);
 
 	export function from(kind: types.CompletionItemKind): languages.CompletionItemKind {
@@ -1181,7 +1228,7 @@ export namespace CompletionItemKind {
 		[languages.CompletionItemKind.Operator, types.CompletionItemKind.Operator],
 		[languages.CompletionItemKind.TypeParameter, types.CompletionItemKind.TypeParameter],
 		[languages.CompletionItemKind.User, types.CompletionItemKind.User],
-		[languages.CompletionItemKind.Issue, types.CompletionItemKind.Issue],
+		[languages.CompletionItemKind.Issue, types.CompletionItemKind.Issue]
 	]);
 
 	export function to(kind: languages.CompletionItemKind): types.CompletionItemKind {
@@ -1190,15 +1237,18 @@ export namespace CompletionItemKind {
 }
 
 export namespace CompletionItem {
-
-	export function to(suggestion: languages.CompletionItem, converter?: Command.ICommandsConverter): types.CompletionItem {
-
+	export function to(
+		suggestion: languages.CompletionItem,
+		converter?: Command.ICommandsConverter
+	): types.CompletionItem {
 		const result = new types.CompletionItem(suggestion.label);
 		result.insertText = suggestion.insertText;
 		result.kind = CompletionItemKind.to(suggestion.kind);
 		result.tags = suggestion.tags?.map(CompletionItemTag.to);
 		result.detail = suggestion.detail;
-		result.documentation = htmlContent.isMarkdownString(suggestion.documentation) ? MarkdownString.to(suggestion.documentation) : suggestion.documentation;
+		result.documentation = htmlContent.isMarkdownString(suggestion.documentation)
+			? MarkdownString.to(suggestion.documentation)
+			: suggestion.documentation;
 		result.sortText = suggestion.sortText;
 		result.filterText = suggestion.filterText;
 		result.preselect = suggestion.preselect;
@@ -1211,13 +1261,20 @@ export namespace CompletionItem {
 			result.range = { inserting: Range.to(suggestion.range.insert), replacing: Range.to(suggestion.range.replace) };
 		}
 
-		result.keepWhitespace = typeof suggestion.insertTextRules === 'undefined' ? false : Boolean(suggestion.insertTextRules & languages.CompletionItemInsertTextRule.KeepWhitespace);
+		result.keepWhitespace =
+			typeof suggestion.insertTextRules === 'undefined'
+				? false
+				: Boolean(suggestion.insertTextRules & languages.CompletionItemInsertTextRule.KeepWhitespace);
 		// 'insertText'-logic
-		if (typeof suggestion.insertTextRules !== 'undefined' && suggestion.insertTextRules & languages.CompletionItemInsertTextRule.InsertAsSnippet) {
+		if (
+			typeof suggestion.insertTextRules !== 'undefined' &&
+			suggestion.insertTextRules & languages.CompletionItemInsertTextRule.InsertAsSnippet
+		) {
 			result.insertText = new types.SnippetString(suggestion.insertText);
 		} else {
 			result.insertText = suggestion.insertText;
-			result.textEdit = result.range instanceof types.Range ? new types.TextEdit(result.range, result.insertText) : undefined;
+			result.textEdit =
+				result.range instanceof types.Range ? new types.TextEdit(result.range, result.insertText) : undefined;
 		}
 		if (suggestion.additionalTextEdits && suggestion.additionalTextEdits.length > 0) {
 			result.additionalTextEdits = suggestion.additionalTextEdits.map(e => TextEdit.to(e as languages.TextEdit));
@@ -1242,39 +1299,41 @@ export namespace ParameterInformation {
 	export function to(info: languages.ParameterInformation): types.ParameterInformation {
 		return {
 			label: info.label,
-			documentation: htmlContent.isMarkdownString(info.documentation) ? MarkdownString.to(info.documentation) : info.documentation
+			documentation: htmlContent.isMarkdownString(info.documentation)
+				? MarkdownString.to(info.documentation)
+				: info.documentation
 		};
 	}
 }
 
 export namespace SignatureInformation {
-
 	export function from(info: types.SignatureInformation): languages.SignatureInformation {
 		return {
 			label: info.label,
 			documentation: MarkdownString.fromStrict(info.documentation),
 			parameters: Array.isArray(info.parameters) ? info.parameters.map(ParameterInformation.from) : [],
-			activeParameter: info.activeParameter,
+			activeParameter: info.activeParameter
 		};
 	}
 
 	export function to(info: languages.SignatureInformation): types.SignatureInformation {
 		return {
 			label: info.label,
-			documentation: htmlContent.isMarkdownString(info.documentation) ? MarkdownString.to(info.documentation) : info.documentation,
+			documentation: htmlContent.isMarkdownString(info.documentation)
+				? MarkdownString.to(info.documentation)
+				: info.documentation,
 			parameters: Array.isArray(info.parameters) ? info.parameters.map(ParameterInformation.to) : [],
-			activeParameter: info.activeParameter,
+			activeParameter: info.activeParameter
 		};
 	}
 }
 
 export namespace SignatureHelp {
-
 	export function from(help: types.SignatureHelp): languages.SignatureHelp {
 		return {
 			activeSignature: help.activeSignature,
 			activeParameter: help.activeParameter,
-			signatures: Array.isArray(help.signatures) ? help.signatures.map(SignatureInformation.from) : [],
+			signatures: Array.isArray(help.signatures) ? help.signatures.map(SignatureInformation.from) : []
 		};
 	}
 
@@ -1282,13 +1341,12 @@ export namespace SignatureHelp {
 		return {
 			activeSignature: help.activeSignature,
 			activeParameter: help.activeParameter,
-			signatures: Array.isArray(help.signatures) ? help.signatures.map(SignatureInformation.to) : [],
+			signatures: Array.isArray(help.signatures) ? help.signatures.map(SignatureInformation.to) : []
 		};
 	}
 }
 
 export namespace InlayHint {
-
 	export function to(converter: Command.ICommandsConverter, hint: languages.InlayHint): vscode.InlayHint {
 		const res = new types.InlayHint(
 			Position.to(hint.position),
@@ -1304,12 +1362,12 @@ export namespace InlayHint {
 }
 
 export namespace InlayHintLabelPart {
-
-	export function to(converter: Command.ICommandsConverter, part: languages.InlayHintLabelPart): types.InlayHintLabelPart {
+	export function to(
+		converter: Command.ICommandsConverter,
+		part: languages.InlayHintLabelPart
+	): types.InlayHintLabelPart {
 		const result = new types.InlayHintLabelPart(part.label);
-		result.tooltip = htmlContent.isMarkdownString(part.tooltip)
-			? MarkdownString.to(part.tooltip)
-			: part.tooltip;
+		result.tooltip = htmlContent.isMarkdownString(part.tooltip) ? MarkdownString.to(part.tooltip) : part.tooltip;
 		if (languages.Command.is(part.command)) {
 			result.command = converter.fromInternal(part.command);
 		}
@@ -1330,7 +1388,6 @@ export namespace InlayHintKind {
 }
 
 export namespace DocumentLink {
-
 	export function from(link: vscode.DocumentLink): languages.ILink {
 		return {
 			range: Range.from(link.range),
@@ -1370,7 +1427,9 @@ export namespace ColorPresentation {
 		return {
 			label: colorPresentation.label,
 			textEdit: colorPresentation.textEdit ? TextEdit.from(colorPresentation.textEdit) : undefined,
-			additionalTextEdits: colorPresentation.additionalTextEdits ? colorPresentation.additionalTextEdits.map(value => TextEdit.from(value)) : undefined
+			additionalTextEdits: colorPresentation.additionalTextEdits
+				? colorPresentation.additionalTextEdits.map(value => TextEdit.from(value))
+				: undefined
 		};
 	}
 }
@@ -1384,7 +1443,6 @@ export namespace Color {
 	}
 }
 
-
 export namespace SelectionRange {
 	export function from(obj: vscode.SelectionRange): languages.SelectionRange {
 		return { range: Range.from(obj.range) };
@@ -1396,7 +1454,6 @@ export namespace SelectionRange {
 }
 
 export namespace TextDocumentSaveReason {
-
 	export function to(reason: SaveReason): vscode.TextDocumentSaveReason {
 		switch (reason) {
 			case SaveReason.AUTO:
@@ -1440,7 +1497,6 @@ export namespace TextEditorLineNumbersStyle {
 }
 
 export namespace EndOfLine {
-
 	export function from(eol: vscode.EndOfLine): EndOfLineSequence | undefined {
 		if (eol === types.EndOfLine.CRLF) {
 			return EndOfLineSequence.CRLF;
@@ -1467,9 +1523,12 @@ export namespace ProgressLocation {
 		}
 
 		switch (loc) {
-			case types.ProgressLocation.SourceControl: return MainProgressLocation.Scm;
-			case types.ProgressLocation.Window: return MainProgressLocation.Window;
-			case types.ProgressLocation.Notification: return MainProgressLocation.Notification;
+			case types.ProgressLocation.SourceControl:
+				return MainProgressLocation.Scm;
+			case types.ProgressLocation.Window:
+				return MainProgressLocation.Window;
+			case types.ProgressLocation.Notification:
+				return MainProgressLocation.Notification;
 		}
 		throw new Error(`Unknown 'ProgressLocation'`);
 	}
@@ -1527,7 +1586,6 @@ export interface TextEditorOpenOptions extends vscode.TextDocumentShowOptions {
 }
 
 export namespace TextEditorOpenOptions {
-
 	export function from(options?: TextEditorOpenOptions): ITextEditorOptions | undefined {
 		if (options) {
 			return {
@@ -1541,16 +1599,18 @@ export namespace TextEditorOpenOptions {
 
 		return undefined;
 	}
-
 }
 
 export namespace GlobPattern {
-
 	export function from(pattern: vscode.GlobPattern): string | extHostProtocol.IRelativePatternDto;
 	export function from(pattern: undefined): undefined;
 	export function from(pattern: null): null;
-	export function from(pattern: vscode.GlobPattern | undefined | null): string | extHostProtocol.IRelativePatternDto | undefined | null;
-	export function from(pattern: vscode.GlobPattern | undefined | null): string | extHostProtocol.IRelativePatternDto | undefined | null {
+	export function from(
+		pattern: vscode.GlobPattern | undefined | null
+	): string | extHostProtocol.IRelativePatternDto | undefined | null;
+	export function from(
+		pattern: vscode.GlobPattern | undefined | null
+	): string | extHostProtocol.IRelativePatternDto | undefined | null {
 		if (pattern instanceof types.RelativePattern) {
 			return pattern.toJSON();
 		}
@@ -1581,7 +1641,6 @@ export namespace GlobPattern {
 	}
 
 	function isLegacyRelativePatternShape(obj: unknown): obj is { base: string; pattern: string } {
-
 		// Before 1.64.x, `RelativePattern` did not have any `baseUri: Uri`
 		// property. To preserve backwards compatibility with older extensions
 		// we allow this old format when creating the `vscode.RelativePattern`.
@@ -1604,7 +1663,6 @@ export namespace GlobPattern {
 }
 
 export namespace LanguageSelector {
-
 	export function from(selector: undefined): undefined;
 	export function from(selector: vscode.DocumentSelector): languageSelector.LanguageSelector;
 	export function from(selector: vscode.DocumentSelector | undefined): languageSelector.LanguageSelector | undefined;
@@ -1629,7 +1687,6 @@ export namespace LanguageSelector {
 }
 
 export namespace NotebookRange {
-
 	export function from(range: vscode.NotebookRange): ICellRange {
 		return { start: range.start, end: range.end };
 	}
@@ -1642,7 +1699,10 @@ export namespace NotebookRange {
 export namespace NotebookCellExecutionSummary {
 	export function to(data: notebooks.NotebookCellInternalMetadata): vscode.NotebookCellExecutionSummary {
 		return {
-			timing: typeof data.runStartTime === 'number' && typeof data.runEndTime === 'number' ? { startTime: data.runStartTime, endTime: data.runEndTime } : undefined,
+			timing:
+				typeof data.runStartTime === 'number' && typeof data.runEndTime === 'number'
+					? { startTime: data.runStartTime, endTime: data.runEndTime }
+					: undefined,
 			executionOrder: data.executionOrder,
 			success: data.lastRunSuccess
 		};
@@ -1681,11 +1741,10 @@ export namespace NotebookCellKind {
 }
 
 export namespace NotebookData {
-
 	export function from(data: vscode.NotebookData): extHostProtocol.NotebookDataDto {
 		const res: extHostProtocol.NotebookDataDto = {
 			metadata: data.metadata ?? Object.create(null),
-			cells: [],
+			cells: []
 		};
 		for (const cell of data.cells) {
 			types.NotebookCellData.validate(cell);
@@ -1695,9 +1754,7 @@ export namespace NotebookData {
 	}
 
 	export function to(data: extHostProtocol.NotebookDataDto): vscode.NotebookData {
-		const res = new types.NotebookData(
-			data.cells.map(NotebookCellData.to),
-		);
+		const res = new types.NotebookData(data.cells.map(NotebookCellData.to));
 		if (!isEmptyObject(data.metadata)) {
 			res.metadata = data.metadata;
 		}
@@ -1706,7 +1763,6 @@ export namespace NotebookData {
 }
 
 export namespace NotebookCellData {
-
 	export function from(data: vscode.NotebookCellData): extHostProtocol.NotebookCellDataDto {
 		return {
 			cellKind: NotebookCellKind.from(data.kind),
@@ -1736,7 +1792,7 @@ export namespace NotebookCellOutputItem {
 	export function from(item: types.NotebookCellOutputItem): extHostProtocol.NotebookOutputItemDto {
 		return {
 			mime: item.mime,
-			valueBytes: VSBuffer.wrap(item.data),
+			valueBytes: VSBuffer.wrap(item.data)
 		};
 	}
 
@@ -1760,24 +1816,55 @@ export namespace NotebookCellOutput {
 	}
 }
 
-
 export namespace NotebookExclusiveDocumentPattern {
-	export function from(pattern: { include: vscode.GlobPattern | undefined; exclude: vscode.GlobPattern | undefined }): { include: string | extHostProtocol.IRelativePatternDto | undefined; exclude: string | extHostProtocol.IRelativePatternDto | undefined };
+	export function from(pattern: { include: vscode.GlobPattern | undefined; exclude: vscode.GlobPattern | undefined }): {
+		include: string | extHostProtocol.IRelativePatternDto | undefined;
+		exclude: string | extHostProtocol.IRelativePatternDto | undefined;
+	};
 	export function from(pattern: vscode.GlobPattern): string | extHostProtocol.IRelativePatternDto;
 	export function from(pattern: undefined): undefined;
-	export function from(pattern: { include: vscode.GlobPattern | undefined | null; exclude: vscode.GlobPattern | undefined } | vscode.GlobPattern | undefined): string | extHostProtocol.IRelativePatternDto | { include: string | extHostProtocol.IRelativePatternDto | undefined; exclude: string | extHostProtocol.IRelativePatternDto | undefined } | undefined;
-	export function from(pattern: { include: vscode.GlobPattern | undefined | null; exclude: vscode.GlobPattern | undefined } | vscode.GlobPattern | undefined): string | extHostProtocol.IRelativePatternDto | { include: string | extHostProtocol.IRelativePatternDto | undefined; exclude: string | extHostProtocol.IRelativePatternDto | undefined } | undefined {
+	export function from(
+		pattern:
+			| { include: vscode.GlobPattern | undefined | null; exclude: vscode.GlobPattern | undefined }
+			| vscode.GlobPattern
+			| undefined
+	):
+		| string
+		| extHostProtocol.IRelativePatternDto
+		| {
+				include: string | extHostProtocol.IRelativePatternDto | undefined;
+				exclude: string | extHostProtocol.IRelativePatternDto | undefined;
+		  }
+		| undefined;
+	export function from(
+		pattern:
+			| { include: vscode.GlobPattern | undefined | null; exclude: vscode.GlobPattern | undefined }
+			| vscode.GlobPattern
+			| undefined
+	):
+		| string
+		| extHostProtocol.IRelativePatternDto
+		| {
+				include: string | extHostProtocol.IRelativePatternDto | undefined;
+				exclude: string | extHostProtocol.IRelativePatternDto | undefined;
+		  }
+		| undefined {
 		if (isExclusivePattern(pattern)) {
 			return {
 				include: GlobPattern.from(pattern.include) ?? undefined,
-				exclude: GlobPattern.from(pattern.exclude) ?? undefined,
+				exclude: GlobPattern.from(pattern.exclude) ?? undefined
 			};
 		}
 
 		return GlobPattern.from(pattern) ?? undefined;
 	}
 
-	export function to(pattern: string | extHostProtocol.IRelativePatternDto | { include: string | extHostProtocol.IRelativePatternDto; exclude: string | extHostProtocol.IRelativePatternDto }): { include: vscode.GlobPattern; exclude: vscode.GlobPattern } | vscode.GlobPattern {
+	export function to(
+		pattern:
+			| string
+			| extHostProtocol.IRelativePatternDto
+			| { include: string | extHostProtocol.IRelativePatternDto; exclude: string | extHostProtocol.IRelativePatternDto }
+	): { include: vscode.GlobPattern; exclude: vscode.GlobPattern } | vscode.GlobPattern {
 		if (isExclusivePattern(pattern)) {
 			return {
 				include: GlobPattern.to(pattern.include),
@@ -1798,10 +1885,17 @@ export namespace NotebookExclusiveDocumentPattern {
 }
 
 export namespace NotebookStatusBarItem {
-	export function from(item: vscode.NotebookCellStatusBarItem, commandsConverter: Command.ICommandsConverter, disposables: DisposableStore): notebooks.INotebookCellStatusBarItem {
+	export function from(
+		item: vscode.NotebookCellStatusBarItem,
+		commandsConverter: Command.ICommandsConverter,
+		disposables: DisposableStore
+	): notebooks.INotebookCellStatusBarItem {
 		const command = typeof item.command === 'string' ? { title: '', command: item.command } : item.command;
 		return {
-			alignment: item.alignment === types.NotebookCellStatusBarAlignment.Left ? notebooks.CellStatusbarAlignment.Left : notebooks.CellStatusbarAlignment.Right,
+			alignment:
+				item.alignment === types.NotebookCellStatusBarAlignment.Left
+					? notebooks.CellStatusbarAlignment.Left
+					: notebooks.CellStatusbarAlignment.Right,
 			command: commandsConverter.toInternal(command, disposables), // TODO@roblou
 			text: item.text,
 			tooltip: item.tooltip,
@@ -1812,7 +1906,11 @@ export namespace NotebookStatusBarItem {
 }
 
 export namespace NotebookKernelSourceAction {
-	export function from(item: vscode.NotebookKernelSourceAction, commandsConverter: Command.ICommandsConverter, disposables: DisposableStore): notebooks.INotebookKernelSourceAction {
+	export function from(
+		item: vscode.NotebookKernelSourceAction,
+		commandsConverter: Command.ICommandsConverter,
+		disposables: DisposableStore
+	): notebooks.INotebookKernelSourceAction {
 		const command = typeof item.command === 'string' ? { title: '', command: item.command } : item.command;
 
 		return {
@@ -1857,17 +1955,19 @@ export namespace TestMessage {
 			expected: message.expectedOutput,
 			actual: message.actualOutput,
 			contextValue: message.contextValue,
-			location: message.location && ({ range: Range.from(message.location.range), uri: message.location.uri }),
+			location: message.location && { range: Range.from(message.location.range), uri: message.location.uri },
 			stackTrace: message.stackTrace?.map(s => ({
 				label: s.label,
 				position: s.position && Position.from(s.position),
-				uri: s.uri && URI.revive(s.uri).toJSON(),
-			})),
+				uri: s.uri && URI.revive(s.uri).toJSON()
+			}))
 		};
 	}
 
 	export function to(item: ITestErrorMessage.Serialized): vscode.TestMessage {
-		const message = new types.TestMessage(typeof item.message === 'string' ? item.message : MarkdownString.to(item.message));
+		const message = new types.TestMessage(
+			typeof item.message === 'string' ? item.message : MarkdownString.to(item.message)
+		);
 		message.actualOutput = item.actual;
 		message.expectedOutput = item.expected;
 		message.contextValue = item.contextValue;
@@ -1887,7 +1987,7 @@ export namespace TestRunProfile {
 		return {
 			controllerId: item.controllerId,
 			profileId: item.profileId,
-			group: TestRunProfileKind.from(item.kind),
+			group: TestRunProfileKind.from(item.kind)
 		};
 	}
 }
@@ -1896,7 +1996,7 @@ export namespace TestRunProfileKind {
 	const profileGroupToBitset: { [K in vscode.TestRunProfileKind]: TestRunProfileBitset } = {
 		[types.TestRunProfileKind.Coverage]: TestRunProfileBitset.Coverage,
 		[types.TestRunProfileKind.Debug]: TestRunProfileBitset.Debug,
-		[types.TestRunProfileKind.Run]: TestRunProfileBitset.Run,
+		[types.TestRunProfileKind.Run]: TestRunProfileBitset.Run
 	};
 
 	export function from(kind: types.TestRunProfileKind): TestRunProfileBitset {
@@ -1918,7 +2018,7 @@ export namespace TestItem {
 			range: editorRange.Range.lift(Range.from(item.range)),
 			description: item.description || null,
 			sortText: item.sortText || null,
-			error: item.error ? (MarkdownString.fromStrict(item.error) || null) : null,
+			error: item.error ? MarkdownString.fromStrict(item.error) || null : null
 		};
 	}
 
@@ -1934,19 +2034,19 @@ export namespace TestItem {
 				return new types.TestTag(tagId);
 			}),
 			children: {
-				add: () => { },
-				delete: () => { },
-				forEach: () => { },
-				*[Symbol.iterator]() { },
+				add: () => {},
+				delete: () => {},
+				forEach: () => {},
+				*[Symbol.iterator]() {},
 				get: () => undefined,
-				replace: () => { },
-				size: 0,
+				replace: () => {},
+				size: 0
 			},
 			range: Range.to(item.range || undefined),
 			canResolveChildren: false,
 			busy: item.busy,
 			description: item.description || undefined,
-			sortText: item.sortText || undefined,
+			sortText: item.sortText || undefined
 		};
 	}
 }
@@ -1962,13 +2062,16 @@ export namespace TestTag {
 }
 
 export namespace TestResults {
-	const convertTestResultItem = (node: IPrefixTreeNode<TestResultItem.Serialized>, parent?: vscode.TestResultSnapshot): vscode.TestResultSnapshot | undefined => {
+	const convertTestResultItem = (
+		node: IPrefixTreeNode<TestResultItem.Serialized>,
+		parent?: vscode.TestResultSnapshot
+	): vscode.TestResultSnapshot | undefined => {
 		const item = node.value;
 		if (!item) {
 			return undefined; // should be unreachable
 		}
 
-		const snapshot: vscode.TestResultSnapshot = ({
+		const snapshot: vscode.TestResultSnapshot = {
 			...TestItem.toPlain(item.item),
 			parent,
 			taskStates: item.tasks.map(t => ({
@@ -1976,10 +2079,10 @@ export namespace TestResults {
 				duration: t.duration,
 				messages: t.messages
 					.filter((m): m is ITestErrorMessage.Serialized => m.type === TestMessageType.Error)
-					.map(TestMessage.to),
+					.map(TestMessage.to)
 			})),
-			children: [],
-		});
+			children: []
+		};
 
 		if (node.children) {
 			for (const child of node.children.values()) {
@@ -2014,7 +2117,7 @@ export namespace TestResults {
 
 		return {
 			completedAt: serialized.completedAt,
-			results: roots.map(r => convertTestResultItem(r)).filter(isDefined),
+			results: roots.map(r => convertTestResultItem(r)).filter(isDefined)
 		};
 	}
 }
@@ -2031,7 +2134,9 @@ export namespace TestCoverage {
 	function toLocation(location: IPosition | editorRange.IRange): types.Position | types.Range;
 	function toLocation(location: IPosition | editorRange.IRange | undefined): types.Position | types.Range | undefined;
 	function toLocation(location: IPosition | editorRange.IRange | undefined): types.Position | types.Range | undefined {
-		if (!location) { return undefined; }
+		if (!location) {
+			return undefined;
+		}
 		return 'endLineNumber' in location ? Range.to(location) : Position.to(location);
 	}
 
@@ -2050,18 +2155,10 @@ export namespace TestCoverage {
 			return new types.StatementCoverage(
 				serialized.count,
 				toLocation(serialized.location),
-				serialized.branches?.map(b => new types.BranchCoverage(
-					b.count,
-					toLocation(b.location)!,
-					b.label,
-				))
+				serialized.branches?.map(b => new types.BranchCoverage(b.count, toLocation(b.location)!, b.label))
 			);
 		} else {
-			return new types.DeclarationCoverage(
-				serialized.name,
-				serialized.count,
-				toLocation(serialized.location),
-			);
+			return new types.DeclarationCoverage(serialized.name, serialized.count, toLocation(serialized.location));
 		}
 	}
 
@@ -2076,15 +2173,19 @@ export namespace TestCoverage {
 				location: fromLocation(coverage.location),
 				type: DetailType.Statement,
 				branches: coverage.branches.length
-					? coverage.branches.map(b => ({ count: b.executed, location: b.location && fromLocation(b.location), label: b.label }))
-					: undefined,
+					? coverage.branches.map(b => ({
+							count: b.executed,
+							location: b.location && fromLocation(b.location),
+							label: b.label
+						}))
+					: undefined
 			};
 		} else {
 			return {
 				type: DetailType.Declaration,
 				name: coverage.name,
 				count: coverage.executed,
-				location: fromLocation(coverage.location),
+				location: fromLocation(coverage.location)
 			};
 		}
 	}
@@ -2100,14 +2201,15 @@ export namespace TestCoverage {
 			statement: fromCoverageCount(coverage.statementCoverage),
 			branch: coverage.branchCoverage && fromCoverageCount(coverage.branchCoverage),
 			declaration: coverage.declarationCoverage && fromCoverageCount(coverage.declarationCoverage),
-			testIds: coverage instanceof types.FileCoverage && coverage.includesTests.length ?
-				coverage.includesTests.map(t => TestId.fromExtHostTestItem(t, controllerId).toString()) : undefined,
+			testIds:
+				coverage instanceof types.FileCoverage && coverage.includesTests.length
+					? coverage.includesTests.map(t => TestId.fromExtHostTestItem(t, controllerId).toString())
+					: undefined
 		};
 	}
 }
 
 export namespace CodeActionTriggerKind {
-
 	export function to(value: languages.CodeActionTriggerType): types.CodeActionTriggerKind {
 		switch (value) {
 			case languages.CodeActionTriggerType.Invoke:
@@ -2120,7 +2222,6 @@ export namespace CodeActionTriggerKind {
 }
 
 export namespace TypeHierarchyItem {
-
 	export function to(item: extHostProtocol.ITypeHierarchyItemDto): types.TypeHierarchyItem {
 		const result = new types.TypeHierarchyItem(
 			SymbolKind.to(item.kind),
@@ -2137,8 +2238,11 @@ export namespace TypeHierarchyItem {
 		return result;
 	}
 
-	export function from(item: vscode.TypeHierarchyItem, sessionId?: string, itemId?: string): extHostProtocol.ITypeHierarchyItemDto {
-
+	export function from(
+		item: vscode.TypeHierarchyItem,
+		sessionId?: string,
+		itemId?: string
+	): extHostProtocol.ITypeHierarchyItemDto {
 		sessionId = sessionId ?? (<types.TypeHierarchyItem>item)._sessionId;
 		itemId = itemId ?? (<types.TypeHierarchyItem>item)._itemId;
 
@@ -2174,11 +2278,21 @@ export namespace ViewBadge {
 }
 
 export namespace DataTransferItem {
-	export function to(mime: string, item: extHostProtocol.DataTransferItemDTO, resolveFileData: (id: string) => Promise<Uint8Array>): types.DataTransferItem {
+	export function to(
+		mime: string,
+		item: extHostProtocol.DataTransferItemDTO,
+		resolveFileData: (id: string) => Promise<Uint8Array>
+	): types.DataTransferItem {
 		const file = item.fileData;
 		if (file) {
 			return new types.InternalFileDataTransferItem(
-				new types.DataTransferFile(file.name, URI.revive(file.uri), file.id, createSingleCallFunction(() => resolveFileData(file.id))));
+				new types.DataTransferFile(
+					file.name,
+					URI.revive(file.uri),
+					file.id,
+					createSingleCallFunction(() => resolveFileData(file.id))
+				)
+			);
 		}
 
 		if (mime === Mimes.uriList && item.uriListData) {
@@ -2188,7 +2302,11 @@ export namespace DataTransferItem {
 		return new types.InternalDataTransferItem(item.asString);
 	}
 
-	export async function from(mime: string, item: vscode.DataTransferItem | IDataTransferItem, id: string = generateUuid()): Promise<extHostProtocol.DataTransferItemDTO> {
+	export async function from(
+		mime: string,
+		item: vscode.DataTransferItem | IDataTransferItem,
+		id: string = generateUuid()
+	): Promise<extHostProtocol.DataTransferItemDTO> {
 		const stringValue = await item.asString();
 
 		if (mime === Mimes.uriList) {
@@ -2196,7 +2314,7 @@ export namespace DataTransferItem {
 				id,
 				asString: stringValue,
 				fileData: undefined,
-				uriListData: serializeUriList(stringValue),
+				uriListData: serializeUriList(stringValue)
 			};
 		}
 
@@ -2204,11 +2322,13 @@ export namespace DataTransferItem {
 		return {
 			id,
 			asString: stringValue,
-			fileData: fileValue ? {
-				name: fileValue.name,
-				uri: fileValue.uri,
-				id: (fileValue as types.DataTransferFile)._itemId ?? (fileValue as IDataTransferFile).id,
-			} : undefined,
+			fileData: fileValue
+				? {
+						name: fileValue.name,
+						uri: fileValue.uri,
+						id: (fileValue as types.DataTransferFile)._itemId ?? (fileValue as IDataTransferFile).id
+					}
+				: undefined
 		};
 	}
 
@@ -2229,14 +2349,19 @@ export namespace DataTransferItem {
 	}
 
 	function reviveUriList(parts: ReadonlyArray<string | UriComponents>): string {
-		return UriList.create(parts.map(part => {
-			return typeof part === 'string' ? part : URI.revive(part);
-		}));
+		return UriList.create(
+			parts.map(part => {
+				return typeof part === 'string' ? part : URI.revive(part);
+			})
+		);
 	}
 }
 
 export namespace DataTransfer {
-	export function toDataTransfer(value: extHostProtocol.DataTransferDTO, resolveFileData: (itemId: string) => Promise<Uint8Array>): types.DataTransfer {
+	export function toDataTransfer(
+		value: extHostProtocol.DataTransferDTO,
+		resolveFileData: (itemId: string) => Promise<Uint8Array>
+	): types.DataTransfer {
 		const init = value.items.map(([type, item]) => {
 			return [type, DataTransferItem.to(type, item, resolveFileData)] as const;
 		});
@@ -2244,17 +2369,23 @@ export namespace DataTransfer {
 	}
 
 	export async function from(dataTransfer: vscode.DataTransfer): Promise<extHostProtocol.DataTransferDTO> {
-		const items = await Promise.all(Array.from(dataTransfer, async ([mime, value]) => {
-			return [mime, await DataTransferItem.from(mime, value)] as const;
-		}));
+		const items = await Promise.all(
+			Array.from(dataTransfer, async ([mime, value]) => {
+				return [mime, await DataTransferItem.from(mime, value)] as const;
+			})
+		);
 
 		return { items };
 	}
 
-	export async function fromList(dataTransfer: Iterable<readonly [string, IDataTransferItem]>): Promise<extHostProtocol.DataTransferDTO> {
-		const items = await Promise.all(Array.from(dataTransfer, async ([mime, value]) => {
-			return [mime, await DataTransferItem.from(mime, value, value.id)] as const;
-		}));
+	export async function fromList(
+		dataTransfer: Iterable<readonly [string, IDataTransferItem]>
+	): Promise<extHostProtocol.DataTransferDTO> {
+		const items = await Promise.all(
+			Array.from(dataTransfer, async ([mime, value]) => {
+				return [mime, await DataTransferItem.from(mime, value, value.id)] as const;
+			})
+		);
 
 		return { items };
 	}
@@ -2284,11 +2415,16 @@ export namespace NotebookEdit {
 	}
 }
 
-
-
-
 export namespace TerminalQuickFix {
-	export function from(quickFix: vscode.TerminalQuickFixTerminalCommand | vscode.TerminalQuickFixOpener | vscode.Command, converter: Command.ICommandsConverter, disposables: DisposableStore): extHostProtocol.ITerminalQuickFixTerminalCommandDto | extHostProtocol.ITerminalQuickFixOpenerDto | extHostProtocol.ICommandDto | undefined {
+	export function from(
+		quickFix: vscode.TerminalQuickFixTerminalCommand | vscode.TerminalQuickFixOpener | vscode.Command,
+		converter: Command.ICommandsConverter,
+		disposables: DisposableStore
+	):
+		| extHostProtocol.ITerminalQuickFixTerminalCommandDto
+		| extHostProtocol.ITerminalQuickFixOpenerDto
+		| extHostProtocol.ICommandDto
+		| undefined {
 		if ('terminalCommand' in quickFix) {
 			return { terminalCommand: quickFix.terminalCommand, shouldExecute: quickFix.shouldExecute };
 		}
@@ -2302,27 +2438,35 @@ export namespace TerminalCompletionItemDto {
 	export function from(item: vscode.TerminalCompletionItem): extHostProtocol.ITerminalCompletionItemDto {
 		return {
 			...item,
-			documentation: MarkdownString.fromStrict(item.documentation),
+			documentation: MarkdownString.fromStrict(item.documentation)
 		};
 	}
 }
 
 export namespace TerminalCompletionList {
-	export function from(completions: vscode.TerminalCompletionList | vscode.TerminalCompletionItem[], pathSeparator: string): extHostProtocol.TerminalCompletionListDto {
+	export function from(
+		completions: vscode.TerminalCompletionList | vscode.TerminalCompletionItem[],
+		pathSeparator: string
+	): extHostProtocol.TerminalCompletionListDto {
 		if (Array.isArray(completions)) {
 			return {
-				items: completions.map(i => TerminalCompletionItemDto.from(i)),
+				items: completions.map(i => TerminalCompletionItemDto.from(i))
 			};
 		}
 		return {
 			items: completions.items.map(i => TerminalCompletionItemDto.from(i)),
-			resourceOptions: completions.resourceOptions ? TerminalCompletionResourceOptions.from(completions.resourceOptions, pathSeparator) : undefined,
+			resourceOptions: completions.resourceOptions
+				? TerminalCompletionResourceOptions.from(completions.resourceOptions, pathSeparator)
+				: undefined
 		};
 	}
 }
 
 export namespace TerminalCompletionResourceOptions {
-	export function from(resourceOptions: vscode.TerminalCompletionResourceOptions, pathSeparator: string): extHostProtocol.TerminalCompletionResourceOptionsDto {
+	export function from(
+		resourceOptions: vscode.TerminalCompletionResourceOptions,
+		pathSeparator: string
+	): extHostProtocol.TerminalCompletionResourceOptionsDto {
 		return {
 			...resourceOptions,
 			pathSeparator,
@@ -2336,7 +2480,7 @@ export namespace PartialAcceptInfo {
 	export function to(info: languages.PartialAcceptInfo): types.PartialAcceptInfo {
 		return {
 			kind: PartialAcceptTriggerKind.to(info.kind),
-			acceptedLength: info.acceptedLength,
+			acceptedLength: info.acceptedLength
 		};
 	}
 }
@@ -2357,21 +2501,24 @@ export namespace PartialAcceptTriggerKind {
 }
 
 export namespace InlineCompletionEndOfLifeReason {
-	export function to<T>(reason: languages.InlineCompletionEndOfLifeReason<T>, convertFn: (item: T) => vscode.InlineCompletionItem | undefined): vscode.InlineCompletionEndOfLifeReason {
+	export function to<T>(
+		reason: languages.InlineCompletionEndOfLifeReason<T>,
+		convertFn: (item: T) => vscode.InlineCompletionItem | undefined
+	): vscode.InlineCompletionEndOfLifeReason {
 		if (reason.kind === languages.InlineCompletionEndOfLifeReasonKind.Ignored) {
 			const supersededBy = reason.supersededBy ? convertFn(reason.supersededBy) : undefined;
 			return {
 				kind: types.InlineCompletionEndOfLifeReasonKind.Ignored,
 				supersededBy: supersededBy,
-				userTypingDisagreed: reason.userTypingDisagreed,
+				userTypingDisagreed: reason.userTypingDisagreed
 			};
 		} else if (reason.kind === languages.InlineCompletionEndOfLifeReasonKind.Accepted) {
 			return {
-				kind: types.InlineCompletionEndOfLifeReasonKind.Accepted,
+				kind: types.InlineCompletionEndOfLifeReasonKind.Accepted
 			};
 		}
 		return {
-			kind: types.InlineCompletionEndOfLifeReasonKind.Rejected,
+			kind: types.InlineCompletionEndOfLifeReasonKind.Rejected
 		};
 	}
 }
@@ -2403,7 +2550,7 @@ export namespace DebugTreeItem {
 			description: item.description,
 			canEdit: item.canEdit,
 			collapsibleState: (item.collapsibleState || DebugTreeItemCollapsibleState.None) as DebugTreeItemCollapsibleState,
-			contextValue: item.contextValue,
+			contextValue: item.contextValue
 		};
 	}
 }
@@ -2478,4 +2625,3 @@ export namespace SourceControlInputBoxValidationType {
 		}
 	}
 }
-

@@ -73,7 +73,9 @@ export class ExplorerFileNestingTrie {
 		}
 
 		const findAllRootAncestors = (file: string, seen: Set<string> = new Set()): string[] => {
-			if (seen.has(file)) { return []; }
+			if (seen.has(file)) {
+				return [];
+			}
 			seen.add(file);
 			const attributes = this.getAttributes(file, dirname);
 			const ancestors = parentFinder.get(file, attributes);
@@ -91,10 +93,14 @@ export class ExplorerFileNestingTrie {
 		const result = new Map<string, Set<string>>();
 		for (const file of files) {
 			let ancestors = findAllRootAncestors(file);
-			if (ancestors.length === 0) { ancestors = [file]; }
+			if (ancestors.length === 0) {
+				ancestors = [file];
+			}
 			for (const ancestor of ancestors) {
 				let existing = result.get(ancestor);
-				if (!existing) { result.set(ancestor, existing = new Set()); }
+				if (!existing) {
+					result.set(ancestor, (existing = new Set()));
+				}
 				if (file !== ancestor) {
 					existing.add(file);
 				}
@@ -120,7 +126,7 @@ export class PreTrie {
 			const rest = key.slice(1);
 			let existing = this.map.get(head);
 			if (!existing) {
-				this.map.set(head, existing = new PreTrie());
+				this.map.set(head, (existing = new PreTrie()));
 			}
 			existing.add(rest, value);
 		}
@@ -145,8 +151,7 @@ export class PreTrie {
 		if (this.value.hasItems) {
 			lines.push('* => \n' + this.value.toString(indentation + '  '));
 		}
-		[...this.map.entries()].map(([key, trie]) =>
-			lines.push('^' + key + ' => \n' + trie.toString(indentation + '  ')));
+		[...this.map.entries()].map(([key, trie]) => lines.push('^' + key + ' => \n' + trie.toString(indentation + '  ')));
 		return lines.map(l => indentation + l).join('\n');
 	}
 }
@@ -173,7 +178,7 @@ export class SufTrie {
 			} else {
 				let existing = this.map.get(tail);
 				if (!existing) {
-					this.map.set(tail, existing = new SufTrie());
+					this.map.set(tail, (existing = new SufTrie()));
 				}
 				existing.add(rest, value);
 			}
@@ -210,8 +215,7 @@ export class SufTrie {
 			lines.push('ε => ' + this.epsilon.join('; '));
 		}
 
-		[...this.map.entries()].map(([key, trie]) =>
-			lines.push(key + '$' + ' => \n' + trie.toString(indentation + '  ')));
+		[...this.map.entries()].map(([key, trie]) => lines.push(key + '$' + ' => \n' + trie.toString(indentation + '  ')));
 
 		return lines.map(l => indentation + l).join('\n');
 	}
@@ -221,20 +225,19 @@ const enum SubstitutionType {
 	capture = 'capture',
 	basename = 'basename',
 	dirname = 'dirname',
-	extname = 'extname',
+	extname = 'extname'
 }
 
 const substitutionStringTokenizer = /\$[({](capture|basename|dirname|extname)[)}]/g;
 
 class SubstitutionString {
-
 	private tokens: (string | { capture: SubstitutionType })[] = [];
 
 	constructor(pattern: string) {
 		substitutionStringTokenizer.lastIndex = 0;
 		let token;
 		let lastIndex = 0;
-		while (token = substitutionStringTokenizer.exec(pattern)) {
+		while ((token = substitutionStringTokenizer.exec(pattern))) {
 			const prefix = pattern.slice(lastIndex, token.index);
 			this.tokens.push(prefix);
 
@@ -246,7 +249,8 @@ class SubstitutionString {
 				case SubstitutionType.capture:
 					this.tokens.push({ capture: type });
 					break;
-				default: throw Error('unknown substitution type: ' + type);
+				default:
+					throw Error('unknown substitution type: ' + type);
 			}
 			lastIndex = token.index + token[0].length;
 		}
@@ -258,14 +262,22 @@ class SubstitutionString {
 	}
 
 	substitute(attributes: FilenameAttributes, capture?: string): string {
-		return this.tokens.map(t => {
-			if (typeof t === 'string') { return t; }
-			switch (t.capture) {
-				case SubstitutionType.basename: return attributes.basename;
-				case SubstitutionType.dirname: return attributes.dirname;
-				case SubstitutionType.extname: return attributes.extname;
-				case SubstitutionType.capture: return capture || '';
-			}
-		}).join('');
+		return this.tokens
+			.map(t => {
+				if (typeof t === 'string') {
+					return t;
+				}
+				switch (t.capture) {
+					case SubstitutionType.basename:
+						return attributes.basename;
+					case SubstitutionType.dirname:
+						return attributes.dirname;
+					case SubstitutionType.extname:
+						return attributes.extname;
+					case SubstitutionType.capture:
+						return capture || '';
+				}
+			})
+			.join('');
 	}
 }

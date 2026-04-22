@@ -10,7 +10,6 @@ import { IEditorGroupsContainer } from '../../editor/common/editorGroupsService.
 export const ITitleService = createDecorator<ITitleService>('titleService');
 
 export interface ITitleService extends ITitlebarPart {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -21,5 +20,9 @@ export interface ITitleService extends ITitlebarPart {
 	/**
 	 * Creates a new auxililary title bar part in the provided container.
 	 */
-	createAuxiliaryTitlebarPart(container: HTMLElement, editorGroupsContainer: IEditorGroupsContainer, instantiationService: IInstantiationService): IAuxiliaryTitlebarPart;
+	createAuxiliaryTitlebarPart(
+		container: HTMLElement,
+		editorGroupsContainer: IEditorGroupsContainer,
+		instantiationService: IInstantiationService
+	): IAuxiliaryTitlebarPart;
 }

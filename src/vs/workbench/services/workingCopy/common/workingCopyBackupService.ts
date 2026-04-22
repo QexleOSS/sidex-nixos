@@ -12,7 +12,16 @@ import { IResolvedWorkingCopyBackup, IWorkingCopyBackupService } from './working
 import { IFileService, FileOperationError, FileOperationResult } from '../../../../platform/files/common/files.js';
 import { ResourceMap } from '../../../../base/common/map.js';
 import { isReadableStream, peekStream } from '../../../../base/common/stream.js';
-import { bufferToStream, prefixedBufferReadable, prefixedBufferStream, readableToBuffer, streamToBuffer, VSBuffer, VSBufferReadable, VSBufferReadableStream } from '../../../../base/common/buffer.js';
+import {
+	bufferToStream,
+	prefixedBufferReadable,
+	prefixedBufferStream,
+	readableToBuffer,
+	streamToBuffer,
+	VSBuffer,
+	VSBufferReadable,
+	VSBufferReadableStream
+} from '../../../../base/common/buffer.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
@@ -22,7 +31,6 @@ import { isEmptyObject } from '../../../../base/common/types.js';
 import { IWorkingCopyBackupMeta, IWorkingCopyIdentifier, NO_TYPE_ID } from './workingCopy.js';
 
 export class WorkingCopyBackupsModel {
-
 	private readonly cache = new ResourceMap<{ versionId?: number; meta?: IWorkingCopyBackupMeta }>();
 
 	static async create(backupRoot: URI, fileService: IFileService): Promise<WorkingCopyBackupsModel> {
@@ -33,35 +41,39 @@ export class WorkingCopyBackupsModel {
 		return model;
 	}
 
-	private constructor(private backupRoot: URI, private fileService: IFileService) { }
+	private constructor(
+		private backupRoot: URI,
+		private fileService: IFileService
+	) {}
 
 	private async resolve(): Promise<void> {
 		try {
 			const backupRootStat = await this.fileService.resolve(this.backupRoot);
 			if (backupRootStat.children) {
-				await Promises.settled(backupRootStat.children
-					.filter(child => child.isDirectory)
-					.map(async backupSchemaFolder => {
+				await Promises.settled(
+					backupRootStat.children
+						.filter(child => child.isDirectory)
+						.map(async backupSchemaFolder => {
+							// Read backup directory for backups
+							const backupSchemaFolderStat = await this.fileService.resolve(backupSchemaFolder.resource);
 
-						// Read backup directory for backups
-						const backupSchemaFolderStat = await this.fileService.resolve(backupSchemaFolder.resource);
-
-						// Remember known backups in our caches
-						//
-						// Note: this does NOT account for resolving
-						// associated meta data because that requires
-						// opening the backup and reading the meta
-						// preamble. Instead, when backups are actually
-						// resolved, the meta data will be added via
-						// additional `update` calls.
-						if (backupSchemaFolderStat.children) {
-							for (const backupForSchema of backupSchemaFolderStat.children) {
-								if (!backupForSchema.isDirectory) {
-									this.add(backupForSchema.resource);
+							// Remember known backups in our caches
+							//
+							// Note: this does NOT account for resolving
+							// associated meta data because that requires
+							// opening the backup and reading the meta
+							// preamble. Instead, when backups are actually
+							// resolved, the meta data will be added via
+							// additional `update` calls.
+							if (backupSchemaFolderStat.children) {
+								for (const backupForSchema of backupSchemaFolderStat.children) {
+									if (!backupForSchema.isDirectory) {
+										this.add(backupForSchema.resource);
+									}
 								}
 							}
-						}
-					}));
+						})
+				);
 			}
 		} catch (error) {
 			// ignore any errors
@@ -117,7 +129,6 @@ export class WorkingCopyBackupsModel {
 }
 
 export abstract class WorkingCopyBackupService extends Disposable implements IWorkingCopyBackupService {
-
 	declare readonly _serviceBrand: undefined;
 
 	private impl: WorkingCopyBackupServiceImpl | InMemoryWorkingCopyBackupService;
@@ -132,7 +143,9 @@ export abstract class WorkingCopyBackupService extends Disposable implements IWo
 		this.impl = this._register(this.initialize(backupWorkspaceHome));
 	}
 
-	private initialize(backupWorkspaceHome: URI | undefined): WorkingCopyBackupServiceImpl | InMemoryWorkingCopyBackupService {
+	private initialize(
+		backupWorkspaceHome: URI | undefined
+	): WorkingCopyBackupServiceImpl | InMemoryWorkingCopyBackupService {
 		if (backupWorkspaceHome) {
 			return new WorkingCopyBackupServiceImpl(backupWorkspaceHome, this.fileService, this.logService);
 		}
@@ -141,7 +154,6 @@ export abstract class WorkingCopyBackupService extends Disposable implements IWo
 	}
 
 	reinitialize(backupWorkspaceHome: URI | undefined): void {
-
 		// Re-init implementation (unless we are running in-memory)
 		if (this.impl instanceof WorkingCopyBackupServiceImpl) {
 			if (backupWorkspaceHome) {
@@ -156,7 +168,13 @@ export abstract class WorkingCopyBackupService extends Disposable implements IWo
 		return this.impl.hasBackupSync(identifier, versionId, meta);
 	}
 
-	backup(identifier: IWorkingCopyIdentifier, content?: VSBufferReadableStream | VSBufferReadable, versionId?: number, meta?: IWorkingCopyBackupMeta, token?: CancellationToken): Promise<void> {
+	backup(
+		identifier: IWorkingCopyIdentifier,
+		content?: VSBufferReadableStream | VSBufferReadable,
+		versionId?: number,
+		meta?: IWorkingCopyBackupMeta,
+		token?: CancellationToken
+	): Promise<void> {
 		return this.impl.backup(identifier, content, versionId, meta, token);
 	}
 
@@ -172,7 +190,9 @@ export abstract class WorkingCopyBackupService extends Disposable implements IWo
 		return this.impl.getBackups();
 	}
 
-	resolve<T extends IWorkingCopyBackupMeta>(identifier: IWorkingCopyIdentifier): Promise<IResolvedWorkingCopyBackup<T> | undefined> {
+	resolve<T extends IWorkingCopyBackupMeta>(
+		identifier: IWorkingCopyIdentifier
+	): Promise<IResolvedWorkingCopyBackup<T> | undefined> {
 		return this.impl.resolve(identifier);
 	}
 
@@ -186,7 +206,6 @@ export abstract class WorkingCopyBackupService extends Disposable implements IWo
 }
 
 class WorkingCopyBackupServiceImpl extends Disposable implements IWorkingCopyBackupService {
-
 	private static readonly PREAMBLE_END_MARKER = '\n';
 	private static readonly PREAMBLE_END_MARKER_CHARCODE = '\n'.charCodeAt(0);
 	private static readonly PREAMBLE_META_SEPARATOR = ' '; // using a character that is know to be escaped in a URI as separator
@@ -216,7 +235,6 @@ class WorkingCopyBackupServiceImpl extends Disposable implements IWorkingCopyBac
 	}
 
 	private async doInitialize(): Promise<WorkingCopyBackupsModel> {
-
 		// Create backup model
 		this.model = await WorkingCopyBackupsModel.create(this.backupWorkspaceHome, this.fileService);
 
@@ -233,7 +251,13 @@ class WorkingCopyBackupServiceImpl extends Disposable implements IWorkingCopyBac
 		return this.model.has(backupResource, versionId, meta);
 	}
 
-	async backup(identifier: IWorkingCopyIdentifier, content?: VSBufferReadable | VSBufferReadableStream, versionId?: number, meta?: IWorkingCopyBackupMeta, token?: CancellationToken): Promise<void> {
+	async backup(
+		identifier: IWorkingCopyIdentifier,
+		content?: VSBufferReadable | VSBufferReadableStream,
+		versionId?: number,
+		meta?: IWorkingCopyBackupMeta,
+		token?: CancellationToken
+	): Promise<void> {
 		const model = await this.ready;
 		if (token?.isCancellationRequested) {
 			return;
@@ -304,11 +328,13 @@ class WorkingCopyBackupServiceImpl extends Disposable implements IWorkingCopyBac
 				exceptMap.set(this.toBackupResource(exceptWorkingCopy), true);
 			}
 
-			await Promises.settled(model.get().map(async backupResource => {
-				if (!exceptMap.has(backupResource)) {
-					await this.doDiscardBackup(backupResource);
-				}
-			}));
+			await Promises.settled(
+				model.get().map(async backupResource => {
+					if (!exceptMap.has(backupResource)) {
+						await this.doDiscardBackup(backupResource);
+					}
+				})
+			);
 		}
 
 		// Discard all backups
@@ -370,7 +396,10 @@ class WorkingCopyBackupServiceImpl extends Disposable implements IWorkingCopyBac
 		return coalesce(backups);
 	}
 
-	private async resolveIdentifier(backupResource: URI, model: WorkingCopyBackupsModel): Promise<IWorkingCopyIdentifier | undefined> {
+	private async resolveIdentifier(
+		backupResource: URI,
+		model: WorkingCopyBackupsModel
+	): Promise<IWorkingCopyIdentifier | undefined> {
 		let res: IWorkingCopyIdentifier | undefined = undefined;
 
 		await this.ioOperationQueues.queueFor(backupResource, async () => {
@@ -381,7 +410,11 @@ class WorkingCopyBackupServiceImpl extends Disposable implements IWorkingCopyBac
 			// Read the entire backup preamble by reading up to
 			// `PREAMBLE_MAX_LENGTH` in the backup file until
 			// the `PREAMBLE_END_MARKER` is found
-			const backupPreamble = await this.readToMatchingString(backupResource, WorkingCopyBackupServiceImpl.PREAMBLE_END_MARKER, WorkingCopyBackupServiceImpl.PREAMBLE_MAX_LENGTH);
+			const backupPreamble = await this.readToMatchingString(
+				backupResource,
+				WorkingCopyBackupServiceImpl.PREAMBLE_END_MARKER,
+				WorkingCopyBackupServiceImpl.PREAMBLE_MAX_LENGTH
+			);
 			if (!backupPreamble) {
 				return;
 			}
@@ -418,7 +451,11 @@ class WorkingCopyBackupServiceImpl extends Disposable implements IWorkingCopyBac
 		return res;
 	}
 
-	private async readToMatchingString(backupResource: URI, matchingString: string, maximumBytesToRead: number): Promise<string | undefined> {
+	private async readToMatchingString(
+		backupResource: URI,
+		matchingString: string,
+		maximumBytesToRead: number
+	): Promise<string | undefined> {
 		const contents = (await this.fileService.readFile(backupResource, { length: maximumBytesToRead })).value.toString();
 
 		const matchingStringIndex = contents.indexOf(matchingString);
@@ -430,7 +467,9 @@ class WorkingCopyBackupServiceImpl extends Disposable implements IWorkingCopyBac
 		return undefined;
 	}
 
-	async resolve<T extends IWorkingCopyBackupMeta>(identifier: IWorkingCopyIdentifier): Promise<IResolvedWorkingCopyBackup<T> | undefined> {
+	async resolve<T extends IWorkingCopyBackupMeta>(
+		identifier: IWorkingCopyIdentifier
+	): Promise<IResolvedWorkingCopyBackup<T> | undefined> {
 		const backupResource = this.toBackupResource(identifier);
 
 		const model = await this.ready;
@@ -453,9 +492,13 @@ class WorkingCopyBackupServiceImpl extends Disposable implements IWorkingCopyBac
 			// it always first gets truncated and then written to. In this case, we will not find
 			// the meta-end marker ('\n') and as such the backup can only be invalid. We bail out
 			// here if that is the case.
-			const preambleEndIndex = firstBackupChunk.buffer.indexOf(WorkingCopyBackupServiceImpl.PREAMBLE_END_MARKER_CHARCODE);
+			const preambleEndIndex = firstBackupChunk.buffer.indexOf(
+				WorkingCopyBackupServiceImpl.PREAMBLE_END_MARKER_CHARCODE
+			);
 			if (preambleEndIndex === -1) {
-				this.logService.trace(`Backup: Could not find meta end marker in ${backupResource}. The file is probably corrupt (filesize: ${backupStream.size}).`);
+				this.logService.trace(
+					`Backup: Could not find meta end marker in ${backupResource}. The file is probably corrupt (filesize: ${backupStream.size}).`
+				);
 
 				return undefined;
 			}
@@ -487,7 +530,9 @@ class WorkingCopyBackupServiceImpl extends Disposable implements IWorkingCopyBac
 		return res;
 	}
 
-	private parsePreambleMeta<T extends IWorkingCopyBackupMeta>(preambleMetaRaw: string | undefined): { typeId: string | undefined; meta: T | undefined } {
+	private parsePreambleMeta<T extends IWorkingCopyBackupMeta>(
+		preambleMetaRaw: string | undefined
+	): { typeId: string | undefined; meta: T | undefined } {
 		let typeId: string | undefined = undefined;
 		let meta: T | undefined = undefined;
 
@@ -523,7 +568,6 @@ class WorkingCopyBackupServiceImpl extends Disposable implements IWorkingCopyBac
 }
 
 export class InMemoryWorkingCopyBackupService extends Disposable implements IWorkingCopyBackupService {
-
 	declare readonly _serviceBrand: undefined;
 
 	private backups = new ResourceMap<{ typeId: string; content: VSBuffer; meta?: IWorkingCopyBackupMeta }>();
@@ -534,16 +578,31 @@ export class InMemoryWorkingCopyBackupService extends Disposable implements IWor
 		return this.backups.has(backupResource);
 	}
 
-	async backup(identifier: IWorkingCopyIdentifier, content?: VSBufferReadable | VSBufferReadableStream, versionId?: number, meta?: IWorkingCopyBackupMeta, token?: CancellationToken): Promise<void> {
+	async backup(
+		identifier: IWorkingCopyIdentifier,
+		content?: VSBufferReadable | VSBufferReadableStream,
+		versionId?: number,
+		meta?: IWorkingCopyBackupMeta,
+		token?: CancellationToken
+	): Promise<void> {
 		const backupResource = this.toBackupResource(identifier);
 		this.backups.set(backupResource, {
 			typeId: identifier.typeId,
-			content: content instanceof VSBuffer ? content : content ? isReadableStream(content) ? await streamToBuffer(content) : readableToBuffer(content) : VSBuffer.fromString(''),
+			content:
+				content instanceof VSBuffer
+					? content
+					: content
+						? isReadableStream(content)
+							? await streamToBuffer(content)
+							: readableToBuffer(content)
+						: VSBuffer.fromString(''),
 			meta
 		});
 	}
 
-	async resolve<T extends IWorkingCopyBackupMeta>(identifier: IWorkingCopyIdentifier): Promise<IResolvedWorkingCopyBackup<T> | undefined> {
+	async resolve<T extends IWorkingCopyBackupMeta>(
+		identifier: IWorkingCopyIdentifier
+	): Promise<IResolvedWorkingCopyBackup<T> | undefined> {
 		const backupResource = this.toBackupResource(identifier);
 		const backup = this.backups.get(backupResource);
 		if (backup) {
@@ -592,7 +651,6 @@ export class InMemoryWorkingCopyBackupService extends Disposable implements IWor
  * Exported only for testing
  */
 export function hashIdentifier(identifier: IWorkingCopyIdentifier): string {
-
 	// IMPORTANT: for backwards compatibility, ensure that
 	// we ignore the `typeId` unless a value is provided.
 	// To preserve previous backups without type id, we
@@ -614,7 +672,8 @@ export function hashIdentifier(identifier: IWorkingCopyIdentifier): string {
 }
 
 function hashPath(resource: URI): string {
-	const str = resource.scheme === Schemas.file || resource.scheme === Schemas.untitled ? resource.fsPath : resource.toString();
+	const str =
+		resource.scheme === Schemas.file || resource.scheme === Schemas.untitled ? resource.fsPath : resource.toString();
 
 	return hashString(str);
 }

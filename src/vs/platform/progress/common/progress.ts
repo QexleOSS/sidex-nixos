@@ -16,18 +16,21 @@ export const IProgressService = createDecorator<IProgressService>('progressServi
  * A progress service that can be used to report progress to various locations of the UI.
  */
 export interface IProgressService {
-
 	readonly _serviceBrand: undefined;
 
 	withProgress<R>(
-		options: IProgressOptions | IProgressDialogOptions | IProgressNotificationOptions | IProgressWindowOptions | IProgressCompositeOptions,
+		options:
+			| IProgressOptions
+			| IProgressDialogOptions
+			| IProgressNotificationOptions
+			| IProgressWindowOptions
+			| IProgressCompositeOptions,
 		task: (progress: IProgress<IProgressStep>) => Promise<R>,
 		onDidCancel?: (choice?: number) => void
 	): Promise<R>;
 }
 
 export interface IProgressIndicator {
-
 	/**
 	 * Show progress customized with the provided flags.
 	 */
@@ -98,9 +101,9 @@ export interface IProgressRunner {
 }
 
 export const emptyProgressRunner = Object.freeze<IProgressRunner>({
-	total() { },
-	worked() { },
-	done() { }
+	total() {},
+	worked() {},
+	done() {}
 });
 
 export interface IProgress<T> {
@@ -108,14 +111,14 @@ export interface IProgress<T> {
 }
 
 export class Progress<T> implements IProgress<T> {
-
-	static readonly None = Object.freeze<IProgress<unknown>>({ report() { } });
+	static readonly None = Object.freeze<IProgress<unknown>>({ report() {} });
 
 	private _value?: T;
-	get value(): T | undefined { return this._value; }
-
-	constructor(private callback: (data: T) => unknown) {
+	get value(): T | undefined {
+		return this._value;
 	}
+
+	constructor(private callback: (data: T) => unknown) {}
 
 	report(item: T) {
 		this._value = item;
@@ -144,8 +147,13 @@ export class UnmanagedProgress extends Disposable {
 	private lastStep?: IProgressStep;
 
 	constructor(
-		options: IProgressOptions | IProgressDialogOptions | IProgressNotificationOptions | IProgressWindowOptions | IProgressCompositeOptions,
-		@IProgressService progressService: IProgressService,
+		options:
+			| IProgressOptions
+			| IProgressDialogOptions
+			| IProgressNotificationOptions
+			| IProgressWindowOptions
+			| IProgressCompositeOptions,
+		@IProgressService progressService: IProgressService
 	) {
 		super();
 		progressService.withProgress(options, reporter => {
@@ -175,14 +183,11 @@ export class LongRunningOperation extends Disposable {
 	private currentProgressRunner: IProgressRunner | undefined;
 	private currentProgressTimeout: Timeout | undefined = undefined;
 
-	constructor(
-		private progressIndicator: IProgressIndicator
-	) {
+	constructor(private progressIndicator: IProgressIndicator) {
 		super();
 	}
 
 	start(progressDelay: number): IOperation {
-
 		// Stop any previous operation
 		this.stop();
 
@@ -197,7 +202,9 @@ export class LongRunningOperation extends Disposable {
 
 		this.currentOperationDisposables.add(toDisposable(() => clearTimeout(this.currentProgressTimeout)));
 		this.currentOperationDisposables.add(toDisposable(() => newOperationToken.cancel()));
-		this.currentOperationDisposables.add(toDisposable(() => this.currentProgressRunner ? this.currentProgressRunner.done() : undefined));
+		this.currentOperationDisposables.add(
+			toDisposable(() => (this.currentProgressRunner ? this.currentProgressRunner.done() : undefined))
+		);
 
 		return {
 			id: newOperationId,
@@ -224,6 +231,5 @@ export const IEditorProgressService = createDecorator<IEditorProgressService>('e
  * A progress service that will report progress local to the editor triggered from.
  */
 export interface IEditorProgressService extends IProgressIndicator {
-
 	readonly _serviceBrand: undefined;
 }

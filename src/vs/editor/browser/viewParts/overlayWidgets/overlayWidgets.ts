@@ -5,14 +5,18 @@
 
 import './overlayWidgets.css';
 import { FastDomNode, createFastDomNode } from '../../../../base/browser/fastDomNode.js';
-import { IOverlayWidget, IOverlayWidgetPosition, IOverlayWidgetPositionCoordinates, OverlayWidgetPositionPreference } from '../../editorBrowser.js';
+import {
+	IOverlayWidget,
+	IOverlayWidgetPosition,
+	IOverlayWidgetPositionCoordinates,
+	OverlayWidgetPositionPreference
+} from '../../editorBrowser.js';
 import { PartFingerprint, PartFingerprints, ViewPart } from '../../view/viewPart.js';
 import { RenderingContext, RestrictedRenderingContext } from '../../view/renderingContext.js';
 import { ViewContext } from '../../../common/viewModel/viewContext.js';
 import * as viewEvents from '../../../common/viewEvents.js';
 import { EditorOption } from '../../../common/config/editorOptions.js';
 import * as dom from '../../../../base/browser/dom.js';
-
 
 interface IWidgetData {
 	widget: IOverlayWidget;
@@ -31,7 +35,6 @@ interface IWidgetMap {
  * such as the find widget.
  */
 export class ViewOverlayWidgets extends ViewPart {
-
 	private readonly _viewDomNode: FastDomNode<HTMLElement>;
 	private _widgets: IWidgetMap;
 	private _viewDomNodeRect: dom.IDomNodePagePosition;
@@ -173,11 +176,14 @@ export class ViewOverlayWidgets extends ViewPart {
 			return;
 		}
 
-		const maxRight = (2 * this._verticalScrollbarWidth) + this._minimapWidth;
-		if (widgetData.preference === OverlayWidgetPositionPreference.TOP_RIGHT_CORNER || widgetData.preference === OverlayWidgetPositionPreference.BOTTOM_RIGHT_CORNER) {
+		const maxRight = 2 * this._verticalScrollbarWidth + this._minimapWidth;
+		if (
+			widgetData.preference === OverlayWidgetPositionPreference.TOP_RIGHT_CORNER ||
+			widgetData.preference === OverlayWidgetPositionPreference.BOTTOM_RIGHT_CORNER
+		) {
 			if (widgetData.preference === OverlayWidgetPositionPreference.BOTTOM_RIGHT_CORNER) {
 				const widgetHeight = domNode.domNode.clientHeight;
-				domNode.setTop((this._editorHeight - widgetHeight - 2 * this._horizontalScrollbarHeight));
+				domNode.setTop(this._editorHeight - widgetHeight - 2 * this._horizontalScrollbarHeight);
 			} else {
 				domNode.setTop(0);
 			}
@@ -205,7 +211,6 @@ export class ViewOverlayWidgets extends ViewPart {
 				domNode.setTop(top + editorBoundingBox.top);
 				domNode.setLeft(left + editorBoundingBox.left);
 				domNode.setPosition('fixed');
-
 			} else {
 				domNode.setTop(top);
 				domNode.setLeft(left);

@@ -19,10 +19,12 @@ function isNullOrEmpty(value: unknown): boolean {
 	return value === '' || isUndefinedOrNull(value);
 }
 
-export function createValidator(prop: IConfigurationPropertySchema): (value: any) => (string | null) {
+export function createValidator(prop: IConfigurationPropertySchema): (value: any) => string | null {
 	const type: (string | undefined)[] = Array.isArray(prop.type) ? prop.type : [prop.type];
 	const isNullable = canBeType(type, 'null');
-	const isNumeric = (canBeType(type, 'number') || canBeType(type, 'integer')) && (type.length === 1 || type.length === 2 && isNullable);
+	const isNumeric =
+		(canBeType(type, 'number') || canBeType(type, 'integer')) &&
+		(type.length === 1 || (type.length === 2 && isNullable));
 
 	const numericValidations = getNumericValidators(prop);
 	const stringValidations = getStringValidators(prop);
@@ -30,7 +32,9 @@ export function createValidator(prop: IConfigurationPropertySchema): (value: any
 	const objectValidator = getObjectValidator(prop);
 
 	return value => {
-		if (isNullable && isNullOrEmpty(value)) { return ''; }
+		if (isNullable && isNullOrEmpty(value)) {
+			return '';
+		}
 
 		const errors: string[] = [];
 		if (arrayValidator) {
@@ -53,19 +57,28 @@ export function createValidator(prop: IConfigurationPropertySchema): (value: any
 
 		if (isNumeric) {
 			if (isNullOrEmpty(value) || typeof value === 'boolean' || Array.isArray(value) || isNaN(+value)) {
-				errors.push(nls.localize('validations.expectedNumeric', "Value must be a number."));
+				errors.push(nls.localize('validations.expectedNumeric', 'Value must be a number.'));
 			} else {
-				errors.push(...numericValidations.filter(validator => !validator.isValid(+value)).map(validator => validator.message));
+				errors.push(
+					...numericValidations.filter(validator => !validator.isValid(+value)).map(validator => validator.message)
+				);
 			}
 		}
 
 		if (prop.type === 'string') {
 			if (prop.enum && !isStringArray(prop.enum)) {
-				errors.push(nls.localize('validations.stringIncorrectEnumOptions', 'The enum options should be strings, but there is a non-string option. Please file an issue with the extension author.'));
+				errors.push(
+					nls.localize(
+						'validations.stringIncorrectEnumOptions',
+						'The enum options should be strings, but there is a non-string option. Please file an issue with the extension author.'
+					)
+				);
 			} else if (!isString(value)) {
 				errors.push(nls.localize('validations.stringIncorrectType', 'Incorrect type. Expected "string".'));
 			} else {
-				errors.push(...stringValidations.filter(validator => !validator.isValid(value)).map(validator => validator.message));
+				errors.push(
+					...stringValidations.filter(validator => !validator.isValid(value)).map(validator => validator.message)
+				);
 			}
 		}
 
@@ -87,7 +100,11 @@ export function getInvalidTypeError(value: any, type: undefined | string | strin
 
 	const typeArr = Array.isArray(type) ? type : [type];
 	if (!typeArr.some(_type => valueValidatesAsType(value, _type))) {
-		return nls.localize('invalidTypeError', "Setting has an invalid type, expected {0}. Fix in JSON.", JSON.stringify(type));
+		return nls.localize(
+			'invalidTypeError',
+			'Setting has an invalid type, expected {0}. Fix in JSON.',
+			JSON.stringify(type)
+		);
 	}
 
 	return;
@@ -125,7 +142,10 @@ function toRegExp(pattern: string): RegExp {
 			// If the pattern can't be parsed even without the 'u' flag,
 			// just log the error to avoid rendering the entire Settings editor blank.
 			// Ref https://github.com/microsoft/vscode/issues/195054
-			console.error(nls.localize('regexParsingError', "Error parsing the following regex both with and without the u flag:"), pattern);
+			console.error(
+				nls.localize('regexParsingError', 'Error parsing the following regex both with and without the u flag:'),
+				pattern
+			);
 			return /.*/;
 		}
 	}
@@ -141,49 +161,53 @@ function getStringValidators(prop: IConfigurationPropertySchema) {
 	return [
 		{
 			enabled: prop.maxLength !== undefined,
-			isValid: ((value: { length: number }) => value.length <= prop.maxLength!),
-			message: nls.localize('validations.maxLength', "Value must be {0} or fewer characters long.", prop.maxLength)
+			isValid: (value: { length: number }) => value.length <= prop.maxLength!,
+			message: nls.localize('validations.maxLength', 'Value must be {0} or fewer characters long.', prop.maxLength)
 		},
 		{
 			enabled: prop.minLength !== undefined,
-			isValid: ((value: { length: number }) => value.length >= prop.minLength!),
-			message: nls.localize('validations.minLength', "Value must be {0} or more characters long.", prop.minLength)
+			isValid: (value: { length: number }) => value.length >= prop.minLength!,
+			message: nls.localize('validations.minLength', 'Value must be {0} or more characters long.', prop.minLength)
 		},
 		{
 			enabled: patternRegex !== undefined,
-			isValid: ((value: string) => patternRegex!.test(value)),
-			message: prop.patternErrorMessage || nls.localize('validations.regex', "Value must match regex `{0}`.", prop.pattern)
+			isValid: (value: string) => patternRegex!.test(value),
+			message:
+				prop.patternErrorMessage || nls.localize('validations.regex', 'Value must match regex `{0}`.', prop.pattern)
 		},
 		{
 			enabled: prop.format === 'color-hex',
-			isValid: ((value: string) => Color.Format.CSS.parseHex(value)),
-			message: nls.localize('validations.colorFormat', "Invalid color format. Use #RGB, #RGBA, #RRGGBB or #RRGGBBAA.")
+			isValid: (value: string) => Color.Format.CSS.parseHex(value),
+			message: nls.localize('validations.colorFormat', 'Invalid color format. Use #RGB, #RGBA, #RRGGBB or #RRGGBBAA.')
 		},
 		{
 			enabled: prop.format === 'uri' || prop.format === 'uri-reference',
-			isValid: ((value: string) => !!value.length),
-			message: nls.localize('validations.uriEmpty', "URI expected.")
+			isValid: (value: string) => !!value.length,
+			message: nls.localize('validations.uriEmpty', 'URI expected.')
 		},
 		{
 			enabled: prop.format === 'uri' || prop.format === 'uri-reference',
-			isValid: ((value: string) => uriRegex.test(value)),
-			message: nls.localize('validations.uriMissing', "URI is expected.")
+			isValid: (value: string) => uriRegex.test(value),
+			message: nls.localize('validations.uriMissing', 'URI is expected.')
 		},
 		{
 			enabled: prop.format === 'uri',
-			isValid: ((value: string) => {
+			isValid: (value: string) => {
 				const matches = value.match(uriRegex);
 				return !!(matches && matches[2]);
-			}),
-			message: nls.localize('validations.uriSchemeMissing', "URI with a scheme is expected.")
+			},
+			message: nls.localize('validations.uriSchemeMissing', 'URI with a scheme is expected.')
 		},
 		{
 			enabled: prop.enum !== undefined,
-			isValid: ((value: string) => {
+			isValid: (value: string) => {
 				return prop.enum!.includes(value);
-			}),
-			message: nls.localize('validations.invalidStringEnumValue', "Value is not accepted. Valid values: {0}.",
-				prop.enum ? prop.enum.map(key => `"${key}"`).join(', ') : '[]')
+			},
+			message: nls.localize(
+				'validations.invalidStringEnumValue',
+				'Value is not accepted. Valid values: {0}.',
+				prop.enum ? prop.enum.map(key => `"${key}"`).join(', ') : '[]'
+			)
 		}
 	].filter(validation => validation.enabled);
 }
@@ -192,8 +216,8 @@ function getNumericValidators(prop: IConfigurationPropertySchema): Validator<num
 	const type: (string | undefined)[] = Array.isArray(prop.type) ? prop.type : [prop.type];
 
 	const isNullable = canBeType(type, 'null');
-	const isIntegral = (canBeType(type, 'integer')) && (type.length === 1 || type.length === 2 && isNullable);
-	const isNumeric = canBeType(type, 'number', 'integer') && (type.length === 1 || type.length === 2 && isNullable);
+	const isIntegral = canBeType(type, 'integer') && (type.length === 1 || (type.length === 2 && isNullable));
+	const isNumeric = canBeType(type, 'number', 'integer') && (type.length === 1 || (type.length === 2 && isNullable));
 	if (!isNumeric) {
 		return [];
 	}
@@ -216,38 +240,38 @@ function getNumericValidators(prop: IConfigurationPropertySchema): Validator<num
 	return [
 		{
 			enabled: exclusiveMax !== undefined && (prop.maximum === undefined || exclusiveMax <= prop.maximum),
-			isValid: ((value: number) => value < exclusiveMax!),
-			message: nls.localize('validations.exclusiveMax', "Value must be strictly less than {0}.", exclusiveMax)
+			isValid: (value: number) => value < exclusiveMax!,
+			message: nls.localize('validations.exclusiveMax', 'Value must be strictly less than {0}.', exclusiveMax)
 		},
 		{
 			enabled: exclusiveMin !== undefined && (prop.minimum === undefined || exclusiveMin >= prop.minimum),
-			isValid: ((value: number) => value > exclusiveMin!),
-			message: nls.localize('validations.exclusiveMin', "Value must be strictly greater than {0}.", exclusiveMin)
+			isValid: (value: number) => value > exclusiveMin!,
+			message: nls.localize('validations.exclusiveMin', 'Value must be strictly greater than {0}.', exclusiveMin)
 		},
 		{
 			enabled: prop.maximum !== undefined && (exclusiveMax === undefined || exclusiveMax > prop.maximum),
-			isValid: ((value: number) => value <= prop.maximum!),
-			message: nls.localize('validations.max', "Value must be less than or equal to {0}.", prop.maximum)
+			isValid: (value: number) => value <= prop.maximum!,
+			message: nls.localize('validations.max', 'Value must be less than or equal to {0}.', prop.maximum)
 		},
 		{
 			enabled: prop.minimum !== undefined && (exclusiveMin === undefined || exclusiveMin < prop.minimum),
-			isValid: ((value: number) => value >= prop.minimum!),
-			message: nls.localize('validations.min', "Value must be greater than or equal to {0}.", prop.minimum)
+			isValid: (value: number) => value >= prop.minimum!,
+			message: nls.localize('validations.min', 'Value must be greater than or equal to {0}.', prop.minimum)
 		},
 		{
 			enabled: prop.multipleOf !== undefined,
-			isValid: ((value: number) => value % prop.multipleOf! === 0),
-			message: nls.localize('validations.multipleOf', "Value must be a multiple of {0}.", prop.multipleOf)
+			isValid: (value: number) => value % prop.multipleOf! === 0,
+			message: nls.localize('validations.multipleOf', 'Value must be a multiple of {0}.', prop.multipleOf)
 		},
 		{
 			enabled: isIntegral,
-			isValid: ((value: number) => value % 1 === 0),
-			message: nls.localize('validations.expectedInteger', "Value must be an integer.")
-		},
+			isValid: (value: number) => value % 1 === 0,
+			message: nls.localize('validations.expectedInteger', 'Value must be an integer.')
+		}
 	].filter(validation => validation.enabled);
 }
 
-function getArrayValidator(prop: IConfigurationPropertySchema): ((value: any) => (string | null)) | null {
+function getArrayValidator(prop: IConfigurationPropertySchema): ((value: any) => string | null) | null {
 	if (prop.type === 'array' && prop.items && !Array.isArray(prop.items)) {
 		const propItems = prop.items;
 		if (propItems && !Array.isArray(propItems.type)) {
@@ -274,7 +298,11 @@ function getArrayValidator(prop: IConfigurationPropertySchema): ((value: any) =>
 				}
 
 				if (prop.minItems && arrayValue.length < prop.minItems) {
-					message += nls.localize('validations.stringArrayMinItem', 'Array must have at least {0} items', prop.minItems);
+					message += nls.localize(
+						'validations.stringArrayMinItem',
+						'Array must have at least {0} items',
+						prop.minItems
+					);
 					message += '\n';
 				}
 
@@ -337,7 +365,7 @@ function getArrayValidator(prop: IConfigurationPropertySchema): ((value: any) =>
 	return null;
 }
 
-function getObjectValidator(prop: IConfigurationPropertySchema): ((value: any) => (string | null)) | null {
+function getObjectValidator(prop: IConfigurationPropertySchema): ((value: any) => string | null) | null {
 	if (prop.type === 'object') {
 		const { properties, patternProperties, additionalProperties, propertyNames } = prop;
 		return value => {
@@ -358,8 +386,13 @@ function getObjectValidator(prop: IConfigurationPropertySchema): ((value: any) =
 					if (propertyNames?.pattern && !propertyNamesErrorShown) {
 						const patternRegex = toRegExp(propertyNames.pattern);
 						if (!patternRegex.test(key)) {
-							const errorMessage = propertyNames.patternErrorMessage ||
-								nls.localize('validations.propertyNamePattern', 'Property name must match pattern `{0}`.', propertyNames.pattern);
+							const errorMessage =
+								propertyNames.patternErrorMessage ||
+								nls.localize(
+									'validations.propertyNamePattern',
+									'Property name must match pattern `{0}`.',
+									propertyNames.pattern
+								);
 							errors.push(errorMessage + '\n');
 							propertyNamesErrorShown = true;
 						}
@@ -411,7 +444,10 @@ function getObjectValidator(prop: IConfigurationPropertySchema): ((value: any) =
  * Validates a single property name against the propertyNames.pattern schema.
  * Returns true if the key is valid, false otherwise.
  */
-export function validatePropertyName(propertyNames: IConfigurationPropertySchema['propertyNames'], key: string): boolean {
+export function validatePropertyName(
+	propertyNames: IConfigurationPropertySchema['propertyNames'],
+	key: string
+): boolean {
 	if (!propertyNames?.pattern) {
 		return true;
 	}

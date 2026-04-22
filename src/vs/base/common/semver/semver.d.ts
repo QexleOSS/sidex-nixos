@@ -3,10 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-export * from 'semver'
+export * from 'semver';
 
 declare namespace semver {
-
 	// Type definitions for semver 6.2
 	// Project: https://github.com/npm/node-semver
 	// Definitions by: Bart van der Schoor <https://github.com/Bartvds>
@@ -16,9 +15,9 @@ declare namespace semver {
 	//                 ExE Boss <https://github.com/ExE-Boss>
 	// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/semver
 
-	export const SEMVER_SPEC_VERSION: "2.0.0";
+	export const SEMVER_SPEC_VERSION: '2.0.0';
 
-	export type ReleaseType = "major" | "premajor" | "minor" | "preminor" | "patch" | "prepatch" | "prerelease";
+	export type ReleaseType = 'major' | 'premajor' | 'minor' | 'preminor' | 'patch' | 'prepatch' | 'prerelease';
 
 	export interface Options {
 		loose?: boolean;
@@ -63,7 +62,12 @@ declare namespace semver {
 	/**
 	 * Return the version incremented by the release type (major, minor, patch, or prerelease), or null if it's not valid.
 	 */
-	export function inc(version: string | SemVer, release: ReleaseType, optionsOrLoose?: boolean | Options, identifier?: string): string | null;
+	export function inc(
+		version: string | SemVer,
+		release: ReleaseType,
+		optionsOrLoose?: boolean | Options,
+		identifier?: string
+	): string | null;
 	export function inc(version: string | SemVer, release: ReleaseType, identifier?: string): string | null;
 
 	/**
@@ -84,7 +88,10 @@ declare namespace semver {
 	/**
 	 * Returns an array of prerelease components, or null if none exist.
 	 */
-	export function prerelease(version: string | SemVer, optionsOrLoose?: boolean | Options): ReadonlyArray<string> | null;
+	export function prerelease(
+		version: string | SemVer,
+		optionsOrLoose?: boolean | Options
+	): ReadonlyArray<string> | null;
 
 	// Comparison
 	/**
@@ -117,7 +124,12 @@ declare namespace semver {
 	 * "===" and "!==" do simple string comparison, but are included for completeness.
 	 * Throws if an invalid comparison string is provided.
 	 */
-	export function cmp(v1: string | SemVer, operator: Operator, v2: string | SemVer, optionsOrLoose?: boolean | Options): boolean;
+	export function cmp(
+		v1: string | SemVer,
+		operator: Operator,
+		v2: string | SemVer,
+		optionsOrLoose?: boolean | Options
+	): boolean;
 	export type Operator = '===' | '!==' | '' | '=' | '==' | '!=' | '>' | '>=' | '<' | '<=';
 
 	/**
@@ -177,7 +189,11 @@ declare namespace semver {
 	/**
 	 * Returns difference between two versions by the release type (major, premajor, minor, preminor, patch, prepatch, or prerelease), or null if the versions are the same.
 	 */
-	export function diff(v1: string | SemVer, v2: string | SemVer, optionsOrLoose?: boolean | Options): ReleaseType | null;
+	export function diff(
+		v1: string | SemVer,
+		v2: string | SemVer,
+		optionsOrLoose?: boolean | Options
+	): ReleaseType | null;
 
 	// Ranges
 	/**
@@ -187,15 +203,27 @@ declare namespace semver {
 	/**
 	 * Return true if the version satisfies the range.
 	 */
-	export function satisfies(version: string | SemVer, range: string | Range, optionsOrLoose?: boolean | Options): boolean;
+	export function satisfies(
+		version: string | SemVer,
+		range: string | Range,
+		optionsOrLoose?: boolean | Options
+	): boolean;
 	/**
 	 * Return the highest version in the list that satisfies the range, or null if none of them do.
 	 */
-	export function maxSatisfying<T extends string | SemVer>(versions: ReadonlyArray<T>, range: string | Range, optionsOrLoose?: boolean | Options): T | null;
+	export function maxSatisfying<T extends string | SemVer>(
+		versions: ReadonlyArray<T>,
+		range: string | Range,
+		optionsOrLoose?: boolean | Options
+	): T | null;
 	/**
 	 * Return the lowest version in the list that satisfies the range, or null if none of them do.
 	 */
-	export function minSatisfying<T extends string | SemVer>(versions: ReadonlyArray<T>, range: string | Range, optionsOrLoose?: boolean | Options): T | null;
+	export function minSatisfying<T extends string | SemVer>(
+		versions: ReadonlyArray<T>,
+		range: string | Range,
+		optionsOrLoose?: boolean | Options
+	): T | null;
 	/**
 	 * Return the lowest version that can possibly match the given range.
 	 */
@@ -212,11 +240,20 @@ declare namespace semver {
 	 * Return true if the version is outside the bounds of the range in either the high or low direction.
 	 * The hilo argument must be either the string '>' or '<'. (This is the function called by gtr and ltr.)
 	 */
-	export function outside(version: string | SemVer, range: string | Range, hilo: '>' | '<', optionsOrLoose?: boolean | Options): boolean;
+	export function outside(
+		version: string | SemVer,
+		range: string | Range,
+		hilo: '>' | '<',
+		optionsOrLoose?: boolean | Options
+	): boolean;
 	/**
 	 * Return true if any of the ranges comparators intersect
 	 */
-	export function intersects(range1: string | Range, range2: string | Range, optionsOrLoose?: boolean | Options): boolean;
+	export function intersects(
+		range1: string | Range,
+		range2: string | Range,
+		optionsOrLoose?: boolean | Options
+	): boolean;
 
 	export class SemVer {
 		constructor(version: string | SemVer, optionsOrLoose?: boolean | Options);
@@ -306,5 +343,4 @@ declare namespace semver {
 		test(version: string | SemVer): boolean;
 		intersects(range: Range, optionsOrLoose?: boolean | Options): boolean;
 	}
-
 }

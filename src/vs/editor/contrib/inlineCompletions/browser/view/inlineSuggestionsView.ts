@@ -6,7 +6,16 @@
 import { createStyleSheetFromObservable } from '../../../../../base/browser/domStylesheets.js';
 import { createHotClass } from '../../../../../base/common/hotReloadHelpers.js';
 import { Disposable } from '../../../../../base/common/lifecycle.js';
-import { derived, mapObservableArrayCached, derivedDisposable, derivedObservableWithCache, IObservable, ISettableObservable, constObservable, observableValue } from '../../../../../base/common/observable.js';
+import {
+	derived,
+	mapObservableArrayCached,
+	derivedDisposable,
+	derivedObservableWithCache,
+	IObservable,
+	ISettableObservable,
+	constObservable,
+	observableValue
+} from '../../../../../base/common/observable.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { ICodeEditor } from '../../../../browser/editorBrowser.js';
 import { observableCodeEditor } from '../../../../browser/observableCodeEditor.js';
@@ -18,7 +27,12 @@ import { InlineCompletionsModel } from '../model/inlineCompletionsModel.js';
 import { InlineCompletionItem } from '../model/inlineSuggestionItem.js';
 import { convertItemsToStableObservables } from '../utils.js';
 import { GhostTextView, GhostTextWidgetWarning, IGhostTextWidgetData } from './ghostText/ghostTextView.js';
-import { InlineEditsGutterIndicator, InlineEditsGutterIndicatorData, InlineSuggestionGutterMenuData, SimpleInlineSuggestModel } from './inlineEdits/components/gutterIndicatorView.js';
+import {
+	InlineEditsGutterIndicator,
+	InlineEditsGutterIndicatorData,
+	InlineSuggestionGutterMenuData,
+	SimpleInlineSuggestModel
+} from './inlineEdits/components/gutterIndicatorView.js';
 import { InlineEditsOnboardingExperience } from './inlineEdits/inlineEditsNewUsers.js';
 import { InlineCompletionViewKind, InlineEditTabAction } from './inlineEdits/inlineEditsViewInterface.js';
 import { InlineEditsViewAndDiffProducer } from './inlineEdits/inlineEditsViewProducer.js';
@@ -26,7 +40,7 @@ import { InlineEditsViewAndDiffProducer } from './inlineEdits/inlineEditsViewPro
 export class InlineSuggestionsView extends Disposable {
 	public static hot = createHotClass(this);
 
-	private readonly _ghostTexts = derived(this, (reader) => {
+	private readonly _ghostTexts = derived(this, reader => {
 		const model = this._model.read(reader);
 		return model?.ghostTexts.read(reader) ?? [];
 	});
@@ -35,10 +49,16 @@ export class InlineSuggestionsView extends Disposable {
 	private readonly _editorObs;
 	private readonly _ghostTextWidgets;
 
-	private readonly _inlineEdit = derived(this, reader => this._model.read(reader)?.inlineEditState.read(reader)?.inlineSuggestion);
-	private readonly _everHadInlineEdit = derivedObservableWithCache<boolean>(this,
-		(reader, last) => last || !!this._inlineEdit.read(reader)
-			|| !!this._model.read(reader)?.inlineCompletionState.read(reader)?.inlineSuggestion?.showInlineEditMenu
+	private readonly _inlineEdit = derived(
+		this,
+		reader => this._model.read(reader)?.inlineEditState.read(reader)?.inlineSuggestion
+	);
+	private readonly _everHadInlineEdit = derivedObservableWithCache<boolean>(
+		this,
+		(reader, last) =>
+			last ||
+			!!this._inlineEdit.read(reader) ||
+			!!this._model.read(reader)?.inlineCompletionState.read(reader)?.inlineSuggestion?.showInlineEditMenu
 	);
 
 	// To break a cyclic dependency
@@ -53,7 +73,12 @@ export class InlineSuggestionsView extends Disposable {
 		if (!this._everHadInlineEdit.read(reader)) {
 			return undefined;
 		}
-		return this._instantiationService.createInstance(InlineEditsViewAndDiffProducer, this._editor, this._model, this._showInlineEditCollapsed);
+		return this._instantiationService.createInstance(
+			InlineEditsViewAndDiffProducer,
+			this._editor,
+			this._model,
+			this._showInlineEditCollapsed
+		);
 	});
 
 	private readonly _fontFamily;
@@ -69,57 +94,67 @@ export class InlineSuggestionsView extends Disposable {
 		this._stablizedGhostTexts = convertItemsToStableObservables(this._ghostTexts, this._store);
 		this._editorObs = observableCodeEditor(this._editor);
 
-		this._ghostTextWidgets = mapObservableArrayCached(
-			this,
-			this._stablizedGhostTexts,
-			(ghostText, store) => store.add(this._createGhostText(ghostText))
+		this._ghostTextWidgets = mapObservableArrayCached(this, this._stablizedGhostTexts, (ghostText, store) =>
+			store.add(this._createGhostText(ghostText))
 		).recomputeInitiallyAndOnChange(this._store);
 
 		this._inlineEditWidget.recomputeInitiallyAndOnChange(this._store);
 
 		this._fontFamily = this._editorObs.getOption(EditorOption.inlineSuggest).map(val => val.fontFamily);
 
-		this._register(createStyleSheetFromObservable(derived(reader => {
-			const fontFamily = this._fontFamily.read(reader);
-			return `
+		this._register(
+			createStyleSheetFromObservable(
+				derived(reader => {
+					const fontFamily = this._fontFamily.read(reader);
+					return `
 .monaco-editor .ghost-text-decoration,
 .monaco-editor .ghost-text-decoration-preview,
 .monaco-editor .ghost-text {
 	font-family: ${fontFamily};
 }`;
-		})));
+				})
+			)
+		);
 
 		this._register(new InlineCompletionsHintsWidget(this._editor, this._model, this._instantiationService));
 
-		this._indicator = this._register(this._instantiationService.createInstance(
-			InlineEditsGutterIndicator,
-			this._editorObs,
-			derived(reader => {
-				const s = this._gutterIndicatorState.read(reader);
-				if (!s) { return undefined; }
-				return new InlineEditsGutterIndicatorData(
-					InlineSuggestionGutterMenuData.fromInlineSuggestion(s.inlineSuggestion),
-					s.displayRange,
-					SimpleInlineSuggestModel.fromInlineCompletionModel(s.model),
-					s.inlineSuggestion.action?.kind === 'edit' ? s.inlineSuggestion.action.alternativeAction : undefined,
-				);
-			}),
-			this._gutterIndicatorState.map((s, reader) => s?.tabAction.read(reader) ?? InlineEditTabAction.Inactive),
-			this._gutterIndicatorState.map((s, reader) => s?.gutterIndicatorOffset.read(reader) ?? 0),
-			this._inlineEditWidget.map((w, reader) => w?.view.inlineEditsIsHovered.read(reader) ?? false),
-			this._focusIsInMenu,
-		));
+		this._indicator = this._register(
+			this._instantiationService.createInstance(
+				InlineEditsGutterIndicator,
+				this._editorObs,
+				derived(reader => {
+					const s = this._gutterIndicatorState.read(reader);
+					if (!s) {
+						return undefined;
+					}
+					return new InlineEditsGutterIndicatorData(
+						InlineSuggestionGutterMenuData.fromInlineSuggestion(s.inlineSuggestion),
+						s.displayRange,
+						SimpleInlineSuggestModel.fromInlineCompletionModel(s.model),
+						s.inlineSuggestion.action?.kind === 'edit' ? s.inlineSuggestion.action.alternativeAction : undefined
+					);
+				}),
+				this._gutterIndicatorState.map((s, reader) => s?.tabAction.read(reader) ?? InlineEditTabAction.Inactive),
+				this._gutterIndicatorState.map((s, reader) => s?.gutterIndicatorOffset.read(reader) ?? 0),
+				this._inlineEditWidget.map((w, reader) => w?.view.inlineEditsIsHovered.read(reader) ?? false),
+				this._focusIsInMenu
+			)
+		);
 		this._indicatorIsHoverVisible.set(this._indicator.isHoverVisible, undefined);
 
 		derived(reader => {
 			const w = this._inlineEditWidget.read(reader);
-			if (!w) { return undefined; }
-			return reader.store.add(this._instantiationService.createInstance(
-				InlineEditsOnboardingExperience,
-				w._inlineEditModel,
-				constObservable(this._indicator),
-				w.view._inlineCollapsedView,
-			));
+			if (!w) {
+				return undefined;
+			}
+			return reader.store.add(
+				this._instantiationService.createInstance(
+					InlineEditsOnboardingExperience,
+					w._inlineEditModel,
+					constObservable(this._indicator),
+					w.view._inlineCollapsedView
+				)
+			);
 		}).recomputeInitiallyAndOnChange(this._store);
 	}
 
@@ -134,20 +169,30 @@ export class InlineSuggestionsView extends Disposable {
 					// editor.suggest.preview: true causes situations where we have ghost text, but no suggest preview.
 					return {
 						ghostText: ghostText.read(reader),
-						handleInlineCompletionShown: () => { /* no-op */ },
-						warning: undefined,
+						handleInlineCompletionShown: () => {
+							/* no-op */
+						},
+						warning: undefined
 					};
 				}
 				return {
 					ghostText: ghostText.read(reader),
-					handleInlineCompletionShown: (viewData) => model.handleInlineSuggestionShown(inlineCompletion, InlineCompletionViewKind.GhostText, viewData, Date.now()),
-					warning: GhostTextWidgetWarning.from(model?.warning.read(reader)),
+					handleInlineCompletionShown: viewData =>
+						model.handleInlineSuggestionShown(
+							inlineCompletion,
+							InlineCompletionViewKind.GhostText,
+							viewData,
+							Date.now()
+						),
+					warning: GhostTextWidgetWarning.from(model?.warning.read(reader))
 				} satisfies IGhostTextWidgetData;
 			}),
 			{
-				useSyntaxHighlighting: this._editorObs.getOption(EditorOption.inlineSuggest).map(v => v.syntaxHighlightingEnabled),
-				highlightShortSuggestions: true,
-			},
+				useSyntaxHighlighting: this._editorObs
+					.getOption(EditorOption.inlineSuggest)
+					.map(v => v.syntaxHighlightingEnabled),
+				highlightShortSuggestions: true
+			}
 		);
 	}
 
@@ -166,31 +211,39 @@ export class InlineSuggestionsView extends Disposable {
 		if (state?.kind === 'ghostText' && state.inlineSuggestion?.showInlineEditMenu) {
 			return {
 				displayRange: LineRange.ofLength(state.primaryGhostText.lineNumber, 1),
-				tabAction: derived<InlineEditTabAction>(this,
-					reader => this._editorObs.isFocused.read(reader) ? InlineEditTabAction.Accept : InlineEditTabAction.Inactive
+				tabAction: derived<InlineEditTabAction>(this, reader =>
+					this._editorObs.isFocused.read(reader) ? InlineEditTabAction.Accept : InlineEditTabAction.Inactive
 				),
 				gutterIndicatorOffset: constObservable(getGhostTextTopOffset(state.inlineSuggestion, this._editor)),
 				inlineSuggestion: state.inlineSuggestion,
-				model,
+				model
 			};
 		} else if (state?.kind === 'inlineEdit') {
 			const inlineEditWidget = this._inlineEditWidget.read(reader)?.view;
-			if (!inlineEditWidget) { return undefined; }
+			if (!inlineEditWidget) {
+				return undefined;
+			}
 
 			const displayRange = inlineEditWidget.displayRange.read(reader);
-			if (!displayRange) { return undefined; }
+			if (!displayRange) {
+				return undefined;
+			}
 			return {
 				displayRange,
 				tabAction: derived(reader => {
 					if (this._editorObs.isFocused.read(reader)) {
-						if (model.tabShouldJumpToInlineEdit.read(reader)) { return InlineEditTabAction.Jump; }
-						if (model.tabShouldAcceptInlineEdit.read(reader)) { return InlineEditTabAction.Accept; }
+						if (model.tabShouldJumpToInlineEdit.read(reader)) {
+							return InlineEditTabAction.Jump;
+						}
+						if (model.tabShouldAcceptInlineEdit.read(reader)) {
+							return InlineEditTabAction.Accept;
+						}
 					}
 					return InlineEditTabAction.Inactive;
 				}),
 				gutterIndicatorOffset: inlineEditWidget.gutterIndicatorOffset,
 				inlineSuggestion: state.inlineSuggestion,
-				model,
+				model
 			};
 		} else {
 			return undefined;

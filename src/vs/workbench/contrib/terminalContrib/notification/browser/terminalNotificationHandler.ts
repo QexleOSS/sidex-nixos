@@ -8,7 +8,12 @@ import { disposableTimeout } from '../../../../../base/common/async.js';
 import { decodeBase64 } from '../../../../../base/common/buffer.js';
 import { Disposable, DisposableStore, type IDisposable } from '../../../../../base/common/lifecycle.js';
 import { localize } from '../../../../../nls.js';
-import { NotificationPriority, Severity, type INotification, type INotificationHandle } from '../../../../../platform/notification/common/notification.js';
+import {
+	NotificationPriority,
+	Severity,
+	type INotification,
+	type INotificationHandle
+} from '../../../../../platform/notification/common/notification.js';
 
 const enum Osc99PayloadType {
 	Title = 'title',
@@ -62,9 +67,7 @@ export class TerminalNotificationHandler extends Disposable {
 	private _osc99PendingAnonymous: IOsc99NotificationState | undefined;
 	private readonly _osc99ActiveNotifications = new Map<string, IOsc99ActiveNotification>();
 
-	constructor(
-		private readonly _host: IOsc99NotificationHost
-	) {
+	constructor(private readonly _host: IOsc99NotificationHost) {
 		super();
 	}
 
@@ -242,7 +245,8 @@ export class TerminalNotificationHandler extends Disposable {
 			state.reportOnClose = closeValue === '1';
 		}
 		const urgencyValues = metadataEntries.get('u');
-		const urgencyValue = urgencyValues && urgencyValues.length > 0 ? urgencyValues[urgencyValues.length - 1] : undefined;
+		const urgencyValue =
+			urgencyValues && urgencyValues.length > 0 ? urgencyValues[urgencyValues.length - 1] : undefined;
 		if (urgencyValue !== undefined) {
 			const urgency = Number.parseInt(urgencyValue, 10);
 			if (!Number.isNaN(urgency)) {
@@ -250,7 +254,8 @@ export class TerminalNotificationHandler extends Disposable {
 			}
 		}
 		const autoCloseValues = metadataEntries.get('w');
-		const autoCloseValue = autoCloseValues && autoCloseValues.length > 0 ? autoCloseValues[autoCloseValues.length - 1] : undefined;
+		const autoCloseValue =
+			autoCloseValues && autoCloseValues.length > 0 ? autoCloseValues[autoCloseValues.length - 1] : undefined;
 		if (autoCloseValue !== undefined) {
 			const autoClose = Number.parseInt(autoCloseValue, 10);
 			if (!Number.isNaN(autoClose)) {
@@ -258,7 +263,8 @@ export class TerminalNotificationHandler extends Disposable {
 			}
 		}
 		const occasionValues = metadataEntries.get('o');
-		const occasionValue = occasionValues && occasionValues.length > 0 ? occasionValues[occasionValues.length - 1] : undefined;
+		const occasionValue =
+			occasionValues && occasionValues.length > 0 ? occasionValues[occasionValues.length - 1] : undefined;
 		if (occasionValue === 'always' || occasionValue === 'unfocused' || occasionValue === 'invisible') {
 			state.occasion = occasionValue;
 		}
@@ -333,42 +339,52 @@ export class TerminalNotificationHandler extends Disposable {
 			if (!label) {
 				continue;
 			}
-			const action = actionStore.add(new Action(`terminal.osc99.button.${i}`, label, undefined, true, () => {
-				if (activeRef.current) {
-					activeRef.current.closeReason = 'button';
-				}
-				reportActivation(i + 1);
-				handleRef.current?.close();
-			}));
+			const action = actionStore.add(
+				new Action(`terminal.osc99.button.${i}`, label, undefined, true, () => {
+					if (activeRef.current) {
+						activeRef.current.closeReason = 'button';
+					}
+					reportActivation(i + 1);
+					handleRef.current?.close();
+				})
+			);
 			primaryActions.push(action);
 		}
 
 		const secondaryActions: IAction[] = [];
-		secondaryActions.push(actionStore.add(new Action(
-			'terminal.osc99.dismiss',
-			localize('terminalNotificationDismiss', 'Dismiss'),
-			undefined,
-			true,
-			() => {
-				if (activeRef.current) {
-					activeRef.current.closeReason = 'secondary';
-				}
-				handleRef.current?.close();
-			}
-		)));
-		secondaryActions.push(actionStore.add(new Action(
-			'terminal.osc99.disable',
-			localize('terminalNotificationDisable', 'Disable Terminal Notifications'),
-			undefined,
-			true,
-			async () => {
-				await this._host.updateEnableNotifications(false);
-				if (activeRef.current) {
-					activeRef.current.closeReason = 'secondary';
-				}
-				handleRef.current?.close();
-			}
-		)));
+		secondaryActions.push(
+			actionStore.add(
+				new Action(
+					'terminal.osc99.dismiss',
+					localize('terminalNotificationDismiss', 'Dismiss'),
+					undefined,
+					true,
+					() => {
+						if (activeRef.current) {
+							activeRef.current.closeReason = 'secondary';
+						}
+						handleRef.current?.close();
+					}
+				)
+			)
+		);
+		secondaryActions.push(
+			actionStore.add(
+				new Action(
+					'terminal.osc99.disable',
+					localize('terminalNotificationDisable', 'Disable Terminal Notifications'),
+					undefined,
+					true,
+					async () => {
+						await this._host.updateEnableNotifications(false);
+						if (activeRef.current) {
+							activeRef.current.closeReason = 'secondary';
+						}
+						handleRef.current?.close();
+					}
+				)
+			)
+		);
 
 		const actions = { primary: primaryActions, secondary: secondaryActions };
 
@@ -413,22 +429,24 @@ export class TerminalNotificationHandler extends Disposable {
 		};
 		activeRef.current = active;
 		active.autoCloseDisposable = this._scheduleOsc99AutoClose(active, state.autoCloseMs);
-		this._register(handle.onDidClose(() => {
-			if (active.reportOnActivate && active.closeReason === undefined) {
-				if (active.focusOnActivate) {
-					this._host.focusTerminal();
+		this._register(
+			handle.onDidClose(() => {
+				if (active.reportOnActivate && active.closeReason === undefined) {
+					if (active.focusOnActivate) {
+						this._host.focusTerminal();
+					}
+					this._sendOsc99ActivationReport(active.id);
 				}
-				this._sendOsc99ActivationReport(active.id);
-			}
-			if (active.reportOnClose) {
-				this._sendOsc99CloseReport(active.id);
-			}
-			active.actionStore.dispose();
-			active.autoCloseDisposable?.dispose();
-			if (active.id) {
-				this._osc99ActiveNotifications.delete(active.id);
-			}
-		}));
+				if (active.reportOnClose) {
+					this._sendOsc99CloseReport(active.id);
+				}
+				active.actionStore.dispose();
+				active.autoCloseDisposable?.dispose();
+				if (active.id) {
+					this._osc99ActiveNotifications.delete(active.id);
+				}
+			})
+		);
 
 		if (active.id) {
 			this._osc99ActiveNotifications.set(active.id, active);
@@ -466,14 +484,21 @@ export class TerminalNotificationHandler extends Disposable {
 		}
 	}
 
-	private _scheduleOsc99AutoClose(active: IOsc99ActiveNotification, autoCloseMs: number | undefined): IDisposable | undefined {
+	private _scheduleOsc99AutoClose(
+		active: IOsc99ActiveNotification,
+		autoCloseMs: number | undefined
+	): IDisposable | undefined {
 		if (autoCloseMs === undefined || autoCloseMs <= 0) {
 			return undefined;
 		}
-		return disposableTimeout(() => {
-			active.closeReason = 'auto';
-			active.handle.close();
-		}, autoCloseMs, this._store);
+		return disposableTimeout(
+			() => {
+				active.closeReason = 'auto';
+				active.handle.close();
+			},
+			autoCloseMs,
+			this._store
+		);
 	}
 
 	private _closeOsc99Notification(id: string | undefined): void {
@@ -505,10 +530,7 @@ export class TerminalNotificationHandler extends Disposable {
 	private _sendOsc99AliveResponse(id: string | undefined): void {
 		const requestId = id ?? '0';
 		const aliveIds = Array.from(this._osc99ActiveNotifications.keys()).join(',');
-		this._sendOsc99Response([
-			`i=${requestId}`,
-			'p=alive'
-		], aliveIds);
+		this._sendOsc99Response([`i=${requestId}`, 'p=alive'], aliveIds);
 	}
 
 	private _sendOsc99ActivationReport(id: string | undefined, buttonIndex?: number): void {

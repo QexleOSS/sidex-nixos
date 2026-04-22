@@ -38,10 +38,10 @@ export class TextEdit {
 		return new TextEdit(r);
 	}
 
-	constructor(
-		public readonly replacements: readonly TextReplacement[]
-	) {
-		assertFn(() => checkAdjacentItems(replacements, (a, b) => a.range.getEndPosition().isBeforeOrEqual(b.range.getStartPosition())));
+	constructor(public readonly replacements: readonly TextReplacement[]) {
+		assertFn(() =>
+			checkAdjacentItems(replacements, (a, b) => a.range.getEndPosition().isBeforeOrEqual(b.range.getStartPosition()))
+		);
 	}
 
 	/**
@@ -50,7 +50,10 @@ export class TextEdit {
 	normalize(): TextEdit {
 		const replacements: TextReplacement[] = [];
 		for (const r of this.replacements) {
-			if (replacements.length > 0 && replacements[replacements.length - 1].range.getEndPosition().equals(r.range.getStartPosition())) {
+			if (
+				replacements.length > 0 &&
+				replacements[replacements.length - 1].range.getEndPosition().equals(r.range.getStartPosition())
+			) {
 				const last = replacements[replacements.length - 1];
 				replacements[replacements.length - 1] = new TextReplacement(last.range.plusRange(r.range), last.text + r.text);
 			} else if (!r.isEmpty) {
@@ -75,7 +78,10 @@ export class TextEdit {
 			const end = replacement.range.getEndPosition();
 			const len = TextLength.ofText(replacement.text);
 			if (position.isBefore(end)) {
-				const startPos = new Position(start.lineNumber + lineDelta, start.column + (start.lineNumber + lineDelta === curLine ? columnDeltaInCurLine : 0));
+				const startPos = new Position(
+					start.lineNumber + lineDelta,
+					start.column + (start.lineNumber + lineDelta === curLine ? columnDeltaInCurLine : 0)
+				);
 				const endPos = len.addToPosition(startPos);
 				return rangeFromPositions(startPos, endPos);
 			}
@@ -98,7 +104,10 @@ export class TextEdit {
 			curLine = end.lineNumber + lineDelta;
 		}
 
-		return new Position(position.lineNumber + lineDelta, position.column + (position.lineNumber + lineDelta === curLine ? columnDeltaInCurLine : 0));
+		return new Position(
+			position.lineNumber + lineDelta,
+			position.column + (position.lineNumber + lineDelta === curLine ? columnDeltaInCurLine : 0)
+		);
 	}
 
 	mapRange(range: Range): Range {
@@ -156,7 +165,9 @@ export class TextEdit {
 
 	inverse(doc: AbstractText): TextEdit {
 		const ranges = this.getNewRanges();
-		return new TextEdit(this.replacements.map((e, idx) => new TextReplacement(ranges[idx], doc.getValueOfRange(e.range))));
+		return new TextEdit(
+			this.replacements.map((e, idx) => new TextReplacement(ranges[idx], doc.getValueOfRange(e.range)))
+		);
 	}
 
 	getNewRanges(): Range[] {
@@ -168,7 +179,9 @@ export class TextEdit {
 			const textLength = TextLength.ofText(replacement.text);
 			const newRangeStart = Position.lift({
 				lineNumber: replacement.range.startLineNumber + lineOffset,
-				column: replacement.range.startColumn + (replacement.range.startLineNumber === previousEditEndLineNumber ? columnOffset : 0)
+				column:
+					replacement.range.startColumn +
+					(replacement.range.startLineNumber === previousEditEndLineNumber ? columnOffset : 0)
 			});
 			const newRange = textLength.createRange(newRangeStart);
 			newRanges.push(newRange);
@@ -180,8 +193,12 @@ export class TextEdit {
 	}
 
 	toReplacement(text: AbstractText): TextReplacement {
-		if (this.replacements.length === 0) { throw new BugIndicatingError(); }
-		if (this.replacements.length === 1) { return this.replacements[0]; }
+		if (this.replacements.length === 0) {
+			throw new BugIndicatingError();
+		}
+		if (this.replacements.length === 1) {
+			return this.replacements[0];
+		}
 
 		const startPos = this.replacements[0].range.getStartPosition();
 		const endPos = this.replacements[this.replacements.length - 1].range.getEndPosition();
@@ -218,8 +235,12 @@ export class TextEdit {
 		const edits1 = this.normalize();
 		const edits2 = other.normalize();
 
-		if (edits1.replacements.length === 0) { return edits2; }
-		if (edits2.replacements.length === 0) { return edits1; }
+		if (edits1.replacements.length === 0) {
+			return edits2;
+		}
+		if (edits2.replacements.length === 0) {
+			return edits1;
+		}
 
 		const resultReplacements: TextReplacement[] = [];
 
@@ -242,13 +263,16 @@ export class TextEdit {
 		let currentPosInS1Col = 1;
 
 		function ensureHead() {
-			if (headHasValue) { return; }
+			if (headHasValue) {
+				return;
+			}
 
 			if (edit1Idx < edits1.replacements.length) {
 				const nextEdit = edits1.replacements[edit1Idx];
 				const nextEditStart = nextEdit.range.getStartPosition();
 
-				const gapIsEmpty = (lastEdit1EndS0Line === nextEditStart.lineNumber) && (lastEdit1EndS0Col === nextEditStart.column);
+				const gapIsEmpty =
+					lastEdit1EndS0Line === nextEditStart.lineNumber && lastEdit1EndS0Col === nextEditStart.column;
 
 				if (!gapIsEmpty) {
 					headSrcRangeStartLine = lastEdit1EndS0Line;
@@ -306,12 +330,16 @@ export class TextEdit {
 		}
 
 		function splitText(text: string, lenLine: number, lenCol: number): [string, string] {
-			if (lenLine === 0 && lenCol === 0) { return ['', text]; }
+			if (lenLine === 0 && lenCol === 0) {
+				return ['', text];
+			}
 			let line = 0;
 			let offset = 0;
 			while (line < lenLine) {
 				const idx = text.indexOf('\n', offset);
-				if (idx === -1) { throw new BugIndicatingError('Text length mismatch'); }
+				if (idx === -1) {
+					throw new BugIndicatingError('Text length mismatch');
+				}
 				offset = idx + 1;
 				line++;
 			}
@@ -324,7 +352,9 @@ export class TextEdit {
 			const r2End = r2.range.getEndPosition();
 
 			while (true) {
-				if (currentPosInS1Line === r2Start.lineNumber && currentPosInS1Col === r2Start.column) { break; }
+				if (currentPosInS1Line === r2Start.lineNumber && currentPosInS1Col === r2Start.column) {
+					break;
+				}
 				ensureHead();
 
 				if (headIsInfinite) {
@@ -386,7 +416,12 @@ export class TextEdit {
 
 					if (headText !== null) {
 						const [t1, t2] = splitText(headText, splitLenLine, splitLenCol);
-						resultReplacements.push(new TextReplacement(new Range(headSrcRangeStartLine, headSrcRangeStartCol, headSrcRangeEndLine, headSrcRangeEndCol), t1));
+						resultReplacements.push(
+							new TextReplacement(
+								new Range(headSrcRangeStartLine, headSrcRangeStartCol, headSrcRangeEndLine, headSrcRangeEndCol),
+								t1
+							)
+						);
 
 						headText = t2;
 						headLengthLine = remainingLenLine;
@@ -416,7 +451,12 @@ export class TextEdit {
 				}
 
 				if (headText !== null) {
-					resultReplacements.push(new TextReplacement(new Range(headSrcRangeStartLine, headSrcRangeStartCol, headSrcRangeEndLine, headSrcRangeEndCol), headText));
+					resultReplacements.push(
+						new TextReplacement(
+							new Range(headSrcRangeStartLine, headSrcRangeStartCol, headSrcRangeEndLine, headSrcRangeEndCol),
+							headText
+						)
+					);
 				}
 
 				currentPosInS1Line = headEndInS1Line;
@@ -430,7 +470,9 @@ export class TextEdit {
 			let consumedEndS0Col: number | null = null;
 
 			while (true) {
-				if (currentPosInS1Line === r2End.lineNumber && currentPosInS1Col === r2End.column) { break; }
+				if (currentPosInS1Line === r2End.lineNumber && currentPosInS1Col === r2End.column) {
+					break;
+				}
 				ensureHead();
 
 				if (headIsInfinite) {
@@ -558,20 +600,34 @@ export class TextEdit {
 			}
 
 			if (consumedStartS0Line !== null) {
-				resultReplacements.push(new TextReplacement(new Range(consumedStartS0Line, consumedStartS0Col!, consumedEndS0Line!, consumedEndS0Col!), r2.text));
+				resultReplacements.push(
+					new TextReplacement(
+						new Range(consumedStartS0Line, consumedStartS0Col!, consumedEndS0Line!, consumedEndS0Col!),
+						r2.text
+					)
+				);
 			} else {
 				ensureHead();
 				const insertPosS0Line = headSrcRangeStartLine;
 				const insertPosS0Col = headSrcRangeStartCol;
-				resultReplacements.push(new TextReplacement(new Range(insertPosS0Line, insertPosS0Col, insertPosS0Line, insertPosS0Col), r2.text));
+				resultReplacements.push(
+					new TextReplacement(new Range(insertPosS0Line, insertPosS0Col, insertPosS0Line, insertPosS0Col), r2.text)
+				);
 			}
 		}
 
 		while (true) {
 			ensureHead();
-			if (headIsInfinite) { break; }
+			if (headIsInfinite) {
+				break;
+			}
 			if (headText !== null) {
-				resultReplacements.push(new TextReplacement(new Range(headSrcRangeStartLine, headSrcRangeStartCol, headSrcRangeEndLine, headSrcRangeEndCol), headText));
+				resultReplacements.push(
+					new TextReplacement(
+						new Range(headSrcRangeStartLine, headSrcRangeStartCol, headSrcRangeEndLine, headSrcRangeEndCol),
+						headText
+					)
+				);
 			}
 			headHasValue = false;
 		}
@@ -592,60 +648,62 @@ export class TextEdit {
 			return '';
 		}
 
-		return this.replacements.map(r => {
-			const maxLength = 10;
-			const originalText = text.getValueOfRange(r.range);
+		return this.replacements
+			.map(r => {
+				const maxLength = 10;
+				const originalText = text.getValueOfRange(r.range);
 
-			// Get text before the edit
-			const beforeRange = Range.fromPositions(
-				new Position(Math.max(1, r.range.startLineNumber - 1), 1),
-				r.range.getStartPosition()
-			);
-			let beforeText = text.getValueOfRange(beforeRange);
-			if (beforeText.length > maxLength) {
-				beforeText = '...' + beforeText.substring(beforeText.length - maxLength);
-			}
+				// Get text before the edit
+				const beforeRange = Range.fromPositions(
+					new Position(Math.max(1, r.range.startLineNumber - 1), 1),
+					r.range.getStartPosition()
+				);
+				let beforeText = text.getValueOfRange(beforeRange);
+				if (beforeText.length > maxLength) {
+					beforeText = '...' + beforeText.substring(beforeText.length - maxLength);
+				}
 
-			// Get text after the edit
-			const afterRange = Range.fromPositions(
-				r.range.getEndPosition(),
-				new Position(r.range.endLineNumber + 1, 1)
-			);
-			let afterText = text.getValueOfRange(afterRange);
-			if (afterText.length > maxLength) {
-				afterText = afterText.substring(0, maxLength) + '...';
-			}
+				// Get text after the edit
+				const afterRange = Range.fromPositions(r.range.getEndPosition(), new Position(r.range.endLineNumber + 1, 1));
+				let afterText = text.getValueOfRange(afterRange);
+				if (afterText.length > maxLength) {
+					afterText = afterText.substring(0, maxLength) + '...';
+				}
 
-			// Format the replaced text
-			let replacedText = originalText;
-			if (replacedText.length > maxLength) {
-				const halfMax = Math.floor(maxLength / 2);
-				replacedText = replacedText.substring(0, halfMax) + '...' +
-					replacedText.substring(replacedText.length - halfMax);
-			}
+				// Format the replaced text
+				let replacedText = originalText;
+				if (replacedText.length > maxLength) {
+					const halfMax = Math.floor(maxLength / 2);
+					replacedText =
+						replacedText.substring(0, halfMax) + '...' + replacedText.substring(replacedText.length - halfMax);
+				}
 
-			// Format the new text
-			let newText = r.text;
-			if (newText.length > maxLength) {
-				const halfMax = Math.floor(maxLength / 2);
-				newText = newText.substring(0, halfMax) + '...' +
-					newText.substring(newText.length - halfMax);
-			}
+				// Format the new text
+				let newText = r.text;
+				if (newText.length > maxLength) {
+					const halfMax = Math.floor(maxLength / 2);
+					newText = newText.substring(0, halfMax) + '...' + newText.substring(newText.length - halfMax);
+				}
 
-			if (replacedText.length === 0) {
+				if (replacedText.length === 0) {
+					// allow-any-unicode-next-line
+					return `${beforeText}❰${newText}❱${afterText}`;
+				}
 				// allow-any-unicode-next-line
-				return `${beforeText}❰${newText}❱${afterText}`;
-			}
-			// allow-any-unicode-next-line
-			return `${beforeText}❰${replacedText}↦${newText}❱${afterText}`;
-		}).join('\n');
+				return `${beforeText}❰${replacedText}↦${newText}❱${afterText}`;
+			})
+			.join('\n');
 	}
 }
 
 export class TextReplacement implements IEquatable<TextReplacement> {
 	public static joinReplacements(replacements: TextReplacement[], initialValue: AbstractText): TextReplacement {
-		if (replacements.length === 0) { throw new BugIndicatingError(); }
-		if (replacements.length === 1) { return replacements[0]; }
+		if (replacements.length === 0) {
+			throw new BugIndicatingError();
+		}
+		if (replacements.length === 1) {
+			return replacements[0];
+		}
 
 		const startPos = replacements[0].range.getStartPosition();
 		const endPos = replacements[replacements.length - 1].range.getEndPosition();
@@ -675,9 +733,8 @@ export class TextReplacement implements IEquatable<TextReplacement> {
 
 	constructor(
 		public readonly range: Range,
-		public readonly text: string,
-	) {
-	}
+		public readonly text: string
+	) {}
 
 	get isEmpty(): boolean {
 		return this.range.isEmpty() && this.text.length === 0;
@@ -690,7 +747,7 @@ export class TextReplacement implements IEquatable<TextReplacement> {
 	public toSingleEditOperation(): ISingleEditOperation {
 		return {
 			range: this.range,
-			text: this.text,
+			text: this.text
 		};
 	}
 
@@ -703,11 +760,17 @@ export class TextReplacement implements IEquatable<TextReplacement> {
 	}
 
 	public extendToCoverRange(range: Range, initialValue: AbstractText): TextReplacement {
-		if (this.range.containsRange(range)) { return this; }
+		if (this.range.containsRange(range)) {
+			return this;
+		}
 
 		const newRange = this.range.plusRange(range);
-		const textBefore = initialValue.getValueOfRange(Range.fromPositions(newRange.getStartPosition(), this.range.getStartPosition()));
-		const textAfter = initialValue.getValueOfRange(Range.fromPositions(this.range.getEndPosition(), newRange.getEndPosition()));
+		const textBefore = initialValue.getValueOfRange(
+			Range.fromPositions(newRange.getStartPosition(), this.range.getStartPosition())
+		);
+		const textAfter = initialValue.getValueOfRange(
+			Range.fromPositions(this.range.getEndPosition(), newRange.getEndPosition())
+		);
 		const newText = textBefore + this.text + textAfter;
 		return new TextReplacement(newRange, newText);
 	}
@@ -733,8 +796,9 @@ export class TextReplacement implements IEquatable<TextReplacement> {
 		const normalizedModifiedText = this.text.replaceAll('\r\n', '\n');
 
 		const commonPrefixLen = commonPrefixLength(normalizedOriginalText, normalizedModifiedText);
-		const start = TextLength.ofText(normalizedOriginalText.substring(0, commonPrefixLen))
-			.addToPosition(this.range.getStartPosition());
+		const start = TextLength.ofText(normalizedOriginalText.substring(0, commonPrefixLen)).addToPosition(
+			this.range.getStartPosition()
+		);
 
 		const newText = normalizedModifiedText.substring(commonPrefixLen);
 		const range = Range.fromPositions(start, this.range.getEndPosition());
@@ -746,8 +810,9 @@ export class TextReplacement implements IEquatable<TextReplacement> {
 		const normalizedModifiedText = this.text.replaceAll('\r\n', '\n');
 
 		const commonSuffixLen = commonSuffixLength(normalizedOriginalText, normalizedModifiedText);
-		const end = TextLength.ofText(normalizedOriginalText.substring(0, normalizedOriginalText.length - commonSuffixLen))
-			.addToPosition(this.range.getStartPosition());
+		const end = TextLength.ofText(
+			normalizedOriginalText.substring(0, normalizedOriginalText.length - commonSuffixLen)
+		).addToPosition(this.range.getStartPosition());
 
 		const newText = normalizedModifiedText.substring(0, normalizedModifiedText.length - commonSuffixLen);
 		const range = Range.fromPositions(this.range.getStartPosition(), end);

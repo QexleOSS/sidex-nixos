@@ -12,7 +12,6 @@ import { SaveSource } from '../../../common/editor.js';
 export const IWorkingCopyHistoryService = createDecorator<IWorkingCopyHistoryService>('workingCopyHistoryService');
 
 export interface IWorkingCopyHistoryEvent {
-
 	/**
 	 * The entry this event is about.
 	 */
@@ -20,7 +19,6 @@ export interface IWorkingCopyHistoryEvent {
 }
 
 export interface IWorkingCopyHistoryEntry {
-
 	/**
 	 * Unique identifier of this entry for the working copy.
 	 */
@@ -57,7 +55,6 @@ export interface IWorkingCopyHistoryEntry {
 }
 
 export interface IWorkingCopyHistoryEntryDescriptor {
-
 	/**
 	 * The associated resource of this history entry.
 	 */
@@ -77,7 +74,6 @@ export interface IWorkingCopyHistoryEntryDescriptor {
 }
 
 export interface IWorkingCopyHistoryService {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -114,12 +110,19 @@ export interface IWorkingCopyHistoryService {
 	 * Adds a new entry to the history for the given working copy
 	 * with an optional associated descriptor.
 	 */
-	addEntry(descriptor: IWorkingCopyHistoryEntryDescriptor, token: CancellationToken): Promise<IWorkingCopyHistoryEntry | undefined>;
+	addEntry(
+		descriptor: IWorkingCopyHistoryEntryDescriptor,
+		token: CancellationToken
+	): Promise<IWorkingCopyHistoryEntry | undefined>;
 
 	/**
 	 * Updates an entry in the local history if found.
 	 */
-	updateEntry(entry: IWorkingCopyHistoryEntry, properties: { source: SaveSource }, token: CancellationToken): Promise<void>;
+	updateEntry(
+		entry: IWorkingCopyHistoryEntry,
+		properties: { source: SaveSource },
+		token: CancellationToken
+	): Promise<void>;
 
 	/**
 	 * Removes an entry from the local history if found.

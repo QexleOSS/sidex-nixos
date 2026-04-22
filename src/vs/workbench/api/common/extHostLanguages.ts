@@ -17,7 +17,6 @@ import { IURITransformer } from '../../../base/common/uriIpc.js';
 import { checkProposedApiEnabled } from '../../services/extensions/common/extensions.js';
 
 export class ExtHostLanguages implements ExtHostLanguagesShape {
-
 	private readonly _proxy: MainThreadLanguagesShape;
 
 	private _languageIds: string[] = [];
@@ -54,7 +53,9 @@ export class ExtHostLanguages implements ExtHostLanguagesShape {
 		const info = await this._proxy.$tokensAtPosition(document.uri, pos);
 		const defaultRange = {
 			type: StandardTokenType.Other,
-			range: document.getWordRangeAtPosition(position) ?? new Range(position.line, position.character, position.line, position.character)
+			range:
+				document.getWordRangeAtPosition(position) ??
+				new Range(position.line, position.character, position.line, position.character)
 		};
 		if (!info) {
 			// no result
@@ -78,8 +79,11 @@ export class ExtHostLanguages implements ExtHostLanguagesShape {
 	private _handlePool: number = 0;
 	private _ids = new Set<string>();
 
-	createLanguageStatusItem(extension: IExtensionDescription, id: string, selector: vscode.DocumentSelector): vscode.LanguageStatusItem {
-
+	createLanguageStatusItem(
+		extension: IExtensionDescription,
+		id: string,
+		selector: vscode.DocumentSelector
+	): vscode.LanguageStatusItem {
 		const handle = this._handlePool++;
 		const proxy = this._proxy;
 		const ids = this._ids;
@@ -102,14 +106,15 @@ export class ExtHostLanguages implements ExtHostLanguagesShape {
 			busy: false
 		};
 
-
 		let soonHandle: IDisposable | undefined;
 		const commandDisposables = new DisposableStore();
 		const updateAsync = () => {
 			soonHandle?.dispose();
 
 			if (!ids.has(fullyQualifiedId)) {
-				console.warn(`LanguageStatusItem (${id}) from ${extension.identifier.value} has been disposed and CANNOT be updated anymore`);
+				console.warn(
+					`LanguageStatusItem (${id}) from ${extension.identifier.value} has been disposed and CANNOT be updated anymore`
+				);
 				return; // disposed in the meantime
 			}
 
@@ -122,7 +127,12 @@ export class ExtHostLanguages implements ExtHostLanguagesShape {
 					selector: typeConvert.DocumentSelector.from(data.selector, this._uriTransformer),
 					label: data.text,
 					detail: data.detail ?? '',
-					severity: data.severity === LanguageStatusSeverity.Error ? Severity.Error : data.severity === LanguageStatusSeverity.Warning ? Severity.Warning : Severity.Info,
+					severity:
+						data.severity === LanguageStatusSeverity.Error
+							? Severity.Error
+							: data.severity === LanguageStatusSeverity.Warning
+								? Severity.Warning
+								: Severity.Info,
 					command: data.command && this._commands.toInternal(data.command, commandDisposables),
 					accessibilityInfo: data.accessibilityInformation,
 					busy: data.busy

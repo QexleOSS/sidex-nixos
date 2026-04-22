@@ -13,14 +13,46 @@ import { ITelemetryService } from './telemetry.js';
 type ErrorEventFragment = {
 	owner: 'lramos15, sbatten';
 	comment: 'Whenever an error in VS Code is thrown.';
-	callstack: { classification: 'CallstackOrException'; purpose: 'PerformanceAndHealth'; comment: 'The callstack of the error.' };
-	msg?: { classification: 'CallstackOrException'; purpose: 'PerformanceAndHealth'; comment: 'The message of the error. Normally the first line int the callstack.' };
-	file?: { classification: 'CallstackOrException'; purpose: 'PerformanceAndHealth'; comment: 'The file the error originated from.' };
-	line?: { classification: 'CallstackOrException'; purpose: 'PerformanceAndHealth'; comment: 'The line the error originate on.' };
-	column?: { classification: 'CallstackOrException'; purpose: 'PerformanceAndHealth'; comment: 'The column of the line which the error orginated on.' };
-	uncaught_error_name?: { classification: 'CallstackOrException'; purpose: 'PerformanceAndHealth'; comment: 'If the error is uncaught what is the error type' };
-	uncaught_error_msg?: { classification: 'CallstackOrException'; purpose: 'PerformanceAndHealth'; comment: 'If the error is uncaught this is just msg but for uncaught errors.' };
-	count?: { classification: 'CallstackOrException'; purpose: 'PerformanceAndHealth'; comment: 'How many times this error has been thrown' };
+	callstack: {
+		classification: 'CallstackOrException';
+		purpose: 'PerformanceAndHealth';
+		comment: 'The callstack of the error.';
+	};
+	msg?: {
+		classification: 'CallstackOrException';
+		purpose: 'PerformanceAndHealth';
+		comment: 'The message of the error. Normally the first line int the callstack.';
+	};
+	file?: {
+		classification: 'CallstackOrException';
+		purpose: 'PerformanceAndHealth';
+		comment: 'The file the error originated from.';
+	};
+	line?: {
+		classification: 'CallstackOrException';
+		purpose: 'PerformanceAndHealth';
+		comment: 'The line the error originate on.';
+	};
+	column?: {
+		classification: 'CallstackOrException';
+		purpose: 'PerformanceAndHealth';
+		comment: 'The column of the line which the error orginated on.';
+	};
+	uncaught_error_name?: {
+		classification: 'CallstackOrException';
+		purpose: 'PerformanceAndHealth';
+		comment: 'If the error is uncaught what is the error type';
+	};
+	uncaught_error_msg?: {
+		classification: 'CallstackOrException';
+		purpose: 'PerformanceAndHealth';
+		comment: 'If the error is uncaught this is just msg but for uncaught errors.';
+	};
+	count?: {
+		classification: 'CallstackOrException';
+		purpose: 'PerformanceAndHealth';
+		comment: 'How many times this error has been thrown';
+	};
 };
 export interface ErrorEvent {
 	callstack: string;
@@ -45,7 +77,6 @@ export namespace ErrorEvent {
 }
 
 export default abstract class BaseErrorTelemetry {
-
 	public static ERROR_FLUSH_TIMEOUT: number = 5 * 1000;
 
 	private _telemetryService: ITelemetryService;
@@ -59,7 +90,7 @@ export default abstract class BaseErrorTelemetry {
 		this._flushDelay = flushDelay;
 
 		// (1) check for unexpected but handled errors
-		const unbind = errorHandler.addListener((err) => this._onErrorEvent(err));
+		const unbind = errorHandler.addListener(err => this._onErrorEvent(err));
 		this._disposables.add(toDisposable(unbind));
 
 		// (2) install implementation-specific error listeners
@@ -77,7 +108,6 @@ export default abstract class BaseErrorTelemetry {
 	}
 
 	private _onErrorEvent(err: any): void {
-
 		if (!err || err.code) {
 			return;
 		}
@@ -93,7 +123,12 @@ export default abstract class BaseErrorTelemetry {
 		// Explicitly filter out PendingMigrationError for https://github.com/microsoft/vscode/issues/250648#issuecomment-3394040431
 		// We don't inherit from ErrorNoTelemetry to preserve the name used in reporting for exthostdeprecatedapiusage event.
 		// TODO(deepak1556): remove when PendingMigrationError is no longer needed.
-		if (ErrorNoTelemetry.isErrorNoTelemetry(err) || err instanceof FileOperationError || PendingMigrationError.is(err) || (typeof err?.message === 'string' && err.message.includes('Unable to read file'))) {
+		if (
+			ErrorNoTelemetry.isErrorNoTelemetry(err) ||
+			err instanceof FileOperationError ||
+			PendingMigrationError.is(err) ||
+			(typeof err?.message === 'string' && err.message.includes('Unable to read file'))
+		) {
 			return;
 		}
 
@@ -110,7 +145,6 @@ export default abstract class BaseErrorTelemetry {
 	}
 
 	protected _enqueue(e: ErrorEvent): void {
-
 		const idx = binarySearch(this._buffer, e, ErrorEvent.compare);
 		if (idx < 0) {
 			e.count = 1;

@@ -9,7 +9,13 @@ import { onUnexpectedError } from '../../../../base/common/errors.js';
 import { KeyChord, KeyCode, KeyMod } from '../../../../base/common/keyCodes.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { ICodeEditor } from '../../../browser/editorBrowser.js';
-import { EditorAction, EditorContributionInstantiation, registerEditorAction, registerEditorContribution, ServicesAccessor } from '../../../browser/editorExtensions.js';
+import {
+	EditorAction,
+	EditorContributionInstantiation,
+	registerEditorAction,
+	registerEditorContribution,
+	ServicesAccessor
+} from '../../../browser/editorExtensions.js';
 import { ICodeEditorService } from '../../../browser/services/codeEditorService.js';
 import { EditorOption } from '../../../common/config/editorOptions.js';
 import { CharacterSet } from '../../../common/core/characterClassifier.js';
@@ -18,10 +24,18 @@ import { IEditorContribution } from '../../../common/editorCommon.js';
 import { EditorContextKeys } from '../../../common/editorContextKeys.js';
 import { IEditorWorkerService } from '../../../common/services/editorWorker.js';
 import { ILanguageFeaturesService } from '../../../common/services/languageFeatures.js';
-import { formatDocumentRangesWithSelectedProvider, formatDocumentWithSelectedProvider, FormattingMode, getOnTypeFormattingEdits } from './format.js';
+import {
+	formatDocumentRangesWithSelectedProvider,
+	formatDocumentWithSelectedProvider,
+	FormattingMode,
+	getOnTypeFormattingEdits
+} from './format.js';
 import { FormattingEdit } from './formattingEdit.js';
 import * as nls from '../../../../nls.js';
-import { AccessibilitySignal, IAccessibilitySignalService } from '../../../../platform/accessibilitySignal/browser/accessibilitySignalService.js';
+import {
+	AccessibilitySignal,
+	IAccessibilitySignalService
+} from '../../../../platform/accessibilitySignal/browser/accessibilitySignalService.js';
 import { CommandsRegistry, ICommandService } from '../../../../platform/commands/common/commands.js';
 import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
@@ -29,9 +43,7 @@ import { KeybindingWeight } from '../../../../platform/keybinding/common/keybind
 import { IEditorProgressService, Progress } from '../../../../platform/progress/common/progress.js';
 
 export class FormatOnType implements IEditorContribution {
-
 	public static readonly ID = 'editor.contrib.autoFormat';
-
 
 	private readonly _disposables = new DisposableStore();
 	private readonly _sessionDisposables = new DisposableStore();
@@ -45,11 +57,13 @@ export class FormatOnType implements IEditorContribution {
 		this._disposables.add(_languageFeaturesService.onTypeFormattingEditProvider.onDidChange(this._update, this));
 		this._disposables.add(_editor.onDidChangeModel(() => this._update()));
 		this._disposables.add(_editor.onDidChangeModelLanguage(() => this._update()));
-		this._disposables.add(_editor.onDidChangeConfiguration(e => {
-			if (e.hasChanged(EditorOption.formatOnType)) {
-				this._update();
-			}
-		}));
+		this._disposables.add(
+			_editor.onDidChangeConfiguration(e => {
+				if (e.hasChanged(EditorOption.formatOnType)) {
+					this._update();
+				}
+			})
+		);
 		this._update();
 	}
 
@@ -59,7 +73,6 @@ export class FormatOnType implements IEditorContribution {
 	}
 
 	private _update(): void {
-
 		// clean up
 		this._sessionDisposables.clear();
 
@@ -86,12 +99,14 @@ export class FormatOnType implements IEditorContribution {
 		for (const ch of support.autoFormatTriggerCharacters) {
 			triggerChars.add(ch.charCodeAt(0));
 		}
-		this._sessionDisposables.add(this._editor.onDidType((text: string) => {
-			const lastCharCode = text.charCodeAt(text.length - 1);
-			if (triggerChars.has(lastCharCode)) {
-				this._trigger(String.fromCharCode(lastCharCode));
-			}
-		}));
+		this._sessionDisposables.add(
+			this._editor.onDidType((text: string) => {
+				const lastCharCode = text.charCodeAt(text.length - 1);
+				if (triggerChars.has(lastCharCode)) {
+					this._trigger(String.fromCharCode(lastCharCode));
+				}
+			})
+		);
 	}
 
 	private _trigger(ch: string): void {
@@ -110,7 +125,7 @@ export class FormatOnType implements IEditorContribution {
 		// install a listener that checks if edits happens before the
 		// position on which we format right now. If so, we won't
 		// apply the format edits
-		const unbind = this._editor.onDidChangeModelContent((e) => {
+		const unbind = this._editor.onDidChangeModelContent(e => {
 			if (e.isFlush) {
 				// a model.setValue() was called
 				// cancel only once
@@ -138,22 +153,23 @@ export class FormatOnType implements IEditorContribution {
 			ch,
 			model.getFormattingOptions(),
 			cts.token
-		).then(edits => {
-			if (cts.token.isCancellationRequested) {
-				return;
-			}
-			if (isNonEmptyArray(edits)) {
-				this._accessibilitySignalService.playSignal(AccessibilitySignal.format, { userGesture: false });
-				FormattingEdit.execute(this._editor, edits, true);
-			}
-		}).finally(() => {
-			unbind.dispose();
-		});
+		)
+			.then(edits => {
+				if (cts.token.isCancellationRequested) {
+					return;
+				}
+				if (isNonEmptyArray(edits)) {
+					this._accessibilitySignalService.playSignal(AccessibilitySignal.format, { userGesture: false });
+					FormattingEdit.execute(this._editor, edits, true);
+				}
+			})
+			.finally(() => {
+				unbind.dispose();
+			});
 	}
 }
 
 class FormatOnPaste implements IEditorContribution {
-
 	public static readonly ID = 'editor.contrib.formatOnPaste';
 
 	private readonly _callOnDispose = new DisposableStore();
@@ -162,12 +178,14 @@ class FormatOnPaste implements IEditorContribution {
 	constructor(
 		private readonly editor: ICodeEditor,
 		@ILanguageFeaturesService private readonly _languageFeaturesService: ILanguageFeaturesService,
-		@IInstantiationService private readonly _instantiationService: IInstantiationService,
+		@IInstantiationService private readonly _instantiationService: IInstantiationService
 	) {
 		this._callOnDispose.add(editor.onDidChangeConfiguration(() => this._update()));
 		this._callOnDispose.add(editor.onDidChangeModel(() => this._update()));
 		this._callOnDispose.add(editor.onDidChangeModelLanguage(() => this._update()));
-		this._callOnDispose.add(_languageFeaturesService.documentRangeFormattingEditProvider.onDidChange(this._update, this));
+		this._callOnDispose.add(
+			_languageFeaturesService.documentRangeFormattingEditProvider.onDidChange(this._update, this)
+		);
 	}
 
 	dispose(): void {
@@ -176,7 +194,6 @@ class FormatOnPaste implements IEditorContribution {
 	}
 
 	private _update(): void {
-
 		// clean up
 		this._callOnModel.clear();
 
@@ -205,17 +222,30 @@ class FormatOnPaste implements IEditorContribution {
 		if (this.editor.getSelections().length > 1) {
 			return;
 		}
-		this._instantiationService.invokeFunction(formatDocumentRangesWithSelectedProvider, this.editor, range, FormattingMode.Silent, Progress.None, CancellationToken.None, false).catch(onUnexpectedError);
+		this._instantiationService
+			.invokeFunction(
+				formatDocumentRangesWithSelectedProvider,
+				this.editor,
+				range,
+				FormattingMode.Silent,
+				Progress.None,
+				CancellationToken.None,
+				false
+			)
+			.catch(onUnexpectedError);
 	}
 }
 
 class FormatDocumentAction extends EditorAction {
-
 	constructor() {
 		super({
 			id: 'editor.action.formatDocument',
-			label: nls.localize2('formatDocument.label', "Format Document"),
-			precondition: ContextKeyExpr.and(EditorContextKeys.notInCompositeEditor, EditorContextKeys.writable, EditorContextKeys.hasDocumentFormattingProvider),
+			label: nls.localize2('formatDocument.label', 'Format Document'),
+			precondition: ContextKeyExpr.and(
+				EditorContextKeys.notInCompositeEditor,
+				EditorContextKeys.writable,
+				EditorContextKeys.hasDocumentFormattingProvider
+			),
 			kbOpts: {
 				kbExpr: EditorContextKeys.editorTextFocus,
 				primary: KeyMod.Shift | KeyMod.Alt | KeyCode.KeyF,
@@ -234,7 +264,14 @@ class FormatDocumentAction extends EditorAction {
 			const instaService = accessor.get(IInstantiationService);
 			const progressService = accessor.get(IEditorProgressService);
 			await progressService.showWhile(
-				instaService.invokeFunction(formatDocumentWithSelectedProvider, editor, FormattingMode.Explicit, Progress.None, CancellationToken.None, true),
+				instaService.invokeFunction(
+					formatDocumentWithSelectedProvider,
+					editor,
+					FormattingMode.Explicit,
+					Progress.None,
+					CancellationToken.None,
+					true
+				),
 				250
 			);
 		}
@@ -242,12 +279,14 @@ class FormatDocumentAction extends EditorAction {
 }
 
 class FormatSelectionAction extends EditorAction {
-
 	constructor() {
 		super({
 			id: 'editor.action.formatSelection',
-			label: nls.localize2('formatSelection.label', "Format Selection"),
-			precondition: ContextKeyExpr.and(EditorContextKeys.writable, EditorContextKeys.hasDocumentSelectionFormattingProvider),
+			label: nls.localize2('formatSelection.label', 'Format Selection'),
+			precondition: ContextKeyExpr.and(
+				EditorContextKeys.writable,
+				EditorContextKeys.hasDocumentSelectionFormattingProvider
+			),
 			kbOpts: {
 				kbExpr: EditorContextKeys.editorTextFocus,
 				primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.KeyF),
@@ -276,7 +315,15 @@ class FormatSelectionAction extends EditorAction {
 
 		const progressService = accessor.get(IEditorProgressService);
 		await progressService.showWhile(
-			instaService.invokeFunction(formatDocumentRangesWithSelectedProvider, editor, ranges, FormattingMode.Explicit, Progress.None, CancellationToken.None, true),
+			instaService.invokeFunction(
+				formatDocumentRangesWithSelectedProvider,
+				editor,
+				ranges,
+				FormattingMode.Explicit,
+				Progress.None,
+				CancellationToken.None,
+				true
+			),
 			250
 		);
 	}

@@ -51,7 +51,11 @@ class ExplorerFileContributionRegistry extends Disposable implements IExplorerFi
 	/**
 	 * Creates a new instance of all registered contributions.
 	 */
-	public create(insta: IInstantiationService, container: HTMLElement, store: DisposableStore): IExplorerFileContribution[] {
+	public create(
+		insta: IInstantiationService,
+		container: HTMLElement,
+		store: DisposableStore
+	): IExplorerFileContribution[] {
 		return this.descriptors.map(d => {
 			const i = d.create(insta, container);
 			store.add(i);

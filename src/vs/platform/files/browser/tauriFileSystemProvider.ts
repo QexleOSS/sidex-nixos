@@ -5,10 +5,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { invoke } from '@tauri-apps/api/core';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { URI } from '../../../base/common/uri.js';
 import { Emitter, Event } from '../../../base/common/event.js';
-import { Disposable, IDisposable } from '../../../base/common/lifecycle.js';
+import { Disposable, IDisposable, toDisposable } from '../../../base/common/lifecycle.js';
 import {
+	FileChangeType,
 	FileSystemProviderCapabilities,
 	FileSystemProviderErrorCode,
 	FileType,
@@ -20,7 +22,7 @@ import {
 	IStat,
 	IWatchOptions,
 	IFileSystemProviderWithFileReadWriteCapability,
-	FilePermission,
+	FilePermission
 } from '../common/files.js';
 
 interface TauriFileStat {
@@ -43,23 +45,30 @@ interface TauriDirEntry {
 	modified: number;
 }
 
-export class TauriFileSystemProvider extends Disposable implements IFileSystemProviderWithFileReadWriteCapability {
+interface TauriWatchEvent {
+	path: string;
+	kind: string;
+	is_dir: boolean;
+}
 
+interface TauriWatchBatch {
+	watch_id: number;
+	events: TauriWatchEvent[];
+}
+
+export class TauriFileSystemProvider extends Disposable implements IFileSystemProviderWithFileReadWriteCapability {
 	readonly capabilities: FileSystemProviderCapabilities =
-		FileSystemProviderCapabilities.FileReadWrite |
-		FileSystemProviderCapabilities.PathCaseSensitive;
+		FileSystemProviderCapabilities.FileReadWrite | FileSystemProviderCapabilities.PathCaseSensitive;
 
 	readonly onDidChangeCapabilities = Event.None;
 
 	private readonly _onDidChangeFile = this._register(new Emitter<readonly IFileChange[]>());
 	readonly onDidChangeFile = this._onDidChangeFile.event;
 
-	/**
-	 * Extracts the local filesystem path from a URI.
-	 * For `file://` URIs this is just `fsPath`.
-	 * For `vscode-file://vscode-app/<path>` URIs, strip the authority
-	 * and return the raw path portion so the Rust backend can open it.
-	 */
+	private readonly _activeWatches = new Map<number, IDisposable>();
+	private _watchBatchUnlisten: UnlistenFn | undefined;
+	private _watchListenerRefCount = 0;
+
 	static toPath(resource: URI): string {
 		if (resource.scheme === 'vscode-file') {
 			return decodeURIComponent(resource.path);
@@ -68,8 +77,48 @@ export class TauriFileSystemProvider extends Disposable implements IFileSystemPr
 	}
 
 	private static toError(err: unknown, resource: URI, code: FileSystemProviderErrorCode): Error {
-		const msg = typeof err === 'string' ? err : (err instanceof Error ? err.message : String(err));
+		const msg = typeof err === 'string' ? err : err instanceof Error ? err.message : String(err);
 		return createFileSystemProviderError(msg, code);
+	}
+
+	private static toFileChangeType(kind: string): FileChangeType | undefined {
+		switch (kind) {
+			case 'created':
+				return FileChangeType.ADDED;
+			case 'modified':
+				return FileChangeType.UPDATED;
+			case 'deleted':
+				return FileChangeType.DELETED;
+			case 'renamed_to':
+				return FileChangeType.ADDED;
+			case 'renamed_from':
+				return FileChangeType.DELETED;
+			default:
+				return undefined;
+		}
+	}
+
+	private async _ensureWatchBatchListener(): Promise<void> {
+		if (this._watchBatchUnlisten) {
+			return;
+		}
+		this._watchBatchUnlisten = await listen<TauriWatchBatch>('watch-batch', event => {
+			const batch = event.payload;
+			if (!batch?.events?.length) {
+				return;
+			}
+			const changes: IFileChange[] = [];
+			for (const e of batch.events) {
+				const type = TauriFileSystemProvider.toFileChangeType(e.kind);
+				if (type === undefined) {
+					continue;
+				}
+				changes.push({ type, resource: URI.file(e.path) });
+			}
+			if (changes.length > 0) {
+				this._onDidChangeFile.fire(changes);
+			}
+		});
 	}
 
 	async stat(resource: URI): Promise<IStat> {
@@ -78,7 +127,7 @@ export class TauriFileSystemProvider extends Disposable implements IFileSystemPr
 		try {
 			raw = await invoke<TauriFileStat>('stat', { path });
 		} catch (err) {
-			const msg = typeof err === 'string' ? err : (err instanceof Error ? err.message : String(err));
+			const msg = typeof err === 'string' ? err : err instanceof Error ? err.message : String(err);
 			const isNotFound = /no such file|not found|ENOENT/i.test(msg);
 			if (!isNotFound) {
 				console.debug('[SideX-FS] stat failed:', path, err);
@@ -100,7 +149,7 @@ export class TauriFileSystemProvider extends Disposable implements IFileSystemPr
 			mtime: raw.modified * 1000,
 			ctime: raw.created * 1000,
 			size: raw.size,
-			permissions: raw.readonly ? FilePermission.Readonly : undefined,
+			permissions: raw.readonly ? FilePermission.Readonly : undefined
 		};
 	}
 
@@ -110,7 +159,7 @@ export class TauriFileSystemProvider extends Disposable implements IFileSystemPr
 		try {
 			entries = await invoke<TauriDirEntry[]>('read_dir', { path });
 		} catch (err) {
-			const msg = typeof err === 'string' ? err : (err instanceof Error ? err.message : String(err));
+			const msg = typeof err === 'string' ? err : err instanceof Error ? err.message : String(err);
 			const isNotFound = /no such file|not found|ENOENT/i.test(msg);
 			if (!isNotFound) {
 				console.debug('[SideX-FS] readdir failed:', path, err);
@@ -183,7 +232,7 @@ export class TauriFileSystemProvider extends Disposable implements IFileSystemPr
 			if (exists) {
 				throw createFileSystemProviderError(
 					`Unable to rename — target '${newPath}' already exists`,
-					FileSystemProviderErrorCode.FileExists,
+					FileSystemProviderErrorCode.FileExists
 				);
 			}
 		}
@@ -195,7 +244,43 @@ export class TauriFileSystemProvider extends Disposable implements IFileSystemPr
 		}
 	}
 
-	watch(_resource: URI, _opts: IWatchOptions): IDisposable {
-		return Disposable.None;
+	watch(resource: URI, opts: IWatchOptions): IDisposable {
+		const path = TauriFileSystemProvider.toPath(resource);
+		let watchId: number | undefined;
+		let disposed = false;
+
+		this._watchListenerRefCount++;
+		this._ensureWatchBatchListener().catch(() => {});
+
+		invoke<number>('watch_start', {
+			paths: [path],
+			options: {
+				recursive: opts.recursive,
+				debounce_ms: 100,
+				ignore_patterns: opts.excludes.length > 0 ? opts.excludes : undefined
+			}
+		}).then(
+			id => {
+				if (disposed) {
+					invoke('watch_stop', { id }).catch(() => {});
+					return;
+				}
+				watchId = id;
+			},
+			() => {}
+		);
+
+		return toDisposable(() => {
+			disposed = true;
+			this._watchListenerRefCount--;
+			if (watchId !== undefined) {
+				invoke('watch_stop', { id: watchId }).catch(() => {});
+			}
+			if (this._watchListenerRefCount <= 0 && this._watchBatchUnlisten) {
+				this._watchBatchUnlisten();
+				this._watchBatchUnlisten = undefined;
+				this._watchListenerRefCount = 0;
+			}
+		});
 	}
 }

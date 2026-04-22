@@ -7,10 +7,16 @@ import { Emitter, Event } from '../../../base/common/event.js';
 import { Disposable } from '../../../base/common/lifecycle.js';
 import { createDecorator } from '../../../platform/instantiation/common/instantiation.js';
 import { IExtHostRpcService } from './extHostRpcService.js';
-import { ExtHostPowerShape, MainContext, MainThreadPowerShape, PowerSaveBlockerType, PowerSystemIdleState, PowerThermalState } from './extHost.protocol.js';
+import {
+	ExtHostPowerShape,
+	MainContext,
+	MainThreadPowerShape,
+	PowerSaveBlockerType,
+	PowerSystemIdleState,
+	PowerThermalState
+} from './extHost.protocol.js';
 
 export class ExtHostPower extends Disposable implements ExtHostPowerShape {
-
 	declare _serviceBrand: undefined;
 
 	private readonly _proxy: MainThreadPowerShape;
@@ -40,9 +46,7 @@ export class ExtHostPower extends Disposable implements ExtHostPowerShape {
 	private readonly _onDidUnlockScreen = this._register(new Emitter<void>());
 	readonly onDidUnlockScreen: Event<void> = this._onDidUnlockScreen.event;
 
-	constructor(
-		@IExtHostRpcService extHostRpc: IExtHostRpcService,
-	) {
+	constructor(@IExtHostRpcService extHostRpc: IExtHostRpcService) {
 		super();
 		this._proxy = extHostRpc.getProxy(MainContext.MainThreadPower);
 	}
@@ -99,7 +103,9 @@ export class ExtHostPower extends Disposable implements ExtHostPowerShape {
 		return this._proxy.$isOnBatteryPower();
 	}
 
-	async startPowerSaveBlocker(type: PowerSaveBlockerType): Promise<{ id: number; isStarted: boolean; dispose: () => void }> {
+	async startPowerSaveBlocker(
+		type: PowerSaveBlockerType
+	): Promise<{ id: number; isStarted: boolean; dispose: () => void }> {
 		const id = await this._proxy.$startPowerSaveBlocker(type);
 		const proxy = this._proxy;
 		const isSupported = id >= 0;
@@ -121,4 +127,4 @@ export class ExtHostPower extends Disposable implements ExtHostPowerShape {
 }
 
 export const IExtHostPower = createDecorator<IExtHostPower>('IExtHostPower');
-export interface IExtHostPower extends ExtHostPower, ExtHostPowerShape { }
+export interface IExtHostPower extends ExtHostPower, ExtHostPowerShape {}

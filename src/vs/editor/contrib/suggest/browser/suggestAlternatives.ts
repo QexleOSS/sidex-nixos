@@ -10,7 +10,6 @@ import { CompletionModel } from './completionModel.js';
 import { ISelectedSuggestion } from './suggestWidget.js';
 
 export class SuggestAlternatives {
-
 	static readonly OtherSuggestions = new RawContextKey<boolean>('hasOtherSuggestions', false);
 
 	private readonly _ckOtherSuggestions: IContextKey<boolean>;
@@ -41,7 +40,6 @@ export class SuggestAlternatives {
 	}
 
 	set({ model, index }: ISelectedSuggestion, acceptNext: (selected: ISelectedSuggestion) => unknown): void {
-
 		// no suggestions -> nothing to do
 		if (model.items.length === 0) {
 			this.reset();

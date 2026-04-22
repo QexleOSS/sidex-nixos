@@ -30,7 +30,7 @@ export enum TerminalCompletionItemKind {
 
 	// Core-only kinds
 	InlineSuggestion = 100,
-	InlineSuggestionAlwaysOnTop = 101,
+	InlineSuggestionAlwaysOnTop = 101
 }
 
 // Maps CompletionItemKind from language server based completion to TerminalCompletionItemKind
@@ -90,7 +90,6 @@ export interface ITerminalCompletion extends ISimpleCompletion {
 	 * Provider that can resolve this item
 	 */
 	_resolveProvider?: CompletionItemProvider;
-
 }
 
 export class TerminalCompletionItem extends SimpleCompletionItem {
@@ -176,7 +175,6 @@ export class TerminalCompletionItem extends SimpleCompletionItem {
 	 * Resolves the completion item's details lazily when needed.
 	 */
 	async resolve(token: CancellationToken): Promise<void> {
-
 		if (this.resolveCache) {
 			return this.resolveCache;
 		}
@@ -207,7 +205,6 @@ export class TerminalCompletionItem extends SimpleCompletionItem {
 
 		return this.resolveCache;
 	}
-
 }
 
 function isFile(completion: ITerminalCompletion): boolean {

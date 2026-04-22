@@ -7,9 +7,24 @@ import { OS } from '../../../../../base/common/platform.js';
 import { URI } from '../../../../../base/common/uri.js';
 import { IUriIdentityService } from '../../../../../platform/uriIdentity/common/uriIdentity.js';
 import { IWorkspaceContextService } from '../../../../../platform/workspace/common/workspace.js';
-import { ITerminalLinkDetector, ITerminalLinkResolver, ITerminalSimpleLink, ResolvedLink, TerminalBuiltinLinkType } from './links.js';
-import { convertLinkRangeToBuffer, getXtermLineContent, getXtermRangesByAttr, osPathModule, updateLinkWithRelativeCwd } from './terminalLinkHelpers.js';
-import { ITerminalCapabilityStore, TerminalCapability } from '../../../../../platform/terminal/common/capabilities/capabilities.js';
+import {
+	ITerminalLinkDetector,
+	ITerminalLinkResolver,
+	ITerminalSimpleLink,
+	ResolvedLink,
+	TerminalBuiltinLinkType
+} from './links.js';
+import {
+	convertLinkRangeToBuffer,
+	getXtermLineContent,
+	getXtermRangesByAttr,
+	osPathModule,
+	updateLinkWithRelativeCwd
+} from './terminalLinkHelpers.js';
+import {
+	ITerminalCapabilityStore,
+	TerminalCapability
+} from '../../../../../platform/terminal/common/capabilities/capabilities.js';
 import type { IBufferLine, IBufferRange, Terminal } from '@xterm/xterm';
 import { ITerminalProcessManager } from '../../../terminal/common/terminal.js';
 import { detectLinks } from './terminalLinkParsing.js';
@@ -31,7 +46,7 @@ const enum Constants {
 	 * The maximum length of a link to resolve against the file system. This limit is put in place
 	 * to avoid sending excessive data when remote connections are in place.
 	 */
-	MaxResolvedLinkLength = 1024,
+	MaxResolvedLinkLength = 1024
 }
 
 const fallbackMatchers: RegExp[] = [
@@ -70,13 +85,15 @@ export class TerminalLocalLinkDetector implements ITerminalLinkDetector {
 	constructor(
 		readonly xterm: Terminal,
 		private readonly _capabilities: ITerminalCapabilityStore,
-		private readonly _processManager: Pick<ITerminalProcessManager, 'initialCwd' | 'os' | 'remoteAuthority' | 'userHome'> & { backend?: Pick<ITerminalBackend, 'getWslPath'> },
+		private readonly _processManager: Pick<
+			ITerminalProcessManager,
+			'initialCwd' | 'os' | 'remoteAuthority' | 'userHome'
+		> & { backend?: Pick<ITerminalBackend, 'getWslPath'> },
 		private readonly _linkResolver: ITerminalLinkResolver,
 		@ITerminalLogService private readonly _logService: ITerminalLogService,
 		@IUriIdentityService private readonly _uriIdentityService: IUriIdentityService,
 		@IWorkspaceContextService private readonly _workspaceContextService: IWorkspaceContextService
-	) {
-	}
+	) {}
 
 	async detect(lines: IBufferLine[], startLine: number, endLine: number): Promise<ITerminalSimpleLink[]> {
 		const links: ITerminalSimpleLink[] = [];
@@ -95,19 +112,24 @@ export class TerminalLocalLinkDetector implements ITerminalLinkDetector {
 		this._logService.trace('terminalLocalLinkDetector#detect text', text);
 		this._logService.trace('terminalLocalLinkDetector#detect parsedLinks', parsedLinks);
 		for (const parsedLink of parsedLinks) {
-
 			// Don't try resolve any links of excessive length
 			if (parsedLink.path.text.length > Constants.MaxResolvedLinkLength) {
 				continue;
 			}
 
 			// Convert the link text's string index into a wrapped buffer range
-			const bufferRange = convertLinkRangeToBuffer(lines, this.xterm.cols, {
-				startColumn: (parsedLink.prefix?.index ?? parsedLink.path.index) + 1,
-				startLineNumber: 1,
-				endColumn: parsedLink.path.index + parsedLink.path.text.length + (parsedLink.suffix?.suffix.text.length ?? 0) + 1,
-				endLineNumber: 1
-			}, startLine);
+			const bufferRange = convertLinkRangeToBuffer(
+				lines,
+				this.xterm.cols,
+				{
+					startColumn: (parsedLink.prefix?.index ?? parsedLink.path.index) + 1,
+					startLineNumber: 1,
+					endColumn:
+						parsedLink.path.index + parsedLink.path.text.length + (parsedLink.suffix?.suffix.text.length ?? 0) + 1,
+					endLineNumber: 1
+				},
+				startLine
+			);
 
 			// Get a single link candidate if the cwd of the line is known
 			const linkCandidates: string[] = [];
@@ -117,7 +139,13 @@ export class TerminalLocalLinkDetector implements ITerminalLinkDetector {
 				linkCandidates.push(parsedLink.path.text);
 			} else {
 				if (this._capabilities.has(TerminalCapability.CommandDetection)) {
-					const absolutePath = updateLinkWithRelativeCwd(this._capabilities, bufferRange.start.y, parsedLink.path.text, osPath, this._logService);
+					const absolutePath = updateLinkWithRelativeCwd(
+						this._capabilities,
+						bufferRange.start.y,
+						parsedLink.path.text,
+						osPath,
+						this._logService
+					);
 					// Only add a single exact link candidate if the cwd is available, this may cause
 					// the link to not be resolved but that should only occur when the actual file does
 					// not exist. Doing otherwise could cause unexpected results where handling via the
@@ -164,7 +192,9 @@ export class TerminalLocalLinkDetector implements ITerminalLinkDetector {
 				simpleLink.parsedLink = parsedLink;
 				simpleLink.text = text.substring(
 					parsedLink.prefix?.index ?? parsedLink.path.index,
-					parsedLink.suffix ? parsedLink.suffix.suffix.index + parsedLink.suffix.suffix.text.length : parsedLink.path.index + parsedLink.path.text.length
+					parsedLink.suffix
+						? parsedLink.suffix.suffix.index + parsedLink.suffix.suffix.text.length
+						: parsedLink.path.index + parsedLink.path.text.length
 				);
 				this._logService.trace('terminalLocalLinkDetector#detect verified link', simpleLink);
 				links.push(simpleLink);
@@ -200,12 +230,17 @@ export class TerminalLocalLinkDetector implements ITerminalLinkDetector {
 
 				// Convert the link text's string index into a wrapped buffer range
 				stringIndex = text.indexOf(link);
-				const bufferRange = convertLinkRangeToBuffer(lines, this.xterm.cols, {
-					startColumn: stringIndex + 1,
-					startLineNumber: 1,
-					endColumn: stringIndex + link.length + 1,
-					endLineNumber: 1
-				}, startLine);
+				const bufferRange = convertLinkRangeToBuffer(
+					lines,
+					this.xterm.cols,
+					{
+						startColumn: stringIndex + 1,
+						startLineNumber: 1,
+						endColumn: stringIndex + link.length + 1,
+						endLineNumber: 1
+					},
+					startLine
+				);
 
 				// Validate and add link
 				const suffix = line ? `:${line}${col ? `:${col}` : ''}` : '';
@@ -213,7 +248,6 @@ export class TerminalLocalLinkDetector implements ITerminalLinkDetector {
 				if (simpleLink) {
 					links.push(simpleLink);
 				}
-
 			}
 		}
 
@@ -272,10 +306,20 @@ export class TerminalLocalLinkDetector implements ITerminalLinkDetector {
 	 * @param linkText The link text, this should be undefined to use the link stat value
 	 * @param trimRangeMap A map of link candidates to the amount of buffer range they need trimmed.
 	 */
-	private async _validateAndGetLink(linkText: string | undefined, bufferRange: IBufferRange, linkCandidates: string[], trimRangeMap?: Map<string, number>): Promise<ITerminalSimpleLink | undefined> {
+	private async _validateAndGetLink(
+		linkText: string | undefined,
+		bufferRange: IBufferRange,
+		linkCandidates: string[],
+		trimRangeMap?: Map<string, number>
+	): Promise<ITerminalSimpleLink | undefined> {
 		const linkStat = await this._validateLinkCandidates(linkCandidates);
 		if (linkStat) {
-			const type = getTerminalLinkType(linkStat.uri, linkStat.isDirectory, this._uriIdentityService, this._workspaceContextService);
+			const type = getTerminalLinkType(
+				linkStat.uri,
+				linkStat.isDirectory,
+				this._uriIdentityService,
+				this._workspaceContextService
+			);
 
 			// Offset the buffer range if the link range was trimmed
 			const trimRange = trimRangeMap?.get(linkStat.link);

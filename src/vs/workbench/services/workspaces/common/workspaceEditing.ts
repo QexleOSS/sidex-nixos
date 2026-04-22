@@ -25,7 +25,6 @@ export interface IDidEnterWorkspaceEvent {
 }
 
 export interface IWorkspaceEditingService {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -50,7 +49,12 @@ export interface IWorkspaceEditingService {
 	 * Allows to add and remove folders to the existing workspace at once.
 	 * When `donotNotifyError` is `true`, error will be bubbled up otherwise, the service handles the error with proper message and action
 	 */
-	updateFolders(index: number, deleteCount?: number, foldersToAdd?: IWorkspaceFolderCreationData[], donotNotifyError?: boolean): Promise<void>;
+	updateFolders(
+		index: number,
+		deleteCount?: number,
+		foldersToAdd?: IWorkspaceFolderCreationData[],
+		donotNotifyError?: boolean
+	): Promise<void>;
 
 	/**
 	 * Enters the workspace with the provided path.

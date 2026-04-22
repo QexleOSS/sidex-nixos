@@ -11,7 +11,11 @@ import { assertNever } from '../../../base/common/assert.js';
 import { DEFAULT_WORD_REGEXP, getWordAtText } from '../core/wordHelper.js';
 
 export class UnicodeTextModelHighlighter {
-	public static computeUnicodeHighlights(model: IUnicodeCharacterSearcherTarget, options: UnicodeHighlighterOptions, range?: IRange): IUnicodeHighlightsResult {
+	public static computeUnicodeHighlights(
+		model: IUnicodeCharacterSearcherTarget,
+		options: UnicodeHighlighterOptions,
+		range?: IRange
+	): IUnicodeHighlightsResult {
 		const startLine = range ? range.startLineNumber : 1;
 		const endLine = range ? range.endLineNumber : model.getLineCount();
 
@@ -34,8 +38,7 @@ export class UnicodeTextModelHighlighter {
 		let invisibleCharacterCount = 0;
 		let nonBasicAsciiCharacterCount = 0;
 
-		forLoop:
-		for (let lineNumber = startLine, lineCount = endLine; lineNumber <= lineCount; lineNumber++) {
+		forLoop: for (let lineNumber = startLine, lineCount = endLine; lineNumber <= lineCount; lineNumber++) {
 			const lineContent = model.getLineContent(lineNumber);
 			const lineLength = lineContent.length;
 
@@ -99,7 +102,10 @@ export class UnicodeTextModelHighlighter {
 		};
 	}
 
-	public static computeUnicodeHighlightReason(char: string, options: UnicodeHighlighterOptions): UnicodeHighlighterReason | null {
+	public static computeUnicodeHighlightReason(
+		char: string,
+		options: UnicodeHighlighterOptions
+	): UnicodeHighlighterReason | null {
 		const codePointHighlighter = new CodePointHighlighter(options);
 
 		const reason = codePointHighlighter.shouldHighlightNonBasicASCII(char, null);
@@ -112,14 +118,14 @@ export class UnicodeTextModelHighlighter {
 			case SimpleHighlightReason.Ambiguous: {
 				const codePoint = char.codePointAt(0)!;
 				const primaryConfusable = codePointHighlighter.ambiguousCharacters.getPrimaryConfusable(codePoint)!;
-				const notAmbiguousInLocales =
-					strings.AmbiguousCharacters.getLocales().filter(
-						(l) =>
-							!strings.AmbiguousCharacters.getInstance(
-								new Set([...options.allowedLocales, l])
-							).isAmbiguous(codePoint)
-					);
-				return { kind: UnicodeHighlighterReasonKind.Ambiguous, confusableWith: String.fromCodePoint(primaryConfusable), notAmbiguousInLocales };
+				const notAmbiguousInLocales = strings.AmbiguousCharacters.getLocales().filter(
+					l => !strings.AmbiguousCharacters.getInstance(new Set([...options.allowedLocales, l])).isAmbiguous(codePoint)
+				);
+				return {
+					kind: UnicodeHighlighterReasonKind.Ambiguous,
+					confusableWith: String.fromCodePoint(primaryConfusable),
+					notAmbiguousInLocales
+				};
 			}
 			case SimpleHighlightReason.NonBasicASCII:
 				return { kind: UnicodeHighlighterReasonKind.NonBasicAscii };
@@ -128,25 +134,28 @@ export class UnicodeTextModelHighlighter {
 }
 
 function buildRegExpCharClassExpr(codePoints: number[], flags?: string): string {
-	const src = `[${strings.escapeRegExpCharacters(
-		codePoints.map((i) => String.fromCodePoint(i)).join('')
-	)}]`;
+	const src = `[${strings.escapeRegExpCharacters(codePoints.map(i => String.fromCodePoint(i)).join(''))}]`;
 	return src;
 }
 
 export const enum UnicodeHighlighterReasonKind {
-	Ambiguous, Invisible, NonBasicAscii
+	Ambiguous,
+	Invisible,
+	NonBasicAscii
 }
 
-export type UnicodeHighlighterReason = {
-	kind: UnicodeHighlighterReasonKind.Ambiguous;
-	confusableWith: string;
-	notAmbiguousInLocales: string[];
-} | {
-	kind: UnicodeHighlighterReasonKind.Invisible;
-} | {
-	kind: UnicodeHighlighterReasonKind.NonBasicAscii;
-};
+export type UnicodeHighlighterReason =
+	| {
+			kind: UnicodeHighlighterReasonKind.Ambiguous;
+			confusableWith: string;
+			notAmbiguousInLocales: string[];
+	  }
+	| {
+			kind: UnicodeHighlighterReasonKind.Invisible;
+	  }
+	| {
+			kind: UnicodeHighlighterReasonKind.NonBasicAscii;
+	  };
 
 class CodePointHighlighter {
 	private readonly allowedCodePoints: Set<number>;

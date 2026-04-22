@@ -13,15 +13,18 @@ export interface IAnchor {
 }
 
 export const enum AnchorAlignment {
-	LEFT, RIGHT
+	LEFT,
+	RIGHT
 }
 
 export const enum AnchorPosition {
-	BELOW, ABOVE
+	BELOW,
+	ABOVE
 }
 
 export const enum AnchorAxisAlignment {
-	VERTICAL, HORIZONTAL
+	VERTICAL,
+	HORIZONTAL
 }
 
 interface IPosition {
@@ -34,7 +37,7 @@ interface ISize {
 	readonly height: number;
 }
 
-export interface IRect extends IPosition, ISize { }
+export interface IRect extends IPosition, ISize {}
 
 export const enum LayoutAnchorPosition {
 	Before,
@@ -64,8 +67,10 @@ export interface ILayoutResult {
  * @returns The view offset within the viewport.
  */
 export function layout(viewportSize: number, viewSize: number, anchor: ILayoutAnchor): ILayoutResult {
-	const layoutAfterAnchorBoundary = anchor.mode === LayoutAnchorMode.ALIGN ? anchor.offset : anchor.offset + anchor.size;
-	const layoutBeforeAnchorBoundary = anchor.mode === LayoutAnchorMode.ALIGN ? anchor.offset + anchor.size : anchor.offset;
+	const layoutAfterAnchorBoundary =
+		anchor.mode === LayoutAnchorMode.ALIGN ? anchor.offset : anchor.offset + anchor.size;
+	const layoutBeforeAnchorBoundary =
+		anchor.mode === LayoutAnchorMode.ALIGN ? anchor.offset + anchor.size : anchor.offset;
 
 	if (anchor.position === LayoutAnchorPosition.Before) {
 		if (viewSize <= viewportSize - layoutAfterAnchorBoundary) {
@@ -114,8 +119,17 @@ export function layout2d(viewport: IRect, view: ISize, anchor: IRect, options?: 
 	let left: number;
 
 	if (anchorAxisAlignment === AnchorAxisAlignment.VERTICAL) {
-		const verticalAnchor: ILayoutAnchor = { offset: anchor.top - viewport.top, size: anchor.height, position: anchorPosition === AnchorPosition.BELOW ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After };
-		const horizontalAnchor: ILayoutAnchor = { offset: anchor.left, size: anchor.width, position: anchorAlignment === AnchorAlignment.LEFT ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After, mode: LayoutAnchorMode.ALIGN };
+		const verticalAnchor: ILayoutAnchor = {
+			offset: anchor.top - viewport.top,
+			size: anchor.height,
+			position: anchorPosition === AnchorPosition.BELOW ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After
+		};
+		const horizontalAnchor: ILayoutAnchor = {
+			offset: anchor.left,
+			size: anchor.width,
+			position: anchorAlignment === AnchorAlignment.LEFT ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After,
+			mode: LayoutAnchorMode.ALIGN
+		};
 
 		const verticalLayoutResult = layout(viewport.height, view.height, verticalAnchor);
 		top = verticalLayoutResult.position + viewport.top;
@@ -125,7 +139,12 @@ export function layout2d(viewport: IRect, view: ISize, anchor: IRect, options?: 
 		}
 
 		// if view intersects vertically with anchor, we must avoid the anchor
-		if (Range.intersects({ start: top, end: top + view.height }, { start: verticalAnchor.offset, end: verticalAnchor.offset + verticalAnchor.size })) {
+		if (
+			Range.intersects(
+				{ start: top, end: top + view.height },
+				{ start: verticalAnchor.offset, end: verticalAnchor.offset + verticalAnchor.size }
+			)
+		) {
 			horizontalAnchor.mode = LayoutAnchorMode.AVOID;
 		}
 
@@ -136,8 +155,17 @@ export function layout2d(viewport: IRect, view: ISize, anchor: IRect, options?: 
 			anchorAlignment = anchorAlignment === AnchorAlignment.LEFT ? AnchorAlignment.RIGHT : AnchorAlignment.LEFT;
 		}
 	} else {
-		const horizontalAnchor: ILayoutAnchor = { offset: anchor.left, size: anchor.width, position: anchorAlignment === AnchorAlignment.LEFT ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After };
-		const verticalAnchor: ILayoutAnchor = { offset: anchor.top, size: anchor.height, position: anchorPosition === AnchorPosition.BELOW ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After, mode: LayoutAnchorMode.ALIGN };
+		const horizontalAnchor: ILayoutAnchor = {
+			offset: anchor.left,
+			size: anchor.width,
+			position: anchorAlignment === AnchorAlignment.LEFT ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After
+		};
+		const verticalAnchor: ILayoutAnchor = {
+			offset: anchor.top,
+			size: anchor.height,
+			position: anchorPosition === AnchorPosition.BELOW ? LayoutAnchorPosition.Before : LayoutAnchorPosition.After,
+			mode: LayoutAnchorMode.ALIGN
+		};
 
 		const horizontalLayoutResult = layout(viewport.width, view.width, horizontalAnchor);
 		left = horizontalLayoutResult.position;
@@ -147,7 +175,12 @@ export function layout2d(viewport: IRect, view: ISize, anchor: IRect, options?: 
 		}
 
 		// if view intersects horizontally with anchor, we must avoid the anchor
-		if (Range.intersects({ start: left, end: left + view.width }, { start: horizontalAnchor.offset, end: horizontalAnchor.offset + horizontalAnchor.size })) {
+		if (
+			Range.intersects(
+				{ start: left, end: left + view.width },
+				{ start: horizontalAnchor.offset, end: horizontalAnchor.offset + horizontalAnchor.size }
+			)
+		) {
 			verticalAnchor.mode = LayoutAnchorMode.AVOID;
 		}
 

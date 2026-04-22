@@ -115,6 +115,7 @@ impl ExtRuntimeState {
         }
     }
 
+    #[allow(clippy::cast_precision_loss)]
     fn is_slow(&self) -> bool {
         if let Some(ms) = self.activation_time_ms {
             if ms >= SLOW_ACTIVATION_THRESHOLD_MS {
@@ -146,6 +147,7 @@ impl ExtRuntimeState {
         }
     }
 
+    #[allow(clippy::cast_precision_loss)]
     fn to_profile(&self) -> ExtensionProfileRecord {
         let avg = if self.total_provider_calls > 0 {
             self.total_provider_time_ms as f64 / self.total_provider_calls as f64
@@ -199,6 +201,11 @@ impl BisectEngine {
         self.confirmed_good.clear();
     }
 
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )]
     fn total_rounds(&self) -> u32 {
         if self.candidates.is_empty() {
             return 0;
@@ -332,6 +339,7 @@ pub struct ExtensionActivationReport {
     pub command_count: Option<u32>,
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub async fn extension_report_activated(
     report: ExtensionActivationReport,
@@ -361,6 +369,7 @@ pub async fn extension_report_activated(
     Ok(())
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub async fn extension_report_provider_call(
     extension_id: String,
@@ -381,6 +390,7 @@ pub async fn extension_report_provider_call(
     Ok(())
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub async fn extension_report_deactivated(
     extension_id: String,
@@ -394,6 +404,7 @@ pub async fn extension_report_deactivated(
     Ok(())
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub async fn extension_report_error(
     extension_id: String,
@@ -411,6 +422,7 @@ pub async fn extension_report_error(
     Ok(())
 }
 
+#[allow(clippy::cast_possible_truncation)]
 #[tauri::command]
 pub async fn extension_mark_startup_complete(
     state: State<'_, ExtensionDiagnosticsStore>,
@@ -419,12 +431,12 @@ pub async fn extension_mark_startup_complete(
     guard.startup_complete = true;
     let ms = guard
         .session_start
-        .map(|s| s.elapsed().as_millis() as u64)
-        .unwrap_or(0);
+        .map_or(0, |s| s.elapsed().as_millis() as u64);
     guard.startup_time_ms = Some(ms);
     Ok(ms)
 }
 
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub async fn extension_register_session(
     extension_ids: Vec<String>,
@@ -452,7 +464,11 @@ pub async fn extension_runtime_status(
     state: State<'_, ExtensionDiagnosticsStore>,
 ) -> Result<Vec<ExtensionRuntimeRecord>, String> {
     let guard = state.inner.lock().map_err(|e| e.to_string())?;
-    let mut records: Vec<_> = guard.extensions.values().map(|e| e.to_record()).collect();
+    let mut records: Vec<_> = guard
+        .extensions
+        .values()
+        .map(ExtRuntimeState::to_record)
+        .collect();
     records.sort_by(|a, b| a.id.cmp(&b.id));
     Ok(records)
 }
@@ -462,7 +478,11 @@ pub async fn extension_runtime_profile(
     state: State<'_, ExtensionDiagnosticsStore>,
 ) -> Result<Vec<ExtensionProfileRecord>, String> {
     let guard = state.inner.lock().map_err(|e| e.to_string())?;
-    let mut records: Vec<_> = guard.extensions.values().map(|e| e.to_profile()).collect();
+    let mut records: Vec<_> = guard
+        .extensions
+        .values()
+        .map(ExtRuntimeState::to_profile)
+        .collect();
     records.sort_by(|a, b| {
         b.activation_time_ms
             .cmp(&a.activation_time_ms)
@@ -480,7 +500,7 @@ pub async fn extension_slow_extensions(
         .extensions
         .values()
         .filter(|e| e.is_slow())
-        .map(|e| e.to_profile())
+        .map(ExtRuntimeState::to_profile)
         .collect();
     records.sort_by(|a, b| b.activation_time_ms.cmp(&a.activation_time_ms));
     Ok(records)

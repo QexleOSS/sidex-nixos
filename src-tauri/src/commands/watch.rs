@@ -32,9 +32,9 @@ pub struct WatchOptions {
     pub recursive: bool,
     /// Debounce delay in milliseconds (default: 100)
     pub debounce_ms: Option<u64>,
-    /// File extensions to watch (e.g., ["ts", "js", "json"]). None = all files.
+    /// File extensions to watch (e.g., `["ts", "js", "json"]`). None = all files.
     pub file_extensions: Option<Vec<String>>,
-    /// Ignore patterns (gitignore-style, e.g., ["node_modules", ".git", "*.log"])
+    /// Ignore patterns (gitignore-style, e.g., `["node_modules", ".git", "*.log"]`)
     pub ignore_patterns: Option<Vec<String>>,
     /// Whether to include file content in change events (for small files only)
     pub emit_content: Option<bool>,
@@ -67,7 +67,7 @@ pub struct WatchEvent {
     pub kind: String,
     /// Whether this is a directory
     pub is_dir: bool,
-    /// File content (only if emit_content is true and file is small enough)
+    /// File content (only if `emit_content` is true and file is small enough)
     pub content: Option<String>,
 }
 
@@ -147,7 +147,7 @@ impl Default for WatchStore {
     }
 }
 
-/// Build a GlobSet from ignore patterns
+/// Build a `GlobSet` from ignore patterns
 fn build_ignore_globset(patterns: &[String]) -> Result<Option<GlobSet>, String> {
     if patterns.is_empty() {
         return Ok(None);
@@ -156,19 +156,18 @@ fn build_ignore_globset(patterns: &[String]) -> Result<Option<GlobSet>, String> 
     let mut builder = GlobSetBuilder::new();
     for pattern in patterns {
         // Support both glob patterns and simple path patterns
-        let glob =
-            Glob::new(pattern).map_err(|e| format!("Invalid pattern '{}': {}", pattern, e))?;
+        let glob = Glob::new(pattern).map_err(|e| format!("Invalid pattern '{pattern}': {e}"))?;
         builder.add(glob);
     }
 
     let globset = builder
         .build()
-        .map_err(|e| format!("Failed to build globset: {}", e))?;
+        .map_err(|e| format!("Failed to build globset: {e}"))?;
     Ok(Some(globset))
 }
 
 /// Check if a path should be ignored based on globset
-fn should_ignore(path: &Path, ignore_globset: &Option<GlobSet>) -> bool {
+fn should_ignore(path: &Path, ignore_globset: Option<&GlobSet>) -> bool {
     if let Some(globset) = ignore_globset {
         // Check the full path
         if globset.is_match(path) {
@@ -187,7 +186,7 @@ fn should_ignore(path: &Path, ignore_globset: &Option<GlobSet>) -> bool {
 }
 
 /// Check if file extension matches the allowed set
-fn extension_matches(path: &Path, extensions: &Option<HashSet<String>>) -> bool {
+fn extension_matches(path: &Path, extensions: Option<&HashSet<String>>) -> bool {
     if let Some(exts) = extensions {
         if let Some(ext) = path.extension() {
             if let Some(ext_str) = ext.to_str() {
@@ -222,16 +221,16 @@ fn maybe_read_content(path: &Path, should_emit: bool) -> Option<String> {
     std::fs::read_to_string(path).ok()
 }
 
-/// Convert EventKind to string representation
-fn event_kind_to_string(kind: &EventKind) -> String {
-    use notify::event::*;
+/// Convert `EventKind` to string representation
+fn event_kind_to_string(kind: EventKind) -> String {
+    use notify::event::{CreateKind, EventKind, ModifyKind, RemoveKind, RenameMode};
 
     match kind {
-        EventKind::Create(CreateKind::File) | EventKind::Create(CreateKind::Any) => "created",
-        EventKind::Modify(ModifyKind::Data(_))
-        | EventKind::Modify(ModifyKind::Metadata(_))
-        | EventKind::Modify(ModifyKind::Any) => "modified",
-        EventKind::Remove(RemoveKind::File) | EventKind::Remove(RemoveKind::Any) => "deleted",
+        EventKind::Create(CreateKind::File | CreateKind::Any) => "created",
+        EventKind::Modify(ModifyKind::Data(_) | ModifyKind::Metadata(_) | ModifyKind::Any) => {
+            "modified"
+        }
+        EventKind::Remove(RemoveKind::File | RemoveKind::Any) => "deleted",
         EventKind::Modify(ModifyKind::Name(RenameMode::From)) => "renamed_from",
         EventKind::Modify(ModifyKind::Name(RenameMode::To)) => "renamed_to",
         EventKind::Modify(ModifyKind::Name(_)) => "renamed",
@@ -241,11 +240,12 @@ fn event_kind_to_string(kind: &EventKind) -> String {
 }
 
 /// Determine if an event is a deletion
-fn is_deletion(kind: &EventKind) -> bool {
+fn is_deletion(kind: EventKind) -> bool {
     matches!(kind, EventKind::Remove(_))
 }
 
 /// Create the debounce task that batches and emits events
+#[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
 fn spawn_debounce_task(
     watch_id: u32,
     app: AppHandle,
@@ -254,8 +254,8 @@ fn spawn_debounce_task(
 ) -> (UnboundedSender<PendingEvent>, AbortHandle) {
     let (tx, mut rx) = mpsc::unbounded_channel::<PendingEvent>();
 
-    let handle = match tokio::runtime::Handle::try_current() {
-        Ok(h) => h.spawn(async move {
+    let handle = if let Ok(h) = tokio::runtime::Handle::try_current() {
+        h.spawn(async move {
             let mut pending_events: Vec<PendingEvent> = Vec::new();
             let mut debounce_timer = tokio::time::interval(Duration::from_millis(10));
             debounce_timer.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
@@ -289,20 +289,20 @@ fn spawn_debounce_task(
                     // Convert to WatchEvent structs
                     let events: Vec<WatchEvent> = latest_events
                         .into_values()
-                        .filter_map(|pending| {
+                        .map(|pending| {
                             // Skip reading content for deletions
-                            let content = if is_deletion(&pending.kind) {
+                            let content = if is_deletion(pending.kind) {
                                 None
                             } else {
                                 maybe_read_content(&pending.path, emit_content)
                             };
 
-                            Some(WatchEvent {
+                            WatchEvent {
                                 path: pending.path.to_string_lossy().to_string(),
-                                kind: event_kind_to_string(&pending.kind),
+                                kind: event_kind_to_string(pending.kind),
                                 is_dir: pending.is_dir,
                                 content,
-                            })
+                            }
                         })
                         .collect();
 
@@ -324,24 +324,86 @@ fn spawn_debounce_task(
                     last_event_time = None;
                 }
             }
-        }),
-        Err(_) => {
-            log::warn!("[watch] no Tokio runtime for debounce task, file watching disabled for this watcher");
+        })
+    } else {
+        log::warn!("[watch] no Tokio runtime for debounce task, creating background thread");
+        let (stop_tx, mut stop_rx) = mpsc::unbounded_channel::<()>();
+        std::thread::spawn(move || {
             let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()
                 .unwrap();
-            let h = rt.spawn(async { std::future::pending::<()>().await });
-            return (tx, h.abort_handle());
-        }
+            rt.block_on(async move {
+                let mut pending_events: Vec<PendingEvent> = Vec::new();
+                let mut last_event_time: Option<tokio::time::Instant> = None;
+                loop {
+                    tokio::select! {
+                        msg = rx.recv() => {
+                            match msg {
+                                Some(event) => {
+                                    pending_events.push(event);
+                                    last_event_time = Some(tokio::time::Instant::now());
+                                }
+                                None => break,
+                            }
+                        }
+                        _ = stop_rx.recv() => break,
+                        () = tokio::time::sleep(Duration::from_millis(10)) => {
+                            if let Some(last) = last_event_time {
+                                if last.elapsed() >= debounce_duration && !pending_events.is_empty() {
+                                    let mut deduped: std::collections::HashMap<String, PendingEvent> = std::collections::HashMap::new();
+                                    for ev in pending_events.drain(..) {
+                                        deduped.insert(ev.path.to_string_lossy().to_string(), ev);
+                                    }
+                                    let events: Vec<WatchEvent> = deduped.into_values().map(|ev| {
+                                        WatchEvent {
+                                            path: ev.path.to_string_lossy().to_string(),
+                                            kind: event_kind_to_string(ev.kind),
+                                            is_dir: ev.is_dir,
+                                            content: None,
+                                        }
+                                    }).collect();
+                                    if !events.is_empty() {
+                                        let batch = WatchEventBatch {
+                                            watch_id,
+                                            events,
+                                            timestamp: std::time::SystemTime::now()
+                                                .duration_since(std::time::UNIX_EPOCH)
+                                                .unwrap_or_default()
+                                                .as_millis() as u64,
+                                        };
+                                        let _ = app.emit("watch-batch", batch);
+                                    }
+                                    last_event_time = None;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+        let sentinel_rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let abort_handle = sentinel_rt
+            .spawn(async move {
+                // Keep stop_tx alive until this task is aborted
+                let _keep = stop_tx;
+                std::future::pending::<()>().await;
+            })
+            .abort_handle();
+        std::mem::forget(sentinel_rt);
+        return (tx, abort_handle);
     };
 
     (tx, handle.abort_handle())
 }
 
 /// Start watching multiple paths with advanced options
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
-pub fn watch_start(
+pub async fn watch_start(
     app: AppHandle,
     state: State<'_, Arc<WatchStore>>,
     paths: Vec<String>,
@@ -397,12 +459,12 @@ pub fn watch_start(
                 // Process each path in the event
                 for path in &event.paths {
                     // Skip ignored paths
-                    if should_ignore(path, &ignore_clone) {
+                    if should_ignore(path, ignore_clone.as_ref()) {
                         continue;
                     }
 
                     // Check file extension filter
-                    if !extension_matches(path, &exts_clone) {
+                    if !extension_matches(path, exts_clone.as_ref()) {
                         continue;
                     }
 
@@ -412,7 +474,7 @@ pub fn watch_start(
                     // Send to debounce channel
                     let pending = PendingEvent {
                         path: path.clone(),
-                        kind: event.kind.clone(),
+                        kind: event.kind,
                         is_dir,
                     };
 
@@ -422,7 +484,7 @@ pub fn watch_start(
         },
         Config::default(),
     )
-    .map_err(|e| format!("Failed to create watcher: {}", e))?;
+    .map_err(|e| format!("Failed to create watcher: {e}"))?;
 
     // Watch all paths
     for path in &valid_paths {
@@ -449,6 +511,7 @@ pub fn watch_start(
 }
 
 /// Stop a watch session and clean up resources
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn watch_stop(state: State<'_, Arc<WatchStore>>, id: u32) -> Result<(), String> {
     let mut sessions = state.sessions.lock().map_err(|e| e.to_string())?;
@@ -459,11 +522,12 @@ pub fn watch_stop(state: State<'_, Arc<WatchStore>>, id: u32) -> Result<(), Stri
         // The watcher and other resources are dropped automatically
         Ok(())
     } else {
-        Err(format!("Watch session {} not found", id))
+        Err(format!("Watch session {id} not found"))
     }
 }
 
 /// Update ignore patterns for an existing watch session
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn watch_update_patterns(
     state: State<'_, Arc<WatchStore>>,
@@ -477,11 +541,12 @@ pub fn watch_update_patterns(
         session.ignore_globset = new_globset;
         Ok(())
     } else {
-        Err(format!("Watch session {} not found", id))
+        Err(format!("Watch session {id} not found"))
     }
 }
 
 /// Get information about active watch sessions (for debugging/monitoring)
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn watch_list(state: State<'_, Arc<WatchStore>>) -> Result<Vec<u32>, String> {
     let sessions = state.sessions.lock().map_err(|e| e.to_string())?;
@@ -489,6 +554,7 @@ pub fn watch_list(state: State<'_, Arc<WatchStore>>) -> Result<Vec<u32>, String>
 }
 
 /// Check if a specific watch session is still active
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
 pub fn watch_is_active(state: State<'_, Arc<WatchStore>>, id: u32) -> Result<bool, String> {
     let sessions = state.sessions.lock().map_err(|e| e.to_string())?;

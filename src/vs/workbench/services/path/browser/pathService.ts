@@ -12,7 +12,6 @@ import { IWorkspaceContextService } from '../../../../platform/workspace/common/
 import { dirname } from '../../../../base/common/resources.js';
 
 export class BrowserPathService extends AbstractPathService {
-
 	constructor(
 		@IRemoteAgentService remoteAgentService: IRemoteAgentService,
 		@IWorkbenchEnvironmentService environmentService: IWorkbenchEnvironmentService,
@@ -27,8 +26,10 @@ export class BrowserPathService extends AbstractPathService {
 	}
 }
 
-function guessLocalUserHome(environmentService: IWorkbenchEnvironmentService, contextService: IWorkspaceContextService): URI {
-
+function guessLocalUserHome(
+	environmentService: IWorkbenchEnvironmentService,
+	contextService: IWorkspaceContextService
+): URI {
 	// In web we do not really have the concept of a "local" user home
 	// but we still require it in many places as a fallback. As such,
 	// we have to come up with a synthetic location derived from the

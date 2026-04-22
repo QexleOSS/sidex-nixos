@@ -35,8 +35,9 @@ export interface IMarkersFiltersOptions {
 }
 
 export class MarkersFilters extends Disposable {
-
-	private readonly _onDidChange: Emitter<IMarkersFiltersChangeEvent> = this._register(new Emitter<IMarkersFiltersChangeEvent>());
+	private readonly _onDidChange: Emitter<IMarkersFiltersChangeEvent> = this._register(
+		new Emitter<IMarkersFiltersChangeEvent>()
+	);
 	readonly onDidChange: Event<IMarkersFiltersChangeEvent> = this._onDidChange.event;
 
 	constructor(options: IMarkersFiltersOptions, contextKeyService: IContextKeyService) {
@@ -116,11 +117,9 @@ export class MarkersFilters extends Disposable {
 			this._onDidChange.fire({ showInfos: true });
 		}
 	}
-
 }
 
 export class QuickFixAction extends Action {
-
 	public static readonly ID: string = 'workbench.actions.problems.quickfix';
 	private static readonly CLASS: string = 'markers-panel-action-quickfix ' + ThemeIcon.asClassName(Codicon.lightBulb);
 	private static readonly AUTO_FIX_CLASS: string = QuickFixAction.CLASS + ' autofixable';
@@ -141,9 +140,7 @@ export class QuickFixAction extends Action {
 		this.class = autofixable ? QuickFixAction.AUTO_FIX_CLASS : QuickFixAction.CLASS;
 	}
 
-	constructor(
-		readonly marker: Marker,
-	) {
+	constructor(readonly marker: Marker) {
 		super(QuickFixAction.ID, Messages.MARKERS_PANEL_ACTION_TOOLTIP_QUICKFIX, QuickFixAction.CLASS, false);
 	}
 
@@ -154,11 +151,10 @@ export class QuickFixAction extends Action {
 }
 
 export class QuickFixActionViewItem extends ActionViewItem {
-
 	constructor(
 		action: QuickFixAction,
 		options: IActionViewItemOptions,
-		@IContextMenuService private readonly contextMenuService: IContextMenuService,
+		@IContextMenuService private readonly contextMenuService: IContextMenuService
 	) {
 		super(null, action, { ...options, icon: true, label: false });
 	}
@@ -185,4 +181,3 @@ export class QuickFixActionViewItem extends ActionViewItem {
 		}
 	}
 }
-

@@ -37,7 +37,7 @@ export interface IDefaultAccountProvider {
 	readonly onDidChangePolicyData: Event<IPolicyData | null>;
 	getDefaultAccountAuthenticationProvider(): IDefaultAccountAuthenticationProvider;
 	refresh(): Promise<IDefaultAccount | null>;
-	signIn(options?: { additionalScopes?: readonly string[];[key: string]: unknown }): Promise<IDefaultAccount | null>;
+	signIn(options?: { additionalScopes?: readonly string[]; [key: string]: unknown }): Promise<IDefaultAccount | null>;
 	signOut(): Promise<void>;
 }
 
@@ -52,7 +52,7 @@ export interface IDefaultAccountService {
 	getDefaultAccountAuthenticationProvider(): IDefaultAccountAuthenticationProvider;
 	setDefaultAccountProvider(provider: IDefaultAccountProvider): void;
 	refresh(): Promise<IDefaultAccount | null>;
-	signIn(options?: { additionalScopes?: readonly string[];[key: string]: unknown }): Promise<IDefaultAccount | null>;
+	signIn(options?: { additionalScopes?: readonly string[]; [key: string]: unknown }): Promise<IDefaultAccount | null>;
 	signOut(): Promise<void>;
 }
 
@@ -83,7 +83,10 @@ export class NullDefaultAccountService extends Disposable implements IDefaultAcc
 		return null;
 	}
 
-	async signIn(_options?: { additionalScopes?: readonly string[];[key: string]: unknown }): Promise<IDefaultAccount | null> {
+	async signIn(_options?: {
+		additionalScopes?: readonly string[];
+		[key: string]: unknown;
+	}): Promise<IDefaultAccount | null> {
 		return null;
 	}
 

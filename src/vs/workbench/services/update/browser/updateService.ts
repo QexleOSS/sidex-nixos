@@ -1,106 +1,165 @@
 /*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *  SideX — Tauri-backed update service.
+ *
+ *  Mirrors VS Code's `IUpdateService` state machine (see
+ *  `platform/update/common/update.ts`). All heavy lifting lives in the
+ *  native `sidex-update` crate; this class is a thin bridge that:
+ *
+ *    1. invokes Rust Tauri commands for each VS Code lifecycle method
+ *    2. subscribes to a single `sidex://update/state-change` Tauri event
+ *       and re-dispatches it through the workbench `onStateChange` emitter
+ *
+ *  The wire format matches the VS Code `State` union shape exactly so no
+ *  translation is needed beyond `JSON.parse` on the event payload.
  *--------------------------------------------------------------------------------------------*/
 
-import { Event, Emitter } from '../../../../base/common/event.js';
-import { IUpdateService, State, UpdateType } from '../../../../platform/update/common/update.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
-import { IBrowserWorkbenchEnvironmentService } from '../../environment/browser/environmentService.js';
-import { IHostService } from '../../host/browser/host.js';
-import { Disposable } from '../../../../base/common/lifecycle.js';
+import { IUpdateService, State, UpdateType } from '../../../../platform/update/common/update.js';
 
-export interface IUpdate {
-	version: string;
+const STATE_EVENT = 'sidex://update/state-change';
+
+interface TauriCore {
+	invoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T>;
 }
 
-export interface IUpdateProvider {
-
-	/**
-	 * Should return with the `IUpdate` object if an update is
-	 * available or `null` otherwise to signal that there are
-	 * no updates.
-	 */
-	checkForUpdate(): Promise<IUpdate | null>;
+interface TauriEvent {
+	listen(event: string, handler: (e: { payload: unknown }) => void): Promise<() => void>;
 }
 
-export class BrowserUpdateService extends Disposable implements IUpdateService {
+async function loadTauri(): Promise<{ core: TauriCore; event: TauriEvent } | undefined> {
+	try {
+		const [core, event] = await Promise.all([import('@tauri-apps/api/core'), import('@tauri-apps/api/event')]);
+		return { core, event };
+	} catch {
+		return undefined;
+	}
+}
 
+export class SidexUpdateService implements IUpdateService {
 	declare readonly _serviceBrand: undefined;
 
-	private _onStateChange = this._register(new Emitter<State>());
+	private readonly _onStateChange = new Emitter<State>();
 	readonly onStateChange: Event<State> = this._onStateChange.event;
 
 	private _state: State = State.Uninitialized;
-	get state(): State { return this._state; }
-	set state(state: State) {
-		this._state = state;
-		this._onStateChange.fire(state);
+	private _tauriReady: Promise<{ core: TauriCore; event: TauriEvent } | undefined>;
+
+	constructor() {
+		this._tauriReady = loadTauri();
+		this._bootstrap();
 	}
 
-	constructor(
-		@IBrowserWorkbenchEnvironmentService private readonly environmentService: IBrowserWorkbenchEnvironmentService,
-		@IHostService private readonly hostService: IHostService
-	) {
-		super();
+	get state(): State {
+		return this._state;
+	}
 
-		this.checkForUpdates(false);
+	private setState(next: State): void {
+		this._state = next;
+		this._onStateChange.fire(next);
+	}
+
+	private async _bootstrap(): Promise<void> {
+		const tauri = await this._tauriReady;
+		if (!tauri) {
+			this.setState(State.Idle(UpdateType.Archive));
+			return;
+		}
+
+		try {
+			await tauri.event.listen(STATE_EVENT, ({ payload }) => {
+				if (isState(payload)) {
+					this._state = payload;
+					this._onStateChange.fire(payload);
+				}
+			});
+			const current = await tauri.core.invoke<unknown>('update_state');
+			if (isState(current)) {
+				this.setState(current);
+			} else {
+				this.setState(State.Idle(UpdateType.Archive));
+			}
+		} catch (err) {
+			console.error('[sidex-update] bootstrap failed:', err);
+			this.setState(State.Idle(UpdateType.Archive));
+		}
 	}
 
 	async isLatestVersion(): Promise<boolean | undefined> {
-		const update = await this.doCheckForUpdates(false);
-		if (update === undefined) {
-			return undefined; // no update provider
+		const state = this._state;
+		if (state.type === 'idle' && state.notAvailable) {
+			return true;
 		}
-
-		return !!update;
+		if (state.type === 'available for download' || state.type === 'ready') {
+			return false;
+		}
+		return undefined;
 	}
 
 	async checkForUpdates(explicit: boolean): Promise<void> {
-		await this.doCheckForUpdates(explicit);
-	}
-
-	private async doCheckForUpdates(explicit: boolean): Promise<IUpdate | null /* no update available */ | undefined /* no update provider */> {
-		if (this.environmentService.options && this.environmentService.options.updateProvider) {
-			const updateProvider = this.environmentService.options.updateProvider;
-
-			// State -> Checking for Updates
-			this.state = State.CheckingForUpdates(explicit);
-
-			const update = await updateProvider.checkForUpdate();
-			if (update) {
-				// State -> Downloaded
-				this.state = State.Ready({ version: update.version, productVersion: update.version }, explicit, false);
-			} else {
-				// State -> Idle
-				this.state = State.Idle(UpdateType.Archive);
-			}
-
-			return update;
+		const tauri = await this._tauriReady;
+		if (!tauri) {
+			return;
 		}
-
-		return undefined; // no update provider to ask
+		try {
+			await tauri.core.invoke('update_check', { explicit });
+		} catch (err) {
+			console.error('[sidex-update] check failed:', err);
+		}
 	}
 
-	async downloadUpdate(_explicit: boolean): Promise<void> {
-		// no-op
+	async downloadUpdate(explicit: boolean): Promise<void> {
+		const tauri = await this._tauriReady;
+		if (!tauri) {
+			return;
+		}
+		try {
+			await tauri.core.invoke('update_download', { explicit });
+		} catch (err) {
+			console.error('[sidex-update] download failed:', err);
+		}
 	}
 
 	async applyUpdate(): Promise<void> {
-		this.hostService.reload();
+		const tauri = await this._tauriReady;
+		if (!tauri) {
+			return;
+		}
+		try {
+			await tauri.core.invoke('update_apply');
+		} catch (err) {
+			console.error('[sidex-update] apply failed:', err);
+		}
 	}
 
 	async quitAndInstall(): Promise<void> {
-		this.hostService.reload();
+		const tauri = await this._tauriReady;
+		if (!tauri) {
+			return;
+		}
+		try {
+			await tauri.core.invoke('update_quit_and_install');
+		} catch (err) {
+			console.error('[sidex-update] quit-and-install failed:', err);
+		}
 	}
 
-	async _applySpecificUpdate(packagePath: string): Promise<void> {
-		// noop
+	async _applySpecificUpdate(_packagePath: string): Promise<void> {
+		// SideX doesn't expose side-loaded update packages; the VS Code flow
+		// for this path isn't reachable in our UI.
 	}
 
 	async setInternalOrg(_internalOrg: string | undefined): Promise<void> {
-		// noop - not applicable in browser
+		// Internal telemetry orgs are unused; keep the method for interface parity.
 	}
 }
 
-registerSingleton(IUpdateService, BrowserUpdateService, InstantiationType.Eager);
+function isState(value: unknown): value is State {
+	if (!value || typeof value !== 'object') {
+		return false;
+	}
+	const type = (value as { type?: unknown }).type;
+	return typeof type === 'string';
+}
+
+registerSingleton(IUpdateService, SidexUpdateService, InstantiationType.Eager);

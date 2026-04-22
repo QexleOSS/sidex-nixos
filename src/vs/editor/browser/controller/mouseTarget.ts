@@ -4,8 +4,31 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IPointerHandlerHelper } from './mouseHandler.js';
-import { IMouseTargetContentEmptyData, IMouseTargetMarginData, IMouseTarget, IMouseTargetContentEmpty, IMouseTargetContentText, IMouseTargetContentWidget, IMouseTargetMargin, IMouseTargetOutsideEditor, IMouseTargetOverlayWidget, IMouseTargetScrollbar, IMouseTargetTextarea, IMouseTargetUnknown, IMouseTargetViewZone, IMouseTargetContentTextData, IMouseTargetViewZoneData, MouseTargetType } from '../editorBrowser.js';
-import { ClientCoordinates, EditorMouseEvent, EditorPagePosition, PageCoordinates, CoordinatesRelativeToEditor } from '../editorDom.js';
+import {
+	IMouseTargetContentEmptyData,
+	IMouseTargetMarginData,
+	IMouseTarget,
+	IMouseTargetContentEmpty,
+	IMouseTargetContentText,
+	IMouseTargetContentWidget,
+	IMouseTargetMargin,
+	IMouseTargetOutsideEditor,
+	IMouseTargetOverlayWidget,
+	IMouseTargetScrollbar,
+	IMouseTargetTextarea,
+	IMouseTargetUnknown,
+	IMouseTargetViewZone,
+	IMouseTargetContentTextData,
+	IMouseTargetViewZoneData,
+	MouseTargetType
+} from '../editorBrowser.js';
+import {
+	ClientCoordinates,
+	EditorMouseEvent,
+	EditorPagePosition,
+	PageCoordinates,
+	CoordinatesRelativeToEditor
+} from '../editorDom.js';
 import { PartFingerprint, PartFingerprints } from '../view/viewPart.js';
 import { ViewLine } from '../viewParts/viewLines/viewLine.js';
 import { IViewCursorRenderData } from '../viewParts/viewCursors/viewCursor.js';
@@ -26,26 +49,26 @@ import type { ViewLinesGpu } from '../viewParts/viewLinesGpu/viewLinesGpu.js';
 
 const enum HitTestResultType {
 	Unknown,
-	Content,
+	Content
 }
 
 class UnknownHitTestResult {
 	readonly type = HitTestResultType.Unknown;
-	constructor(
-		readonly hitTarget: HTMLElement | null = null
-	) { }
+	constructor(readonly hitTarget: HTMLElement | null = null) {}
 }
 
 class ContentHitTestResult {
 	readonly type = HitTestResultType.Content;
 
-	get hitTarget(): HTMLElement { return this.spanNode; }
+	get hitTarget(): HTMLElement {
+		return this.spanNode;
+	}
 
 	constructor(
 		readonly position: Position,
 		readonly spanNode: HTMLElement,
-		readonly injectedText: InjectedText | null,
-	) { }
+		readonly injectedText: InjectedText | null
+	) {}
 }
 
 type HitTestResult = UnknownHitTestResult | ContentHitTestResult;
@@ -64,11 +87,10 @@ export class PointerHandlerLastRenderData {
 	constructor(
 		public readonly lastViewCursorsRenderData: IViewCursorRenderData[],
 		public readonly lastTextareaPosition: Position | null
-	) { }
+	) {}
 }
 
 export class MouseTarget {
-
 	private static _deduceRage(position: Position): EditorRange;
 	private static _deduceRage(position: Position, range: EditorRange | null): EditorRange;
 	private static _deduceRage(position: Position | null): EditorRange | null;
@@ -78,35 +100,105 @@ export class MouseTarget {
 		}
 		return range ?? null;
 	}
-	public static createUnknown(element: HTMLElement | null, mouseColumn: number, position: Position | null): IMouseTargetUnknown {
+	public static createUnknown(
+		element: HTMLElement | null,
+		mouseColumn: number,
+		position: Position | null
+	): IMouseTargetUnknown {
 		return { type: MouseTargetType.UNKNOWN, element, mouseColumn, position, range: this._deduceRage(position) };
 	}
 	public static createTextarea(element: HTMLElement | null, mouseColumn: number): IMouseTargetTextarea {
 		return { type: MouseTargetType.TEXTAREA, element, mouseColumn, position: null, range: null };
 	}
-	public static createMargin(type: MouseTargetType.GUTTER_GLYPH_MARGIN | MouseTargetType.GUTTER_LINE_NUMBERS | MouseTargetType.GUTTER_LINE_DECORATIONS, element: HTMLElement | null, mouseColumn: number, position: Position, range: EditorRange, detail: IMouseTargetMarginData): IMouseTargetMargin {
+	public static createMargin(
+		type:
+			| MouseTargetType.GUTTER_GLYPH_MARGIN
+			| MouseTargetType.GUTTER_LINE_NUMBERS
+			| MouseTargetType.GUTTER_LINE_DECORATIONS,
+		element: HTMLElement | null,
+		mouseColumn: number,
+		position: Position,
+		range: EditorRange,
+		detail: IMouseTargetMarginData
+	): IMouseTargetMargin {
 		return { type, element, mouseColumn, position, range, detail };
 	}
-	public static createViewZone(type: MouseTargetType.GUTTER_VIEW_ZONE | MouseTargetType.CONTENT_VIEW_ZONE, element: HTMLElement | null, mouseColumn: number, position: Position, detail: IMouseTargetViewZoneData): IMouseTargetViewZone {
+	public static createViewZone(
+		type: MouseTargetType.GUTTER_VIEW_ZONE | MouseTargetType.CONTENT_VIEW_ZONE,
+		element: HTMLElement | null,
+		mouseColumn: number,
+		position: Position,
+		detail: IMouseTargetViewZoneData
+	): IMouseTargetViewZone {
 		return { type, element, mouseColumn, position, range: this._deduceRage(position), detail };
 	}
-	public static createContentText(element: HTMLElement | null, mouseColumn: number, position: Position, range: EditorRange | null, detail: IMouseTargetContentTextData): IMouseTargetContentText {
-		return { type: MouseTargetType.CONTENT_TEXT, element, mouseColumn, position, range: this._deduceRage(position, range), detail };
+	public static createContentText(
+		element: HTMLElement | null,
+		mouseColumn: number,
+		position: Position,
+		range: EditorRange | null,
+		detail: IMouseTargetContentTextData
+	): IMouseTargetContentText {
+		return {
+			type: MouseTargetType.CONTENT_TEXT,
+			element,
+			mouseColumn,
+			position,
+			range: this._deduceRage(position, range),
+			detail
+		};
 	}
-	public static createContentEmpty(element: HTMLElement | null, mouseColumn: number, position: Position, detail: IMouseTargetContentEmptyData): IMouseTargetContentEmpty {
-		return { type: MouseTargetType.CONTENT_EMPTY, element, mouseColumn, position, range: this._deduceRage(position), detail };
+	public static createContentEmpty(
+		element: HTMLElement | null,
+		mouseColumn: number,
+		position: Position,
+		detail: IMouseTargetContentEmptyData
+	): IMouseTargetContentEmpty {
+		return {
+			type: MouseTargetType.CONTENT_EMPTY,
+			element,
+			mouseColumn,
+			position,
+			range: this._deduceRage(position),
+			detail
+		};
 	}
-	public static createContentWidget(element: HTMLElement | null, mouseColumn: number, detail: string): IMouseTargetContentWidget {
+	public static createContentWidget(
+		element: HTMLElement | null,
+		mouseColumn: number,
+		detail: string
+	): IMouseTargetContentWidget {
 		return { type: MouseTargetType.CONTENT_WIDGET, element, mouseColumn, position: null, range: null, detail };
 	}
-	public static createScrollbar(element: HTMLElement | null, mouseColumn: number, position: Position): IMouseTargetScrollbar {
+	public static createScrollbar(
+		element: HTMLElement | null,
+		mouseColumn: number,
+		position: Position
+	): IMouseTargetScrollbar {
 		return { type: MouseTargetType.SCROLLBAR, element, mouseColumn, position, range: this._deduceRage(position) };
 	}
-	public static createOverlayWidget(element: HTMLElement | null, mouseColumn: number, detail: string): IMouseTargetOverlayWidget {
+	public static createOverlayWidget(
+		element: HTMLElement | null,
+		mouseColumn: number,
+		detail: string
+	): IMouseTargetOverlayWidget {
 		return { type: MouseTargetType.OVERLAY_WIDGET, element, mouseColumn, position: null, range: null, detail };
 	}
-	public static createOutsideEditor(mouseColumn: number, position: Position, outsidePosition: 'above' | 'below' | 'left' | 'right', outsideDistance: number): IMouseTargetOutsideEditor {
-		return { type: MouseTargetType.OUTSIDE_EDITOR, element: null, mouseColumn, position, range: this._deduceRage(position), outsidePosition, outsideDistance };
+	public static createOutsideEditor(
+		mouseColumn: number,
+		position: Position,
+		outsidePosition: 'above' | 'below' | 'left' | 'right',
+		outsideDistance: number
+	): IMouseTargetOutsideEditor {
+		return {
+			type: MouseTargetType.OUTSIDE_EDITOR,
+			element: null,
+			mouseColumn,
+			position,
+			range: this._deduceRage(position),
+			outsidePosition,
+			outsideDistance
+		};
 	}
 
 	private static _typeToString(type: MouseTargetType): string {
@@ -150,92 +242,63 @@ export class MouseTarget {
 	}
 
 	public static toString(target: IMouseTarget): string {
-		return this._typeToString(target.type) + ': ' + target.position + ' - ' + target.range + ' - ' + JSON.stringify((target as unknown as Record<string, unknown>).detail);
+		return (
+			this._typeToString(target.type) +
+			': ' +
+			target.position +
+			' - ' +
+			target.range +
+			' - ' +
+			JSON.stringify((target as unknown as Record<string, unknown>).detail)
+		);
 	}
 }
 
 class ElementPath {
-
 	public static isTextArea(path: Uint8Array): boolean {
-		return (
-			path.length === 2
-			&& path[0] === PartFingerprint.OverflowGuard
-			&& path[1] === PartFingerprint.TextArea
-		);
+		return path.length === 2 && path[0] === PartFingerprint.OverflowGuard && path[1] === PartFingerprint.TextArea;
 	}
 
 	public static isChildOfViewLines(path: Uint8Array): boolean {
-		return (
-			path.length >= 4
-			&& path[0] === PartFingerprint.OverflowGuard
-			&& path[3] === PartFingerprint.ViewLines
-		);
+		return path.length >= 4 && path[0] === PartFingerprint.OverflowGuard && path[3] === PartFingerprint.ViewLines;
 	}
 
 	public static isStrictChildOfViewLines(path: Uint8Array): boolean {
-		return (
-			path.length > 4
-			&& path[0] === PartFingerprint.OverflowGuard
-			&& path[3] === PartFingerprint.ViewLines
-		);
+		return path.length > 4 && path[0] === PartFingerprint.OverflowGuard && path[3] === PartFingerprint.ViewLines;
 	}
 
 	public static isChildOfScrollableElement(path: Uint8Array): boolean {
 		return (
-			path.length >= 2
-			&& path[0] === PartFingerprint.OverflowGuard
-			&& path[1] === PartFingerprint.ScrollableElement
+			path.length >= 2 && path[0] === PartFingerprint.OverflowGuard && path[1] === PartFingerprint.ScrollableElement
 		);
 	}
 
 	public static isChildOfMinimap(path: Uint8Array): boolean {
-		return (
-			path.length >= 2
-			&& path[0] === PartFingerprint.OverflowGuard
-			&& path[1] === PartFingerprint.Minimap
-		);
+		return path.length >= 2 && path[0] === PartFingerprint.OverflowGuard && path[1] === PartFingerprint.Minimap;
 	}
 
 	public static isChildOfContentWidgets(path: Uint8Array): boolean {
-		return (
-			path.length >= 4
-			&& path[0] === PartFingerprint.OverflowGuard
-			&& path[3] === PartFingerprint.ContentWidgets
-		);
+		return path.length >= 4 && path[0] === PartFingerprint.OverflowGuard && path[3] === PartFingerprint.ContentWidgets;
 	}
 
 	public static isChildOfOverflowGuard(path: Uint8Array): boolean {
-		return (
-			path.length >= 1
-			&& path[0] === PartFingerprint.OverflowGuard
-		);
+		return path.length >= 1 && path[0] === PartFingerprint.OverflowGuard;
 	}
 
 	public static isChildOfOverflowingContentWidgets(path: Uint8Array): boolean {
-		return (
-			path.length >= 1
-			&& path[0] === PartFingerprint.OverflowingContentWidgets
-		);
+		return path.length >= 1 && path[0] === PartFingerprint.OverflowingContentWidgets;
 	}
 
 	public static isChildOfOverlayWidgets(path: Uint8Array): boolean {
-		return (
-			path.length >= 2
-			&& path[0] === PartFingerprint.OverflowGuard
-			&& path[1] === PartFingerprint.OverlayWidgets
-		);
+		return path.length >= 2 && path[0] === PartFingerprint.OverflowGuard && path[1] === PartFingerprint.OverlayWidgets;
 	}
 
 	public static isChildOfOverflowingOverlayWidgets(path: Uint8Array): boolean {
-		return (
-			path.length >= 1
-			&& path[0] === PartFingerprint.OverflowingOverlayWidgets
-		);
+		return path.length >= 1 && path[0] === PartFingerprint.OverflowingOverlayWidgets;
 	}
 }
 
 export class HitTestContext {
-
 	public readonly viewModel: IViewModel;
 	public readonly layoutInfo: EditorLayoutInfo;
 	public readonly viewDomNode: HTMLElement;
@@ -283,7 +346,10 @@ export class HitTestContext {
 			}
 			if (viewZoneWhitespace.afterLineNumber > 0) {
 				// There are more lines above this view zone
-				positionBefore = new Position(viewZoneWhitespace.afterLineNumber, context.viewModel.getLineMaxColumn(viewZoneWhitespace.afterLineNumber));
+				positionBefore = new Position(
+					viewZoneWhitespace.afterLineNumber,
+					context.viewModel.getLineMaxColumn(viewZoneWhitespace.afterLineNumber)
+				);
 			}
 
 			if (positionAfter === null) {
@@ -369,7 +435,6 @@ export class HitTestContext {
 
 	public isRtl(lineNumber: number): boolean {
 		return this.viewModel.getTextDirection(lineNumber) === TextDirection.RTL;
-
 	}
 
 	public visibleRangeForPosition(lineNumber: number, column: number): HorizontalPosition | null {
@@ -390,7 +455,6 @@ export class HitTestContext {
 }
 
 abstract class BareHitTestRequest {
-
 	public readonly editorPos: EditorPagePosition;
 	public readonly pos: PageCoordinates;
 	public readonly relativePos: CoordinatesRelativeToEditor;
@@ -401,16 +465,25 @@ abstract class BareHitTestRequest {
 
 	protected readonly mouseColumn: number;
 
-	constructor(ctx: HitTestContext, editorPos: EditorPagePosition, pos: PageCoordinates, relativePos: CoordinatesRelativeToEditor) {
+	constructor(
+		ctx: HitTestContext,
+		editorPos: EditorPagePosition,
+		pos: PageCoordinates,
+		relativePos: CoordinatesRelativeToEditor
+	) {
 		this.editorPos = editorPos;
 		this.pos = pos;
 		this.relativePos = relativePos;
 
 		this.mouseVerticalOffset = Math.max(0, ctx.getCurrentScrollTop() + this.relativePos.y);
 		this.mouseContentHorizontalOffset = ctx.getCurrentScrollLeft() + this.relativePos.x - ctx.layoutInfo.contentLeft;
-		this.isInMarginArea = (this.relativePos.x < ctx.layoutInfo.contentLeft && this.relativePos.x >= ctx.layoutInfo.glyphMarginLeft);
+		this.isInMarginArea =
+			this.relativePos.x < ctx.layoutInfo.contentLeft && this.relativePos.x >= ctx.layoutInfo.glyphMarginLeft;
 		this.isInContentArea = !this.isInMarginArea;
-		this.mouseColumn = Math.max(0, MouseTargetFactory._getMouseColumn(this.mouseContentHorizontalOffset, ctx.typicalHalfwidthCharacterWidth));
+		this.mouseColumn = Math.max(
+			0,
+			MouseTargetFactory._getMouseColumn(this.mouseContentHorizontalOffset, ctx.typicalHalfwidthCharacterWidth)
+		);
 	}
 }
 
@@ -437,7 +510,13 @@ class HitTestRequest extends BareHitTestRequest {
 		return this._targetPathCacheValue;
 	}
 
-	constructor(ctx: HitTestContext, editorPos: EditorPagePosition, pos: PageCoordinates, relativePos: CoordinatesRelativeToEditor, eventTarget: HTMLElement | null) {
+	constructor(
+		ctx: HitTestContext,
+		editorPos: EditorPagePosition,
+		pos: PageCoordinates,
+		relativePos: CoordinatesRelativeToEditor,
+		eventTarget: HTMLElement | null
+	) {
 		super(ctx, editorPos, pos, relativePos);
 		this._ctx = ctx;
 		this._eventTarget = eventTarget;
@@ -453,9 +532,9 @@ class HitTestRequest extends BareHitTestRequest {
 
 	public get wouldBenefitFromHitTestTargetSwitch(): boolean {
 		return (
-			!this._useHitTestTarget
-			&& this.hitTestResult.value.hitTarget !== null
-			&& this.target !== this.hitTestResult.value.hitTarget
+			!this._useHitTestTarget &&
+			this.hitTestResult.value.hitTarget !== null &&
+			this.target !== this.hitTestResult.value.hitTarget
 		);
 	}
 
@@ -466,7 +545,13 @@ class HitTestRequest extends BareHitTestRequest {
 	private _getMouseColumn(position: Position | null = null): number {
 		if (position && position.column < this._ctx.viewModel.getLineMaxColumn(position.lineNumber)) {
 			// Most likely, the line contains foreign decorations...
-			return CursorColumns.visibleColumnFromColumn(this._ctx.viewModel.getLineContent(position.lineNumber), position.column, this._ctx.viewModel.model.getOptions().tabSize) + 1;
+			return (
+				CursorColumns.visibleColumnFromColumn(
+					this._ctx.viewModel.getLineContent(position.lineNumber),
+					position.column,
+					this._ctx.viewModel.model.getOptions().tabSize
+				) + 1
+			);
 		}
 		return this.mouseColumn;
 	}
@@ -477,14 +562,30 @@ class HitTestRequest extends BareHitTestRequest {
 	public fulfillTextarea(): IMouseTargetTextarea {
 		return MouseTarget.createTextarea(this.target, this._getMouseColumn());
 	}
-	public fulfillMargin(type: MouseTargetType.GUTTER_GLYPH_MARGIN | MouseTargetType.GUTTER_LINE_NUMBERS | MouseTargetType.GUTTER_LINE_DECORATIONS, position: Position, range: EditorRange, detail: IMouseTargetMarginData): IMouseTargetMargin {
+	public fulfillMargin(
+		type:
+			| MouseTargetType.GUTTER_GLYPH_MARGIN
+			| MouseTargetType.GUTTER_LINE_NUMBERS
+			| MouseTargetType.GUTTER_LINE_DECORATIONS,
+		position: Position,
+		range: EditorRange,
+		detail: IMouseTargetMarginData
+	): IMouseTargetMargin {
 		return MouseTarget.createMargin(type, this.target, this._getMouseColumn(position), position, range, detail);
 	}
-	public fulfillViewZone(type: MouseTargetType.GUTTER_VIEW_ZONE | MouseTargetType.CONTENT_VIEW_ZONE, position: Position, detail: IMouseTargetViewZoneData): IMouseTargetViewZone {
+	public fulfillViewZone(
+		type: MouseTargetType.GUTTER_VIEW_ZONE | MouseTargetType.CONTENT_VIEW_ZONE,
+		position: Position,
+		detail: IMouseTargetViewZoneData
+	): IMouseTargetViewZone {
 		// Always return the usual mouse column for a view zone.
 		return MouseTarget.createViewZone(type, this.target, this._getMouseColumn(), position, detail);
 	}
-	public fulfillContentText(position: Position, range: EditorRange | null, detail: IMouseTargetContentTextData): IMouseTargetContentText {
+	public fulfillContentText(
+		position: Position,
+		range: EditorRange | null,
+		detail: IMouseTargetContentTextData
+	): IMouseTargetContentText {
 		return MouseTarget.createContentText(this.target, this._getMouseColumn(position), position, range, detail);
 	}
 	public fulfillContentEmpty(position: Position, detail: IMouseTargetContentEmptyData): IMouseTargetContentEmpty {
@@ -515,7 +616,6 @@ function createEmptyContentDataInLines(horizontalDistanceToText: number): IMouse
 }
 
 export class MouseTargetFactory {
-
 	private readonly _context: ViewContext;
 	private readonly _viewHelper: IPointerHandlerHelper;
 
@@ -541,7 +641,13 @@ export class MouseTargetFactory {
 		return false;
 	}
 
-	public createMouseTarget(lastRenderData: PointerHandlerLastRenderData, editorPos: EditorPagePosition, pos: PageCoordinates, relativePos: CoordinatesRelativeToEditor, target: HTMLElement | null): IMouseTarget {
+	public createMouseTarget(
+		lastRenderData: PointerHandlerLastRenderData,
+		editorPos: EditorPagePosition,
+		pos: PageCoordinates,
+		relativePos: CoordinatesRelativeToEditor,
+		target: HTMLElement | null
+	): IMouseTarget {
 		const ctx = new HitTestContext(this._context, this._viewHelper, lastRenderData);
 		const request = new HitTestRequest(ctx, editorPos, pos, relativePos, target);
 		try {
@@ -565,7 +671,6 @@ export class MouseTargetFactory {
 	}
 
 	private static _createMouseTarget(ctx: HitTestContext, request: HitTestRequest): IMouseTarget {
-
 		// console.log(`${domHitTestExecuted ? '=>' : ''}CAME IN REQUEST: ${request}`);
 
 		if (request.target === null) {
@@ -578,7 +683,11 @@ export class MouseTargetFactory {
 
 		let result: IMouseTarget | null = null;
 
-		if (!ElementPath.isChildOfOverflowGuard(request.targetPath) && !ElementPath.isChildOfOverflowingContentWidgets(request.targetPath) && !ElementPath.isChildOfOverflowingOverlayWidgets(request.targetPath)) {
+		if (
+			!ElementPath.isChildOfOverflowGuard(request.targetPath) &&
+			!ElementPath.isChildOfOverflowingContentWidgets(request.targetPath) &&
+			!ElementPath.isChildOfOverflowingOverlayWidgets(request.targetPath)
+		) {
 			// We only render dom nodes inside the overflow guard or in the overflowing content widgets
 			result = result || request.fulfillUnknown();
 		}
@@ -594,12 +703,15 @@ export class MouseTargetFactory {
 		result = result || MouseTargetFactory._hitTestViewLines(ctx, resolvedRequest);
 		result = result || MouseTargetFactory._hitTestScrollbar(ctx, resolvedRequest);
 
-		return (result || request.fulfillUnknown());
+		return result || request.fulfillUnknown();
 	}
 
 	private static _hitTestContentWidget(ctx: HitTestContext, request: ResolvedHitTestRequest): IMouseTarget | null {
 		// Is it a content widget?
-		if (ElementPath.isChildOfContentWidgets(request.targetPath) || ElementPath.isChildOfOverflowingContentWidgets(request.targetPath)) {
+		if (
+			ElementPath.isChildOfContentWidgets(request.targetPath) ||
+			ElementPath.isChildOfOverflowingContentWidgets(request.targetPath)
+		) {
 			const widgetId = ctx.findAttribute(request.target, 'widgetId');
 			if (widgetId) {
 				return request.fulfillContentWidget(widgetId);
@@ -612,7 +724,10 @@ export class MouseTargetFactory {
 
 	private static _hitTestOverlayWidget(ctx: HitTestContext, request: ResolvedHitTestRequest): IMouseTarget | null {
 		// Is it an overlay widget?
-		if (ElementPath.isChildOfOverlayWidgets(request.targetPath) || ElementPath.isChildOfOverflowingOverlayWidgets(request.targetPath)) {
+		if (
+			ElementPath.isChildOfOverlayWidgets(request.targetPath) ||
+			ElementPath.isChildOfOverflowingOverlayWidgets(request.targetPath)
+		) {
 			const widgetId = ctx.findAttribute(request.target, 'widgetId');
 			if (widgetId) {
 				return request.fulfillOverlayWidget(widgetId);
@@ -624,13 +739,11 @@ export class MouseTargetFactory {
 	}
 
 	private static _hitTestViewCursor(ctx: HitTestContext, request: ResolvedHitTestRequest): IMouseTarget | null {
-
 		if (request.target) {
 			// Check if we've hit a painted cursor
 			const lastViewCursorsRenderData = ctx.lastRenderData.lastViewCursorsRenderData;
 
 			for (const d of lastViewCursorsRenderData) {
-
 				if (request.target === d.domNode) {
 					return request.fulfillContentText(d.position, null, { mightBeForeignElement: false, injectedText: null });
 				}
@@ -648,7 +761,6 @@ export class MouseTargetFactory {
 			const mouseVerticalOffset = request.mouseVerticalOffset;
 
 			for (const d of lastViewCursorsRenderData) {
-
 				if (mouseContentHorizontalOffset < d.contentLeft) {
 					// mouse position is to the left of the cursor
 					continue;
@@ -660,10 +772,7 @@ export class MouseTargetFactory {
 
 				const cursorVerticalOffset = ctx.getVerticalOffsetForLineNumber(d.position.lineNumber);
 
-				if (
-					cursorVerticalOffset <= mouseVerticalOffset
-					&& mouseVerticalOffset <= cursorVerticalOffset + d.height
-				) {
+				if (cursorVerticalOffset <= mouseVerticalOffset && mouseVerticalOffset <= cursorVerticalOffset + d.height) {
 					return request.fulfillContentText(d.position, null, { mightBeForeignElement: false, injectedText: null });
 				}
 			}
@@ -675,7 +784,9 @@ export class MouseTargetFactory {
 	private static _hitTestViewZone(ctx: HitTestContext, request: ResolvedHitTestRequest): IMouseTarget | null {
 		const viewZoneData = ctx.getZoneAtCoord(request.mouseVerticalOffset);
 		if (viewZoneData) {
-			const mouseTargetType = (request.isInContentArea ? MouseTargetType.CONTENT_VIEW_ZONE : MouseTargetType.GUTTER_VIEW_ZONE);
+			const mouseTargetType = request.isInContentArea
+				? MouseTargetType.CONTENT_VIEW_ZONE
+				: MouseTargetType.GUTTER_VIEW_ZONE;
 			return request.fulfillViewZone(mouseTargetType, viewZoneData.position, viewZoneData);
 		}
 
@@ -686,7 +797,10 @@ export class MouseTargetFactory {
 		// Is it the textarea?
 		if (ElementPath.isTextArea(request.targetPath)) {
 			if (ctx.lastRenderData.lastTextareaPosition) {
-				return request.fulfillContentText(ctx.lastRenderData.lastTextareaPosition, null, { mightBeForeignElement: false, injectedText: null });
+				return request.fulfillContentText(ctx.lastRenderData.lastTextareaPosition, null, {
+					mightBeForeignElement: false,
+					injectedText: null
+				});
 			}
 			return request.fulfillTextarea();
 		}
@@ -710,7 +824,9 @@ export class MouseTargetFactory {
 
 			if (offset <= ctx.layoutInfo.glyphMarginWidth) {
 				// On the glyph margin
-				const modelCoordinate = ctx.viewModel.coordinatesConverter.convertViewPositionToModelPosition(res.range.getStartPosition());
+				const modelCoordinate = ctx.viewModel.coordinatesConverter.convertViewPositionToModelPosition(
+					res.range.getStartPosition()
+				);
 				const lanes = ctx.viewModel.glyphLanes.getLanesAtLine(modelCoordinate.lineNumber);
 				detail.glyphMarginLane = lanes[Math.floor(offset / ctx.lineHeight)];
 				return request.fulfillMargin(MouseTargetType.GUTTER_GLYPH_MARGIN, pos, res.range, detail);
@@ -759,7 +875,10 @@ export class MouseTargetFactory {
 
 			const isRtl = ctx.isRtl(lineNumber);
 			if (isRtl) {
-				if (request.mouseContentHorizontalOffset + lineWidth <= ctx.layoutInfo.contentWidth - ctx.layoutInfo.verticalScrollbarWidth) {
+				if (
+					request.mouseContentHorizontalOffset + lineWidth <=
+					ctx.layoutInfo.contentWidth - ctx.layoutInfo.verticalScrollbarWidth
+				) {
 					const detail = createEmptyContentDataInLines(request.mouseContentHorizontalOffset - lineWidth);
 					const pos = new Position(lineNumber, ctx.viewModel.getLineMaxColumn(lineNumber));
 					return request.fulfillContentEmpty(pos, detail);
@@ -781,7 +900,10 @@ export class MouseTargetFactory {
 				const lineWidth = ctx.getLineWidth(lineNumber);
 				const isRtl = ctx.isRtl(lineNumber);
 				if (isRtl) {
-					if (request.mouseContentHorizontalOffset + lineWidth <= ctx.layoutInfo.contentWidth - ctx.layoutInfo.verticalScrollbarWidth) {
+					if (
+						request.mouseContentHorizontalOffset + lineWidth <=
+						ctx.layoutInfo.contentWidth - ctx.layoutInfo.verticalScrollbarWidth
+					) {
 						const detail = createEmptyContentDataInLines(request.mouseContentHorizontalOffset - lineWidth);
 						const pos = new Position(lineNumber, ctx.viewModel.getLineMaxColumn(lineNumber));
 						return request.fulfillContentEmpty(pos, detail);
@@ -807,7 +929,13 @@ export class MouseTargetFactory {
 		const hitTestResult = request.hitTestResult.value;
 
 		if (hitTestResult.type === HitTestResultType.Content) {
-			return MouseTargetFactory.createMouseTargetFromHitTestPosition(ctx, request, hitTestResult.spanNode, hitTestResult.position, hitTestResult.injectedText);
+			return MouseTargetFactory.createMouseTargetFromHitTestPosition(
+				ctx,
+				request,
+				hitTestResult.spanNode,
+				hitTestResult.position,
+				hitTestResult.injectedText
+			);
 		}
 
 		// We didn't hit content...
@@ -859,8 +987,12 @@ export class MouseTargetFactory {
 	public getMouseColumn(relativePos: CoordinatesRelativeToEditor): number {
 		const options = this._context.configuration.options;
 		const layoutInfo = options.get(EditorOption.layoutInfo);
-		const mouseContentHorizontalOffset = this._context.viewLayout.getCurrentScrollLeft() + relativePos.x - layoutInfo.contentLeft;
-		return MouseTargetFactory._getMouseColumn(mouseContentHorizontalOffset, options.get(EditorOption.fontInfo).typicalHalfwidthCharacterWidth);
+		const mouseContentHorizontalOffset =
+			this._context.viewLayout.getCurrentScrollLeft() + relativePos.x - layoutInfo.contentLeft;
+		return MouseTargetFactory._getMouseColumn(
+			mouseContentHorizontalOffset,
+			options.get(EditorOption.fontInfo).typicalHalfwidthCharacterWidth
+		);
 	}
 
 	public static _getMouseColumn(mouseContentHorizontalOffset: number, typicalHalfwidthCharacterWidth: number): number {
@@ -868,10 +1000,16 @@ export class MouseTargetFactory {
 			return 1;
 		}
 		const chars = Math.round(mouseContentHorizontalOffset / typicalHalfwidthCharacterWidth);
-		return (chars + 1);
+		return chars + 1;
 	}
 
-	private static createMouseTargetFromHitTestPosition(ctx: HitTestContext, request: HitTestRequest, spanNode: HTMLElement, pos: Position, injectedText: InjectedText | null): IMouseTarget {
+	private static createMouseTargetFromHitTestPosition(
+		ctx: HitTestContext,
+		request: HitTestRequest,
+		spanNode: HTMLElement,
+		pos: Position,
+		injectedText: InjectedText | null
+	): IMouseTarget {
 		const lineNumber = pos.lineNumber;
 		const column = pos.column;
 
@@ -895,7 +1033,10 @@ export class MouseTargetFactory {
 		}
 
 		// Let's define a, b, c and check if the offset is in between them...
-		interface OffsetColumn { offset: number; column: number }
+		interface OffsetColumn {
+			offset: number;
+			column: number;
+		}
 
 		const points: OffsetColumn[] = [];
 		points.push({ offset: visibleRange.left, column: column });
@@ -917,7 +1058,8 @@ export class MouseTargetFactory {
 
 		const mouseCoordinates = request.pos.toClientCoordinates(dom.getWindow(ctx.viewDomNode));
 		const spanNodeClientRect = spanNode.getBoundingClientRect();
-		const mouseIsOverSpanNode = (spanNodeClientRect.left <= mouseCoordinates.clientX && mouseCoordinates.clientX <= spanNodeClientRect.right);
+		const mouseIsOverSpanNode =
+			spanNodeClientRect.left <= mouseCoordinates.clientX && mouseCoordinates.clientX <= spanNodeClientRect.right;
 
 		let rng: EditorRange | null = null;
 
@@ -934,34 +1076,30 @@ export class MouseTargetFactory {
 				const prevDelta = Math.abs(prev.offset - request.mouseContentHorizontalOffset);
 				const nextDelta = Math.abs(curr.offset - request.mouseContentHorizontalOffset);
 
-				pos = (
-					prevDelta < nextDelta
-						? new Position(lineNumber, prev.column)
-						: new Position(lineNumber, curr.column)
-				);
+				pos = prevDelta < nextDelta ? new Position(lineNumber, prev.column) : new Position(lineNumber, curr.column);
 
 				break;
 			}
 		}
 
-		return request.fulfillContentText(pos, rng, { mightBeForeignElement: !mouseIsOverSpanNode || !!injectedText, injectedText });
+		return request.fulfillContentText(pos, rng, {
+			mightBeForeignElement: !mouseIsOverSpanNode || !!injectedText,
+			injectedText
+		});
 	}
 
 	/**
 	 * Most probably WebKit browsers and Edge
 	 */
 	private static _doHitTestWithCaretRangeFromPoint(ctx: HitTestContext, request: BareHitTestRequest): HitTestResult {
-
 		// In Chrome, especially on Linux it is possible to click between lines,
 		// so try to adjust the `hity` below so that it lands in the center of a line
 		const lineNumber = ctx.getLineNumberAtVerticalOffset(request.mouseVerticalOffset);
 		const lineStartVerticalOffset = ctx.getVerticalOffsetForLineNumber(lineNumber);
 		const lineEndVerticalOffset = lineStartVerticalOffset + ctx.lineHeight;
 
-		const isBelowLastLine = (
-			lineNumber === ctx.viewModel.getLineCount()
-			&& request.mouseVerticalOffset > lineEndVerticalOffset
-		);
+		const isBelowLastLine =
+			lineNumber === ctx.viewModel.getLineCount() && request.mouseVerticalOffset > lineEndVerticalOffset;
 
 		if (!isBelowLastLine) {
 			const lineCenteredVerticalOffset = Math.floor((lineStartVerticalOffset + lineEndVerticalOffset) / 2);
@@ -976,29 +1114,38 @@ export class MouseTargetFactory {
 
 			const adjustedPage = new PageCoordinates(request.pos.x, adjustedPageY);
 
-			const r = this._actualDoHitTestWithCaretRangeFromPoint(ctx, adjustedPage.toClientCoordinates(dom.getWindow(ctx.viewDomNode)));
+			const r = this._actualDoHitTestWithCaretRangeFromPoint(
+				ctx,
+				adjustedPage.toClientCoordinates(dom.getWindow(ctx.viewDomNode))
+			);
 			if (r.type === HitTestResultType.Content) {
 				return r;
 			}
 		}
 
 		// Also try to hit test without the adjustment (for the edge cases that we are near the top or bottom)
-		return this._actualDoHitTestWithCaretRangeFromPoint(ctx, request.pos.toClientCoordinates(dom.getWindow(ctx.viewDomNode)));
+		return this._actualDoHitTestWithCaretRangeFromPoint(
+			ctx,
+			request.pos.toClientCoordinates(dom.getWindow(ctx.viewDomNode))
+		);
 	}
 
-	private static _actualDoHitTestWithCaretRangeFromPoint(ctx: HitTestContext, coords: ClientCoordinates): HitTestResult {
+	private static _actualDoHitTestWithCaretRangeFromPoint(
+		ctx: HitTestContext,
+		coords: ClientCoordinates
+	): HitTestResult {
 		const shadowRoot = dom.getShadowRoot(ctx.viewDomNode);
 		let range: Range;
 		if (shadowRoot) {
-			// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+			// eslint-disable-next-line local/code-no-any-casts
 			if (typeof (<any>shadowRoot).caretRangeFromPoint === 'undefined') {
 				range = shadowCaretRangeFromPoint(shadowRoot, coords.clientX, coords.clientY);
 			} else {
-				// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+				// eslint-disable-next-line local/code-no-any-casts
 				range = (<any>shadowRoot).caretRangeFromPoint(coords.clientX, coords.clientY);
 			}
 		} else {
-			// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+			// eslint-disable-next-line local/code-no-any-casts
 			range = (<any>ctx.viewDomNode.ownerDocument).caretRangeFromPoint(coords.clientX, coords.clientY);
 		}
 
@@ -1014,7 +1161,8 @@ export class MouseTargetFactory {
 			const parent1 = startContainer.parentNode; // expected to be the token span
 			const parent2 = parent1 ? parent1.parentNode : null; // expected to be the view line container span
 			const parent3 = parent2 ? parent2.parentNode : null; // expected to be the view line div
-			const parent3ClassName = parent3 && parent3.nodeType === parent3.ELEMENT_NODE ? (<HTMLElement>parent3).className : null;
+			const parent3ClassName =
+				parent3 && parent3.nodeType === parent3.ELEMENT_NODE ? (<HTMLElement>parent3).className : null;
 
 			if (parent3ClassName === ViewLine.CLASS_NAME) {
 				return HitTestResult.createFromDOMInfo(ctx, <HTMLElement>parent1, range.startOffset);
@@ -1025,10 +1173,15 @@ export class MouseTargetFactory {
 			// startContainer is expected to be the token span
 			const parent1 = startContainer.parentNode; // expected to be the view line container span
 			const parent2 = parent1 ? parent1.parentNode : null; // expected to be the view line div
-			const parent2ClassName = parent2 && parent2.nodeType === parent2.ELEMENT_NODE ? (<HTMLElement>parent2).className : null;
+			const parent2ClassName =
+				parent2 && parent2.nodeType === parent2.ELEMENT_NODE ? (<HTMLElement>parent2).className : null;
 
 			if (parent2ClassName === ViewLine.CLASS_NAME) {
-				return HitTestResult.createFromDOMInfo(ctx, <HTMLElement>startContainer, (<HTMLElement>startContainer).textContent.length);
+				return HitTestResult.createFromDOMInfo(
+					ctx,
+					<HTMLElement>startContainer,
+					(<HTMLElement>startContainer).textContent.length
+				);
 			} else {
 				return new UnknownHitTestResult(<HTMLElement>startContainer);
 			}
@@ -1041,15 +1194,19 @@ export class MouseTargetFactory {
 	 * Most probably Gecko
 	 */
 	private static _doHitTestWithCaretPositionFromPoint(ctx: HitTestContext, coords: ClientCoordinates): HitTestResult {
-		// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
-		const hitResult: { offsetNode: Node; offset: number } = (<any>ctx.viewDomNode.ownerDocument).caretPositionFromPoint(coords.clientX, coords.clientY);
+		// eslint-disable-next-line local/code-no-any-casts
+		const hitResult: { offsetNode: Node; offset: number } = (<any>ctx.viewDomNode.ownerDocument).caretPositionFromPoint(
+			coords.clientX,
+			coords.clientY
+		);
 
 		if (hitResult.offsetNode.nodeType === hitResult.offsetNode.TEXT_NODE) {
 			// offsetNode is expected to be the token text
 			const parent1 = hitResult.offsetNode.parentNode; // expected to be the token span
 			const parent2 = parent1 ? parent1.parentNode : null; // expected to be the view line container span
 			const parent3 = parent2 ? parent2.parentNode : null; // expected to be the view line div
-			const parent3ClassName = parent3 && parent3.nodeType === parent3.ELEMENT_NODE ? (<HTMLElement>parent3).className : null;
+			const parent3ClassName =
+				parent3 && parent3.nodeType === parent3.ELEMENT_NODE ? (<HTMLElement>parent3).className : null;
 
 			if (parent3ClassName === ViewLine.CLASS_NAME) {
 				return HitTestResult.createFromDOMInfo(ctx, <HTMLElement>hitResult.offsetNode.parentNode, hitResult.offset);
@@ -1062,13 +1219,16 @@ export class MouseTargetFactory {
 		// Some other times, it returns the `<span>` with the inline decoration
 		if (hitResult.offsetNode.nodeType === hitResult.offsetNode.ELEMENT_NODE) {
 			const parent1 = hitResult.offsetNode.parentNode;
-			const parent1ClassName = parent1 && parent1.nodeType === parent1.ELEMENT_NODE ? (<HTMLElement>parent1).className : null;
+			const parent1ClassName =
+				parent1 && parent1.nodeType === parent1.ELEMENT_NODE ? (<HTMLElement>parent1).className : null;
 			const parent2 = parent1 ? parent1.parentNode : null;
-			const parent2ClassName = parent2 && parent2.nodeType === parent2.ELEMENT_NODE ? (<HTMLElement>parent2).className : null;
+			const parent2ClassName =
+				parent2 && parent2.nodeType === parent2.ELEMENT_NODE ? (<HTMLElement>parent2).className : null;
 
 			if (parent1ClassName === ViewLine.CLASS_NAME) {
 				// it returned the `<span>` of the line and the offset is the `<span>` with the inline decoration
-				const tokenSpan = hitResult.offsetNode.childNodes[Math.min(hitResult.offset, hitResult.offsetNode.childNodes.length - 1)];
+				const tokenSpan =
+					hitResult.offsetNode.childNodes[Math.min(hitResult.offset, hitResult.offsetNode.childNodes.length - 1)];
 				if (tokenSpan) {
 					return HitTestResult.createFromDOMInfo(ctx, <HTMLElement>tokenSpan, 0);
 				}
@@ -1084,7 +1244,12 @@ export class MouseTargetFactory {
 	private static _snapToSoftTabBoundary(position: Position, viewModel: IViewModel): Position {
 		const lineContent = viewModel.getLineContent(position.lineNumber);
 		const { tabSize } = viewModel.model.getOptions();
-		const newPosition = AtomicTabMoveOperations.atomicPosition(lineContent, position.column - 1, tabSize, Direction.Nearest);
+		const newPosition = AtomicTabMoveOperations.atomicPosition(
+			lineContent,
+			position.column - 1,
+			tabSize,
+			Direction.Nearest
+		);
 		if (newPosition !== -1) {
 			return new Position(position.lineNumber, newPosition + 1);
 		}
@@ -1092,14 +1257,16 @@ export class MouseTargetFactory {
 	}
 
 	public static doHitTest(ctx: HitTestContext, request: BareHitTestRequest): HitTestResult {
-
 		let result: HitTestResult = new UnknownHitTestResult();
-		// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+		// eslint-disable-next-line local/code-no-any-casts
 		if (typeof (<any>ctx.viewDomNode.ownerDocument).caretRangeFromPoint === 'function') {
 			result = this._doHitTestWithCaretRangeFromPoint(ctx, request);
-			// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+			// eslint-disable-next-line local/code-no-any-casts
 		} else if ((<any>ctx.viewDomNode.ownerDocument).caretPositionFromPoint) {
-			result = this._doHitTestWithCaretPositionFromPoint(ctx, request.pos.toClientCoordinates(dom.getWindow(ctx.viewDomNode)));
+			result = this._doHitTestWithCaretPositionFromPoint(
+				ctx,
+				request.pos.toClientCoordinates(dom.getWindow(ctx.viewDomNode))
+			);
 		}
 		if (result.type === HitTestResultType.Content) {
 			const injectedText = ctx.viewModel.getInjectedTextAt(result.position);
@@ -1117,14 +1284,20 @@ function shadowCaretRangeFromPoint(shadowRoot: ShadowRoot, x: number, y: number)
 	const range = document.createRange();
 
 	// Get the element under the point
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	let el: HTMLElement | null = (<any>shadowRoot).elementFromPoint(x, y);
 	// When el is not null, it may be div.monaco-mouse-cursor-text Element, which has not childNodes, we don't need to handle it.
 	if (el?.hasChildNodes()) {
 		// Get the last child of the element until its firstChild is a text node
 		// This assumes that the pointer is on the right of the line, out of the tokens
 		// and that we want to get the offset of the last token of the line
-		while (el && el.firstChild && el.firstChild.nodeType !== el.firstChild.TEXT_NODE && el.lastChild && el.lastChild.firstChild) {
+		while (
+			el &&
+			el.firstChild &&
+			el.firstChild.nodeType !== el.firstChild.TEXT_NODE &&
+			el.lastChild &&
+			el.lastChild.firstChild
+		) {
 			el = <HTMLElement>el.lastChild;
 		}
 

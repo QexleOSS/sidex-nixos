@@ -9,15 +9,34 @@ import { Emitter, Event } from '../../../base/common/event.js';
 import { MainContext, MainThreadAuthenticationShape, ExtHostAuthenticationShape } from './extHost.protocol.js';
 import { Disposable, ProgressLocation } from './extHostTypes.js';
 import { IExtensionDescription, ExtensionIdentifier } from '../../../platform/extensions/common/extensions.js';
-import { INTERNAL_AUTH_PROVIDER_PREFIX, isAuthenticationWwwAuthenticateRequest } from '../../services/authentication/common/authentication.js';
+import {
+	INTERNAL_AUTH_PROVIDER_PREFIX,
+	isAuthenticationWwwAuthenticateRequest
+} from '../../services/authentication/common/authentication.js';
 import { createDecorator } from '../../../platform/instantiation/common/instantiation.js';
 import { IExtHostRpcService } from './extHostRpcService.js';
 import { URI, UriComponents } from '../../../base/common/uri.js';
-import { AuthorizationErrorType, fetchDynamicRegistration, getClaimsFromJWT, IAuthorizationJWTClaims, IAuthorizationProtectedResourceMetadata, IAuthorizationServerMetadata, IAuthorizationTokenResponse, isAuthorizationErrorResponse, isAuthorizationTokenResponse } from '../../../base/common/oauth.js';
+import {
+	AuthorizationErrorType,
+	fetchDynamicRegistration,
+	getClaimsFromJWT,
+	IAuthorizationJWTClaims,
+	IAuthorizationProtectedResourceMetadata,
+	IAuthorizationServerMetadata,
+	IAuthorizationTokenResponse,
+	isAuthorizationErrorResponse,
+	isAuthorizationTokenResponse
+} from '../../../base/common/oauth.js';
 import { IExtHostWindow } from './extHostWindow.js';
 import { IExtHostInitDataService } from './extHostInitDataService.js';
 import { ILogger, ILoggerService, ILogService } from '../../../platform/log/common/log.js';
-import { autorun, derivedOpts, IObservable, ISettableObservable, observableValue } from '../../../base/common/observable.js';
+import {
+	autorun,
+	derivedOpts,
+	IObservable,
+	ISettableObservable,
+	observableValue
+} from '../../../base/common/observable.js';
 import { stringHash } from '../../../base/common/hash.js';
 import { DisposableStore, IDisposable } from '../../../base/common/lifecycle.js';
 import { IExtHostUrlsService } from './extHostUrls.js';
@@ -28,7 +47,7 @@ import { IProgressStep } from '../../../platform/progress/common/progress.js';
 import { CancellationError, isCancellationError } from '../../../base/common/errors.js';
 import { raceCancellationError, SequencerByKey } from '../../../base/common/async.js';
 
-export interface IExtHostAuthentication extends ExtHostAuthentication { }
+export interface IExtHostAuthentication extends ExtHostAuthentication {}
 export const IExtHostAuthentication = createDecorator<IExtHostAuthentication>('IExtHostAuthentication');
 
 interface ProviderWithMetadata {
@@ -39,7 +58,6 @@ interface ProviderWithMetadata {
 }
 
 export class ExtHostAuthentication implements ExtHostAuthenticationShape {
-
 	declare _serviceBrand: undefined;
 
 	protected readonly _dynamicAuthProviderCtor = DynamicAuthProvider;
@@ -48,10 +66,16 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 	private _authenticationProviders: Map<string, ProviderWithMetadata> = new Map<string, ProviderWithMetadata>();
 	private _providerOperations = new SequencerByKey<string>();
 
-	private _onDidChangeSessions = new Emitter<vscode.AuthenticationSessionsChangeEvent & { extensionIdFilter?: string[] }>();
+	private _onDidChangeSessions = new Emitter<
+		vscode.AuthenticationSessionsChangeEvent & { extensionIdFilter?: string[] }
+	>();
 	private _getSessionTaskSingler = new TaskSingler<vscode.AuthenticationSession | undefined>();
 
-	private _onDidDynamicAuthProviderTokensChange = new Emitter<{ authProviderId: string; clientId: string; tokens: IAuthorizationToken[] }>();
+	private _onDidDynamicAuthProviderTokensChange = new Emitter<{
+		authProviderId: string;
+		clientId: string;
+		tokens: IAuthorizationToken[];
+	}>();
 
 	constructor(
 		@IExtHostRpcService extHostRpc: IExtHostRpcService,
@@ -60,7 +84,7 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 		@IExtHostUrlsService private readonly _extHostUrls: IExtHostUrlsService,
 		@IExtHostProgress private readonly _extHostProgress: IExtHostProgress,
 		@ILoggerService private readonly _extHostLoggerService: ILoggerService,
-		@ILogService private readonly _logService: ILogService,
+		@ILogService private readonly _logService: ILogService
 	) {
 		this._proxy = extHostRpc.getProxy(MainContext.MainThreadAuthentication);
 	}
@@ -73,19 +97,52 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 	 */
 	getExtensionScopedSessionsEvent(extensionId: string): Event<vscode.AuthenticationSessionsChangeEvent> {
 		const normalizedExtensionId = extensionId.toLowerCase();
-		return Event.chain(this._onDidChangeSessions.event, ($) => $
-			.filter(e => !e.extensionIdFilter || e.extensionIdFilter.includes(normalizedExtensionId))
-			.map(e => ({ provider: e.provider }))
+		return Event.chain(this._onDidChangeSessions.event, $ =>
+			$.filter(e => !e.extensionIdFilter || e.extensionIdFilter.includes(normalizedExtensionId)).map(e => ({
+				provider: e.provider
+			}))
 		);
 	}
 
-	async getSession(requestingExtension: IExtensionDescription, providerId: string, scopesOrRequest: readonly string[] | vscode.AuthenticationWwwAuthenticateRequest, options: vscode.AuthenticationGetSessionOptions & ({ createIfNone: true } | { forceNewSession: true } | { forceNewSession: vscode.AuthenticationForceNewSessionOptions })): Promise<vscode.AuthenticationSession>;
-	async getSession(requestingExtension: IExtensionDescription, providerId: string, scopesOrRequest: readonly string[] | vscode.AuthenticationWwwAuthenticateRequest, options: vscode.AuthenticationGetSessionOptions & { forceNewSession: true }): Promise<vscode.AuthenticationSession>;
-	async getSession(requestingExtension: IExtensionDescription, providerId: string, scopesOrRequest: readonly string[] | vscode.AuthenticationWwwAuthenticateRequest, options: vscode.AuthenticationGetSessionOptions & { forceNewSession: vscode.AuthenticationForceNewSessionOptions }): Promise<vscode.AuthenticationSession>;
-	async getSession(requestingExtension: IExtensionDescription, providerId: string, scopesOrRequest: readonly string[] | vscode.AuthenticationWwwAuthenticateRequest, options: vscode.AuthenticationGetSessionOptions): Promise<vscode.AuthenticationSession | undefined>;
-	async getSession(requestingExtension: IExtensionDescription, providerId: string, scopesOrRequest: readonly string[] | vscode.AuthenticationWwwAuthenticateRequest, options: vscode.AuthenticationGetSessionOptions = {}): Promise<vscode.AuthenticationSession | undefined> {
+	async getSession(
+		requestingExtension: IExtensionDescription,
+		providerId: string,
+		scopesOrRequest: readonly string[] | vscode.AuthenticationWwwAuthenticateRequest,
+		options: vscode.AuthenticationGetSessionOptions &
+			(
+				| { createIfNone: true }
+				| { forceNewSession: true }
+				| { forceNewSession: vscode.AuthenticationForceNewSessionOptions }
+			)
+	): Promise<vscode.AuthenticationSession>;
+	async getSession(
+		requestingExtension: IExtensionDescription,
+		providerId: string,
+		scopesOrRequest: readonly string[] | vscode.AuthenticationWwwAuthenticateRequest,
+		options: vscode.AuthenticationGetSessionOptions & { forceNewSession: true }
+	): Promise<vscode.AuthenticationSession>;
+	async getSession(
+		requestingExtension: IExtensionDescription,
+		providerId: string,
+		scopesOrRequest: readonly string[] | vscode.AuthenticationWwwAuthenticateRequest,
+		options: vscode.AuthenticationGetSessionOptions & { forceNewSession: vscode.AuthenticationForceNewSessionOptions }
+	): Promise<vscode.AuthenticationSession>;
+	async getSession(
+		requestingExtension: IExtensionDescription,
+		providerId: string,
+		scopesOrRequest: readonly string[] | vscode.AuthenticationWwwAuthenticateRequest,
+		options: vscode.AuthenticationGetSessionOptions
+	): Promise<vscode.AuthenticationSession | undefined>;
+	async getSession(
+		requestingExtension: IExtensionDescription,
+		providerId: string,
+		scopesOrRequest: readonly string[] | vscode.AuthenticationWwwAuthenticateRequest,
+		options: vscode.AuthenticationGetSessionOptions = {}
+	): Promise<vscode.AuthenticationSession | undefined> {
 		const extensionId = ExtensionIdentifier.toKey(requestingExtension.identifier);
-		const keys: (keyof vscode.AuthenticationGetSessionOptions)[] = Object.keys(options) as (keyof vscode.AuthenticationGetSessionOptions)[];
+		const keys: (keyof vscode.AuthenticationGetSessionOptions)[] = Object.keys(
+			options
+		) as (keyof vscode.AuthenticationGetSessionOptions)[];
 		// TODO: pull this out into a utility function somewhere
 		const optionsStr = keys
 			.map(key => {
@@ -94,9 +151,10 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 						return `${key}:${options.account?.id}`;
 					case 'createIfNone':
 					case 'forceNewSession': {
-						const value = typeof options[key] === 'boolean'
-							? `${options[key]}`
-							: `'${options[key]?.detail}/${options[key]?.learnMore?.toString()}'`;
+						const value =
+							typeof options[key] === 'boolean'
+								? `${options[key]}`
+								: `'${options[key]?.detail}/${options[key]?.learnMore?.toString()}'`;
 						return `${key}:${value}`;
 					}
 					case 'authorizationServer':
@@ -131,18 +189,30 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 		return await this._proxy.$getAccounts(providerId);
 	}
 
-	registerAuthenticationProvider(id: string, label: string, provider: vscode.AuthenticationProvider, options?: vscode.AuthenticationProviderOptions): vscode.Disposable {
+	registerAuthenticationProvider(
+		id: string,
+		label: string,
+		provider: vscode.AuthenticationProvider,
+		options?: vscode.AuthenticationProviderOptions
+	): vscode.Disposable {
 		// register
 		void this._providerOperations.queue(id, async () => {
 			// This use to be synchronous, but that wasn't an accurate representation because the main thread
 			// may have unregistered the provider in the meantime. I don't see how this could really be done
 			// synchronously, so we just say first one wins.
 			if (this._authenticationProviders.get(id)) {
-				this._logService.error(`An authentication provider with id '${id}' is already registered. The existing provider will not be replaced.`);
+				this._logService.error(
+					`An authentication provider with id '${id}' is already registered. The existing provider will not be replaced.`
+				);
 				return;
 			}
 			const listener = provider.onDidChangeSessions(e => this._proxy.$sendDidChangeSessions(id, e));
-			this._authenticationProviders.set(id, { label, provider, disposable: listener, options: options ?? { supportsMultipleAccounts: false } });
+			this._authenticationProviders.set(id, {
+				label,
+				provider,
+				disposable: listener,
+				options: options ?? { supportsMultipleAccounts: false }
+			});
 			await this._proxy.$registerAuthenticationProvider({
 				id,
 				label,
@@ -165,7 +235,11 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 		});
 	}
 
-	$createSession(providerId: string, scopes: string[], options: vscode.AuthenticationProviderSessionOptions): Promise<vscode.AuthenticationSession> {
+	$createSession(
+		providerId: string,
+		scopes: string[],
+		options: vscode.AuthenticationProviderSessionOptions
+	): Promise<vscode.AuthenticationSession> {
 		return this._providerOperations.queue(providerId, async () => {
 			const providerData = this._authenticationProviders.get(providerId);
 			if (providerData) {
@@ -188,7 +262,11 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 		});
 	}
 
-	$getSessions(providerId: string, scopes: ReadonlyArray<string> | undefined, options: vscode.AuthenticationProviderSessionOptions): Promise<ReadonlyArray<vscode.AuthenticationSession>> {
+	$getSessions(
+		providerId: string,
+		scopes: ReadonlyArray<string> | undefined,
+		options: vscode.AuthenticationProviderSessionOptions
+	): Promise<ReadonlyArray<vscode.AuthenticationSession>> {
 		return this._providerOperations.queue(providerId, async () => {
 			const providerData = this._authenticationProviders.get(providerId);
 			if (providerData) {
@@ -200,7 +278,11 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 		});
 	}
 
-	$getSessionsFromChallenges(providerId: string, constraint: vscode.AuthenticationConstraint, options: vscode.AuthenticationProviderSessionOptions): Promise<ReadonlyArray<vscode.AuthenticationSession>> {
+	$getSessionsFromChallenges(
+		providerId: string,
+		constraint: vscode.AuthenticationConstraint,
+		options: vscode.AuthenticationProviderSessionOptions
+	): Promise<ReadonlyArray<vscode.AuthenticationSession>> {
 		return this._providerOperations.queue(providerId, async () => {
 			const providerData = this._authenticationProviders.get(providerId);
 			if (providerData) {
@@ -210,14 +292,20 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 					options.authorizationServer = URI.revive(options.authorizationServer);
 					return await provider.getSessionsFromChallenges(constraint, options);
 				}
-				throw new Error(`Authentication provider with handle: ${providerId} does not support getSessionsFromChallenges`);
+				throw new Error(
+					`Authentication provider with handle: ${providerId} does not support getSessionsFromChallenges`
+				);
 			}
 
 			throw new Error(`Unable to find authentication provider with handle: ${providerId}`);
 		});
 	}
 
-	$createSessionFromChallenges(providerId: string, constraint: vscode.AuthenticationConstraint, options: vscode.AuthenticationProviderSessionOptions): Promise<vscode.AuthenticationSession> {
+	$createSessionFromChallenges(
+		providerId: string,
+		constraint: vscode.AuthenticationConstraint,
+		options: vscode.AuthenticationProviderSessionOptions
+	): Promise<vscode.AuthenticationSession> {
 		return this._providerOperations.queue(providerId, async () => {
 			const providerData = this._authenticationProviders.get(providerId);
 			if (providerData) {
@@ -227,7 +315,9 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 					options.authorizationServer = URI.revive(options.authorizationServer);
 					return await provider.createSessionFromChallenges(constraint, options);
 				}
-				throw new Error(`Authentication provider with handle: ${providerId} does not support createSessionFromChallenges`);
+				throw new Error(
+					`Authentication provider with handle: ${providerId} does not support createSessionFromChallenges`
+				);
 			}
 
 			throw new Error(`Unable to find authentication provider with handle: ${providerId}`);
@@ -264,11 +354,17 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 			const authorizationServer = URI.revive(authorizationServerComponents);
 			if (serverMetadata.registration_endpoint) {
 				try {
-					const registration = await fetchDynamicRegistration(serverMetadata, this._initData.environment.appName, resourceMetadata?.scopes_supported);
+					const registration = await fetchDynamicRegistration(
+						serverMetadata,
+						this._initData.environment.appName,
+						resourceMetadata?.scopes_supported
+					);
 					clientId = registration.client_id;
 					clientSecret = registration.client_secret;
 				} catch (err) {
-					this._logService.warn(`Dynamic registration failed for ${authorizationServer.toString()}: ${err.message}. Prompting user for client ID and client secret...`);
+					this._logService.warn(
+						`Dynamic registration failed for ${authorizationServer.toString()}: ${err.message}. Prompting user for client ID and client secret...`
+					);
 				}
 			}
 			// Still no client id so dynamic client registration was either not supported or failed
@@ -306,23 +402,22 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 
 		// Use the sequencer to ensure dynamic provider registration is serialized
 		await this._providerOperations.queue(provider.id, async () => {
-			this._authenticationProviders.set(
-				provider.id,
-				{
-					label: provider.label,
+			this._authenticationProviders.set(provider.id, {
+				label: provider.label,
+				provider,
+				disposable: Disposable.from(
 					provider,
-					disposable: Disposable.from(
-						provider,
-						provider.onDidChangeSessions(e => this._proxy.$sendDidChangeSessions(provider.id, e)),
-						provider.onDidChangeClientId(() => this._proxy.$sendDidChangeDynamicProviderInfo({
+					provider.onDidChangeSessions(e => this._proxy.$sendDidChangeSessions(provider.id, e)),
+					provider.onDidChangeClientId(() =>
+						this._proxy.$sendDidChangeDynamicProviderInfo({
 							providerId: provider.id,
 							clientId: provider.clientId,
 							clientSecret: provider.clientSecret
-						}))
-					),
-					options: { supportsMultipleAccounts: true }
-				}
-			);
+						})
+					)
+				),
+				options: { supportsMultipleAccounts: true }
+			});
 
 			await this._proxy.$registerDynamicAuthenticationProvider({
 				id: provider.id,
@@ -335,13 +430,14 @@ export class ExtHostAuthentication implements ExtHostAuthenticationShape {
 			});
 		});
 
-
-
-
 		return provider.id;
 	}
 
-	async $onDidChangeDynamicAuthProviderTokens(authProviderId: string, clientId: string, tokens: IAuthorizationToken[]): Promise<void> {
+	async $onDidChangeDynamicAuthProviderTokens(
+		authProviderId: string,
+		clientId: string,
+		tokens: IAuthorizationToken[]
+	): Promise<void> {
 		this._onDidDynamicAuthProviderTokensChange.fire({ authProviderId, clientId, tokens });
 	}
 }
@@ -375,7 +471,11 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 
 	protected readonly _createFlows: Array<{
 		label: string;
-		handler: (scopes: string[], progress: vscode.Progress<{ message: string }>, token: vscode.CancellationToken) => Promise<IAuthorizationTokenResponse>;
+		handler: (
+			scopes: string[],
+			progress: vscode.Progress<{ message: string }>,
+			token: vscode.CancellationToken
+		) => Promise<IAuthorizationTokenResponse>;
 	}>;
 
 	protected readonly _logger: ILogger;
@@ -393,14 +493,16 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 		protected readonly _resourceMetadata: IAuthorizationProtectedResourceMetadata | undefined,
 		protected _clientId: string,
 		protected _clientSecret: string | undefined,
-		onDidDynamicAuthProviderTokensChange: Emitter<{ authProviderId: string; clientId: string; tokens: IAuthorizationToken[] }>,
-		initialTokens: IAuthorizationToken[],
+		onDidDynamicAuthProviderTokensChange: Emitter<{
+			authProviderId: string;
+			clientId: string;
+			tokens: IAuthorizationToken[];
+		}>,
+		initialTokens: IAuthorizationToken[]
 	) {
 		const stringifiedServer = authorizationServer.toString(true);
 		// Auth Provider Id is a combination of the authorization server and the resource, if provided.
-		this.id = _resourceMetadata?.resource
-			? stringifiedServer + ' ' + _resourceMetadata?.resource
-			: stringifiedServer;
+		this.id = _resourceMetadata?.resource ? stringifiedServer + ' ' + _resourceMetadata?.resource : stringifiedServer;
 		// Auth Provider label is just the resource name if provided, otherwise the authority of the authorization server.
 		this.label = _resourceMetadata?.resource_name ?? this.authorizationServer.authority;
 
@@ -408,24 +510,25 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 		this._disposable = new DisposableStore();
 		this._disposable.add(this._onDidChangeSessions);
 		this._disposable.add(this._onDidChangeClientId);
-		const scopedEvent = Event.chain(onDidDynamicAuthProviderTokensChange.event, $ => $
-			.filter(e => e.authProviderId === this.id && e.clientId === _clientId)
-			.map(e => e.tokens)
+		const scopedEvent = Event.chain(onDidDynamicAuthProviderTokensChange.event, $ =>
+			$.filter(e => e.authProviderId === this.id && e.clientId === _clientId).map(e => e.tokens)
 		);
-		this._tokenStore = this._disposable.add(new TokenStore(
-			{
-				onDidChange: scopedEvent,
-				set: (tokens) => _proxy.$setSessionsForDynamicAuthProvider(this.id, this.clientId, tokens),
-			},
-			initialTokens,
-			this._logger
-		));
+		this._tokenStore = this._disposable.add(
+			new TokenStore(
+				{
+					onDidChange: scopedEvent,
+					set: tokens => _proxy.$setSessionsForDynamicAuthProvider(this.id, this.clientId, tokens)
+				},
+				initialTokens,
+				this._logger
+			)
+		);
 		this._disposable.add(this._tokenStore.onDidChangeSessions(e => this._onDidChangeSessions.fire(e)));
 		// Will be extended later to support other flows
 		this._createFlows = [];
 		if (_serverMetadata.authorization_endpoint) {
 			this._createFlows.push({
-				label: nls.localize('url handler', "URL Handler"),
+				label: nls.localize('url handler', 'URL Handler'),
 				handler: (scopes, progress, token) => this._createWithUrlHandler(scopes, progress, token)
 			});
 		}
@@ -439,7 +542,10 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 		return this._clientSecret;
 	}
 
-	async getSessions(scopes: readonly string[] | undefined, _options: vscode.AuthenticationProviderSessionOptions): Promise<vscode.AuthenticationSession[]> {
+	async getSessions(
+		scopes: readonly string[] | undefined,
+		_options: vscode.AuthenticationProviderSessionOptions
+	): Promise<vscode.AuthenticationSession[]> {
 		this._logger.info(`Getting sessions for scopes: ${scopes?.join(' ') ?? 'all'}`);
 		if (!scopes) {
 			return this._tokenStore.sessions;
@@ -454,19 +560,23 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 		if (sessions.length) {
 			const newTokens: IAuthorizationToken[] = [];
 			const removedTokens: IAuthorizationToken[] = [];
-			const tokenMap = new Map<string, IAuthorizationToken>(this._tokenStore.tokens.map(token => [token.access_token, token]));
+			const tokenMap = new Map<string, IAuthorizationToken>(
+				this._tokenStore.tokens.map(token => [token.access_token, token])
+			);
 			for (const session of sessions) {
 				const token = tokenMap.get(session.accessToken);
 				if (token && token.expires_in) {
 					const now = Date.now();
 					const expiresInMS = token.expires_in * 1000;
 					// Check if the token is about to expire in 5 minutes or if it is expired
-					if (now > token.created_at + expiresInMS - (5 * 60 * 1000)) {
+					if (now > token.created_at + expiresInMS - 5 * 60 * 1000) {
 						this._logger.info(`Token for session ${session.id} is about to expire, refreshing...`);
 						removedTokens.push(token);
 						if (!token.refresh_token) {
 							// No refresh token available, cannot refresh
-							this._logger.warn(`No refresh token available for scopes ${session.scopes.join(' ')}. Throwing away token.`);
+							this._logger.warn(
+								`No refresh token available for scopes ${session.scopes.join(' ')}. Throwing away token.`
+							);
 							continue;
 						}
 						try {
@@ -474,7 +584,9 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 							// TODO@TylerLeonhardt: When the core scope handling doesn't care about order, this check should be
 							// updated to not care about order
 							if (newToken.scope !== scopeStr) {
-								this._logger.warn(`Token scopes '${newToken.scope}' do not match requested scopes '${scopeStr}'. Overwriting token with what was requested...`);
+								this._logger.warn(
+									`Token scopes '${newToken.scope}' do not match requested scopes '${scopeStr}'. Overwriting token with what was requested...`
+								);
 								newToken.scope = scopeStr;
 							}
 							this._logger.info(`Successfully created a new token for scopes ${session.scopes.join(' ')}.`);
@@ -482,7 +594,6 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 						} catch (err) {
 							this._logger.error(`Failed to refresh token: ${err}`);
 						}
-
 					}
 				}
 			}
@@ -498,7 +609,10 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 		return [];
 	}
 
-	async createSession(scopes: string[], _options: vscode.AuthenticationProviderSessionOptions): Promise<vscode.AuthenticationSession> {
+	async createSession(
+		scopes: string[],
+		_options: vscode.AuthenticationProviderSessionOptions
+	): Promise<vscode.AuthenticationSession> {
 		this._logger.info(`Creating session for scopes: ${scopes.join(' ')}`);
 		let token: IAuthorizationTokenResponse | undefined;
 		for (let i = 0; i < this._createFlows.length; i++) {
@@ -511,7 +625,8 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 						title: nls.localize('authenticatingTo', "Authenticating to '{0}'", this.label),
 						cancellable: true
 					},
-					(progress, token) => handler(scopes, progress, token));
+					(progress, token) => handler(scopes, progress, token)
+				);
 				if (token) {
 					break;
 				}
@@ -521,8 +636,18 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 					break; // No more flows to try
 				}
 				const message = isCancellationError(err)
-					? nls.localize('userCanceledContinue', "Having trouble authenticating to '{0}'? Would you like to try a different way? ({1})", this.label, nextMode)
-					: nls.localize('continueWith', "You have not yet finished authenticating to '{0}'. Would you like to try a different way? ({1})", this.label, nextMode);
+					? nls.localize(
+							'userCanceledContinue',
+							"Having trouble authenticating to '{0}'? Would you like to try a different way? ({1})",
+							this.label,
+							nextMode
+						)
+					: nls.localize(
+							'continueWith',
+							"You have not yet finished authenticating to '{0}'. Would you like to try a different way? ({1})",
+							this.label,
+							nextMode
+						);
 
 				const result = await this._proxy.$showContinueNotification(message);
 				if (!result) {
@@ -535,14 +660,18 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 			throw new Error('Failed to create authentication token');
 		}
 		if (token.scope !== scopes.join(' ')) {
-			this._logger.warn(`Token scopes '${token.scope}' do not match requested scopes '${scopes.join(' ')}'. Overwriting token with what was requested...`);
+			this._logger.warn(
+				`Token scopes '${token.scope}' do not match requested scopes '${scopes.join(' ')}'. Overwriting token with what was requested...`
+			);
 			token.scope = scopes.join(' ');
 		}
 
 		// Store session for later retrieval
 		this._tokenStore.update({ added: [{ ...token, created_at: Date.now() }], removed: [] });
 		const session = this._tokenStore.sessions.find(t => t.accessToken === token.access_token)!;
-		this._logger.info(`Created ${token.refresh_token ? 'refreshable' : 'non-refreshable'} session for scopes: ${token.scope}${token.expires_in ? ` that expires in ${token.expires_in} seconds` : ''}`);
+		this._logger.info(
+			`Created ${token.refresh_token ? 'refreshable' : 'non-refreshable'} session for scopes: ${token.scope}${token.expires_in ? ` that expires in ${token.expires_in} seconds` : ''}`
+		);
 		return session;
 	}
 
@@ -566,7 +695,11 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 		this._disposable.dispose();
 	}
 
-	private async _createWithUrlHandler(scopes: string[], progress: vscode.Progress<IProgressStep>, token: vscode.CancellationToken): Promise<IAuthorizationTokenResponse> {
+	private async _createWithUrlHandler(
+		scopes: string[],
+		progress: vscode.Progress<IProgressStep>,
+		token: vscode.CancellationToken
+	): Promise<IAuthorizationTokenResponse> {
 		if (!this._serverMetadata.authorization_endpoint) {
 			throw new Error('Authorization Endpoint required');
 		}
@@ -580,7 +713,9 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 
 		// Generate a random state value to prevent CSRF
 		const nonce = this.generateRandomString(32);
-		const callbackUri = URI.parse(`${this._initData.environment.appUriScheme}://dynamicauthprovider/${this.authorizationServer.authority}/authorize?nonce=${nonce}`);
+		const callbackUri = URI.parse(
+			`${this._initData.environment.appUriScheme}://dynamicauthprovider/${this.authorizationServer.authority}/authorize?nonce=${nonce}`
+		);
 		let state: URI;
 		try {
 			state = await this._extHostUrls.createAppUri(callbackUri);
@@ -619,7 +754,7 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 			throw new CancellationError();
 		}
 		progress.report({
-			message: nls.localize('completeAuth', "Complete the authentication in the browser window that has opened."),
+			message: nls.localize('completeAuth', 'Complete the authentication in the browser window that has opened.')
 		});
 
 		// Wait for the authorization code via a redirect
@@ -675,7 +810,11 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 		return { code: codeMatch[1] };
 	}
 
-	protected async exchangeCodeForToken(code: string, codeVerifier: string, redirectUri: string): Promise<IAuthorizationTokenResponse> {
+	protected async exchangeCodeForToken(
+		code: string,
+		codeVerifier: string,
+		redirectUri: string
+	): Promise<IAuthorizationTokenResponse> {
 		if (!this._serverMetadata.token_endpoint) {
 			throw new Error('Token endpoint not available in server metadata');
 		}
@@ -706,7 +845,7 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/x-www-form-urlencoded',
-					'Accept': 'application/json'
+					Accept: 'application/json'
 				},
 				body: tokenRequest.toString()
 			});
@@ -756,7 +895,7 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/x-www-form-urlencoded',
-				'Accept': 'application/json'
+				Accept: 'application/json'
 			},
 			body: tokenRequest.toString()
 		});
@@ -765,7 +904,7 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 		if (isAuthorizationTokenResponse(result)) {
 			return {
 				...result,
-				created_at: Date.now(),
+				created_at: Date.now()
 			};
 		} else if (isAuthorizationErrorResponse(result) && result.error === AuthorizationErrorType.InvalidClient) {
 			this._logger.warn(`Client ID (${this._clientId}) was invalid, generated a new one.`);
@@ -777,13 +916,19 @@ export class DynamicAuthProvider implements vscode.AuthenticationProvider {
 
 	protected async _generateNewClientId(): Promise<void> {
 		try {
-			const registration = await fetchDynamicRegistration(this._serverMetadata, this._initData.environment.appName, this._resourceMetadata?.scopes_supported);
+			const registration = await fetchDynamicRegistration(
+				this._serverMetadata,
+				this._initData.environment.appName,
+				this._resourceMetadata?.scopes_supported
+			);
 			this._clientId = registration.client_id;
 			this._clientSecret = registration.client_secret;
 			this._onDidChangeClientId.fire();
 		} catch (err) {
 			// When DCR fails, try to prompt the user for a client ID and client secret
-			this._logger.info(`Dynamic registration failed for ${this.authorizationServer.toString()}: ${err}. Prompting user for client ID and client secret.`);
+			this._logger.info(
+				`Dynamic registration failed for ${this.authorizationServer.toString()}: ${err}. Prompting user for client ID and client secret.`
+			);
 
 			try {
 				const clientDetails = await this._proxy.$promptForClientRegistration(this.authorizationServer.toString());
@@ -825,7 +970,10 @@ class TokenStore implements Disposable {
 	private readonly _disposable: DisposableStore;
 
 	constructor(
-		private readonly _persistence: { onDidChange: Event<IAuthorizationToken[]>; set: (tokens: IAuthorizationToken[]) => void },
+		private readonly _persistence: {
+			onDidChange: Event<IAuthorizationToken[]>;
+			set: (tokens: IAuthorizationToken[]) => void;
+		},
 		initialTokens: IAuthorizationToken[],
 		private readonly _logger: ILogger
 	) {
@@ -833,10 +981,10 @@ class TokenStore implements Disposable {
 		this._tokensObservable = observableValue<IAuthorizationToken[]>('tokens', initialTokens);
 		this._sessionsObservable = derivedOpts(
 			{ equalsFn: (a, b) => arraysEqual(a, b, (a, b) => a.accessToken === b.accessToken) },
-			(reader) => this._tokensObservable.read(reader).map(t => this._getSessionFromToken(t))
+			reader => this._tokensObservable.read(reader).map(t => this._getSessionFromToken(t))
 		);
 		this._disposable.add(this._registerChangeEventAutorun());
-		this._disposable.add(this._persistence.onDidChange((tokens) => this._tokensObservable.set(tokens, undefined)));
+		this._disposable.add(this._persistence.onDidChange(tokens => this._tokensObservable.set(tokens, undefined)));
 	}
 
 	get tokens(): IAuthorizationToken[] {
@@ -877,7 +1025,7 @@ class TokenStore implements Disposable {
 
 	private _registerChangeEventAutorun(): IDisposable {
 		let previousSessions: vscode.AuthenticationSession[] = [];
-		return autorun((reader) => {
+		return autorun(reader => {
 			this._logger.trace('Checking for session changes...');
 			const currentSessions = this._sessionsObservable.read(reader);
 			if (previousSessions === currentSessions) {
@@ -945,17 +1093,13 @@ class TokenStore implements Disposable {
 				// log
 			}
 		}
-		const scopes = token.scope
-			? token.scope.split(' ')
-			: claims?.scope
-				? claims.scope.split(' ')
-				: [];
+		const scopes = token.scope ? token.scope.split(' ') : claims?.scope ? claims.scope.split(' ') : [];
 		return {
 			id: stringHash(token.access_token, 0).toString(),
 			accessToken: token.access_token,
 			account: {
 				id: claims?.sub || 'unknown',
-				label: claims?.preferred_username || claims?.name || claims?.email || 'Unknown',
+				label: claims?.preferred_username || claims?.name || claims?.email || 'Unknown'
 			},
 			scopes: scopes,
 			idToken: token.id_token

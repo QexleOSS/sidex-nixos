@@ -8,7 +8,14 @@ import { ICommandMetadata } from '../../../platform/commands/common/commands.js'
 import * as extHostTypes from './extHostTypes.js';
 import * as extHostTypeConverter from './extHostTypeConverters.js';
 import { cloneAndChange } from '../../../base/common/objects.js';
-import { MainContext, MainThreadCommandsShape, ExtHostCommandsShape, ICommandDto, ICommandMetadataDto, MainThreadTelemetryShape } from './extHost.protocol.js';
+import {
+	MainContext,
+	MainThreadCommandsShape,
+	ExtHostCommandsShape,
+	ICommandDto,
+	ICommandMetadataDto,
+	MainThreadTelemetryShape
+} from './extHost.protocol.js';
 import { isNonEmptyArray } from '../../../base/common/arrays.js';
 import * as languages from '../../../editor/common/languages.js';
 import type * as vscode from 'vscode';
@@ -44,7 +51,6 @@ export interface ArgumentProcessor {
 }
 
 export class ExtHostCommands implements ExtHostCommandsShape {
-
 	readonly _serviceBrand: undefined;
 
 	#proxy: MainThreadCommandsShape;
@@ -75,8 +81,7 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 				// converted to their internal command and don't need
 				// any indirection commands
 				const candidate = this._apiCommands.get(id);
-				return candidate?.result === ApiCommandResult.Void
-					? candidate : undefined;
+				return candidate?.result === ApiCommandResult.Void ? candidate : undefined;
 			},
 			logService
 		);
@@ -117,24 +122,29 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 	}
 
 	registerApiCommand(apiCommand: ApiCommand): extHostTypes.Disposable {
+		const registration = this.registerCommand(
+			false,
+			apiCommand.id,
+			async (...apiArgs) => {
+				const internalArgs = apiCommand.args.map((arg, i) => {
+					if (!arg.validate(apiArgs[i])) {
+						throw new Error(
+							`Invalid argument '${arg.name}' when running '${apiCommand.id}', received: ${typeof apiArgs[i] === 'object' ? JSON.stringify(apiArgs[i], null, '\t') : apiArgs[i]} `
+						);
+					}
+					return arg.convert(apiArgs[i]);
+				});
 
-
-		const registration = this.registerCommand(false, apiCommand.id, async (...apiArgs) => {
-
-			const internalArgs = apiCommand.args.map((arg, i) => {
-				if (!arg.validate(apiArgs[i])) {
-					throw new Error(`Invalid argument '${arg.name}' when running '${apiCommand.id}', received: ${typeof apiArgs[i] === 'object' ? JSON.stringify(apiArgs[i], null, '\t') : apiArgs[i]} `);
-				}
-				return arg.convert(apiArgs[i]);
-			});
-
-			const internalResult = await this.executeCommand(apiCommand.internalId, ...internalArgs);
-			return apiCommand.result.convert(internalResult, apiArgs, this.converter);
-		}, undefined, {
-			description: apiCommand.description,
-			args: apiCommand.args,
-			returns: apiCommand.result.description
-		});
+				const internalResult = await this.executeCommand(apiCommand.internalId, ...internalArgs);
+				return apiCommand.result.convert(internalResult, apiArgs, this.converter);
+			},
+			undefined,
+			{
+				description: apiCommand.description,
+				args: apiCommand.args,
+				returns: apiCommand.result.description
+			}
+		);
 
 		this._apiCommands.set(apiCommand.id, apiCommand);
 
@@ -144,7 +154,14 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 		});
 	}
 
-	registerCommand(global: boolean, id: string, callback: <T>(...args: any[]) => T | Thenable<T>, thisArg?: any, metadata?: ICommandMetadata, extension?: IExtensionDescription): extHostTypes.Disposable {
+	registerCommand(
+		global: boolean,
+		id: string,
+		callback: <T>(...args: any[]) => T | Thenable<T>,
+		thisArg?: any,
+		metadata?: ICommandMetadata,
+		extension?: IExtensionDescription
+	): extHostTypes.Disposable {
 		this._logService.trace('ExtHostCommands#registerCommand', id);
 
 		if (!id.trim().length) {
@@ -175,7 +192,6 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 	}
 
 	private async _doExecuteCommand<T>(id: string, args: unknown[], retry: boolean): Promise<T> {
-
 		if (this._commands.has(id)) {
 			// - We stay inside the extension host and support
 			// 	 to pass any kind of parameters around.
@@ -183,7 +199,6 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 			//   BUT we don't await that event
 			this.#proxy.$fireCommandActivationEvent(id);
 			return this._executeContributedCommand<T>(id, args, false);
-
 		} else {
 			// automagically convert some argument types
 			let hasBuffers = false;
@@ -212,7 +227,11 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 			});
 
 			try {
-				const result = await this.#proxy.$executeCommand(id, hasBuffers ? new SerializableObjectWithBuffers(toArgs) : toArgs, retry);
+				const result = await this.#proxy.$executeCommand(
+					id,
+					hasBuffers ? new SerializableObjectWithBuffers(toArgs) : toArgs,
+					retry
+				);
 				return revive<any>(result);
 			} catch (e) {
 				// Rerun the command when it wasn't known, had arguments, and when retry
@@ -227,7 +246,11 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 		}
 	}
 
-	private async _executeContributedCommand<T = unknown>(id: string, args: unknown[], annotateError: boolean): Promise<T> {
+	private async _executeContributedCommand<T = unknown>(
+		id: string,
+		args: unknown[],
+		annotateError: boolean
+	): Promise<T> {
 		const command = this._commands.get(id);
 		if (!command) {
 			throw new Error('Unknown command');
@@ -238,7 +261,9 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 				try {
 					validateConstraint(args[i], metadata.args[i].constraint);
 				} catch (err) {
-					throw new Error(`Running the contributed command: '${id}' failed. Illegal argument '${metadata.args[i].name}' - ${metadata.args[i].description}`);
+					throw new Error(
+						`Running the contributed command: '${id}' failed. Illegal argument '${metadata.args[i].name}' - ${metadata.args[i].description}`
+					);
 				}
 			}
 		}
@@ -268,15 +293,14 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 				this._logService.trace('forwarded error to extension?', reported, command.extension?.identifier);
 			}
 
-			throw new class CommandError extends Error {
+			throw new (class CommandError extends Error {
 				readonly id = id;
 				readonly source = command!.extension?.displayName ?? command!.extension?.name;
 				constructor() {
 					super(toErrorMessage(err));
 				}
-			};
-		}
-		finally {
+			})();
+		} finally {
 			this._reportTelemetry(command, id, stopWatch.elapsed());
 		}
 	}
@@ -295,16 +319,28 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 			duration: number;
 		};
 		type ExtensionActionTelemetryMeta = {
-			extensionId: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The id of the extension handling the command, informing which extensions provide most-used functionality.' };
-			id: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The id of the command, to understand which specific extension features are most popular.' };
-			duration: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The duration of the command execution, to detect performance issues' };
+			extensionId: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'The id of the extension handling the command, informing which extensions provide most-used functionality.';
+			};
+			id: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'The id of the command, to understand which specific extension features are most popular.';
+			};
+			duration: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'The duration of the command execution, to detect performance issues';
+			};
 			owner: 'digitarald';
 			comment: 'Used to gain insight on the most popular commands used from extensions';
 		};
 		this.#telemetry.$publicLog2<ExtensionActionTelemetry, ExtensionActionTelemetryMeta>('Extension:ActionExecuted', {
 			extensionId: command.extension.identifier.value,
 			id: new TelemetryTrustedValue(id),
-			duration: duration,
+			duration: duration
 		});
 	}
 
@@ -315,7 +351,9 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 		if (!cmdHandler) {
 			return Promise.reject(new Error(`Contributed command '${id}' does not exist.`));
 		} else {
-			args = args.map(arg => this._argumentProcessors.reduce((r, p) => p.processArgument(r, cmdHandler.extension), arg));
+			args = args.map(arg =>
+				this._argumentProcessors.reduce((r, p) => p.processArgument(r, cmdHandler.extension), arg)
+			);
 			return this._executeContributedCommand(id, args, true);
 		}
 	}
@@ -343,11 +381,10 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 	}
 }
 
-export interface IExtHostCommands extends ExtHostCommands { }
+export interface IExtHostCommands extends ExtHostCommands {}
 export const IExtHostCommands = createDecorator<IExtHostCommands>('IExtHostCommands');
 
 export class CommandsConverter implements extHostTypeConverter.Command.ICommandsConverter {
-
 	readonly delegatingCommandId: string = `__vsc${generateUuid()}`;
 	private readonly _cache = new Map<string, vscode.Command>();
 	private _cachIdPool = 0;
@@ -364,7 +401,6 @@ export class CommandsConverter implements extHostTypeConverter.Command.ICommands
 	toInternal(command: vscode.Command, disposables: DisposableStore): ICommandDto;
 	toInternal(command: vscode.Command | undefined, disposables: DisposableStore): ICommandDto | undefined;
 	toInternal(command: vscode.Command | undefined, disposables: DisposableStore): ICommandDto | undefined {
-
 		if (!command) {
 			return undefined;
 		}
@@ -387,18 +423,18 @@ export class CommandsConverter implements extHostTypeConverter.Command.ICommands
 			// API command with return-value can be converted inplace
 			result.id = apiCommand.internalId;
 			result.arguments = apiCommand.args.map((arg, i) => arg.convert(command.arguments && command.arguments[i]));
-
-
 		} else if (isNonEmptyArray(command.arguments)) {
 			// we have a contributed command with arguments. that
 			// means we don't want to send the arguments around
 
 			const id = `${command.command} /${++this._cachIdPool}`;
 			this._cache.set(id, command);
-			disposables.add(toDisposable(() => {
-				this._cache.delete(id);
-				this._logService.trace('CommandsConverter#DISPOSE', id);
-			}));
+			disposables.add(
+				toDisposable(() => {
+					this._cache.delete(id);
+					this._logService.trace('CommandsConverter#DISPOSE', id);
+				})
+			);
 			result.$ident = id;
 
 			result.id = this.delegatingCommandId;
@@ -411,10 +447,8 @@ export class CommandsConverter implements extHostTypeConverter.Command.ICommands
 	}
 
 	fromInternal(command: ICommandDto): vscode.Command | undefined {
-
 		if (typeof command.$ident === 'string') {
 			return this._cache.get(command.$ident);
-
 		} else {
 			return {
 				command: command.id,
@@ -423,7 +457,6 @@ export class CommandsConverter implements extHostTypeConverter.Command.ICommands
 			};
 		}
 	}
-
 
 	getActualCommand(...args: unknown[]): vscode.Command | undefined {
 		return this._cache.get(args[0] as string);
@@ -438,18 +471,45 @@ export class CommandsConverter implements extHostTypeConverter.Command.ICommands
 		}
 		return this._commands.executeCommand(actualCmd.command, ...(actualCmd.arguments || []));
 	}
-
 }
 
-
 export class ApiCommandArgument<V, O = V> {
-
-	static readonly Uri = new ApiCommandArgument<URI>('uri', 'Uri of a text document', v => URI.isUri(v), v => v);
-	static readonly Position = new ApiCommandArgument<extHostTypes.Position, IPosition>('position', 'A position in a text document', v => extHostTypes.Position.isPosition(v), extHostTypeConverter.Position.from);
-	static readonly Range = new ApiCommandArgument<extHostTypes.Range, IRange>('range', 'A range in a text document', v => extHostTypes.Range.isRange(v), extHostTypeConverter.Range.from);
-	static readonly Selection = new ApiCommandArgument<extHostTypes.Selection, ISelection>('selection', 'A selection in a text document', v => extHostTypes.Selection.isSelection(v), extHostTypeConverter.Selection.from);
-	static readonly Number = new ApiCommandArgument<number>('number', '', v => typeof v === 'number', v => v);
-	static readonly String = new ApiCommandArgument<string>('string', '', v => typeof v === 'string', v => v);
+	static readonly Uri = new ApiCommandArgument<URI>(
+		'uri',
+		'Uri of a text document',
+		v => URI.isUri(v),
+		v => v
+	);
+	static readonly Position = new ApiCommandArgument<extHostTypes.Position, IPosition>(
+		'position',
+		'A position in a text document',
+		v => extHostTypes.Position.isPosition(v),
+		extHostTypeConverter.Position.from
+	);
+	static readonly Range = new ApiCommandArgument<extHostTypes.Range, IRange>(
+		'range',
+		'A range in a text document',
+		v => extHostTypes.Range.isRange(v),
+		extHostTypeConverter.Range.from
+	);
+	static readonly Selection = new ApiCommandArgument<extHostTypes.Selection, ISelection>(
+		'selection',
+		'A selection in a text document',
+		v => extHostTypes.Selection.isSelection(v),
+		extHostTypeConverter.Selection.from
+	);
+	static readonly Number = new ApiCommandArgument<number>(
+		'number',
+		'',
+		v => typeof v === 'number',
+		v => v
+	);
+	static readonly String = new ApiCommandArgument<string>(
+		'string',
+		'',
+		v => typeof v === 'string',
+		v => v
+	);
 
 	static Arr<T, K = T>(element: ApiCommandArgument<T, K>) {
 		return new ApiCommandArgument(
@@ -460,23 +520,44 @@ export class ApiCommandArgument<V, O = V> {
 		);
 	}
 
-	static readonly CallHierarchyItem = new ApiCommandArgument('item', 'A call hierarchy item', v => v instanceof extHostTypes.CallHierarchyItem, extHostTypeConverter.CallHierarchyItem.from);
-	static readonly TypeHierarchyItem = new ApiCommandArgument('item', 'A type hierarchy item', v => v instanceof extHostTypes.TypeHierarchyItem, extHostTypeConverter.TypeHierarchyItem.from);
-	static readonly TestItem = new ApiCommandArgument('testItem', 'A VS Code TestItem', v => v instanceof TestItemImpl, extHostTypeConverter.TestItem.from);
-	static readonly TestProfile = new ApiCommandArgument('testProfile', 'A VS Code test profile', v => v instanceof extHostTypes.TestRunProfileBase, extHostTypeConverter.TestRunProfile.from);
+	static readonly CallHierarchyItem = new ApiCommandArgument(
+		'item',
+		'A call hierarchy item',
+		v => v instanceof extHostTypes.CallHierarchyItem,
+		extHostTypeConverter.CallHierarchyItem.from
+	);
+	static readonly TypeHierarchyItem = new ApiCommandArgument(
+		'item',
+		'A type hierarchy item',
+		v => v instanceof extHostTypes.TypeHierarchyItem,
+		extHostTypeConverter.TypeHierarchyItem.from
+	);
+	static readonly TestItem = new ApiCommandArgument(
+		'testItem',
+		'A VS Code TestItem',
+		v => v instanceof TestItemImpl,
+		extHostTypeConverter.TestItem.from
+	);
+	static readonly TestProfile = new ApiCommandArgument(
+		'testProfile',
+		'A VS Code test profile',
+		v => v instanceof extHostTypes.TestRunProfileBase,
+		extHostTypeConverter.TestRunProfile.from
+	);
 
 	constructor(
 		readonly name: string,
 		readonly description: string,
 		readonly validate: (v: V) => boolean,
 		readonly convert: (v: V) => O
-	) { }
+	) {}
 
 	optional(): ApiCommandArgument<V | undefined | null, O | undefined | null> {
 		return new ApiCommandArgument(
-			this.name, `(optional) ${this.description}`,
+			this.name,
+			`(optional) ${this.description}`,
 			value => value === undefined || value === null || this.validate(value),
-			value => value === undefined ? undefined : value === null ? null : this.convert(value)
+			value => (value === undefined ? undefined : value === null ? null : this.convert(value))
 		);
 	}
 
@@ -486,22 +567,20 @@ export class ApiCommandArgument<V, O = V> {
 }
 
 export class ApiCommandResult<V, O = V> {
-
 	static readonly Void = new ApiCommandResult<void, void>('no result', v => v);
 
 	constructor(
 		readonly description: string,
 		readonly convert: (v: V, apiArgs: any[], cmdConverter: CommandsConverter) => O
-	) { }
+	) {}
 }
 
 export class ApiCommand {
-
 	constructor(
 		readonly id: string,
 		readonly internalId: string,
 		readonly description: string,
 		readonly args: ApiCommandArgument<any, any>[],
 		readonly result: ApiCommandResult<any, any>
-	) { }
+	) {}
 }

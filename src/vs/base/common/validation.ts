@@ -13,7 +13,9 @@ export interface IValidator<T> {
 }
 
 export abstract class ValidatorBase<T> implements IValidator<T> {
-	abstract validate(content: unknown): { content: T; error: undefined } | { content: undefined; error: ValidationError };
+	abstract validate(
+		content: unknown
+	): { content: T; error: undefined } | { content: undefined; error: ValidationError };
 
 	abstract getJSONSchema(): IJSONSchema;
 
@@ -45,7 +47,9 @@ class TypeofValidator<TKey extends keyof TypeOfMap> extends ValidatorBase<TypeOf
 		super();
 	}
 
-	validate(content: unknown): { content: TypeOfMap[TKey]; error: undefined } | { content: undefined; error: ValidationError } {
+	validate(
+		content: unknown
+	): { content: TypeOfMap[TKey]; error: undefined } | { content: undefined; error: ValidationError } {
 		if (typeof content !== this.type) {
 			return { content: undefined, error: { message: `Expected ${this.type}, but got ${typeof content}` } };
 		}
@@ -59,17 +63,24 @@ class TypeofValidator<TKey extends keyof TypeOfMap> extends ValidatorBase<TypeOf
 }
 
 const vStringValidator = new TypeofValidator('string');
-export function vString(): ValidatorBase<string> { return vStringValidator; }
+export function vString(): ValidatorBase<string> {
+	return vStringValidator;
+}
 
 const vNumberValidator = new TypeofValidator('number');
-export function vNumber(): ValidatorBase<number> { return vNumberValidator; }
+export function vNumber(): ValidatorBase<number> {
+	return vNumberValidator;
+}
 
 const vBooleanValidator = new TypeofValidator('boolean');
-export function vBoolean(): ValidatorBase<boolean> { return vBooleanValidator; }
+export function vBoolean(): ValidatorBase<boolean> {
+	return vBooleanValidator;
+}
 
 const vObjAnyValidator = new TypeofValidator('object');
-export function vObjAny(): ValidatorBase<object> { return vObjAnyValidator; }
-
+export function vObjAny(): ValidatorBase<object> {
+	return vObjAnyValidator;
+}
 
 class UncheckedValidator<T> extends ValidatorBase<T> {
 	validate(content: unknown): { content: T; error: undefined } {
@@ -86,7 +97,9 @@ export function vUnchecked<T>(): ValidatorBase<T> {
 }
 
 class UndefinedValidator extends ValidatorBase<undefined> {
-	validate(content: unknown): { content: undefined; error: undefined } | { content: undefined; error: ValidationError } {
+	validate(
+		content: unknown
+	): { content: undefined; error: undefined } | { content: undefined; error: ValidationError } {
 		if (content !== undefined) {
 			return { content: undefined, error: { message: `Expected undefined, but got ${typeof content}` } };
 		}
@@ -110,7 +123,7 @@ export function vUnknown(): ValidatorBase<unknown> {
 export type ObjectProperties = Record<string, unknown>;
 
 export class Optional<T extends IValidator<unknown>> {
-	constructor(public readonly validator: T) { }
+	constructor(public readonly validator: T) {}
 }
 
 export function vOptionalProp<T>(validator: IValidator<T>): Optional<IValidator<T>> {
@@ -131,12 +144,16 @@ export type vObjType<T extends Record<string, IValidator<unknown> | Optional<IVa
 	[K in ExtractOptionalKeys<T>]?: T[K] extends Optional<IValidator<infer U>> ? U : never;
 };
 
-class ObjValidator<T extends Record<string, IValidator<unknown> | Optional<IValidator<unknown>>>> extends ValidatorBase<vObjType<T>> {
+class ObjValidator<T extends Record<string, IValidator<unknown> | Optional<IValidator<unknown>>>> extends ValidatorBase<
+	vObjType<T>
+> {
 	constructor(private readonly properties: T) {
 		super();
 	}
 
-	validate(content: unknown): { content: vObjType<T>; error: undefined } | { content: undefined; error: ValidationError } {
+	validate(
+		content: unknown
+	): { content: vObjType<T>; error: undefined } | { content: undefined; error: ValidationError } {
 		if (typeof content !== 'object' || content === null) {
 			return { content: undefined, error: { message: 'Expected object' } };
 		}
@@ -146,7 +163,7 @@ class ObjValidator<T extends Record<string, IValidator<unknown> | Optional<IVali
 
 		for (const key in this.properties) {
 			const prop = this.properties[key];
-			// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+			// eslint-disable-next-line local/code-no-any-casts
 			const fieldValue = (content as any)[key];
 
 			const isOptional = prop instanceof Optional;
@@ -162,7 +179,7 @@ class ObjValidator<T extends Record<string, IValidator<unknown> | Optional<IVali
 				return { content: undefined, error: { message: `Error in property '${key}': ${error.message}` } };
 			}
 
-			// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+			// eslint-disable-next-line local/code-no-any-casts
 			(result as any)[key] = value;
 		}
 
@@ -192,7 +209,9 @@ class ObjValidator<T extends Record<string, IValidator<unknown> | Optional<IVali
 	}
 }
 
-export function vObj<T extends Record<string, IValidator<unknown> | Optional<IValidator<unknown>>>>(properties: T): ValidatorBase<vObjType<T>> {
+export function vObj<T extends Record<string, IValidator<unknown> | Optional<IValidator<unknown>>>>(
+	properties: T
+): ValidatorBase<vObjType<T>> {
 	return new ObjValidator(properties);
 }
 
@@ -222,7 +241,7 @@ class ArrayValidator<T> extends ValidatorBase<T[]> {
 	getJSONSchema(): IJSONSchema {
 		return {
 			type: 'array',
-			items: this.validator.getJSONSchema(),
+			items: this.validator.getJSONSchema()
 		};
 	}
 }
@@ -238,13 +257,18 @@ class TupleValidator<T extends IValidator<unknown>[]> extends ValidatorBase<vTup
 		super();
 	}
 
-	validate(content: unknown): { content: vTupleType<T>; error: undefined } | { content: undefined; error: ValidationError } {
+	validate(
+		content: unknown
+	): { content: vTupleType<T>; error: undefined } | { content: undefined; error: ValidationError } {
 		if (!Array.isArray(content)) {
 			return { content: undefined, error: { message: 'Expected array' } };
 		}
 
 		if (content.length !== this.validators.length) {
-			return { content: undefined, error: { message: `Expected tuple of length ${this.validators.length}, but got ${content.length}` } };
+			return {
+				content: undefined,
+				error: { message: `Expected tuple of length ${this.validators.length}, but got ${content.length}` }
+			};
 		}
 
 		const result = [] as vTupleType<T>;
@@ -263,7 +287,7 @@ class TupleValidator<T extends IValidator<unknown>[]> extends ValidatorBase<vTup
 	getJSONSchema(): IJSONSchema {
 		return {
 			type: 'array',
-			items: this.validators.map(validator => validator.getJSONSchema()),
+			items: this.validators.map(validator => validator.getJSONSchema())
 		};
 	}
 }
@@ -277,12 +301,14 @@ class UnionValidator<T extends IValidator<unknown>[]> extends ValidatorBase<Vali
 		super();
 	}
 
-	validate(content: unknown): { content: ValidatorType<T[number]>; error: undefined } | { content: undefined; error: ValidationError } {
+	validate(
+		content: unknown
+	): { content: ValidatorType<T[number]>; error: undefined } | { content: undefined; error: ValidationError } {
 		let lastError: ValidationError | undefined;
 		for (const validator of this.validators) {
 			const { content: value, error } = validator.validate(content);
 			if (!error) {
-				// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+				// eslint-disable-next-line local/code-no-any-casts
 				return { content: value as any, error: undefined };
 			}
 
@@ -299,7 +325,7 @@ class UnionValidator<T extends IValidator<unknown>[]> extends ValidatorBase<Vali
 					return undefined;
 				}
 				return validator.getJSONSchema();
-			}),
+			})
 		};
 	}
 }
@@ -313,7 +339,9 @@ class EnumValidator<T extends string[]> extends ValidatorBase<T[number]> {
 		super();
 	}
 
-	validate(content: unknown): { content: T[number]; error: undefined } | { content: undefined; error: ValidationError } {
+	validate(
+		content: unknown
+	): { content: T[number]; error: undefined } | { content: undefined; error: ValidationError } {
 		if (this.values.indexOf(content as string) === -1) {
 			return { content: undefined, error: { message: `Expected one of: ${this.values.join(', ')}` } };
 		}
@@ -323,7 +351,7 @@ class EnumValidator<T extends string[]> extends ValidatorBase<T[number]> {
 
 	getJSONSchema(): IJSONSchema {
 		return {
-			enum: this.values,
+			enum: this.values
 		};
 	}
 }
@@ -347,7 +375,7 @@ class LiteralValidator<T extends string> extends ValidatorBase<T> {
 
 	getJSONSchema(): IJSONSchema {
 		return {
-			const: this.value,
+			const: this.value
 		};
 	}
 }

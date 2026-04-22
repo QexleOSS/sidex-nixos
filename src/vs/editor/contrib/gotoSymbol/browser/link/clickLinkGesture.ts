@@ -12,7 +12,10 @@ import { ICodeEditor, IEditorMouseEvent, IMouseTarget } from '../../../../browse
 import { EditorOption, MouseMiddleClickAction } from '../../../../common/config/editorOptions.js';
 import { ICursorSelectionChangedEvent } from '../../../../common/cursorEvents.js';
 
-function hasModifier(e: { ctrlKey: boolean; shiftKey: boolean; altKey: boolean; metaKey: boolean }, modifier: 'ctrlKey' | 'shiftKey' | 'altKey' | 'metaKey'): boolean {
+function hasModifier(
+	e: { ctrlKey: boolean; shiftKey: boolean; altKey: boolean; metaKey: boolean },
+	modifier: 'ctrlKey' | 'shiftKey' | 'altKey' | 'metaKey'
+): boolean {
 	return !!e[modifier];
 }
 
@@ -20,7 +23,6 @@ function hasModifier(e: { ctrlKey: boolean; shiftKey: boolean; altKey: boolean; 
  * An event that encapsulates the various trigger modifiers logic needed for go to definition.
  */
 export class ClickLinkMouseEvent {
-
 	public readonly target: IMouseTarget;
 	public readonly hasTriggerModifier: boolean;
 	public readonly hasSideBySideModifier: boolean;
@@ -46,7 +48,7 @@ export class ClickLinkMouseEvent {
 			this.hasTriggerModifier = true;
 		}
 		this.hasSideBySideModifier = hasModifier(source.event, opts.triggerSideBySideModifier);
-		this.isNoneOrSingleMouseDown = (source.event.detail <= 1);
+		this.isNoneOrSingleMouseDown = source.event.detail <= 1;
 	}
 }
 
@@ -54,21 +56,19 @@ export class ClickLinkMouseEvent {
  * An event that encapsulates the various trigger modifiers logic needed for go to definition.
  */
 export class ClickLinkKeyboardEvent {
-
 	public readonly keyCodeIsTriggerKey: boolean;
 	public readonly keyCodeIsSideBySideKey: boolean;
 	public readonly hasTriggerModifier: boolean;
 
 	constructor(source: IKeyboardEvent, opts: ClickLinkOptions) {
-		this.keyCodeIsTriggerKey = (source.keyCode === opts.triggerKey);
-		this.keyCodeIsSideBySideKey = (source.keyCode === opts.triggerSideBySideKey);
+		this.keyCodeIsTriggerKey = source.keyCode === opts.triggerKey;
+		this.keyCodeIsSideBySideKey = source.keyCode === opts.triggerSideBySideKey;
 		this.hasTriggerModifier = hasModifier(source, opts.triggerModifier);
 	}
 }
 export type TriggerModifier = 'ctrlKey' | 'shiftKey' | 'altKey' | 'metaKey';
 
 export class ClickLinkOptions {
-
 	public readonly triggerKey: KeyCode;
 	public readonly triggerModifier: TriggerModifier;
 	public readonly triggerSideBySideKey: KeyCode;
@@ -79,7 +79,7 @@ export class ClickLinkOptions {
 		triggerModifier: TriggerModifier,
 		triggerSideBySideKey: KeyCode,
 		triggerSideBySideModifier: TriggerModifier,
-		public readonly mouseMiddleClickAction: MouseMiddleClickAction,
+		public readonly mouseMiddleClickAction: MouseMiddleClickAction
 	) {
 		this.triggerKey = triggerKey;
 		this.triggerModifier = triggerModifier;
@@ -89,16 +89,19 @@ export class ClickLinkOptions {
 
 	public equals(other: ClickLinkOptions): boolean {
 		return (
-			this.triggerKey === other.triggerKey
-			&& this.triggerModifier === other.triggerModifier
-			&& this.triggerSideBySideKey === other.triggerSideBySideKey
-			&& this.triggerSideBySideModifier === other.triggerSideBySideModifier
-			&& this.mouseMiddleClickAction === other.mouseMiddleClickAction
+			this.triggerKey === other.triggerKey &&
+			this.triggerModifier === other.triggerModifier &&
+			this.triggerSideBySideKey === other.triggerSideBySideKey &&
+			this.triggerSideBySideModifier === other.triggerSideBySideModifier &&
+			this.mouseMiddleClickAction === other.mouseMiddleClickAction
 		);
 	}
 }
 
-function createOptions(multiCursorModifier: 'altKey' | 'ctrlKey' | 'metaKey', mouseMiddleClickAction: MouseMiddleClickAction): ClickLinkOptions {
+function createOptions(
+	multiCursorModifier: 'altKey' | 'ctrlKey' | 'metaKey',
+	mouseMiddleClickAction: MouseMiddleClickAction
+): ClickLinkOptions {
 	if (multiCursorModifier === 'altKey') {
 		if (platform.isMacintosh) {
 			return new ClickLinkOptions(KeyCode.Meta, 'metaKey', KeyCode.Alt, 'altKey', mouseMiddleClickAction);
@@ -120,9 +123,10 @@ export interface IClickLinkGestureOptions {
 }
 
 export class ClickLinkGesture extends Disposable {
-
-	private readonly _onMouseMoveOrRelevantKeyDown: Emitter<[ClickLinkMouseEvent, ClickLinkKeyboardEvent | null]> = this._register(new Emitter<[ClickLinkMouseEvent, ClickLinkKeyboardEvent | null]>());
-	public readonly onMouseMoveOrRelevantKeyDown: Event<[ClickLinkMouseEvent, ClickLinkKeyboardEvent | null]> = this._onMouseMoveOrRelevantKeyDown.event;
+	private readonly _onMouseMoveOrRelevantKeyDown: Emitter<[ClickLinkMouseEvent, ClickLinkKeyboardEvent | null]> =
+		this._register(new Emitter<[ClickLinkMouseEvent, ClickLinkKeyboardEvent | null]>());
+	public readonly onMouseMoveOrRelevantKeyDown: Event<[ClickLinkMouseEvent, ClickLinkKeyboardEvent | null]> =
+		this._onMouseMoveOrRelevantKeyDown.event;
 
 	private readonly _onExecute: Emitter<ClickLinkMouseEvent> = this._register(new Emitter<ClickLinkMouseEvent>());
 	public readonly onExecute: Event<ClickLinkMouseEvent> = this._onExecute.event;
@@ -142,41 +146,66 @@ export class ClickLinkGesture extends Disposable {
 		super();
 
 		this._editor = editor;
-		this._extractLineNumberFromMouseEvent = opts?.extractLineNumberFromMouseEvent ?? ((e) => e.target.position ? e.target.position.lineNumber : 0);
-		this._opts = createOptions(this._editor.getOption(EditorOption.multiCursorModifier), this._editor.getOption(EditorOption.mouseMiddleClickAction));
+		this._extractLineNumberFromMouseEvent =
+			opts?.extractLineNumberFromMouseEvent ?? (e => (e.target.position ? e.target.position.lineNumber : 0));
+		this._opts = createOptions(
+			this._editor.getOption(EditorOption.multiCursorModifier),
+			this._editor.getOption(EditorOption.mouseMiddleClickAction)
+		);
 
 		this._lastMouseMoveEvent = null;
 		this._hasTriggerKeyOnMouseDown = false;
 		this._lineNumberOnMouseDown = 0;
 
-		this._register(this._editor.onDidChangeConfiguration((e) => {
-			if (e.hasChanged(EditorOption.multiCursorModifier) || e.hasChanged(EditorOption.mouseMiddleClickAction)) {
-				const newOpts = createOptions(this._editor.getOption(EditorOption.multiCursorModifier), this._editor.getOption(EditorOption.mouseMiddleClickAction));
-				if (this._opts.equals(newOpts)) {
-					return;
+		this._register(
+			this._editor.onDidChangeConfiguration(e => {
+				if (e.hasChanged(EditorOption.multiCursorModifier) || e.hasChanged(EditorOption.mouseMiddleClickAction)) {
+					const newOpts = createOptions(
+						this._editor.getOption(EditorOption.multiCursorModifier),
+						this._editor.getOption(EditorOption.mouseMiddleClickAction)
+					);
+					if (this._opts.equals(newOpts)) {
+						return;
+					}
+					this._opts = newOpts;
+					this._lastMouseMoveEvent = null;
+					this._hasTriggerKeyOnMouseDown = false;
+					this._lineNumberOnMouseDown = 0;
+					this._onCancel.fire();
 				}
-				this._opts = newOpts;
-				this._lastMouseMoveEvent = null;
-				this._hasTriggerKeyOnMouseDown = false;
-				this._lineNumberOnMouseDown = 0;
-				this._onCancel.fire();
-			}
-		}));
-		this._register(this._editor.onMouseMove((e: IEditorMouseEvent) => this._onEditorMouseMove(new ClickLinkMouseEvent(e, this._opts))));
-		this._register(this._editor.onMouseDown((e: IEditorMouseEvent) => this._onEditorMouseDown(new ClickLinkMouseEvent(e, this._opts))));
-		this._register(this._editor.onMouseUp((e: IEditorMouseEvent) => this._onEditorMouseUp(new ClickLinkMouseEvent(e, this._opts))));
-		this._register(this._editor.onKeyDown((e: IKeyboardEvent) => this._onEditorKeyDown(new ClickLinkKeyboardEvent(e, this._opts))));
-		this._register(this._editor.onKeyUp((e: IKeyboardEvent) => this._onEditorKeyUp(new ClickLinkKeyboardEvent(e, this._opts))));
+			})
+		);
+		this._register(
+			this._editor.onMouseMove((e: IEditorMouseEvent) =>
+				this._onEditorMouseMove(new ClickLinkMouseEvent(e, this._opts))
+			)
+		);
+		this._register(
+			this._editor.onMouseDown((e: IEditorMouseEvent) =>
+				this._onEditorMouseDown(new ClickLinkMouseEvent(e, this._opts))
+			)
+		);
+		this._register(
+			this._editor.onMouseUp((e: IEditorMouseEvent) => this._onEditorMouseUp(new ClickLinkMouseEvent(e, this._opts)))
+		);
+		this._register(
+			this._editor.onKeyDown((e: IKeyboardEvent) => this._onEditorKeyDown(new ClickLinkKeyboardEvent(e, this._opts)))
+		);
+		this._register(
+			this._editor.onKeyUp((e: IKeyboardEvent) => this._onEditorKeyUp(new ClickLinkKeyboardEvent(e, this._opts)))
+		);
 		this._register(this._editor.onMouseDrag(() => this._resetHandler()));
 
-		this._register(this._editor.onDidChangeCursorSelection((e) => this._onDidChangeCursorSelection(e)));
-		this._register(this._editor.onDidChangeModel((e) => this._resetHandler()));
+		this._register(this._editor.onDidChangeCursorSelection(e => this._onDidChangeCursorSelection(e)));
+		this._register(this._editor.onDidChangeModel(e => this._resetHandler()));
 		this._register(this._editor.onDidChangeModelContent(() => this._resetHandler()));
-		this._register(this._editor.onDidScrollChange((e) => {
-			if (e.scrollTopChanged || e.scrollLeftChanged) {
-				this._resetHandler();
-			}
-		}));
+		this._register(
+			this._editor.onDidScrollChange(e => {
+				if (e.scrollTopChanged || e.scrollLeftChanged) {
+					this._resetHandler();
+				}
+			})
+		);
 	}
 
 	private _onDidChangeCursorSelection(e: ICursorSelectionChangedEvent): void {
@@ -203,18 +232,19 @@ export class ClickLinkGesture extends Disposable {
 	private _onEditorMouseUp(mouseEvent: ClickLinkMouseEvent): void {
 		const currentLineNumber = this._extractLineNumberFromMouseEvent(mouseEvent);
 		const lineNumbersCorrect = !!this._lineNumberOnMouseDown && this._lineNumberOnMouseDown === currentLineNumber;
-		if (lineNumbersCorrect && (this._hasTriggerKeyOnMouseDown || (mouseEvent.isMiddleClick && mouseEvent.mouseMiddleClickAction === 'openLink'))) {
+		if (
+			lineNumbersCorrect &&
+			(this._hasTriggerKeyOnMouseDown || (mouseEvent.isMiddleClick && mouseEvent.mouseMiddleClickAction === 'openLink'))
+		) {
 			this._onExecute.fire(mouseEvent);
 		}
 	}
 
 	private _onEditorKeyDown(e: ClickLinkKeyboardEvent): void {
 		if (
-			this._lastMouseMoveEvent
-			&& (
-				e.keyCodeIsTriggerKey // User just pressed Ctrl/Cmd (normal goto definition)
-				|| (e.keyCodeIsSideBySideKey && e.hasTriggerModifier) // User pressed Ctrl/Cmd+Alt (goto definition to the side)
-			)
+			this._lastMouseMoveEvent &&
+			(e.keyCodeIsTriggerKey || // User just pressed Ctrl/Cmd (normal goto definition)
+				(e.keyCodeIsSideBySideKey && e.hasTriggerModifier)) // User pressed Ctrl/Cmd+Alt (goto definition to the side)
 		) {
 			this._onMouseMoveOrRelevantKeyDown.fire([this._lastMouseMoveEvent, e]);
 		} else if (e.hasTriggerModifier) {

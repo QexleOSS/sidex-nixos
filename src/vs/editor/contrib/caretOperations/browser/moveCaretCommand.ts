@@ -9,7 +9,6 @@ import { ICommand, ICursorStateComputerData, IEditOperationBuilder } from '../..
 import { ITextModel } from '../../../common/model.js';
 
 export class MoveCaretCommand implements ICommand {
-
 	private readonly _selection: Selection;
 	private readonly _isMovingLeft: boolean;
 
@@ -47,9 +46,19 @@ export class MoveCaretCommand implements ICommand {
 
 	public computeCursorState(model: ITextModel, helper: ICursorStateComputerData): Selection {
 		if (this._isMovingLeft) {
-			return new Selection(this._selection.startLineNumber, this._selection.startColumn - 1, this._selection.endLineNumber, this._selection.endColumn - 1);
+			return new Selection(
+				this._selection.startLineNumber,
+				this._selection.startColumn - 1,
+				this._selection.endLineNumber,
+				this._selection.endColumn - 1
+			);
 		} else {
-			return new Selection(this._selection.startLineNumber, this._selection.startColumn + 1, this._selection.endLineNumber, this._selection.endColumn + 1);
+			return new Selection(
+				this._selection.startLineNumber,
+				this._selection.startColumn + 1,
+				this._selection.endLineNumber,
+				this._selection.endColumn + 1
+			);
 		}
 	}
 }

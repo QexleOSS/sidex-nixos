@@ -49,7 +49,11 @@ export interface IMenubarMenuItemSeparator {
 	id: 'vscode.menubar.separator';
 }
 
-export type MenubarMenuItem = IMenubarMenuItemAction | IMenubarMenuItemSubmenu | IMenubarMenuItemSeparator | IMenubarMenuRecentItemAction;
+export type MenubarMenuItem =
+	| IMenubarMenuItemAction
+	| IMenubarMenuItemSubmenu
+	| IMenubarMenuItemSeparator
+	| IMenubarMenuRecentItemAction;
 
 export function isMenubarMenuItemSubmenu(menuItem: MenubarMenuItem): menuItem is IMenubarMenuItemSubmenu {
 	return (<IMenubarMenuItemSubmenu>menuItem).submenu !== undefined;
@@ -64,5 +68,9 @@ export function isMenubarMenuItemRecentAction(menuItem: MenubarMenuItem): menuIt
 }
 
 export function isMenubarMenuItemAction(menuItem: MenubarMenuItem): menuItem is IMenubarMenuItemAction {
-	return !isMenubarMenuItemSubmenu(menuItem) && !isMenubarMenuItemSeparator(menuItem) && !isMenubarMenuItemRecentAction(menuItem);
+	return (
+		!isMenubarMenuItemSubmenu(menuItem) &&
+		!isMenubarMenuItemSeparator(menuItem) &&
+		!isMenubarMenuItemRecentAction(menuItem)
+	);
 }

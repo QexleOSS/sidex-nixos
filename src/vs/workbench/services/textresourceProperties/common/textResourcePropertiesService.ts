@@ -15,7 +15,6 @@ import { IRemoteAgentEnvironment } from '../../../../platform/remote/common/remo
 import { IRemoteAgentService } from '../../remote/common/remoteAgentService.js';
 
 export class TextResourcePropertiesService implements ITextResourcePropertiesService {
-
 	declare readonly _serviceBrand: undefined;
 
 	private remoteEnvironment: IRemoteAgentEnvironment | null = null;
@@ -26,7 +25,7 @@ export class TextResourcePropertiesService implements ITextResourcePropertiesSer
 		@IWorkbenchEnvironmentService private readonly environmentService: IWorkbenchEnvironmentService,
 		@IStorageService private readonly storageService: IStorageService
 	) {
-		remoteAgentService.getEnvironment().then(remoteEnv => this.remoteEnvironment = remoteEnv);
+		remoteAgentService.getEnvironment().then(remoteEnv => (this.remoteEnvironment = remoteEnv));
 	}
 
 	getEOL(resource?: URI, language?: string): string {
@@ -45,7 +44,9 @@ export class TextResourcePropertiesService implements ITextResourcePropertiesSer
 		if (remoteAuthority) {
 			if (resource && resource.scheme !== Schemas.file) {
 				const osCacheKey = `resource.authority.os.${remoteAuthority}`;
-				os = this.remoteEnvironment ? this.remoteEnvironment.os : /* Get it from cache */ this.storageService.getNumber(osCacheKey, StorageScope.WORKSPACE, OS);
+				os = this.remoteEnvironment
+					? this.remoteEnvironment.os
+					: /* Get it from cache */ this.storageService.getNumber(osCacheKey, StorageScope.WORKSPACE, OS);
 				this.storageService.store(osCacheKey, os, StorageScope.WORKSPACE, StorageTarget.MACHINE);
 			}
 		}

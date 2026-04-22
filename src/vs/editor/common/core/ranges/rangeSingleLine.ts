@@ -8,7 +8,7 @@ import { Range } from '../range.js';
 
 /**
  * Represents a column range in a single line.
-*/
+ */
 export class RangeSingleLine {
 	public static fromRange(range: Range): RangeSingleLine | undefined {
 		if (range.endLineNumber !== range.startLineNumber) {
@@ -20,10 +20,15 @@ export class RangeSingleLine {
 	constructor(
 		/** 1-based */
 		public readonly lineNumber: number,
-		public readonly columnRange: ColumnRange,
-	) { }
+		public readonly columnRange: ColumnRange
+	) {}
 
 	toRange(): Range {
-		return new Range(this.lineNumber, this.columnRange.startColumn, this.lineNumber, this.columnRange.endColumnExclusive);
+		return new Range(
+			this.lineNumber,
+			this.columnRange.startColumn,
+			this.lineNumber,
+			this.columnRange.endColumnExclusive
+		);
 	}
 }

@@ -40,16 +40,18 @@ export class TerminalWordLinkDetector extends Disposable implements ITerminalLin
 	constructor(
 		readonly xterm: Terminal,
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
-		@IProductService private readonly _productService: IProductService,
+		@IProductService private readonly _productService: IProductService
 	) {
 		super();
 
 		this._refreshSeparatorCodes();
-		this._register(this._configurationService.onDidChangeConfiguration(e => {
-			if (e.affectsConfiguration(TerminalSettingId.WordSeparators)) {
-				this._refreshSeparatorCodes();
-			}
-		}));
+		this._register(
+			this._configurationService.onDidChangeConfiguration(e => {
+				if (e.affectsConfiguration(TerminalSettingId.WordSeparators)) {
+					this._refreshSeparatorCodes();
+				}
+			})
+		);
 	}
 
 	detect(lines: IBufferLine[], startLine: number, endLine: number): ITerminalSimpleLink[] {
@@ -127,7 +129,8 @@ export class TerminalWordLinkDetector extends Disposable implements ITerminalLin
 	}
 
 	private _refreshSeparatorCodes(): void {
-		const separators = this._configurationService.getValue<ITerminalConfiguration>(TERMINAL_CONFIG_SECTION).wordSeparators;
+		const separators =
+			this._configurationService.getValue<ITerminalConfiguration>(TERMINAL_CONFIG_SECTION).wordSeparators;
 		let powerlineSymbols = '';
 		for (let i = 0xe0b0; i <= 0xe0bf; i++) {
 			powerlineSymbols += String.fromCharCode(i);

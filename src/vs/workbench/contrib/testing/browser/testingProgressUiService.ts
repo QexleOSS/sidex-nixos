@@ -23,15 +23,17 @@ export class TestingProgressTrigger extends Disposable {
 		@ITestResultService resultService: ITestResultService,
 		@ITestCoverageService testCoverageService: ITestCoverageService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
-		@IViewsService private readonly viewsService: IViewsService,
+		@IViewsService private readonly viewsService: IViewsService
 	) {
 		super();
 
-		this._register(resultService.onResultsChanged((e) => {
-			if ('started' in e) {
-				this.attachAutoOpenForNewResults(e.started);
-			}
-		}));
+		this._register(
+			resultService.onResultsChanged(e => {
+				if ('started' in e) {
+					this.attachAutoOpenForNewResults(e.started);
+				}
+			})
+		);
 
 		const barContributionRegistration = autorun(reader => {
 			const hasCoverage = !!testCoverageService.selected.read(reader);
@@ -67,12 +69,14 @@ export class TestingProgressTrigger extends Disposable {
 		// open on failure
 		const disposable = new DisposableStore();
 		disposable.add(result.onComplete(() => disposable.dispose()));
-		disposable.add(result.onChange(e => {
-			if (e.reason === TestResultItemChangeReason.OwnStateChange && isFailedState(e.item.ownComputedState)) {
-				this.openResultsView();
-				disposable.dispose();
-			}
-		}));
+		disposable.add(
+			result.onChange(e => {
+				if (e.reason === TestResultItemChangeReason.OwnStateChange && isFailedState(e.item.ownComputedState)) {
+					this.openResultsView();
+					disposable.dispose();
+				}
+			})
+		);
 	}
 
 	private openExplorerView() {

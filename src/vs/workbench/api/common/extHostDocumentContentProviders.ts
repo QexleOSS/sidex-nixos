@@ -8,7 +8,12 @@ import { URI, UriComponents } from '../../../base/common/uri.js';
 import { IDisposable } from '../../../base/common/lifecycle.js';
 import { Disposable } from './extHostTypes.js';
 import type * as vscode from 'vscode';
-import { MainContext, ExtHostDocumentContentProvidersShape, MainThreadDocumentContentProvidersShape, IMainContext } from './extHost.protocol.js';
+import {
+	MainContext,
+	ExtHostDocumentContentProvidersShape,
+	MainThreadDocumentContentProvidersShape,
+	IMainContext
+} from './extHost.protocol.js';
 import { ExtHostDocumentsAndEditors } from './extHostDocumentsAndEditors.js';
 import { Schemas } from '../../../base/common/network.js';
 import { ILogService } from '../../../platform/log/common/log.js';
@@ -16,7 +21,6 @@ import { CancellationToken } from '../../../base/common/cancellation.js';
 import { splitLines } from '../../../base/common/strings.js';
 
 export class ExtHostDocumentContentProvider implements ExtHostDocumentContentProvidersShape {
-
 	private static _handlePool = 0;
 
 	private readonly _documentContentProviders = new Map<number, vscode.TextDocumentContentProvider>();
@@ -25,7 +29,7 @@ export class ExtHostDocumentContentProvider implements ExtHostDocumentContentPro
 	constructor(
 		mainContext: IMainContext,
 		private readonly _documentsAndEditors: ExtHostDocumentsAndEditors,
-		private readonly _logService: ILogService,
+		private readonly _logService: ILogService
 	) {
 		this._proxy = mainContext.getProxy(MainContext.MainThreadDocumentContentProviders);
 	}
@@ -44,12 +48,13 @@ export class ExtHostDocumentContentProvider implements ExtHostDocumentContentPro
 
 		let subscription: IDisposable | undefined;
 		if (typeof provider.onDidChange === 'function') {
-
 			let lastEvent: Promise<void> | undefined;
 
 			subscription = provider.onDidChange(async uri => {
 				if (uri.scheme !== scheme) {
-					this._logService.warn(`Provider for scheme '${scheme}' is firing event for schema '${uri.scheme}' which will be IGNORED`);
+					this._logService.warn(
+						`Provider for scheme '${scheme}' is firing event for schema '${uri.scheme}' which will be IGNORED`
+					);
 					return;
 				}
 				if (!this._documentsAndEditors.getDocument(uri)) {

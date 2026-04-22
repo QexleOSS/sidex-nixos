@@ -21,9 +21,19 @@ interface IUserDataProfileInfo {
 	readonly useDefaultFlags?: UseDefaultProfileFlags;
 }
 
-export function merge(local: IUserDataProfile[], remote: ISyncUserDataProfile[] | null, lastSync: ISyncUserDataProfile[] | null, ignored: string[]): IMergeResult {
-	const localResult: { added: ISyncUserDataProfile[]; removed: IUserDataProfile[]; updated: ISyncUserDataProfile[] } = { added: [], removed: [], updated: [] };
-	let remoteResult: { added: IUserDataProfile[]; removed: ISyncUserDataProfile[]; updated: IUserDataProfile[] } | null = { added: [], removed: [], updated: [] };
+export function merge(
+	local: IUserDataProfile[],
+	remote: ISyncUserDataProfile[] | null,
+	lastSync: ISyncUserDataProfile[] | null,
+	ignored: string[]
+): IMergeResult {
+	const localResult: { added: ISyncUserDataProfile[]; removed: IUserDataProfile[]; updated: ISyncUserDataProfile[] } = {
+		added: [],
+		removed: [],
+		updated: []
+	};
+	let remoteResult: { added: IUserDataProfile[]; removed: ISyncUserDataProfile[]; updated: IUserDataProfile[] } | null =
+		{ added: [], removed: [], updated: [] };
 
 	if (!remote) {
 		const added = local.filter(({ id }) => !ignored.includes(id));
@@ -40,7 +50,6 @@ export function merge(local: IUserDataProfile[], remote: ISyncUserDataProfile[] 
 
 	const localToRemote = compare(local, remote, ignored);
 	if (localToRemote.added.length > 0 || localToRemote.removed.length > 0 || localToRemote.updated.length > 0) {
-
 		const baseToLocal = compare(lastSync, local, ignored);
 		const baseToRemote = compare(lastSync, remote, ignored);
 
@@ -110,7 +119,11 @@ export function merge(local: IUserDataProfile[], remote: ISyncUserDataProfile[] 
 	return { local: localResult, remote: remoteResult };
 }
 
-function compare(from: IUserDataProfileInfo[] | null, to: IUserDataProfileInfo[], ignoredProfiles: string[]): { added: string[]; removed: string[]; updated: string[] } {
+function compare(
+	from: IUserDataProfileInfo[] | null,
+	to: IUserDataProfileInfo[],
+	ignoredProfiles: string[]
+): { added: string[]; removed: string[]; updated: string[] } {
 	from = from ? from.filter(({ id }) => !ignoredProfiles.includes(id)) : [];
 	to = to.filter(({ id }) => !ignoredProfiles.includes(id));
 	const fromKeys = from.map(({ id }) => id);
@@ -124,10 +137,11 @@ function compare(from: IUserDataProfileInfo[] | null, to: IUserDataProfileInfo[]
 			continue;
 		}
 		const toProfile = to.find(p => p.id === id);
-		if (!toProfile
-			|| toProfile.name !== name
-			|| toProfile.icon !== icon
-			|| !equals(toProfile.useDefaultFlags, useDefaultFlags)
+		if (
+			!toProfile ||
+			toProfile.name !== name ||
+			toProfile.icon !== icon ||
+			!equals(toProfile.useDefaultFlags, useDefaultFlags)
 		) {
 			updated.push(id);
 		}

@@ -23,8 +23,12 @@ export class InlineEditWithChanges {
 		return new LineReplacement(new LineRange(1, 1), []);
 	}
 
-	public get originalLineRange(): LineRange { return this.lineEdit.lineRange; }
-	public get modifiedLineRange(): LineRange { return this.lineEdit.toLineEdit().getNewLineRanges()[0]; }
+	public get originalLineRange(): LineRange {
+		return this.lineEdit.lineRange;
+	}
+	public get modifiedLineRange(): LineRange {
+		return this.lineEdit.toLineEdit().getNewLineRanges()[0];
+	}
 
 	public get displayRange(): LineRange {
 		return this.originalText.lineRange.intersect(
@@ -41,7 +45,6 @@ export class InlineEditWithChanges {
 		public readonly cursorPosition: Position,
 		public readonly multiCursorPositions: readonly Position[],
 		public readonly commands: readonly InlineCompletionCommand[],
-		public readonly inlineCompletion: InlineSuggestionItem,
-	) {
-	}
+		public readonly inlineCompletion: InlineSuggestionItem
+	) {}
 }

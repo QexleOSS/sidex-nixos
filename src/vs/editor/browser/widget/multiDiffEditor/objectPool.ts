@@ -9,9 +9,7 @@ export class ObjectPool<TData extends IObjectData, T extends IPooledObject<TData
 	private readonly _used = new Set<T>();
 	private readonly _itemData = new Map<T, TData>();
 
-	constructor(
-		private readonly _create: (data: TData) => T,
-	) { }
+	constructor(private readonly _create: (data: TData) => T) {}
 
 	public getUnusedObj(data: TData): IReference<T> {
 		let obj: T;

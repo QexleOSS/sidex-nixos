@@ -10,11 +10,24 @@ import { ISimpleModel } from './viewModel/screenReaderSimpleModel.js';
 import { ICoordinatesConverter } from './coordinatesConverter.js';
 import { IPosition, Position } from './core/position.js';
 import { Range } from './core/range.js';
-import { CursorConfiguration, CursorState, EditOperationType, IColumnSelectData, ICursorSimpleModel, PartialCursorState } from './cursorCommon.js';
+import {
+	CursorConfiguration,
+	CursorState,
+	EditOperationType,
+	IColumnSelectData,
+	ICursorSimpleModel,
+	PartialCursorState
+} from './cursorCommon.js';
 import { CursorChangeReason } from './cursorEvents.js';
 import { INewScrollPosition, ScrollType } from './editorCommon.js';
 import { EditorTheme } from './editorTheme.js';
-import { EndOfLinePreference, IGlyphMarginLanesModel, IModelDecorationOptions, ITextModel, TextDirection } from './model.js';
+import {
+	EndOfLinePreference,
+	IGlyphMarginLanesModel,
+	IModelDecorationOptions,
+	ITextModel,
+	TextDirection
+} from './model.js';
 import { ILineBreaksComputer, ILineBreaksComputerContext, InjectedText } from './modelLineProjectionData.js';
 import { InternalModelContentChangeEvent, ModelInjectedTextChangedEvent } from './textModelEvents.js';
 import { BracketGuideOptions, IActiveIndentGuideInfo, IndentGuide } from './textModelGuides.js';
@@ -25,7 +38,6 @@ import { InlineDecoration } from './viewModel/inlineDecorations.js';
 import { EditorOption, FindComputedEditorOptionValueById } from './config/editorOptions.js';
 
 export interface IViewModel extends ICursorSimpleModel, ISimpleModel {
-
 	readonly model: ITextModel;
 
 	readonly coordinatesConverter: ICoordinatesConverter;
@@ -58,7 +70,11 @@ export interface IViewModel extends ICursorSimpleModel, ISimpleModel {
 	getViewportViewLineRenderingData(visibleRange: Range, lineNumber: number): ViewLineRenderingData;
 	getViewLineRenderingData(lineNumber: number): ViewLineRenderingData;
 	getViewLineData(lineNumber: number): ViewLineData;
-	getMinimapLinesRenderingData(startLineNumber: number, endLineNumber: number, needed: boolean[]): MinimapLinesRenderingData;
+	getMinimapLinesRenderingData(
+		startLineNumber: number,
+		endLineNumber: number,
+		needed: boolean[]
+	): MinimapLinesRenderingData;
 	getCompletelyVisibleViewRange(): Range;
 	getCompletelyVisibleViewRangeAtScrollTop(scrollTop: number): Range;
 	getViewRangeWithCursorPadding(viewRange: Range): Range;
@@ -70,7 +86,12 @@ export interface IViewModel extends ICursorSimpleModel, ISimpleModel {
 	getLineLength(lineNumber: number): number;
 	getActiveIndentGuide(lineNumber: number, minLineNumber: number, maxLineNumber: number): IActiveIndentGuideInfo;
 	getLinesIndentGuides(startLineNumber: number, endLineNumber: number): number[];
-	getBracketGuidesInRangeByLine(startLineNumber: number, endLineNumber: number, activePosition: IPosition | null, options: BracketGuideOptions): IndentGuide[][];
+	getBracketGuidesInRangeByLine(
+		startLineNumber: number,
+		endLineNumber: number,
+		activePosition: IPosition | null,
+		options: BracketGuideOptions
+	): IndentGuide[][];
 	getLineMinColumn(lineNumber: number): number;
 	getLineMaxColumn(lineNumber: number): number;
 	getLineFirstNonWhitespaceColumn(lineNumber: number): number;
@@ -82,8 +103,16 @@ export interface IViewModel extends ICursorSimpleModel, ISimpleModel {
 
 	getInjectedTextAt(viewPosition: Position): InjectedText | null;
 
-	deduceModelPositionRelativeToViewPosition(viewAnchorPosition: Position, deltaOffset: number, lineFeedCnt: number): Position;
-	getPlainTextToCopy(modelRanges: Range[], emptySelectionClipboard: boolean, forceCRLF: boolean): { sourceRanges: Range[]; sourceText: string | string[] };
+	deduceModelPositionRelativeToViewPosition(
+		viewAnchorPosition: Position,
+		deltaOffset: number,
+		lineFeedCnt: number
+	): Position;
+	getPlainTextToCopy(
+		modelRanges: Range[],
+		emptySelectionClipboard: boolean,
+		forceCRLF: boolean
+	): { sourceRanges: Range[]; sourceText: string | string[] };
 	getRichTextToCopy(modelRanges: Range[], emptySelectionClipboard: boolean): { html: string; mode: string } | null;
 
 	onDidChangeContentOrInjectedText(e: InternalModelContentChangeEvent | ModelInjectedTextChangedEvent): void;
@@ -95,7 +124,11 @@ export interface IViewModel extends ICursorSimpleModel, ISimpleModel {
 	getPrimaryCursorState(): CursorState;
 	getLastAddedCursorIndex(): number;
 	getCursorStates(): CursorState[];
-	setCursorStates(source: string | null | undefined, reason: CursorChangeReason, states: PartialCursorState[] | null): boolean;
+	setCursorStates(
+		source: string | null | undefined,
+		reason: CursorChangeReason,
+		states: PartialCursorState[] | null
+	): boolean;
 	getCursorColumnSelectData(): IColumnSelectData;
 	getCursorAutoClosedCharacters(): Range[];
 	setCursorColumnSelectData(columnSelectData: IColumnSelectData): void;
@@ -105,7 +138,13 @@ export interface IViewModel extends ICursorSimpleModel, ISimpleModel {
 	revealPrimaryCursor(source: string | null | undefined, revealHorizontal: boolean, minimalReveal?: boolean): void;
 	revealTopMostCursor(source: string | null | undefined): void;
 	revealBottomMostCursor(source: string | null | undefined): void;
-	revealRange(source: string | null | undefined, revealHorizontal: boolean, viewRange: Range, verticalType: VerticalRevealType, scrollType: ScrollType): void;
+	revealRange(
+		source: string | null | undefined,
+		revealHorizontal: boolean,
+		viewRange: Range,
+		verticalType: VerticalRevealType,
+		scrollType: ScrollType
+	): void;
 	//#endregion
 
 	//#region viewLayout
@@ -116,7 +155,6 @@ export interface IViewModel extends ICursorSimpleModel, ISimpleModel {
 }
 
 export interface IViewLayout {
-
 	getScrollable(): Scrollable;
 
 	getScrollWidth(): number;
@@ -171,7 +209,12 @@ export interface IWhitespaceChangeAccessor {
 }
 
 export interface ILineHeightChangeAccessor {
-	insertOrChangeCustomLineHeight(decorationId: string, startLineNumber: number, endLineNumber: number, lineHeight: number): void;
+	insertOrChangeCustomLineHeight(
+		decorationId: string,
+		startLineNumber: number,
+		endLineNumber: number,
+		lineHeight: number
+	): void;
 	removeCustomLineHeight(decorationId: string): void;
 }
 
@@ -238,10 +281,7 @@ export class MinimapLinesRenderingData {
 	public readonly tabSize: number;
 	public readonly data: Array<ViewLineData | null>;
 
-	constructor(
-		tabSize: number,
-		data: Array<ViewLineData | null>
-	) {
+	constructor(tabSize: number, data: Array<ViewLineData | null>) {
 		this.tabSize = tabSize;
 		this.data = data;
 	}
@@ -277,7 +317,7 @@ export class ViewLineData {
 
 	/**
 	 * Additional inline decorations for this line.
-	*/
+	 */
 	public readonly inlineDecorations: readonly InlineDecoration[] | null;
 
 	constructor(
@@ -407,7 +447,6 @@ export class ViewModelDecoration {
 }
 
 export class OverviewRulerDecorationsGroup {
-
 	constructor(
 		public readonly color: string,
 		public readonly zIndex: number,
@@ -418,7 +457,7 @@ export class OverviewRulerDecorationsGroup {
 		 *  - 3*i+2 = endLineNumber
 		 */
 		public readonly data: number[]
-	) { }
+	) {}
 
 	public static compareByRenderingProps(a: OverviewRulerDecorationsGroup, b: OverviewRulerDecorationsGroup): number {
 		if (a.zIndex === b.zIndex) {
@@ -434,11 +473,7 @@ export class OverviewRulerDecorationsGroup {
 	}
 
 	public static equals(a: OverviewRulerDecorationsGroup, b: OverviewRulerDecorationsGroup): boolean {
-		return (
-			a.color === b.color
-			&& a.zIndex === b.zIndex
-			&& arrays.equals(a.data, b.data)
-		);
+		return a.color === b.color && a.zIndex === b.zIndex && arrays.equals(a.data, b.data);
 	}
 
 	public static equalsArr(a: OverviewRulerDecorationsGroup[], b: OverviewRulerDecorationsGroup[]): boolean {

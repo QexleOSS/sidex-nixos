@@ -13,11 +13,10 @@ import { IKeyboardMapper } from '../../../../platform/keyboardLayout/common/keyb
  * A keyboard mapper to be used when reading the keymap from the OS fails.
  */
 export class FallbackKeyboardMapper implements IKeyboardMapper {
-
 	constructor(
 		private readonly _mapAltGrToCtrlAlt: boolean,
-		private readonly _OS: OperatingSystem,
-	) { }
+		private readonly _OS: OperatingSystem
+	) {}
 
 	public dumpDebugInfo(): string {
 		return 'FallbackKeyboardMapper dispatching on keyCode';

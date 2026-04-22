@@ -7,20 +7,40 @@ import { localize } from '../../../../nls.js';
 import { deepClone } from '../../../../base/common/objects.js';
 import { isObject, assertReturnsDefined } from '../../../../base/common/types.js';
 import { ICodeEditor, IDiffEditor } from '../../../../editor/browser/editorBrowser.js';
-import { IDiffEditorOptions, IEditorOptions as ICodeEditorOptions } from '../../../../editor/common/config/editorOptions.js';
+import {
+	IDiffEditorOptions,
+	IEditorOptions as ICodeEditorOptions
+} from '../../../../editor/common/config/editorOptions.js';
 import { AbstractTextEditor, IEditorConfiguration } from './textEditor.js';
-import { TEXT_DIFF_EDITOR_ID, IEditorFactoryRegistry, EditorExtensions, ITextDiffEditorPane, IEditorOpenContext, isEditorInput, isTextEditorViewState, createTooLargeFileError } from '../../../common/editor.js';
+import {
+	TEXT_DIFF_EDITOR_ID,
+	IEditorFactoryRegistry,
+	EditorExtensions,
+	ITextDiffEditorPane,
+	IEditorOpenContext,
+	isEditorInput,
+	isTextEditorViewState,
+	createTooLargeFileError
+} from '../../../common/editor.js';
 import { EditorInput } from '../../../common/editor/editorInput.js';
 import { applyTextEditorOptions } from '../../../common/editor/editorOptions.js';
 import { DiffEditorInput } from '../../../common/editor/diffEditorInput.js';
 import { TextDiffEditorModel } from '../../../common/editor/textDiffEditorModel.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
-import { ITextResourceConfigurationChangeEvent, ITextResourceConfigurationService } from '../../../../editor/common/services/textResourceConfiguration.js';
+import {
+	ITextResourceConfigurationChangeEvent,
+	ITextResourceConfigurationService
+} from '../../../../editor/common/services/textResourceConfiguration.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { TextFileOperationError, TextFileOperationResult } from '../../../services/textfile/common/textfiles.js';
-import { ScrollType, IDiffEditorViewState, IDiffEditorModel, IDiffEditorViewModel } from '../../../../editor/common/editorCommon.js';
+import {
+	ScrollType,
+	IDiffEditorViewState,
+	IDiffEditorModel,
+	IDiffEditorViewModel
+} from '../../../../editor/common/editorCommon.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IEditorGroup, IEditorGroupsService } from '../../../services/editor/common/editorGroupsService.js';
@@ -31,7 +51,13 @@ import { IContextKeyService } from '../../../../platform/contextkey/common/conte
 import { isEqual } from '../../../../base/common/resources.js';
 import { Dimension } from '../../../../base/browser/dom.js';
 import { multibyteAwareBtoa } from '../../../../base/common/strings.js';
-import { ByteSize, FileOperationError, FileOperationResult, IFileService, TooLargeFileOperationError } from '../../../../platform/files/common/files.js';
+import {
+	ByteSize,
+	FileOperationError,
+	FileOperationResult,
+	IFileService,
+	TooLargeFileOperationError
+} from '../../../../platform/files/common/files.js';
 import { IBoundarySashes } from '../../../../base/browser/ui/sash/sash.js';
 import { IPreferencesService } from '../../../services/preferences/common/preferences.js';
 import { StopWatch } from '../../../../base/common/stopwatch.js';
@@ -55,7 +81,9 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		const originalEditor = this.diffEditorControl.getOriginalEditor();
 		const modifiedEditor = this.diffEditorControl.getModifiedEditor();
 
-		return (originalEditor.hasTextFocus() ? originalEditor : modifiedEditor).invokeWithinContext(accessor => accessor.get(IContextKeyService));
+		return (originalEditor.hasTextFocus() ? originalEditor : modifiedEditor).invokeWithinContext(accessor =>
+			accessor.get(IContextKeyService)
+		);
 	}
 
 	constructor(
@@ -70,7 +98,18 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		@IFileService fileService: IFileService,
 		@IPreferencesService private readonly preferencesService: IPreferencesService
 	) {
-		super(TextDiffEditor.ID, group, telemetryService, instantiationService, storageService, configurationService, themeService, editorService, editorGroupService, fileService);
+		super(
+			TextDiffEditor.ID,
+			group,
+			telemetryService,
+			instantiationService,
+			storageService,
+			configurationService,
+			themeService,
+			editorService,
+			editorGroupService,
+			fileService
+		);
 	}
 
 	override getTitle(): string {
@@ -78,11 +117,13 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 			return this.input.getName();
 		}
 
-		return localize('textDiffEditor', "Text Diff Editor");
+		return localize('textDiffEditor', 'Text Diff Editor');
 	}
 
 	protected override createEditorControl(parent: HTMLElement, configuration: ICodeEditorOptions): void {
-		this.diffEditorControl = this._register(this.instantiationService.createInstance(DiffEditorWidget, parent, configuration, {}));
+		this.diffEditorControl = this._register(
+			this.instantiationService.createInstance(DiffEditorWidget, parent, configuration, {})
+		);
 	}
 
 	protected updateEditorControlOptions(options: ICodeEditorOptions): void {
@@ -95,7 +136,12 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 
 	private _previousViewModel: IDiffEditorViewModel | null = null;
 
-	override async setInput(input: DiffEditorInput, options: ITextEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
+	override async setInput(
+		input: DiffEditorInput,
+		options: ITextEditorOptions | undefined,
+		context: IEditorOpenContext,
+		token: CancellationToken
+	): Promise<void> {
 		if (this._previousViewModel) {
 			this._previousViewModel.dispose();
 			this._previousViewModel = null;
@@ -125,7 +171,9 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 			const control = assertReturnsDefined(this.diffEditorControl);
 			const resolvedDiffEditorModel = resolvedModel;
 
-			const vm = resolvedDiffEditorModel.textDiffEditorModel ? control.createViewModel(resolvedDiffEditorModel.textDiffEditorModel) : null;
+			const vm = resolvedDiffEditorModel.textDiffEditorModel
+				? control.createViewModel(resolvedDiffEditorModel.textDiffEditorModel)
+				: null;
 			this._previousViewModel = vm;
 			await vm?.waitForDiff();
 			control.setModel(vm);
@@ -165,8 +213,11 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		}
 	}
 
-	private async handleSetInputError(error: Error, input: DiffEditorInput, options: ITextEditorOptions | undefined): Promise<void> {
-
+	private async handleSetInputError(
+		error: Error,
+		input: DiffEditorInput,
+		options: ITextEditorOptions | undefined
+	): Promise<void> {
 		// Handle case where content appears to be binary
 		if (this.isFileBinaryError(error)) {
 			return this.openAsBinary(input, options);
@@ -176,9 +227,16 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		if ((<FileOperationError>error).fileOperationResult === FileOperationResult.FILE_TOO_LARGE) {
 			let message: string;
 			if (error instanceof TooLargeFileOperationError) {
-				message = localize('fileTooLargeForHeapErrorWithSize', "At least one file is not displayed in the text compare editor because it is very large ({0}).", ByteSize.formatSize(error.size));
+				message = localize(
+					'fileTooLargeForHeapErrorWithSize',
+					'At least one file is not displayed in the text compare editor because it is very large ({0}).',
+					ByteSize.formatSize(error.size)
+				);
 			} else {
-				message = localize('fileTooLargeForHeapErrorWithoutSize', "At least one file is not displayed in the text compare editor because it is very large.");
+				message = localize(
+					'fileTooLargeForHeapErrorWithoutSize',
+					'At least one file is not displayed in the text compare editor because it is very large.'
+				);
 			}
 
 			throw createTooLargeFileError(this.group, input, options, message, this.preferencesService);
@@ -188,7 +246,12 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		throw error;
 	}
 
-	private restoreTextDiffEditorViewState(editor: DiffEditorInput, options: ITextEditorOptions | undefined, context: IEditorOpenContext, control: IDiffEditor): boolean {
+	private restoreTextDiffEditorViewState(
+		editor: DiffEditorInput,
+		options: ITextEditorOptions | undefined,
+		context: IEditorOpenContext,
+		control: IDiffEditor
+	): boolean {
 		const editorViewState = this.loadEditorViewState(editor, context);
 		if (editorViewState) {
 			if (options?.selection && editorViewState.modified) {
@@ -211,10 +274,19 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		const original = input.original;
 		const modified = input.modified;
 
-		const binaryDiffInput = this.instantiationService.createInstance(DiffEditorInput, input.getName(), input.getDescription(), original, modified, true);
+		const binaryDiffInput = this.instantiationService.createInstance(
+			DiffEditorInput,
+			input.getName(),
+			input.getDescription(),
+			original,
+			modified,
+			true
+		);
 
 		// Forward binary flag to input if supported
-		const fileEditorFactory = Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).getFileEditorFactory();
+		const fileEditorFactory = Registry.as<IEditorFactoryRegistry>(
+			EditorExtensions.EditorFactory
+		).getFileEditorFactory();
 		if (fileEditorFactory.isFileEditor(original)) {
 			original.setForceOpenAsBinary();
 		}
@@ -224,20 +296,22 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		}
 
 		// Replace this editor with the binary one
-		this.group.replaceEditors([{
-			editor: input,
-			replacement: binaryDiffInput,
-			options: {
-				...options,
-				// Make sure to not steal away the currently active group
-				// because we are triggering another openEditor() call
-				// and do not control the initial intent that resulted
-				// in us now opening as binary.
-				activation: EditorActivation.PRESERVE,
-				pinned: this.group.isPinned(input),
-				sticky: this.group.isSticky(input)
+		this.group.replaceEditors([
+			{
+				editor: input,
+				replacement: binaryDiffInput,
+				options: {
+					...options,
+					// Make sure to not steal away the currently active group
+					// because we are triggering another openEditor() call
+					// and do not control the initial intent that resulted
+					// in us now opening as binary.
+					activation: EditorActivation.PRESERVE,
+					pinned: this.group.isPinned(input),
+					sticky: this.group.isSticky(input)
+				}
 			}
-		}]);
+		]);
 	}
 
 	override setOptions(options: ITextEditorOptions | undefined): void {
@@ -248,12 +322,18 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		}
 	}
 
-	protected override shouldHandleConfigurationChangeEvent(e: ITextResourceConfigurationChangeEvent, resource: URI): boolean {
+	protected override shouldHandleConfigurationChangeEvent(
+		e: ITextResourceConfigurationChangeEvent,
+		resource: URI
+	): boolean {
 		if (super.shouldHandleConfigurationChangeEvent(e, resource)) {
 			return true;
 		}
 
-		return e.affectsConfiguration(resource, 'diffEditor') || e.affectsConfiguration(resource, 'accessibility.verbosity.diffEditor');
+		return (
+			e.affectsConfiguration(resource, 'diffEditor') ||
+			e.affectsConfiguration(resource, 'accessibility.verbosity.diffEditor')
+		);
 	}
 
 	protected override computeConfiguration(configuration: IEditorConfiguration): ICodeEditorOptions {
@@ -293,7 +373,7 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		if (input instanceof DiffEditorInput) {
 			this.diffEditorControl?.updateOptions({
 				...this.getReadonlyConfiguration(input.isReadonly()),
-				originalEditable: !input.original.isReadonly(),
+				originalEditable: !input.original.isReadonly()
 			});
 		} else {
 			super.updateReadonly(input);
@@ -336,20 +416,35 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		if (this.diffEditorControl instanceof DiffEditorWidget) {
 			collapseUnchangedRegions = this.diffEditorControl.collapseUnchangedRegions;
 		}
-		this.telemetryService.publicLog2<{
-			editorVisibleTimeMs: number;
-			languageId: string;
-			collapseUnchangedRegions: boolean;
-		}, {
-			owner: 'hediet';
-			editorVisibleTimeMs: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Indicates the time the diff editor was visible to the user' };
-			languageId: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Indicates for which language the diff editor was shown' };
-			collapseUnchangedRegions: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Indicates whether unchanged regions were collapsed' };
-			comment: 'This event gives insight about how long the diff editor was visible to the user.';
-		}>('diffEditor.editorVisibleTime', {
+		this.telemetryService.publicLog2<
+			{
+				editorVisibleTimeMs: number;
+				languageId: string;
+				collapseUnchangedRegions: boolean;
+			},
+			{
+				owner: 'hediet';
+				editorVisibleTimeMs: {
+					classification: 'SystemMetaData';
+					purpose: 'FeatureInsight';
+					comment: 'Indicates the time the diff editor was visible to the user';
+				};
+				languageId: {
+					classification: 'SystemMetaData';
+					purpose: 'FeatureInsight';
+					comment: 'Indicates for which language the diff editor was shown';
+				};
+				collapseUnchangedRegions: {
+					classification: 'SystemMetaData';
+					purpose: 'FeatureInsight';
+					comment: 'Indicates whether unchanged regions were collapsed';
+				};
+				comment: 'This event gives insight about how long the diff editor was visible to the user.';
+			}
+		>('diffEditor.editorVisibleTime', {
 			editorVisibleTimeMs: duration,
 			languageId: languageId ?? '',
-			collapseUnchangedRegions,
+			collapseUnchangedRegions
 		});
 	}
 
@@ -428,6 +523,9 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		}
 
 		// create a URI that is the Base64 concatenation of original + modified resource
-		return URI.from({ scheme: 'diff', path: `${multibyteAwareBtoa(original.toString())}${multibyteAwareBtoa(modified.toString())}` });
+		return URI.from({
+			scheme: 'diff',
+			path: `${multibyteAwareBtoa(original.toString())}${multibyteAwareBtoa(modified.toString())}`
+		});
 	}
 }

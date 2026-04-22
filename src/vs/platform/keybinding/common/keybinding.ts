@@ -86,7 +86,11 @@ export interface IKeybindingService {
 	 * Look up the preferred (last defined) keybinding for a command.
 	 * @returns The preferred keybinding or null if the command is not bound.
 	 */
-	lookupKeybinding(commandId: string, context?: IContextKeyService, enforceContextCheck?: boolean): ResolvedKeybinding | undefined;
+	lookupKeybinding(
+		commandId: string,
+		context?: IContextKeyService,
+		enforceContextCheck?: boolean
+	): ResolvedKeybinding | undefined;
 
 	getDefaultKeybindingsContent(): string;
 
@@ -110,7 +114,12 @@ export interface IKeybindingService {
 	 * Given a UI element label and a command ID, appends the keybinding label if any.
 	 * If the command is defined and has a keybinding, returns `${label} (keybinding label)`, otherwise just `label`.
 	 */
-	appendKeybinding(label: string, commandId: string | undefined | null, context?: IContextKeyService, enforceContextCheck?: boolean): string;
+	appendKeybinding(
+		label: string,
+		commandId: string | undefined | null,
+		context?: IContextKeyService,
+		enforceContextCheck?: boolean
+	): string;
 
 	_dumpDebugInfo(): string;
 	_dumpDebugInfoJSON(): string;

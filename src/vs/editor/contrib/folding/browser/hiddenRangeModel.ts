@@ -14,15 +14,18 @@ import { countEOL } from '../../../common/core/misc/eolCounter.js';
 import { FoldingModel } from './foldingModel.js';
 
 export class HiddenRangeModel implements IDisposable {
-
 	private readonly _foldingModel: FoldingModel;
 	private _hiddenRanges: IRange[];
 	private _foldingModelListener: IDisposable | null;
 	private readonly _updateEventEmitter = new Emitter<IRange[]>();
 	private _hasLineChanges: boolean = false;
 
-	public get onDidChange(): Event<IRange[]> { return this._updateEventEmitter.event; }
-	public get hiddenRanges() { return this._hiddenRanges; }
+	public get onDidChange(): Event<IRange[]> {
+		return this._updateEventEmitter.event;
+	}
+	public get hiddenRanges() {
+		return this._hiddenRanges;
+	}
 
 	public constructor(model: FoldingModel) {
 		this._foldingModel = model;
@@ -63,7 +66,12 @@ export class HiddenRangeModel implements IDisposable {
 				continue;
 			}
 
-			if (!updateHiddenAreas && k < this._hiddenRanges.length && this._hiddenRanges[k].startLineNumber === startLineNumber && this._hiddenRanges[k].endLineNumber === endLineNumber) {
+			if (
+				!updateHiddenAreas &&
+				k < this._hiddenRanges.length &&
+				this._hiddenRanges[k].startLineNumber === startLineNumber &&
+				this._hiddenRanges[k].endLineNumber === endLineNumber
+			) {
 				// reuse the old ranges
 				newHiddenAreas.push(this._hiddenRanges[k]);
 				k++;
@@ -123,7 +131,6 @@ export class HiddenRangeModel implements IDisposable {
 		}
 		return hasChanges;
 	}
-
 
 	public dispose() {
 		if (this.hiddenRanges.length > 0) {

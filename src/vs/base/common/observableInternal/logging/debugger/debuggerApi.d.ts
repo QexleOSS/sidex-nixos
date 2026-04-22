@@ -4,12 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 export type ObsDebuggerApi = {
-	channelId: 'observableDevTools',
+	channelId: 'observableDevTools';
 	host: {
 		notifications: {
 			handleChange(update: ObsStateUpdate, clearState: boolean): void;
-		}
-		requests: {},
+		};
+		requests: {};
 	};
 	client: {
 		notifications: {
@@ -17,7 +17,7 @@ export type ObsDebuggerApi = {
 			logObservableValue(observableId: ObsInstanceId): void;
 			flushUpdates(): void;
 			resetUpdates(): void;
-		},
+		};
 		requests: {
 			getDeclarations(): IObsDeclarations;
 			getSummarizedInstances(): IObsPushState;
@@ -34,7 +34,7 @@ export type ObsDebuggerApi = {
 			logValue(instanceId: ObsInstanceId): void;
 
 			getTransactionState(): ITransactionState | undefined;
-		}
+		};
 	};
 };
 
@@ -68,8 +68,10 @@ export interface IObsDeclarationSummary {
 	recentInstances: ObsInstanceId[]; // Limited
 }
 
-export type ObsInstancePushState = IObservableValueInstancePushState | IDerivedObservableInstancePushState | IAutorunInstancePushState;
-
+export type ObsInstancePushState =
+	| IObservableValueInstancePushState
+	| IDerivedObservableInstancePushState
+	| IAutorunInstancePushState;
 
 interface IBaseObsInstancePushState {
 	instanceId: ObsInstanceId;
@@ -128,25 +130,22 @@ export interface ITransactionState {
 
 export type ObserverInstanceState = DerivedObservableState | AutorunState;
 
-export type DerivedObservableState =
-	IObsInstanceRef & { type: 'observable/derived', updateCount: number } & (
-		{ state: 'noValue' }
-		| { state: 'stale', changedDependencies: ObsInstanceId[] }
-		| { state: 'possiblyStale', }
+export type DerivedObservableState = IObsInstanceRef & { type: 'observable/derived'; updateCount: number } & (
+		| { state: 'noValue' }
+		| { state: 'stale'; changedDependencies: ObsInstanceId[] }
+		| { state: 'possiblyStale' }
 		| { state: 'upToDate' }
-		| { state: 'updating', changedDependencies: ObsInstanceId[], initialComputation: boolean }
+		| { state: 'updating'; changedDependencies: ObsInstanceId[]; initialComputation: boolean }
 	);
 
-export type AutorunState =
-	IObsInstanceRef & { type: 'autorun', updateCount: number } & (
-		{ state: 'stale', changedDependencies: ObsInstanceId[], }
-		| { state: 'possiblyStale', }
+export type AutorunState = IObsInstanceRef & { type: 'autorun'; updateCount: number } & (
+		| { state: 'stale'; changedDependencies: ObsInstanceId[] }
+		| { state: 'possiblyStale' }
 		| { state: 'upToDate' }
-		| { state: 'updating', changedDependencies: ObsInstanceId[], }
+		| { state: 'updating'; changedDependencies: ObsInstanceId[] }
 	);
 
-export type ObservableValueState =
-	IObsInstanceRef & { type: 'observable/value' } & (
-		{ state: 'upToDate' }
+export type ObservableValueState = IObsInstanceRef & { type: 'observable/value' } & (
+		| { state: 'upToDate' }
 		| { state: 'updating' }
 	);

@@ -22,7 +22,22 @@ import { MutableObservableValue } from './observableValue.js';
 import { TestExclusions } from './testExclusions.js';
 import { TestId, TestIdPathParts } from './testId.js';
 import { ITestResult } from './testResult.js';
-import { AbstractIncrementalTestCollection, ICallProfileRunHandler, IncrementalTestCollectionItem, InternalTestItem, IStartControllerTests, IStartControllerTestsResult, ITestItemContext, ResolvedTestRunRequest, TestControllerCapability, TestItemExpandState, TestMessageFollowupRequest, TestMessageFollowupResponse, TestRunProfileBitset, TestsDiff } from './testTypes.js';
+import {
+	AbstractIncrementalTestCollection,
+	ICallProfileRunHandler,
+	IncrementalTestCollectionItem,
+	InternalTestItem,
+	IStartControllerTests,
+	IStartControllerTestsResult,
+	ITestItemContext,
+	ResolvedTestRunRequest,
+	TestControllerCapability,
+	TestItemExpandState,
+	TestMessageFollowupRequest,
+	TestMessageFollowupResponse,
+	TestRunProfileBitset,
+	TestsDiff
+} from './testTypes.js';
 
 export const ITestService = createDecorator<ITestService>('testService');
 
@@ -35,12 +50,18 @@ export interface IMainThreadTestController {
 	configureRunProfile(profileId: number): void;
 	expandTest(id: string, levels: number): Promise<void>;
 	getRelatedCode(testId: string, token: CancellationToken): Promise<Location[]>;
-	startContinuousRun(request: ICallProfileRunHandler[], token: CancellationToken): Promise<IStartControllerTestsResult[]>;
+	startContinuousRun(
+		request: ICallProfileRunHandler[],
+		token: CancellationToken
+	): Promise<IStartControllerTestsResult[]>;
 	runTests(request: IStartControllerTests[], token: CancellationToken): Promise<IStartControllerTestsResult[]>;
 }
 
 export interface IMainThreadTestHostProxy {
-	provideTestFollowups(req: TestMessageFollowupRequest, token: CancellationToken): Promise<TestMessageFollowupResponse[]>;
+	provideTestFollowups(
+		req: TestMessageFollowupRequest,
+		token: CancellationToken
+	): Promise<TestMessageFollowupResponse[]>;
 	getTestsRelatedToCode(uri: URI, position: Position, token: CancellationToken): Promise<string[]>;
 	executeTestFollowup(id: number): Promise<void>;
 	disposeTestFollowups(ids: number[]): void;
@@ -124,11 +145,15 @@ export const getContextForTestItem = (collection: IMainThreadTestCollection, id:
  * If cancellation is requested, or the test cannot be found, it will return
  * undefined.
  */
-export const expandAndGetTestById = async (collection: IMainThreadTestCollection, id: string, ct = CancellationToken.None) => {
+export const expandAndGetTestById = async (
+	collection: IMainThreadTestCollection,
+	id: string,
+	ct = CancellationToken.None
+) => {
 	const idPath = [...TestId.fromString(id).idsFromRoot()];
 
 	let expandToLevel = 0;
-	for (let i = idPath.length - 1; !ct.isCancellationRequested && i >= expandToLevel;) {
+	for (let i = idPath.length - 1; !ct.isCancellationRequested && i >= expandToLevel; ) {
 		const id = idPath[i].toString();
 		const existing = collection.getNodeById(id);
 		if (!existing) {
@@ -173,14 +198,22 @@ export const waitForTestToBeIdle = (testService: ITestService, test: Incremental
  * Iterator that expands to and iterates through tests in the file. Iterates
  * in strictly descending order.
  */
-export const testsInFile = async function* (testService: ITestService, ident: IUriIdentityService, uri: URI, waitForIdle = true, descendInFile = true): AsyncIterable<readonly IncrementalTestCollectionItem[]> {
+export const testsInFile = async function* (
+	testService: ITestService,
+	ident: IUriIdentityService,
+	uri: URI,
+	waitForIdle = true,
+	descendInFile = true
+): AsyncIterable<readonly IncrementalTestCollectionItem[]> {
 	// In this function we go to a bit of effort to avoid awaiting unnecessarily
 	// and bulking the test collections we do collect for consumers. This fixes
 	// a performance issue (#235819) where a large number of tests in a file
 	// would cause a long delay switching editors.
 	const queue = new LinkedList<Iterable<string> | DeferredPromise<Iterable<string>>>();
 
-	const existing = [...testService.collection.getNodeByUrl(uri)].sort((a, b) => a.item.extId.length - b.item.extId.length);
+	const existing = [...testService.collection.getNodeByUrl(uri)].sort(
+		(a, b) => a.item.extId.length - b.item.extId.length
+	);
 
 	// getNodeByUrl will return all known tests in the URI, but this can include
 	// children of tests even when `descendInFile` is false. Remove those cases.
@@ -263,8 +296,12 @@ export const testsInFile = async function* (testService: ITestService, ident: IU
  * Iterator that iterates to the top-level children of tests under the given
  * the URI.
  */
-export const testsUnderUri = async function* (testService: ITestService, ident: IUriIdentityService, uri: URI, waitForIdle = true): AsyncIterable<IncrementalTestCollectionItem> {
-
+export const testsUnderUri = async function* (
+	testService: ITestService,
+	ident: IUriIdentityService,
+	uri: URI,
+	waitForIdle = true
+): AsyncIterable<IncrementalTestCollectionItem> {
 	const queue = [testService.collection.rootIds];
 	while (queue.length) {
 		for (const testId of queue.pop()!) {
@@ -294,7 +331,10 @@ export const testsUnderUri = async function* (testService: ITestService, ident: 
  * Simplifies the array of tests by preferring test item parents if all of
  * their children are included.
  */
-export const simplifyTestsToExecute = (collection: IMainThreadTestCollection, tests: IncrementalTestCollectionItem[]): IncrementalTestCollectionItem[] => {
+export const simplifyTestsToExecute = (
+	collection: IMainThreadTestCollection,
+	tests: IncrementalTestCollectionItem[]
+): IncrementalTestCollectionItem[] => {
 	if (tests.length < 2) {
 		return tests;
 	}
@@ -320,7 +360,9 @@ export const simplifyTestsToExecute = (collection: IMainThreadTestCollection, te
 		for (const [part, child] of node.children) {
 			currentId.push(part);
 			const c = process(currentId, child);
-			if (c) { thisChildren.push(c); }
+			if (c) {
+				thisChildren.push(c);
+			}
 			currentId.pop();
 		}
 
@@ -342,7 +384,9 @@ export const simplifyTestsToExecute = (collection: IMainThreadTestCollection, te
 
 	for (const [id, node] of tree.entries) {
 		const n = process([id], node);
-		if (n) { out.push(n); }
+		if (n) {
+			out.push(n);
+		}
 	}
 
 	return out;

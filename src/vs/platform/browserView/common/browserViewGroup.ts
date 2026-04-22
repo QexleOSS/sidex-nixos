@@ -45,7 +45,6 @@ export interface IBrowserViewGroup extends IDisposable {
  * The main-process implementation is {@link BrowserViewGroupMainService}.
  */
 export interface IBrowserViewGroupService {
-
 	// Dynamic events - one per group instance, keyed by group ID.
 	onDynamicDidAddView(groupId: string): Event<IBrowserViewGroupViewEvent>;
 	onDynamicDidRemoveView(groupId: string): Event<IBrowserViewGroupViewEvent>;

@@ -365,15 +365,16 @@ export abstract class AbstractExtensionService extends Disposable implements IEx
 	}
 
 	private _canAddExtension(extension: IExtensionDescription, extensionsBeingRemoved: IExtensionDescription[]): boolean {
-		// (Also check for renamed extensions)
 		const existing = this._registry.getExtensionDescriptionByIdOrUUID(extension.identifier, extension.id);
 		if (existing) {
-			// This extension is already known (most likely at a different version)
-			// so it cannot be added again unless it is removed first
 			const isBeingRemoved = extensionsBeingRemoved.some((extensionDescription) => ExtensionIdentifier.equals(extension.identifier, extensionDescription.identifier));
 			if (!isBeingRemoved) {
 				return false;
 			}
+		}
+
+		if ((globalThis as any).__SIDEX_TAURI__) {
+			return true;
 		}
 
 		const extensionKinds = this._runningLocations.readExtensionKinds(extension);

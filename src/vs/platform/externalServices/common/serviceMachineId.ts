@@ -9,8 +9,14 @@ import { IEnvironmentService } from '../../environment/common/environment.js';
 import { IFileService } from '../../files/common/files.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../storage/common/storage.js';
 
-export async function getServiceMachineId(environmentService: IEnvironmentService, fileService: IFileService, storageService: IStorageService | undefined): Promise<string> {
-	let uuid: string | null = storageService ? storageService.get('storage.serviceMachineId', StorageScope.APPLICATION) || null : null;
+export async function getServiceMachineId(
+	environmentService: IEnvironmentService,
+	fileService: IFileService,
+	storageService: IStorageService | undefined
+): Promise<string> {
+	let uuid: string | null = storageService
+		? storageService.get('storage.serviceMachineId', StorageScope.APPLICATION) || null
+		: null;
 	if (uuid) {
 		return uuid;
 	}

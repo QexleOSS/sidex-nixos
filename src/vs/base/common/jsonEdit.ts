@@ -6,12 +6,17 @@
 import { findNodeAtLocation, JSONPath, Node, ParseError, parseTree, Segment } from './json.js';
 import { Edit, format, FormattingOptions, isEOL } from './jsonFormatter.js';
 
-
 export function removeProperty(text: string, path: JSONPath, formattingOptions: FormattingOptions): Edit[] {
 	return setProperty(text, path, undefined, formattingOptions);
 }
 
-export function setProperty(text: string, originalPath: JSONPath, value: unknown, formattingOptions: FormattingOptions, getInsertionIndex?: (properties: string[]) => number): Edit[] {
+export function setProperty(
+	text: string,
+	originalPath: JSONPath,
+	value: unknown,
+	formattingOptions: FormattingOptions,
+	getInsertionIndex?: (properties: string[]) => number
+): Edit[] {
 	const path = originalPath.slice();
 	const errors: ParseError[] = [];
 	const root = parseTree(text, errors);
@@ -34,14 +39,20 @@ export function setProperty(text: string, originalPath: JSONPath, value: unknown
 
 	if (!parent) {
 		// empty document
-		if (value === undefined) { // delete
+		if (value === undefined) {
+			// delete
 			return []; // property does not exist, nothing to do
 		}
-		return withFormatting(text, { offset: root ? root.offset : 0, length: root ? root.length : 0, content: JSON.stringify(value) }, formattingOptions);
+		return withFormatting(
+			text,
+			{ offset: root ? root.offset : 0, length: root ? root.length : 0, content: JSON.stringify(value) },
+			formattingOptions
+		);
 	} else if (parent.type === 'object' && typeof lastSegment === 'string' && Array.isArray(parent.children)) {
 		const existing = findNodeAtLocation(parent, [lastSegment]);
 		if (existing !== undefined) {
-			if (value === undefined) { // delete
+			if (value === undefined) {
+				// delete
 				if (!existing.parent) {
 					throw new Error('Malformed AST');
 				}
@@ -60,17 +71,28 @@ export function setProperty(text: string, originalPath: JSONPath, value: unknown
 						removeEnd = next.offset;
 					}
 				}
-				return withFormatting(text, { offset: removeBegin, length: removeEnd - removeBegin, content: '' }, formattingOptions);
+				return withFormatting(
+					text,
+					{ offset: removeBegin, length: removeEnd - removeBegin, content: '' },
+					formattingOptions
+				);
 			} else {
 				// set value of existing property
-				return withFormatting(text, { offset: existing.offset, length: existing.length, content: JSON.stringify(value) }, formattingOptions);
+				return withFormatting(
+					text,
+					{ offset: existing.offset, length: existing.length, content: JSON.stringify(value) },
+					formattingOptions
+				);
 			}
 		} else {
-			if (value === undefined) { // delete
+			if (value === undefined) {
+				// delete
 				return []; // property does not exist, nothing to do
 			}
 			const newProperty = `${JSON.stringify(lastSegment)}: ${JSON.stringify(value)}`;
-			const index = getInsertionIndex ? getInsertionIndex(parent.children.map(p => p.children![0].value)) : parent.children.length;
+			const index = getInsertionIndex
+				? getInsertionIndex(parent.children.map(p => p.children![0].value))
+				: parent.children.length;
 			let edit: Edit;
 			if (index > 0) {
 				const previous = parent.children[index - 1];
@@ -88,7 +110,11 @@ export function setProperty(text: string, originalPath: JSONPath, value: unknown
 			const newProperty = `${JSON.stringify(value)}`;
 			let edit: Edit;
 			if (parent.children.length === 0 || lastSegment === 0) {
-				edit = { offset: parent.offset + 1, length: 0, content: parent.children.length === 0 ? newProperty : newProperty + ',' };
+				edit = {
+					offset: parent.offset + 1,
+					length: 0,
+					content: parent.children.length === 0 ? newProperty : newProperty + ','
+				};
 			} else {
 				const index = lastSegment === -1 || lastSegment > parent.children.length ? parent.children.length : lastSegment;
 				const previous = parent.children[index - 1];
@@ -110,12 +136,18 @@ export function setProperty(text: string, originalPath: JSONPath, value: unknown
 				const parentEndOffset = parent.offset + parent.length;
 				edit = { offset, length: parentEndOffset - 2 - offset, content: '' };
 			} else {
-				edit = { offset: toRemove.offset, length: parent.children[removalIndex + 1].offset - toRemove.offset, content: '' };
+				edit = {
+					offset: toRemove.offset,
+					length: parent.children[removalIndex + 1].offset - toRemove.offset,
+					content: ''
+				};
 			}
 			return withFormatting(text, edit, formattingOptions);
 		}
 	} else {
-		throw new Error(`Can not add ${typeof lastSegment !== 'number' ? 'index' : 'property'} to parent of type ${parent.type}`);
+		throw new Error(
+			`Can not add ${typeof lastSegment !== 'number' ? 'index' : 'property'} to parent of type ${parent.type}`
+		);
 	}
 }
 
@@ -126,7 +158,8 @@ export function withFormatting(text: string, edit: Edit, formattingOptions: Form
 	// format the new text
 	let begin = edit.offset;
 	let end = edit.offset + edit.content.length;
-	if (edit.length === 0 || edit.content.length === 0) { // insert or remove
+	if (edit.length === 0 || edit.content.length === 0) {
+		// insert or remove
 		while (begin > 0 && !isEOL(newText, begin - 1)) {
 			begin--;
 		}

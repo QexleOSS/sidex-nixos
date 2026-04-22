@@ -9,7 +9,10 @@ import { IStringDictionary } from '../../../../base/common/collections.js';
 import { IExtensionRecommendations } from '../../../../base/common/product.js';
 import { localize } from '../../../../nls.js';
 import { RawContextKey } from '../../../../platform/contextkey/common/contextkey.js';
-import { IExtensionGalleryService, IGalleryExtension } from '../../../../platform/extensionManagement/common/extensionManagement.js';
+import {
+	IExtensionGalleryService,
+	IGalleryExtension
+} from '../../../../platform/extensionManagement/common/extensionManagement.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { IProductService } from '../../../../platform/product/common/productService.js';
 import { ISearchResult, ISettingsEditorModel } from '../../../services/preferences/common/preferences.js';
@@ -122,7 +125,7 @@ export const LLM_RANKED_SEARCH_PROVIDER_NAME = 'llmRanked';
 
 export enum WorkbenchSettingsEditorSettings {
 	ShowAISearchToggle = 'workbench.settings.showAISearchToggle',
-	EnableNaturalLanguageSearch = 'workbench.settings.enableNaturalLanguageSearch',
+	EnableNaturalLanguageSearch = 'workbench.settings.enableNaturalLanguageSearch'
 }
 
 export type ExtensionToggleData = {
@@ -134,7 +137,7 @@ let cachedExtensionToggleData: ExtensionToggleData | undefined;
 
 export async function getExperimentalExtensionToggleData(
 	extensionGalleryService: IExtensionGalleryService,
-	productService: IProductService,
+	productService: IProductService
 ): Promise<ExtensionToggleData | undefined> {
 	if (!ENABLE_EXTENSION_TOGGLE_SETTINGS) {
 		return undefined;
@@ -165,7 +168,8 @@ export async function getExperimentalExtensionToggleData(
 			try {
 				const extensions = await raceTimeout(
 					extensionGalleryService.getExtensions([{ id: extensionId, preRelease: !isStable }], CancellationToken.None),
-					EXTENSION_FETCH_TIMEOUT_MS);
+					EXTENSION_FETCH_TIMEOUT_MS
+				);
 				if (extensions?.length === 1) {
 					recommendedExtensionsGalleryInfo[key] = extensions[0];
 				} else {
@@ -203,24 +207,21 @@ export function compareTwoNullableNumbers(a: number | undefined, b: number | und
 	}
 }
 
-export const PREVIEW_INDICATOR_DESCRIPTION = localize('previewIndicatorDescription', "Preview setting: this setting controls a new feature that is still under refinement yet ready to use. Feedback is welcome.");
-export const EXPERIMENTAL_INDICATOR_DESCRIPTION = localize('experimentalIndicatorDescription', "Experimental setting: this setting controls a new feature that is actively being developed and may be unstable. It is subject to change or removal.");
-export const ADVANCED_INDICATOR_DESCRIPTION = localize('advancedIndicatorDescription', "Advanced setting: this setting is intended for advanced scenarios and configurations. Only modify this if you know what it does.");
+export const PREVIEW_INDICATOR_DESCRIPTION = localize(
+	'previewIndicatorDescription',
+	'Preview setting: this setting controls a new feature that is still under refinement yet ready to use. Feedback is welcome.'
+);
+export const EXPERIMENTAL_INDICATOR_DESCRIPTION = localize(
+	'experimentalIndicatorDescription',
+	'Experimental setting: this setting controls a new feature that is actively being developed and may be unstable. It is subject to change or removal.'
+);
+export const ADVANCED_INDICATOR_DESCRIPTION = localize(
+	'advancedIndicatorDescription',
+	'Advanced setting: this setting is intended for advanced scenarios and configurations. Only modify this if you know what it does.'
+);
 
 export const knownAcronyms = new Set<string>();
-[
-	'css',
-	'html',
-	'scss',
-	'less',
-	'json',
-	'js',
-	'ts',
-	'ie',
-	'id',
-	'php',
-	'scm',
-].forEach(str => knownAcronyms.add(str));
+['css', 'html', 'scss', 'less', 'json', 'js', 'ts', 'ie', 'id', 'php', 'scm'].forEach(str => knownAcronyms.add(str));
 
 export const knownTermMappings = new Map<string, string>();
 knownTermMappings.set('power shell', 'PowerShell');
@@ -239,10 +240,9 @@ export function wordifyKey(key: string): string {
 		.replace(/([a-z0-9])([A-Z])/g, '$1 $2') // Camel case to spacing, fooBar => foo Bar
 		.replace(/([A-Z]{1,})([A-Z][a-z])/g, '$1 $2') // Split consecutive capitals letters, AISearch => AI Search
 		.replace(/^[a-z]/g, match => match.toUpperCase()) // Upper casing all first letters, foo => Foo
-		.replace(/\b\w+\b/g, match => { // Upper casing known acronyms
-			return knownAcronyms.has(match.toLowerCase()) ?
-				match.toUpperCase() :
-				match;
+		.replace(/\b\w+\b/g, match => {
+			// Upper casing known acronyms
+			return knownAcronyms.has(match.toLowerCase()) ? match.toUpperCase() : match;
 		});
 
 	for (const [k, v] of knownTermMappings) {

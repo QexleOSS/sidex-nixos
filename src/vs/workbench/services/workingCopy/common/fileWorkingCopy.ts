@@ -11,7 +11,6 @@ import { URI } from '../../../../base/common/uri.js';
 import { IWorkingCopy } from './workingCopy.js';
 
 export interface IFileWorkingCopyModelFactory<M extends IFileWorkingCopyModel> {
-
 	/**
 	 * Create a model for the untitled or stored working copy
 	 * from the given content under the provided resource.
@@ -24,7 +23,6 @@ export interface IFileWorkingCopyModelFactory<M extends IFileWorkingCopyModel> {
 }
 
 export interface IFileWorkingCopyModelConfiguration {
-
 	/**
 	 * The delay in milliseconds to wait before triggering
 	 * a backup after the content of the model has changed.
@@ -45,7 +43,6 @@ export const enum SnapshotContext {
  * and stored file working copies.
  */
 export interface IFileWorkingCopyModel extends IDisposable {
-
 	/**
 	 * This event signals ANY changes to the contents, for example:
 	 * - through the user typing into the editor
@@ -98,7 +95,6 @@ export interface IFileWorkingCopyModel extends IDisposable {
 }
 
 export interface IFileWorkingCopy<M extends IFileWorkingCopyModel> extends IWorkingCopy, IDisposable {
-
 	/**
 	 * An event for when the file working copy has been reverted.
 	 */
@@ -129,7 +125,6 @@ export interface IFileWorkingCopy<M extends IFileWorkingCopyModel> extends IWork
 }
 
 export interface IResolvedFileWorkingCopy<M extends IFileWorkingCopyModel> extends IFileWorkingCopy<M> {
-
 	/**
 	 * A resolved file working copy has a resolved model.
 	 */

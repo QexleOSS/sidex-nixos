@@ -48,7 +48,12 @@ export class SimplePagedScreenReaderStrategy implements IPagedScreenReaderStrate
 		return new Range(startLineNumber, 1, endLineNumber + 1, 1);
 	}
 
-	public fromEditorSelection(model: ISimpleModel, selection: Selection, linesPerPage: number, trimLongText: boolean): ISimpleScreenReaderContentState {
+	public fromEditorSelection(
+		model: ISimpleModel,
+		selection: Selection,
+		linesPerPage: number,
+		trimLongText: boolean
+	): ISimpleScreenReaderContentState {
 		// Chromium handles very poorly text even of a few thousand chars
 		// Cut text to avoid stalling the entire UI
 		const LIMIT_CHARS = 500;
@@ -59,7 +64,9 @@ export class SimplePagedScreenReaderStrategy implements IPagedScreenReaderStrate
 		const selectionEndPage = this._getPageOfLine(selection.endLineNumber, linesPerPage);
 		const selectionEndPageRange = this._getRangeForPage(selectionEndPage, linesPerPage);
 
-		let pretextRange = selectionStartPageRange.intersectRanges(new Range(1, 1, selection.startLineNumber, selection.startColumn))!;
+		let pretextRange = selectionStartPageRange.intersectRanges(
+			new Range(1, 1, selection.startLineNumber, selection.startColumn)
+		)!;
 		if (trimLongText && model.getValueLengthInRange(pretextRange, EndOfLinePreference.LF) > LIMIT_CHARS) {
 			const pretextStart = model.modifyPosition(pretextRange.getEndPosition(), -LIMIT_CHARS);
 			pretextRange = Range.fromPositions(pretextStart, pretextRange.getEndPosition());
@@ -68,13 +75,14 @@ export class SimplePagedScreenReaderStrategy implements IPagedScreenReaderStrate
 
 		const lastLine = model.getLineCount();
 		const lastLineMaxColumn = model.getLineMaxColumn(lastLine);
-		let posttextRange = selectionEndPageRange.intersectRanges(new Range(selection.endLineNumber, selection.endColumn, lastLine, lastLineMaxColumn))!;
+		let posttextRange = selectionEndPageRange.intersectRanges(
+			new Range(selection.endLineNumber, selection.endColumn, lastLine, lastLineMaxColumn)
+		)!;
 		if (trimLongText && model.getValueLengthInRange(posttextRange, EndOfLinePreference.LF) > LIMIT_CHARS) {
 			const posttextEnd = model.modifyPosition(posttextRange.getStartPosition(), LIMIT_CHARS);
 			posttextRange = Range.fromPositions(posttextRange.getStartPosition(), posttextEnd);
 		}
 		const posttext = model.getValueInRange(posttextRange, EndOfLinePreference.LF);
-
 
 		let text: string;
 		if (selectionStartPage === selectionEndPage || selectionStartPage + 1 === selectionEndPage) {
@@ -83,14 +91,16 @@ export class SimplePagedScreenReaderStrategy implements IPagedScreenReaderStrate
 		} else {
 			const selectionRange1 = selectionStartPageRange.intersectRanges(selection)!;
 			const selectionRange2 = selectionEndPageRange.intersectRanges(selection)!;
-			text = (
-				model.getValueInRange(selectionRange1, EndOfLinePreference.LF)
-				+ String.fromCharCode(8230)
-				+ model.getValueInRange(selectionRange2, EndOfLinePreference.LF)
-			);
+			text =
+				model.getValueInRange(selectionRange1, EndOfLinePreference.LF) +
+				String.fromCharCode(8230) +
+				model.getValueInRange(selectionRange2, EndOfLinePreference.LF);
 		}
 		if (trimLongText && text.length > 2 * LIMIT_CHARS) {
-			text = text.substring(0, LIMIT_CHARS) + String.fromCharCode(8230) + text.substring(text.length - LIMIT_CHARS, text.length);
+			text =
+				text.substring(0, LIMIT_CHARS) +
+				String.fromCharCode(8230) +
+				text.substring(text.length - LIMIT_CHARS, text.length);
 		}
 
 		let selectionStart: number;
@@ -108,25 +118,51 @@ export class SimplePagedScreenReaderStrategy implements IPagedScreenReaderStrate
 			selectionStart,
 			selectionEnd,
 			startPositionWithinEditor: pretextRange.getStartPosition(),
-			newlineCountBeforeSelection: pretextRange.endLineNumber - pretextRange.startLineNumber,
+			newlineCountBeforeSelection: pretextRange.endLineNumber - pretextRange.startLineNumber
 		};
 	}
 }
 
-export function ariaLabelForScreenReaderContent(options: IComputedEditorOptions, keybindingService: IKeybindingService) {
+export function ariaLabelForScreenReaderContent(
+	options: IComputedEditorOptions,
+	keybindingService: IKeybindingService
+) {
 	const accessibilitySupport = options.get(EditorOption.accessibilitySupport);
 	if (accessibilitySupport === AccessibilitySupport.Disabled) {
-
-		const toggleKeybindingLabel = keybindingService.lookupKeybinding('editor.action.toggleScreenReaderAccessibilityMode')?.getAriaLabel();
-		const runCommandKeybindingLabel = keybindingService.lookupKeybinding('workbench.action.showCommands')?.getAriaLabel();
-		const keybindingEditorKeybindingLabel = keybindingService.lookupKeybinding('workbench.action.openGlobalKeybindings')?.getAriaLabel();
-		const editorNotAccessibleMessage = nls.localize('accessibilityModeOff', "The editor is not accessible at this time.");
+		const toggleKeybindingLabel = keybindingService
+			.lookupKeybinding('editor.action.toggleScreenReaderAccessibilityMode')
+			?.getAriaLabel();
+		const runCommandKeybindingLabel = keybindingService
+			.lookupKeybinding('workbench.action.showCommands')
+			?.getAriaLabel();
+		const keybindingEditorKeybindingLabel = keybindingService
+			.lookupKeybinding('workbench.action.openGlobalKeybindings')
+			?.getAriaLabel();
+		const editorNotAccessibleMessage = nls.localize(
+			'accessibilityModeOff',
+			'The editor is not accessible at this time.'
+		);
 		if (toggleKeybindingLabel) {
-			return nls.localize('accessibilityOffAriaLabel', "{0} To enable screen reader optimized mode, use {1}", editorNotAccessibleMessage, toggleKeybindingLabel);
+			return nls.localize(
+				'accessibilityOffAriaLabel',
+				'{0} To enable screen reader optimized mode, use {1}',
+				editorNotAccessibleMessage,
+				toggleKeybindingLabel
+			);
 		} else if (runCommandKeybindingLabel) {
-			return nls.localize('accessibilityOffAriaLabelNoKb', "{0} To enable screen reader optimized mode, open the quick pick with {1} and run the command Toggle Screen Reader Accessibility Mode, which is currently not triggerable via keyboard.", editorNotAccessibleMessage, runCommandKeybindingLabel);
+			return nls.localize(
+				'accessibilityOffAriaLabelNoKb',
+				'{0} To enable screen reader optimized mode, open the quick pick with {1} and run the command Toggle Screen Reader Accessibility Mode, which is currently not triggerable via keyboard.',
+				editorNotAccessibleMessage,
+				runCommandKeybindingLabel
+			);
 		} else if (keybindingEditorKeybindingLabel) {
-			return nls.localize('accessibilityOffAriaLabelNoKbs', "{0} Please assign a keybinding for the command Toggle Screen Reader Accessibility Mode by accessing the keybindings editor with {1} and run it.", editorNotAccessibleMessage, keybindingEditorKeybindingLabel);
+			return nls.localize(
+				'accessibilityOffAriaLabelNoKbs',
+				'{0} Please assign a keybinding for the command Toggle Screen Reader Accessibility Mode by accessing the keybindings editor with {1} and run it.',
+				editorNotAccessibleMessage,
+				keybindingEditorKeybindingLabel
+			);
 		} else {
 			// SOS
 			return editorNotAccessibleMessage;

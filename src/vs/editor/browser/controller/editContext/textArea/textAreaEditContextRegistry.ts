@@ -7,7 +7,6 @@ import { IDisposable } from '../../../../../base/common/lifecycle.js';
 import { TextAreaEditContext } from './textAreaEditContext.js';
 
 class TextAreaEditContextRegistryImpl {
-
 	private _textAreaEditContextMapping: Map<string, TextAreaEditContext> = new Map();
 
 	register(ownerID: string, textAreaEditContext: TextAreaEditContext): IDisposable {

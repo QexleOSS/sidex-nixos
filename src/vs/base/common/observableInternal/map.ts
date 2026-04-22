@@ -6,7 +6,6 @@
 import { IObservable, ITransaction } from '../observable.js';
 import { observableValueOpts } from './observables/observableValueOpts.js';
 
-
 export class ObservableMap<K, V> implements Map<K, V> {
 	private readonly _data = new Map<K, V>();
 

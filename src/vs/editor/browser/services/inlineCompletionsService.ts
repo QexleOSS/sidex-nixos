@@ -41,12 +41,12 @@ export interface IInlineCompletionsService {
 
 	/**
 	 * Check if inline completions are currently snoozed.
-	*/
+	 */
 	isSnoozing(): boolean;
 
 	/**
 	 * Cancel the current snooze.
-	*/
+	 */
 	cancelSnooze(): void;
 
 	/**
@@ -55,7 +55,11 @@ export interface IInlineCompletionsService {
 	reportNewCompletion(requestUuid: string): void;
 }
 
-const InlineCompletionsSnoozing = new RawContextKey<boolean>('inlineCompletions.snoozed', false, localize('inlineCompletions.snoozed', "Whether inline completions are currently snoozed"));
+const InlineCompletionsSnoozing = new RawContextKey<boolean>(
+	'inlineCompletions.snoozed',
+	false,
+	localize('inlineCompletions.snoozed', 'Whether inline completions are currently snoozed')
+);
 
 export class InlineCompletionsService extends Disposable implements IInlineCompletionsService {
 	declare readonly _serviceBrand: undefined;
@@ -77,7 +81,7 @@ export class InlineCompletionsService extends Disposable implements IInlineCompl
 
 	constructor(
 		@IContextKeyService private _contextKeyService: IContextKeyService,
-		@ITelemetryService private _telemetryService: ITelemetryService,
+		@ITelemetryService private _telemetryService: ITelemetryService
 	) {
 		super();
 
@@ -109,16 +113,13 @@ export class InlineCompletionsService extends Disposable implements IInlineCompl
 			this._onDidChangeIsSnoozing.fire(true);
 		}
 
-		this._timer.cancelAndSet(
-			() => {
-				if (!this.isSnoozing()) {
-					this._onDidChangeIsSnoozing.fire(false);
-				} else {
-					throw new BugIndicatingError('Snooze timer did not fire as expected');
-				}
-			},
-			this.snoozeTimeLeft + 1,
-		);
+		this._timer.cancelAndSet(() => {
+			if (!this.isSnoozing()) {
+				this._onDidChangeIsSnoozing.fire(false);
+			} else {
+				throw new BugIndicatingError('Snooze timer did not fire as expected');
+			}
+		}, this.snoozeTimeLeft + 1);
 
 		this._reportSnooze(durationMs - timeLeft, durationMs);
 	}
@@ -153,10 +154,26 @@ export class InlineCompletionsService extends Disposable implements IInlineCompl
 		type WorkspaceStatsClassification = {
 			owner: 'benibenj';
 			comment: 'Snooze duration for inline completions';
-			deltaSeconds: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The duration by which the snooze has changed, in seconds.' };
-			totalSeconds: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The total duration for which inline completions are snoozed, in seconds.' };
-			lastCompletionId: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The ID of the last completion.' };
-			recentCompletionIds: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The IDs of the recent completions.' };
+			deltaSeconds: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'The duration by which the snooze has changed, in seconds.';
+			};
+			totalSeconds: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'The total duration for which inline completions are snoozed, in seconds.';
+			};
+			lastCompletionId: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'The ID of the last completion.';
+			};
+			recentCompletionIds: {
+				classification: 'SystemMetaData';
+				purpose: 'FeatureInsight';
+				comment: 'The IDs of the recent completions.';
+			};
 		};
 		type WorkspaceStatsEvent = {
 			deltaSeconds: number;
@@ -168,7 +185,7 @@ export class InlineCompletionsService extends Disposable implements IInlineCompl
 			deltaSeconds,
 			totalSeconds,
 			lastCompletionId: this._lastCompletionId,
-			recentCompletionIds: this._recentCompletionIds,
+			recentCompletionIds: this._recentCompletionIds
 		});
 	}
 }
@@ -184,9 +201,9 @@ export class SnoozeInlineCompletion extends Action2 {
 	constructor() {
 		super({
 			id: SnoozeInlineCompletion.ID,
-			title: localize2('action.inlineSuggest.snooze', "Snooze Inline Suggestions"),
+			title: localize2('action.inlineSuggest.snooze', 'Snooze Inline Suggestions'),
 			precondition: ContextKeyExpr.true(),
-			f1: true,
+			f1: true
 		});
 	}
 
@@ -209,7 +226,10 @@ export class SnoozeInlineCompletion extends Action2 {
 		}
 	}
 
-	private async getDurationFromUser(quickInputService: IQuickInputService, storageService: IStorageService): Promise<number | undefined> {
+	private async getDurationFromUser(
+		quickInputService: IQuickInputService,
+		storageService: IStorageService
+	): Promise<number | undefined> {
 		const lastSelectedDuration = storageService.getNumber(LAST_SNOOZE_DURATION_KEY, StorageScope.PROFILE, 300_000);
 
 		const items: (IQuickPickItem & { value: number })[] = [
@@ -222,8 +242,8 @@ export class SnoozeInlineCompletion extends Action2 {
 		];
 
 		const picked = await quickInputService.pick(items, {
-			placeHolder: localize('snooze.placeholder', "Select snooze duration for Inline Suggestions"),
-			activeItem: items.find(item => item.value === lastSelectedDuration),
+			placeHolder: localize('snooze.placeholder', 'Select snooze duration for Inline Suggestions'),
+			activeItem: items.find(item => item.value === lastSelectedDuration)
 		});
 
 		if (picked) {
@@ -240,9 +260,9 @@ export class CancelSnoozeInlineCompletion extends Action2 {
 	constructor() {
 		super({
 			id: CancelSnoozeInlineCompletion.ID,
-			title: localize2('action.inlineSuggest.cancelSnooze', "Cancel Snooze Inline Suggestions"),
+			title: localize2('action.inlineSuggest.cancelSnooze', 'Cancel Snooze Inline Suggestions'),
 			precondition: InlineCompletionsSnoozing,
-			f1: true,
+			f1: true
 		});
 	}
 

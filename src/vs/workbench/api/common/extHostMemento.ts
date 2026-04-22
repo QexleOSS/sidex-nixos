@@ -10,7 +10,6 @@ import { IExtensionDescription } from '../../../platform/extensions/common/exten
 import { DeferredPromise, RunOnceScheduler } from '../../../base/common/async.js';
 
 export class ExtensionMemento implements vscode.Memento {
-
 	protected readonly _id: string;
 	private readonly _shared: boolean;
 	protected readonly _storage: ExtHostStorage;
@@ -58,7 +57,9 @@ export class ExtensionMemento implements vscode.Memento {
 
 	keys(): readonly string[] {
 		// Filter out `undefined` values, as they can stick around in the `_value` until the `onDidChangeStorage` event runs
-		return Object.entries(this._value ?? {}).filter(([, value]) => value !== undefined).map(([key]) => key);
+		return Object.entries(this._value ?? {})
+			.filter(([, value]) => value !== undefined)
+			.map(([key]) => key);
 	}
 
 	get whenReady(): Promise<ExtensionMemento> {
@@ -107,7 +108,6 @@ export class ExtensionMemento implements vscode.Memento {
 }
 
 export class ExtensionGlobalMemento extends ExtensionMemento {
-
 	private readonly _extension: IExtensionDescription;
 
 	setKeysForSync(keys: string[]): void {
@@ -118,5 +118,4 @@ export class ExtensionGlobalMemento extends ExtensionMemento {
 		super(extensionDescription.identifier.value, true, storage);
 		this._extension = extensionDescription;
 	}
-
 }

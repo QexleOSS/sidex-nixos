@@ -36,7 +36,15 @@ export interface IExplorerService {
 	refresh(): Promise<void>;
 	setToCopy(stats: ExplorerItem[], cut: boolean): Promise<void>;
 	isCut(stat: ExplorerItem): boolean;
-	applyBulkEdit(edit: ResourceFileEdit[], options: { undoLabel: string; progressLabel: string; confirmBeforeUndo?: boolean; progressLocation?: ProgressLocation.Explorer | ProgressLocation.Window }): Promise<void>;
+	applyBulkEdit(
+		edit: ResourceFileEdit[],
+		options: {
+			undoLabel: string;
+			progressLabel: string;
+			confirmBeforeUndo?: boolean;
+			progressLocation?: ProgressLocation.Explorer | ProgressLocation.Window;
+		}
+	): Promise<void>;
 
 	/**
 	 * Selects and reveal the file element provided by the given resource if its found in the explorer.
@@ -91,7 +99,11 @@ function getFocus(listService: IListService): unknown | undefined {
 
 // Commands can get executed from a command palette, from a context menu or from some list using a keybinding
 // To cover all these cases we need to properly compute the resource on which the command is being executed
-export function getResourceForCommand(commandArg: unknown, editorService: IEditorService, listService: IListService): URI | undefined {
+export function getResourceForCommand(
+	commandArg: unknown,
+	editorService: IEditorService,
+	listService: IListService
+): URI | undefined {
 	if (URI.isUri(commandArg)) {
 		return commandArg;
 	}
@@ -103,10 +115,18 @@ export function getResourceForCommand(commandArg: unknown, editorService: IEdito
 		return focus.getResource();
 	}
 
-	return EditorResourceAccessor.getOriginalUri(editorService.activeEditor, { supportSideBySide: SideBySideEditor.PRIMARY });
+	return EditorResourceAccessor.getOriginalUri(editorService.activeEditor, {
+		supportSideBySide: SideBySideEditor.PRIMARY
+	});
 }
 
-export function getMultiSelectedResources(commandArg: unknown, listService: IListService, editorSerice: IEditorService, editorGroupService: IEditorGroupsService, explorerService: IExplorerService): Array<URI> {
+export function getMultiSelectedResources(
+	commandArg: unknown,
+	listService: IListService,
+	editorSerice: IEditorService,
+	editorGroupService: IEditorGroupsService,
+	explorerService: IExplorerService
+): Array<URI> {
 	const list = listService.lastFocusedList;
 	const element = list?.getHTMLElement();
 	if (element && isActiveElement(element)) {
@@ -121,7 +141,12 @@ export function getMultiSelectedResources(commandArg: unknown, listService: ILis
 
 		// Open editors view
 		if (list instanceof List) {
-			const selection = coalesce(list.getSelectedElements().filter(s => s instanceof OpenEditor).map((oe: OpenEditor) => oe.getResource()));
+			const selection = coalesce(
+				list
+					.getSelectedElements()
+					.filter(s => s instanceof OpenEditor)
+					.map((oe: OpenEditor) => oe.getResource())
+			);
 			const focusedElements = list.getFocusedElements();
 			const focus = focusedElements.length ? focusedElements[0] : undefined;
 			let mainUriStr: string | undefined = undefined;

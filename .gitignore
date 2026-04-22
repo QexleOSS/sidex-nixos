@@ -17,7 +17,7 @@ build/
 # ── WASM build artifacts (wasm-pack output) ──────────────────────────────────
 **/pkg/
 
-# ── Extensions (downloaded / installed at runtime) ───────────────────────────
+# ── Extensions (auto-installed on first dev/build via npm run setup) ──────────
 /extensions/
 
 # ── Cargo.lock for library crates ───────────────────────────────────────────
@@ -36,6 +36,7 @@ pnpm-debug.log*
 
 # ── OS files ─────────────────────────────────────────────────────────────────
 .DS_Store
+._*
 Thumbs.db
 Desktop.ini
 ehthumbs.db
@@ -53,6 +54,7 @@ ehthumbs.db
 .env
 .env.*
 !.env.example
+/docs
 
 # ── Tauri generated ──────────────────────────────────────────────────────────
 src-tauri/gen/
@@ -91,7 +93,13 @@ extensions-rust/php-language-extension/
 extensions-rust/references-view-extension/
 extensions-rust/terminal-suggest-extension/
 
-# ── Generated CSS spec data (can be regenerated from vscode-fork) ────────────
+# ── Cloudflare Wrangler (marketplace-proxy dev state) ────────────────────────
+infrastructure/marketplace-proxy/.wrangler/
+infrastructure/marketplace-proxy/node_modules/
+
+
 extensions-rust/css-language-extension/css-data.json
 extensions-rust/css-language-extension/css-builtin.json
 extensions-rust/css-language-extension/src/css_data.rs
+extensions-meta.json
+public/builtin-extensions.js

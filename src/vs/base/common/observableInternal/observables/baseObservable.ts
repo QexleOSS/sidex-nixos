@@ -16,13 +16,15 @@ let _derived: typeof derivedOpts;
 /**
  * @internal
  * This is to allow splitting files.
-*/
+ */
 export function _setDerivedOpts(derived: typeof _derived) {
 	_derived = derived;
 }
 
 let _recomputeInitiallyAndOnChange: typeof recomputeInitiallyAndOnChange;
-export function _setRecomputeInitiallyAndOnChange(recomputeInitiallyAndOnChange: typeof _recomputeInitiallyAndOnChange) {
+export function _setRecomputeInitiallyAndOnChange(
+	recomputeInitiallyAndOnChange: typeof _recomputeInitiallyAndOnChange
+) {
 	_recomputeInitiallyAndOnChange = recomputeInitiallyAndOnChange;
 }
 
@@ -37,7 +39,9 @@ export function _setDebugGetObservableGraph(debugGetObservableGraph: typeof _deb
 }
 
 export abstract class ConvenientObservable<T, TChange> implements IObservableWithChange<T, TChange> {
-	get TChange(): TChange { return null!; }
+	get TChange(): TChange {
+		return null!;
+	}
 
 	public abstract get(): T;
 
@@ -60,9 +64,13 @@ export abstract class ConvenientObservable<T, TChange> implements IObservableWit
 	/** @sealed */
 	public map<TNew>(fn: (value: T, reader: IReader) => TNew): IObservable<TNew>;
 	public map<TNew>(owner: DebugOwner, fn: (value: T, reader: IReader) => TNew): IObservable<TNew>;
-	public map<TNew>(fnOrOwner: DebugOwner | ((value: T, reader: IReader) => TNew), fnOrUndefined?: (value: T, reader: IReader) => TNew, debugLocation: DebugLocation = DebugLocation.ofCaller()): IObservable<TNew> {
-		const owner = fnOrUndefined === undefined ? undefined : fnOrOwner as DebugOwner;
-		const fn = fnOrUndefined === undefined ? fnOrOwner as (value: T, reader: IReader) => TNew : fnOrUndefined;
+	public map<TNew>(
+		fnOrOwner: DebugOwner | ((value: T, reader: IReader) => TNew),
+		fnOrUndefined?: (value: T, reader: IReader) => TNew,
+		debugLocation: DebugLocation = DebugLocation.ofCaller()
+	): IObservable<TNew> {
+		const owner = fnOrUndefined === undefined ? undefined : (fnOrOwner as DebugOwner);
+		const fn = fnOrUndefined === undefined ? (fnOrOwner as (value: T, reader: IReader) => TNew) : fnOrUndefined;
 
 		return _derived(
 			{
@@ -84,10 +92,10 @@ export abstract class ConvenientObservable<T, TChange> implements IObservableWit
 					}
 					return undefined;
 				},
-				debugReferenceFn: fn,
+				debugReferenceFn: fn
 			},
-			(reader) => fn(this.read(reader), reader),
-			debugLocation,
+			reader => fn(this.read(reader), reader),
+			debugLocation
 		);
 	}
 
@@ -96,14 +104,14 @@ export abstract class ConvenientObservable<T, TChange> implements IObservableWit
 	/**
 	 * @sealed
 	 * Converts an observable of an observable value into a direct observable of the value.
-	*/
+	 */
 	public flatten<TNew>(this: IObservable<IObservableWithChange<TNew, any>>): IObservable<TNew> {
 		return _derived(
 			{
 				owner: undefined,
-				debugName: () => `${this.debugName} (flattened)`,
+				debugName: () => `${this.debugName} (flattened)`
 			},
-			(reader) => this.read(reader).read(reader)
+			reader => this.read(reader).read(reader)
 		);
 	}
 
@@ -134,8 +142,7 @@ export abstract class ConvenientObservable<T, TChange> implements IObservableWit
 }
 
 class DebugHelper {
-	constructor(public readonly observable: IObservableWithChange<any, any>) {
-	}
+	constructor(public readonly observable: IObservableWithChange<any, any>) {}
 
 	getDependencyGraph(): string {
 		return _debugGetObservableGraph(this.observable, { type: 'dependencies' });
@@ -175,8 +182,8 @@ export abstract class BaseObservable<T, TChange = void> extends ConvenientObserv
 		}
 	}
 
-	protected onFirstObserverAdded(): void { }
-	protected onLastObserverRemoved(): void { }
+	protected onFirstObserverAdded(): void {}
+	protected onLastObserverRemoved(): void {}
 
 	public override log(): IObservableWithChange<T, TChange> {
 		const hadLogger = !!getLogger();

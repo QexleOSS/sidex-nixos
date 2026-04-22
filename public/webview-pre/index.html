@@ -5,7 +5,7 @@
 	<meta charset="UTF-8">
 
 	<meta http-equiv="Content-Security-Policy"
-		content="default-src 'none'; script-src 'unsafe-inline' 'self'; frame-src 'self'; style-src 'unsafe-inline';">
+		content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; font-src * data:; img-src * data: blob:; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'; frame-src *;">
 
 	<!-- Disable pinch zooming -->
 	<meta name="viewport"
@@ -35,6 +35,7 @@
 		const onElectron = searchParams.get('platform') === 'electron';
 		const disableServiceWorker = searchParams.has('disableServiceWorker');
 		const serviceWorkerProtocolSupported = location.protocol === 'http:' || location.protocol === 'https:';
+		const disableServiceWorkerRuntime = disableServiceWorker || !serviceWorkerProtocolSupported;
 		const expectedWorkerVersion = parseInt(searchParams.get('swVersion'));
 
 		/**
@@ -248,7 +249,7 @@
 
 		/** @type {Promise<void>} */
 		const workerReady = new Promise((resolve, reject) => {
-			if (disableServiceWorker || !serviceWorkerProtocolSupported) {
+			if (disableServiceWorkerRuntime) {
 				if (!disableServiceWorker && !serviceWorkerProtocolSupported) {
 					console.warn(`Service workers are not supported for protocol ${location.protocol}. Webview runs with service workers disabled.`);
 				}
@@ -374,7 +375,7 @@
 
 				const hostname = location.hostname;
 
-				if (hostname === 'localhost' || hostname === '127.0.0.1') {
+				if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === 'tauri.localhost' || hostname.endsWith('.tauri.localhost')) {
 					return start(parentOrigin);
 				}
 
@@ -492,7 +493,7 @@
 			reduceMotion: false,
 		};
 
-		if (!disableServiceWorker && serviceWorkerProtocolSupported) {
+		if (!disableServiceWorkerRuntime) {
 			hostMessaging.onMessage('did-load-resource', (_event, data) => {
 				assertIsDefined(navigator.serviceWorker.controller).postMessage({ channel: 'did-load-resource', data }, data.data?.buffer ? [data.data.buffer] : []);
 			});
@@ -1179,7 +1180,9 @@
 					loadTimeout = setTimeout(() => {
 						clearTimeout(loadTimeout);
 						loadTimeout = undefined;
-						onLoad(assertIsDefined(newFrame.contentDocument), assertIsDefined(newFrame.contentWindow));
+						if (newFrame.contentDocument && newFrame.contentWindow) {
+							onLoad(newFrame.contentDocument, newFrame.contentWindow);
+						}
 					}, 200);
 
 					const contentWindow = assertIsDefined(newFrame.contentWindow);
@@ -1247,7 +1250,7 @@
 					unloadMonitor.onIframeLoaded(newFrame);
 				}
 
-				if (!disableServiceWorker && outerIframeMessageChannel) {
+				if (!disableServiceWorkerRuntime && outerIframeMessageChannel) {
 					outerIframeMessageChannel.port1.onmessage = event => {
 						switch (event.data.channel) {
 							case 'load-resource':

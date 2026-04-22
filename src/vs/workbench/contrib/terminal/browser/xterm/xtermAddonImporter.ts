@@ -24,7 +24,10 @@ export interface IXtermAddonNameToCtor {
 }
 
 // This interface lets a maps key and value be linked with generics
-interface IImportedXtermAddonMap extends Map<keyof IXtermAddonNameToCtor, IXtermAddonNameToCtor[keyof IXtermAddonNameToCtor]> {
+interface IImportedXtermAddonMap extends Map<
+	keyof IXtermAddonNameToCtor,
+	IXtermAddonNameToCtor[keyof IXtermAddonNameToCtor]
+> {
 	get<K extends keyof IXtermAddonNameToCtor>(name: K): IXtermAddonNameToCtor[K] | undefined;
 	set<K extends keyof IXtermAddonNameToCtor>(name: K, value: IXtermAddonNameToCtor[K]): this;
 }
@@ -41,14 +44,30 @@ export class XtermAddonImporter {
 		if (!addon) {
 			try {
 				switch (name) {
-					case 'clipboard': addon = (await import('@xterm/addon-clipboard')).ClipboardAddon as IXtermAddonNameToCtor[T]; break;
-					case 'image': addon = (await import('@xterm/addon-image')).ImageAddon as IXtermAddonNameToCtor[T]; break;
-					case 'search': addon = (await import('@xterm/addon-search')).SearchAddon as IXtermAddonNameToCtor[T]; break;
-					case 'serialize': addon = (await import('@xterm/addon-serialize')).SerializeAddon as IXtermAddonNameToCtor[T]; break;
-					case 'unicode11': addon = (await import('@xterm/addon-unicode11')).Unicode11Addon as IXtermAddonNameToCtor[T]; break;
-					case 'webgl': addon = (await import('@xterm/addon-webgl')).WebglAddon as IXtermAddonNameToCtor[T]; break;
-					case 'progress': addon = (await import('@xterm/addon-progress')).ProgressAddon as IXtermAddonNameToCtor[T]; break;
-					case 'ligatures': addon = (await import('@xterm/addon-ligatures')).LigaturesAddon as IXtermAddonNameToCtor[T]; break;
+					case 'clipboard':
+						addon = (await import('@xterm/addon-clipboard')).ClipboardAddon as IXtermAddonNameToCtor[T];
+						break;
+					case 'image':
+						addon = (await import('@xterm/addon-image')).ImageAddon as IXtermAddonNameToCtor[T];
+						break;
+					case 'search':
+						addon = (await import('@xterm/addon-search')).SearchAddon as IXtermAddonNameToCtor[T];
+						break;
+					case 'serialize':
+						addon = (await import('@xterm/addon-serialize')).SerializeAddon as IXtermAddonNameToCtor[T];
+						break;
+					case 'unicode11':
+						addon = (await import('@xterm/addon-unicode11')).Unicode11Addon as IXtermAddonNameToCtor[T];
+						break;
+					case 'webgl':
+						addon = (await import('@xterm/addon-webgl')).WebglAddon as IXtermAddonNameToCtor[T];
+						break;
+					case 'progress':
+						addon = (await import('@xterm/addon-progress')).ProgressAddon as IXtermAddonNameToCtor[T];
+						break;
+					case 'ligatures':
+						addon = (await import('@xterm/addon-ligatures')).LigaturesAddon as IXtermAddonNameToCtor[T];
+						break;
 				}
 			} catch (e) {
 				console.warn(`[SideX] Failed to load xterm addon '${name}':`, e);

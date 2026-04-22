@@ -12,13 +12,25 @@ import { CancellationToken, CancellationTokenSource } from '../../../../base/com
 import { Codicon } from '../../../../base/common/codicons.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable, DisposableStore, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
-import { autorun, autorunWithStore, derived, IObservable, ISettableObservable, observableValue, transaction } from '../../../../base/common/observable.js';
+import {
+	autorun,
+	autorunWithStore,
+	derived,
+	IObservable,
+	ISettableObservable,
+	observableValue,
+	transaction
+} from '../../../../base/common/observable.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { Constants } from '../../../../base/common/uint.js';
 import { URI } from '../../../../base/common/uri.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
 import { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
-import { EditorContributionCtor, EditorContributionInstantiation, IEditorContributionDescription } from '../../../../editor/browser/editorExtensions.js';
+import {
+	EditorContributionCtor,
+	EditorContributionInstantiation,
+	IEditorContributionDescription
+} from '../../../../editor/browser/editorExtensions.js';
 import { CodeEditorWidget } from '../../../../editor/browser/widget/codeEditor/codeEditorWidget.js';
 import { EmbeddedCodeEditorWidget } from '../../../../editor/browser/widget/codeEditor/embeddedCodeEditorWidget.js';
 import { IEditorOptions } from '../../../../editor/common/config/editorOptions.js';
@@ -28,7 +40,10 @@ import { IWordAtPosition } from '../../../../editor/common/core/wordHelper.js';
 import { IEditorContribution, IEditorDecorationsCollection } from '../../../../editor/common/editorCommon.js';
 import { Location } from '../../../../editor/common/languages.js';
 import { ITextModelService } from '../../../../editor/common/services/resolverService.js';
-import { ClickLinkGesture, ClickLinkMouseEvent } from '../../../../editor/contrib/gotoSymbol/browser/link/clickLinkGesture.js';
+import {
+	ClickLinkGesture,
+	ClickLinkMouseEvent
+} from '../../../../editor/contrib/gotoSymbol/browser/link/clickLinkGesture.js';
 import { localize, localize2 } from '../../../../nls.js';
 import { createActionViewItem } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
 import { MenuWorkbenchToolBar } from '../../../../platform/actions/browser/toolbar.js';
@@ -44,21 +59,20 @@ import { IEditorService, SIDE_GROUP } from '../../../services/editor/common/edit
 import { makeStackFrameColumnDecoration, TOP_STACK_FRAME_DECORATION } from './callStackEditorContribution.js';
 import './media/callStackWidget.css';
 
-
 export class CallStackFrame {
 	constructor(
 		public readonly name: string,
 		public readonly source?: URI,
 		public readonly line = 1,
-		public readonly column = 1,
-	) { }
+		public readonly column = 1
+	) {}
 }
 
 export class SkippedCallFrames {
 	constructor(
 		public readonly label: string,
-		public readonly load: (token: CancellationToken) => Promise<AnyStackFrame[]>,
-	) { }
+		public readonly load: (token: CancellationToken) => Promise<AnyStackFrame[]>
+	) {}
 }
 
 export abstract class CustomStackFrame {
@@ -82,7 +96,9 @@ class WrappedCallStackFrame extends CallStackFrame implements IFrameLikeItem {
 	public readonly collapsed = observableValue('WrappedCallStackFrame.collapsed', false);
 
 	public readonly height = derived(reader => {
-		return this.collapsed.read(reader) ? CALL_STACK_WIDGET_HEADER_HEIGHT : CALL_STACK_WIDGET_HEADER_HEIGHT + this.editorHeight.read(reader);
+		return this.collapsed.read(reader)
+			? CALL_STACK_WIDGET_HEADER_HEIGHT
+			: CALL_STACK_WIDGET_HEADER_HEIGHT + this.editorHeight.read(reader);
 	});
 
 	constructor(original: CallStackFrame) {
@@ -98,7 +114,7 @@ class WrappedCustomStackFrame implements IFrameLikeItem {
 		return this.collapsed.read(reader) ? headerHeight : headerHeight + this.original.height.read(reader);
 	});
 
-	constructor(public readonly original: CustomStackFrame) { }
+	constructor(public readonly original: CustomStackFrame) {}
 }
 
 const isFrameLike = (item: unknown): item is IFrameLikeItem =>
@@ -134,33 +150,35 @@ export class CallStackWidget extends Disposable {
 	constructor(
 		container: HTMLElement,
 		containingEditor: ICodeEditor | undefined,
-		@IInstantiationService instantiationService: IInstantiationService,
+		@IInstantiationService instantiationService: IInstantiationService
 	) {
 		super();
 
 		container.classList.add(WIDGET_CLASS_NAME);
 		this._register(toDisposable(() => container.classList.remove(WIDGET_CLASS_NAME)));
 
-		this.list = this._register(instantiationService.createInstance(
-			WorkbenchList,
-			'TestResultStackWidget',
-			container,
-			new StackDelegate(),
-			[
-				instantiationService.createInstance(FrameCodeRenderer, containingEditor, this.layoutEmitter.event),
-				instantiationService.createInstance(MissingCodeRenderer),
-				instantiationService.createInstance(CustomRenderer),
-				instantiationService.createInstance(SkippedRenderer, (i) => this.loadFrame(i)),
-			],
-			{
-				multipleSelectionSupport: false,
-				mouseSupport: false,
-				keyboardSupport: false,
-				setRowLineHeight: false,
-				alwaysConsumeMouseWheel: false,
-				accessibilityProvider: instantiationService.createInstance(StackAccessibilityProvider),
-			}
-		) as WorkbenchList<ListItem>);
+		this.list = this._register(
+			instantiationService.createInstance(
+				WorkbenchList,
+				'TestResultStackWidget',
+				container,
+				new StackDelegate(),
+				[
+					instantiationService.createInstance(FrameCodeRenderer, containingEditor, this.layoutEmitter.event),
+					instantiationService.createInstance(MissingCodeRenderer),
+					instantiationService.createInstance(CustomRenderer),
+					instantiationService.createInstance(SkippedRenderer, i => this.loadFrame(i))
+				],
+				{
+					multipleSelectionSupport: false,
+					mouseSupport: false,
+					keyboardSupport: false,
+					setRowLineHeight: false,
+					alwaysConsumeMouseWheel: false,
+					accessibilityProvider: instantiationService.createInstance(StackAccessibilityProvider)
+				}
+			) as WorkbenchList<ListItem>
+		);
 	}
 
 	/** Replaces the call frames display in the view. */
@@ -212,17 +230,19 @@ export class CallStackWidget extends Disposable {
 				continue;
 			}
 
-			const wrapped = frame instanceof CustomStackFrame
-				? new WrappedCustomStackFrame(frame) : new WrappedCallStackFrame(frame);
+			const wrapped =
+				frame instanceof CustomStackFrame ? new WrappedCustomStackFrame(frame) : new WrappedCallStackFrame(frame);
 			result.push(wrapped);
 
-			this.currentFramesDs.add(autorun(reader => {
-				const height = wrapped.height.read(reader);
-				const idx = this.list.indexOf(wrapped);
-				if (idx !== -1) {
-					this.list.updateElementHeight(idx, height);
-				}
-			}));
+			this.currentFramesDs.add(
+				autorun(reader => {
+					const height = wrapped.height.read(reader);
+					const idx = this.list.indexOf(wrapped);
+					if (idx !== -1) {
+						this.list.updateElementHeight(idx, height);
+					}
+				})
+			);
 		}
 
 		return result;
@@ -230,7 +250,7 @@ export class CallStackWidget extends Disposable {
 }
 
 class StackAccessibilityProvider implements IListAccessibilityProvider<ListItem> {
-	constructor(@ILabelService private readonly labelService: ILabelService) { }
+	constructor(@ILabelService private readonly labelService: ILabelService) {}
 
 	getAriaLabel(e: ListItem): string | IObservable<string> | null {
 		if (e instanceof SkippedCallFrames) {
@@ -243,10 +263,16 @@ class StackAccessibilityProvider implements IListAccessibilityProvider<ListItem>
 
 		if (e instanceof CallStackFrame) {
 			if (e.source && e.line) {
-				return localize({
-					comment: ['{0} is an extension-defined label, then line number and filename'],
-					key: 'stackTraceLabel',
-				}, '{0}, line {1} in {2}', e.name, e.line, this.labelService.getUriLabel(e.source, { relative: true }));
+				return localize(
+					{
+						comment: ['{0} is an extension-defined label, then line number and filename'],
+						key: 'stackTraceLabel'
+					},
+					'{0}, line {1} in {2}',
+					e.name,
+					e.line,
+					this.labelService.getUriLabel(e.source, { relative: true })
+				);
 			}
 
 			return e.name;
@@ -297,7 +323,7 @@ const editorOptions: IEditorOptions = {
 		vertical: 'hidden',
 		horizontal: 'hidden',
 		handleMouseWheel: false,
-		useShadows: false,
+		useShadows: false
 	},
 	overviewRulerLanes: 0,
 	fixedOverflowWidgets: true,
@@ -305,20 +331,19 @@ const editorOptions: IEditorOptions = {
 	stickyScroll: { enabled: false },
 	minimap: { enabled: false },
 	readOnly: true,
-	automaticLayout: false,
+	automaticLayout: false
 };
 
-const makeFrameElements = () => dom.h('div.multiCallStackFrame', [
-	dom.h('div.header@header', [
-		dom.h('div.collapse-button@collapseButton'),
-		dom.h('div.title.show-file-icons@title'),
-		dom.h('div.actions@actions'),
-	]),
+const makeFrameElements = () =>
+	dom.h('div.multiCallStackFrame', [
+		dom.h('div.header@header', [
+			dom.h('div.collapse-button@collapseButton'),
+			dom.h('div.title.show-file-icons@title'),
+			dom.h('div.actions@actions')
+		]),
 
-	dom.h('div.editorParent', [
-		dom.h('div.editorContainer@editor'),
-	])
-]);
+		dom.h('div.editorParent', [dom.h('div.editorContainer@editor')])
+	]);
 
 export const CALL_STACK_WIDGET_HEADER_HEIGHT = 24;
 
@@ -332,24 +357,26 @@ interface IAbstractFrameRendererTemplateData {
 	templateStore: DisposableStore;
 }
 
-abstract class AbstractFrameRenderer<T extends IAbstractFrameRendererTemplateData> implements IListRenderer<ListItem, T> {
+abstract class AbstractFrameRenderer<T extends IAbstractFrameRendererTemplateData> implements IListRenderer<
+	ListItem,
+	T
+> {
 	public abstract templateId: string;
 
-	constructor(
-		@IInstantiationService protected readonly instantiationService: IInstantiationService,
-	) { }
+	constructor(@IInstantiationService protected readonly instantiationService: IInstantiationService) {}
 
 	renderTemplate(container: HTMLElement): T {
 		const elements = makeFrameElements();
 		container.appendChild(elements.root);
 
-
 		const templateStore = new DisposableStore();
 		container.classList.add('multiCallStackFrameContainer');
-		templateStore.add(toDisposable(() => {
-			container.classList.remove('multiCallStackFrameContainer');
-			elements.root.remove();
-		}));
+		templateStore.add(
+			toDisposable(() => {
+				container.classList.remove('multiCallStackFrameContainer');
+				elements.root.remove();
+			})
+		);
 
 		const label = templateStore.add(this.instantiationService.createInstance(ResourceLabel, elements.title, {}));
 
@@ -367,7 +394,7 @@ abstract class AbstractFrameRenderer<T extends IAbstractFrameRendererTemplateDat
 			label,
 			collapse,
 			elementStore: templateStore.add(new DisposableStore()),
-			templateStore,
+			templateStore
 		});
 	}
 
@@ -382,13 +409,15 @@ abstract class AbstractFrameRenderer<T extends IAbstractFrameRendererTemplateDat
 	}
 
 	private setupCollapseButton(item: IFrameLikeItem, { elementStore, elements, collapse }: T) {
-		elementStore.add(autorun(reader => {
-			collapse.element.className = '';
-			const collapsed = item.collapsed.read(reader);
-			collapse.icon = collapsed ? Codicon.chevronRight : Codicon.chevronDown;
-			collapse.element.ariaExpanded = String(!collapsed);
-			elements.root.classList.toggle('collapsed', collapsed);
-		}));
+		elementStore.add(
+			autorun(reader => {
+				collapse.element.className = '';
+				const collapsed = item.collapsed.read(reader);
+				collapse.icon = collapsed ? Codicon.chevronRight : Codicon.chevronDown;
+				collapse.element.ariaExpanded = String(!collapsed);
+				elements.root.classList.toggle('collapsed', collapsed);
+			})
+		);
 		const toggleCollapse = () => item.collapsed.set(!item.collapsed.get(), undefined);
 		elementStore.add(collapse.onDidClick(toggleCollapse));
 		elementStore.add(dom.addDisposableListener(elements.title, 'click', toggleCollapse));
@@ -415,7 +444,7 @@ class FrameCodeRenderer extends AbstractFrameRenderer<IStackTemplateData> {
 		private readonly containingEditor: ICodeEditor | undefined,
 		private readonly onLayout: Event<void>,
 		@ITextModelService private readonly modelService: ITextModelService,
-		@IInstantiationService instantiationService: IInstantiationService,
+		@IInstantiationService instantiationService: IInstantiationService
 	) {
 		super(instantiationService);
 	}
@@ -423,33 +452,40 @@ class FrameCodeRenderer extends AbstractFrameRenderer<IStackTemplateData> {
 	protected override finishRenderTemplate(data: IAbstractFrameRendererTemplateData): IStackTemplateData {
 		// override default e.g. language contributions, only allow users to click
 		// on code in the call stack to go to its source location
-		const contributions: IEditorContributionDescription[] = [{
-			id: ClickToLocationContribution.ID,
-			instantiation: EditorContributionInstantiation.BeforeFirstInteraction,
-			ctor: ClickToLocationContribution as EditorContributionCtor,
-		}];
+		const contributions: IEditorContributionDescription[] = [
+			{
+				id: ClickToLocationContribution.ID,
+				instantiation: EditorContributionInstantiation.BeforeFirstInteraction,
+				ctor: ClickToLocationContribution as EditorContributionCtor
+			}
+		];
 
 		const editor = this.containingEditor
 			? this.instantiationService.createInstance(
-				EmbeddedCodeEditorWidget,
-				data.elements.editor,
-				editorOptions,
-				{ isSimpleWidget: true, contributions },
-				this.containingEditor,
-			)
-			: this.instantiationService.createInstance(
-				CodeEditorWidget,
-				data.elements.editor,
-				editorOptions,
-				{ isSimpleWidget: true, contributions },
-			);
+					EmbeddedCodeEditorWidget,
+					data.elements.editor,
+					editorOptions,
+					{ isSimpleWidget: true, contributions },
+					this.containingEditor
+				)
+			: this.instantiationService.createInstance(CodeEditorWidget, data.elements.editor, editorOptions, {
+					isSimpleWidget: true,
+					contributions
+				});
 
 		data.templateStore.add(editor);
 
-		const toolbar = data.templateStore.add(this.instantiationService.createInstance(MenuWorkbenchToolBar, data.elements.actions, MenuId.DebugCallStackToolbar, {
-			menuOptions: { shouldForwardArgs: true },
-			actionViewItemProvider: (action, options) => createActionViewItem(this.instantiationService, action, options),
-		}));
+		const toolbar = data.templateStore.add(
+			this.instantiationService.createInstance(
+				MenuWorkbenchToolBar,
+				data.elements.actions,
+				MenuId.DebugCallStackToolbar,
+				{
+					menuOptions: { shouldForwardArgs: true },
+					actionViewItemProvider: (action, options) => createActionViewItem(this.instantiationService, action, options)
+				}
+			)
+		);
 
 		return { ...data, editor, toolbar };
 	}
@@ -499,7 +535,7 @@ class FrameCodeRenderer extends AbstractFrameRenderer<IStackTemplateData> {
 	private setupEditorAfterModel(item: WrappedCallStackFrame, template: IStackTemplateData): void {
 		const range = Range.fromPositions({
 			column: item.column ?? 1,
-			lineNumber: item.line ?? 1,
+			lineNumber: item.line ?? 1
 		});
 
 		template.toolbar.context = { uri: item.source, range };
@@ -507,12 +543,12 @@ class FrameCodeRenderer extends AbstractFrameRenderer<IStackTemplateData> {
 		template.editor.setHiddenAreas([
 			Range.fromPositions(
 				{ column: 1, lineNumber: 1 },
-				{ column: 1, lineNumber: Math.max(1, item.line - CONTEXT_LINES - 1) },
+				{ column: 1, lineNumber: Math.max(1, item.line - CONTEXT_LINES - 1) }
 			),
 			Range.fromPositions(
 				{ column: 1, lineNumber: item.line + CONTEXT_LINES + 1 },
-				{ column: 1, lineNumber: Constants.MAX_SAFE_SMALL_INTEGER },
-			),
+				{ column: 1, lineNumber: Constants.MAX_SAFE_SMALL_INTEGER }
+			)
 		]);
 
 		template.editor.changeDecorations(accessor => {
@@ -525,14 +561,10 @@ class FrameCodeRenderer extends AbstractFrameRenderer<IStackTemplateData> {
 			const hasCharactersBefore = !!template.editor.getModel()?.getValueInRange(beforeRange).trim();
 			const decoRange = range.setEndPosition(range.startLineNumber, Constants.MAX_SAFE_SMALL_INTEGER);
 
-			template.decorations.push(accessor.addDecoration(
-				decoRange,
-				makeStackFrameColumnDecoration(!hasCharactersBefore),
-			));
-			template.decorations.push(accessor.addDecoration(
-				decoRange,
-				TOP_STACK_FRAME_DECORATION,
-			));
+			template.decorations.push(
+				accessor.addDecoration(decoRange, makeStackFrameColumnDecoration(!hasCharactersBefore))
+			);
+			template.decorations.push(accessor.addDecoration(decoRange, TOP_STACK_FRAME_DECORATION));
 		});
 
 		item.editorHeight.set(template.editor.getContentHeight(), undefined);
@@ -549,7 +581,7 @@ class MissingCodeRenderer implements IListRenderer<ListItem, IMissingTemplateDat
 	public static readonly templateId = 'm';
 	public readonly templateId = MissingCodeRenderer.templateId;
 
-	constructor(@IInstantiationService private readonly instantiationService: IInstantiationService) { }
+	constructor(@IInstantiationService private readonly instantiationService: IInstantiationService) {}
 
 	renderTemplate(container: HTMLElement): IMissingTemplateData {
 		const elements = makeFrameElements();
@@ -561,13 +593,21 @@ class MissingCodeRenderer implements IListRenderer<ListItem, IMissingTemplateDat
 
 	renderElement(element: ListItem, _index: number, templateData: IMissingTemplateData): void {
 		const cast = element as CallStackFrame;
-		templateData.label.element.setResource({
-			name: cast.name,
-			description: localize('stackFrameLocation', 'Line {0} column {1}', cast.line, cast.column),
-			range: { startLineNumber: cast.line, startColumn: cast.column, endColumn: cast.column, endLineNumber: cast.line },
-		}, {
-			icon: Codicon.fileBinary,
-		});
+		templateData.label.element.setResource(
+			{
+				name: cast.name,
+				description: localize('stackFrameLocation', 'Line {0} column {1}', cast.line, cast.column),
+				range: {
+					startLineNumber: cast.line,
+					startColumn: cast.column,
+					endColumn: cast.column,
+					endLineNumber: cast.line
+				}
+			},
+			{
+				icon: Codicon.fileBinary
+			}
+		);
 	}
 
 	disposeTemplate(templateData: IMissingTemplateData): void {
@@ -581,7 +621,9 @@ class CustomRenderer extends AbstractFrameRenderer<IAbstractFrameRendererTemplat
 	public static readonly templateId = 'c';
 	public readonly templateId = CustomRenderer.templateId;
 
-	protected override finishRenderTemplate(data: IAbstractFrameRendererTemplateData): IAbstractFrameRendererTemplateData {
+	protected override finishRenderTemplate(
+		data: IAbstractFrameRendererTemplateData
+	): IAbstractFrameRendererTemplateData {
 		return data;
 	}
 
@@ -593,15 +635,19 @@ class CustomRenderer extends AbstractFrameRenderer<IAbstractFrameRendererTemplat
 
 		label.element.setResource({ name: item.original.label }, { icon: item.original.icon });
 
-		elementStore.add(autorun(reader => {
-			template.elements.header.style.display = item.original.showHeader.read(reader) ? '' : 'none';
-		}));
+		elementStore.add(
+			autorun(reader => {
+				template.elements.header.style.display = item.original.showHeader.read(reader) ? '' : 'none';
+			})
+		);
 
-		elementStore.add(autorunWithStore((reader, store) => {
-			if (!item.collapsed.read(reader)) {
-				store.add(item.original.render(container));
-			}
-		}));
+		elementStore.add(
+			autorunWithStore((reader, store) => {
+				if (!item.collapsed.read(reader)) {
+					store.add(item.original.render(container));
+				}
+			})
+		);
 
 		const actions = item.original.renderActions?.(template.elements.actions);
 		if (actions) {
@@ -623,8 +669,8 @@ class SkippedRenderer implements IListRenderer<ListItem, ISkippedTemplateData> {
 
 	constructor(
 		private readonly loadFrames: (fromItem: SkippedCallFrames) => Promise<void>,
-		@INotificationService private readonly notificationService: INotificationService,
-	) { }
+		@INotificationService private readonly notificationService: INotificationService
+	) {}
 
 	renderTemplate(container: HTMLElement): ISkippedTemplateData {
 		const store = new DisposableStore();
@@ -632,16 +678,18 @@ class SkippedRenderer implements IListRenderer<ListItem, ISkippedTemplateData> {
 		const data: ISkippedTemplateData = { button, store };
 
 		store.add(button);
-		store.add(button.onDidClick(() => {
-			if (!data.current || !button.enabled) {
-				return;
-			}
+		store.add(
+			button.onDidClick(() => {
+				if (!data.current || !button.enabled) {
+					return;
+				}
 
-			button.enabled = false;
-			this.loadFrames(data.current).catch(e => {
-				this.notificationService.error(localize('failedToLoadFrames', 'Failed to load stack frames: {0}', e.message));
-			});
-		}));
+				button.enabled = false;
+				this.loadFrames(data.current).catch(e => {
+					this.notificationService.error(localize('failedToLoadFrames', 'Failed to load stack frames: {0}', e.message));
+				});
+			})
+		);
 
 		return data;
 	}
@@ -666,7 +714,7 @@ class ClickToLocationContribution extends Disposable implements IEditorContribut
 
 	constructor(
 		private readonly editor: ICodeEditor,
-		@IEditorService editorService: IEditorService,
+		@IEditorService editorService: IEditorService
 	) {
 		super();
 		this.linkDecorations = editor.createDecorationsCollection();
@@ -674,23 +722,30 @@ class ClickToLocationContribution extends Disposable implements IEditorContribut
 
 		const clickLinkGesture = this._register(new ClickLinkGesture(editor));
 
-		this._register(clickLinkGesture.onMouseMoveOrRelevantKeyDown(([mouseEvent, keyboardEvent]) => {
-			this.onMove(mouseEvent);
-		}));
-		this._register(clickLinkGesture.onExecute((e) => {
-			const model = this.editor.getModel();
-			if (!this.current || !model) {
-				return;
-			}
+		this._register(
+			clickLinkGesture.onMouseMoveOrRelevantKeyDown(([mouseEvent, keyboardEvent]) => {
+				this.onMove(mouseEvent);
+			})
+		);
+		this._register(
+			clickLinkGesture.onExecute(e => {
+				const model = this.editor.getModel();
+				if (!this.current || !model) {
+					return;
+				}
 
-			editorService.openEditor({
-				resource: model.uri,
-				options: {
-					selection: Range.fromPositions(new Position(this.current.line, this.current.word.startColumn)),
-					selectionRevealType: TextEditorSelectionRevealType.CenterIfOutsideViewport,
-				},
-			}, e.hasSideBySideModifier ? SIDE_GROUP : undefined);
-		}));
+				editorService.openEditor(
+					{
+						resource: model.uri,
+						options: {
+							selection: Range.fromPositions(new Position(this.current.line, this.current.word.startColumn)),
+							selectionRevealType: TextEditorSelectionRevealType.CenterIfOutsideViewport
+						}
+					},
+					e.hasSideBySideModifier ? SIDE_GROUP : undefined
+				);
+			})
+		);
 	}
 
 	private onMove(mouseEvent: ClickLinkMouseEvent) {
@@ -710,13 +765,15 @@ class ClickToLocationContribution extends Disposable implements IEditorContribut
 		}
 
 		this.current = { word, line: position.lineNumber };
-		this.linkDecorations.set([{
-			range: new Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
-			options: {
-				description: 'call-stack-go-to-file-link',
-				inlineClassName: 'call-stack-go-to-file-link',
-			},
-		}]);
+		this.linkDecorations.set([
+			{
+				range: new Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn),
+				options: {
+					description: 'call-stack-go-to-file-link',
+					inlineClassName: 'call-stack-go-to-file-link'
+				}
+			}
+		]);
 	}
 
 	private clear() {
@@ -725,28 +782,30 @@ class ClickToLocationContribution extends Disposable implements IEditorContribut
 	}
 }
 
-registerAction2(class extends Action2 {
-	constructor() {
-		super({
-			id: 'callStackWidget.goToFile',
-			title: localize2('goToFile', 'Open File'),
-			icon: Codicon.goToFile,
-			menu: {
-				id: MenuId.DebugCallStackToolbar,
-				order: 22,
-				group: 'navigation',
-			},
-		});
-	}
+registerAction2(
+	class extends Action2 {
+		constructor() {
+			super({
+				id: 'callStackWidget.goToFile',
+				title: localize2('goToFile', 'Open File'),
+				icon: Codicon.goToFile,
+				menu: {
+					id: MenuId.DebugCallStackToolbar,
+					order: 22,
+					group: 'navigation'
+				}
+			});
+		}
 
-	async run(accessor: ServicesAccessor, { uri, range }: Location): Promise<void> {
-		const editorService = accessor.get(IEditorService);
-		await editorService.openEditor({
-			resource: uri,
-			options: {
-				selection: range,
-				selectionRevealType: TextEditorSelectionRevealType.CenterIfOutsideViewport,
-			},
-		});
+		async run(accessor: ServicesAccessor, { uri, range }: Location): Promise<void> {
+			const editorService = accessor.get(IEditorService);
+			await editorService.openEditor({
+				resource: uri,
+				options: {
+					selection: range,
+					selectionRevealType: TextEditorSelectionRevealType.CenterIfOutsideViewport
+				}
+			});
+		}
 	}
-});
+);

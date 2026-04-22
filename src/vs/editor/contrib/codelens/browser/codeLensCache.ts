@@ -11,7 +11,12 @@ import { CodeLens, CodeLensList, CodeLensProvider } from '../../../common/langua
 import { CodeLensModel } from './codelens.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
-import { IStorageService, StorageScope, StorageTarget, WillSaveStateReason } from '../../../../platform/storage/common/storage.js';
+import {
+	IStorageService,
+	StorageScope,
+	StorageTarget,
+	WillSaveStateReason
+} from '../../../../platform/storage/common/storage.js';
 import { mainWindow } from '../../../../base/browser/window.js';
 import { runWhenWindowIdle } from '../../../../base/browser/dom.js';
 
@@ -30,27 +35,24 @@ interface ISerializedCacheData {
 }
 
 class CacheItem {
-
 	constructor(
 		readonly lineCount: number,
 		readonly data: CodeLensModel
-	) { }
+	) {}
 }
 
 export class CodeLensCache implements ICodeLensCache {
-
 	declare readonly _serviceBrand: undefined;
 
-	private readonly _fakeProvider = new class implements CodeLensProvider {
+	private readonly _fakeProvider = new (class implements CodeLensProvider {
 		provideCodeLenses(): CodeLensList {
 			throw new Error('not supported');
 		}
-	};
+	})();
 
 	private readonly _cache = new LRUCache<string, CacheItem>(20, 0.75);
 
 	constructor(@IStorageService storageService: IStorageService) {
-
 		// remove old data
 		const oldkey = 'codelens/cache';
 		runWhenWindowIdle(mainWindow, () => storageService.remove(oldkey, StorageScope.WORKSPACE));
@@ -61,7 +63,10 @@ export class CodeLensCache implements ICodeLensCache {
 		this._deserialize(raw);
 
 		// store lens data on shutdown
-		const onWillSaveStateBecauseOfShutdown = Event.filter(storageService.onWillSaveState, e => e.reason === WillSaveStateReason.SHUTDOWN);
+		const onWillSaveStateBecauseOfShutdown = Event.filter(
+			storageService.onWillSaveState,
+			e => e.reason === WillSaveStateReason.SHUTDOWN
+		);
 		Event.once(onWillSaveStateBecauseOfShutdown)(e => {
 			storageService.store(key, this._serialize(), StorageScope.WORKSPACE, StorageTarget.MACHINE);
 		});
@@ -73,7 +78,7 @@ export class CodeLensCache implements ICodeLensCache {
 		const copyItems = data.lenses.map((item): CodeLens => {
 			return {
 				range: item.symbol.range,
-				command: item.symbol.command && { id: '', title: item.symbol.command?.title },
+				command: item.symbol.command && { id: '', title: item.symbol.command?.title }
 			};
 		});
 		const copyModel = new CodeLensModel();

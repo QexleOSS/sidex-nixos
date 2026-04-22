@@ -17,7 +17,10 @@ import { ITerminalLinkOpener, ITerminalSimpleLink, TerminalBuiltinLinkType } fro
 import { osPathModule, updateLinkWithRelativeCwd } from './terminalLinkHelpers.js';
 import { getTerminalLinkType } from './terminalLocalLinkDetector.js';
 import { IUriIdentityService } from '../../../../../platform/uriIdentity/common/uriIdentity.js';
-import { ITerminalCapabilityStore, TerminalCapability } from '../../../../../platform/terminal/common/capabilities/capabilities.js';
+import {
+	ITerminalCapabilityStore,
+	TerminalCapability
+} from '../../../../../platform/terminal/common/capabilities/capabilities.js';
 import { IEditorService } from '../../../../services/editor/common/editorService.js';
 import { IWorkbenchEnvironmentService } from '../../../../services/environment/common/environmentService.js';
 import { IHostService } from '../../../../services/host/browser/host.js';
@@ -28,10 +31,7 @@ import { detectLinks, getLinkSuffix } from './terminalLinkParsing.js';
 import { ITerminalLogService } from '../../../../../platform/terminal/common/terminal.js';
 
 export class TerminalLocalFileLinkOpener implements ITerminalLinkOpener {
-	constructor(
-		@IEditorService private readonly _editorService: IEditorService,
-	) {
-	}
+	constructor(@IEditorService private readonly _editorService: IEditorService) {}
 
 	async open(link: ITerminalSimpleLink): Promise<void> {
 		if (!link.uri) {
@@ -40,12 +40,15 @@ export class TerminalLocalFileLinkOpener implements ITerminalLinkOpener {
 		const linkSuffix = link.parsedLink ? link.parsedLink.suffix : getLinkSuffix(link.text);
 		let selection: ITextEditorSelection | undefined = link.selection;
 		if (!selection) {
-			selection = linkSuffix?.row === undefined ? undefined : {
-				startLineNumber: linkSuffix.row ?? 1,
-				startColumn: linkSuffix.col ?? 1,
-				endLineNumber: linkSuffix.rowEnd,
-				endColumn: linkSuffix.colEnd
-			};
+			selection =
+				linkSuffix?.row === undefined
+					? undefined
+					: {
+							startLineNumber: linkSuffix.row ?? 1,
+							startColumn: linkSuffix.col ?? 1,
+							endLineNumber: linkSuffix.rowEnd,
+							endColumn: linkSuffix.colEnd
+						};
 		}
 		await this._editorService.openEditor({
 			resource: link.uri,
@@ -55,8 +58,7 @@ export class TerminalLocalFileLinkOpener implements ITerminalLinkOpener {
 }
 
 export class TerminalLocalFolderInWorkspaceLinkOpener implements ITerminalLinkOpener {
-	constructor(@ICommandService private readonly _commandService: ICommandService) {
-	}
+	constructor(@ICommandService private readonly _commandService: ICommandService) {}
 
 	async open(link: ITerminalSimpleLink): Promise<void> {
 		if (!link.uri) {
@@ -67,8 +69,7 @@ export class TerminalLocalFolderInWorkspaceLinkOpener implements ITerminalLinkOp
 }
 
 export class TerminalLocalFolderOutsideWorkspaceLinkOpener implements ITerminalLinkOpener {
-	constructor(@IHostService private readonly _hostService: IHostService) {
-	}
+	constructor(@IHostService private readonly _hostService: IHostService) {}
 
 	async open(link: ITerminalSimpleLink): Promise<void> {
 		if (!link.uri) {
@@ -93,7 +94,7 @@ export class TerminalSearchLinkOpener implements ITerminalLinkOpener {
 		@ISearchService private readonly _searchService: ISearchService,
 		@ITerminalLogService private readonly _logService: ITerminalLogService,
 		@IWorkbenchEnvironmentService private readonly _workbenchEnvironmentService: IWorkbenchEnvironmentService,
-		@IWorkspaceContextService private readonly _workspaceContextService: IWorkspaceContextService,
+		@IWorkspaceContextService private readonly _workspaceContextService: IWorkspaceContextService
 	) {
 		this._fileQueryBuilder = instantiationService.createInstance(QueryBuilder);
 	}
@@ -118,7 +119,9 @@ export class TerminalSearchLinkOpener implements ITerminalLinkOpener {
 				const parsedLinks = detectLinks(link.contextLine, this._getOS());
 				// Optimistically check that the link _starts with_ the parsed link text. If so,
 				// continue to use the parsed link
-				const matchingParsedLink = parsedLinks.find(parsedLink => parsedLink.suffix && link.text.startsWith(parsedLink.path.text));
+				const matchingParsedLink = parsedLinks.find(
+					parsedLink => parsedLink.suffix && link.text.startsWith(parsedLink.path.text)
+				);
 				if (matchingParsedLink) {
 					if (matchingParsedLink.suffix?.row !== undefined) {
 						// Normalize the path based on the parsed link
@@ -149,7 +152,7 @@ export class TerminalSearchLinkOpener implements ITerminalLinkOpener {
 
 		// If any of the names of the folders in the workspace matches
 		// a prefix of the link, remove that prefix and continue
-		this._workspaceContextService.getWorkspace().folders.forEach((folder) => {
+		this._workspaceContextService.getWorkspace().folders.forEach(folder => {
 			if (text.substring(0, folder.name.length + 1) === folder.name + pathSeparator) {
 				text = text.substring(folder.name.length + 1);
 				return;
@@ -157,7 +160,9 @@ export class TerminalSearchLinkOpener implements ITerminalLinkOpener {
 		});
 		let cwdResolvedText = text;
 		if (this._capabilities.has(TerminalCapability.CommandDetection)) {
-			cwdResolvedText = updateLinkWithRelativeCwd(this._capabilities, link.bufferRange.start.y, text, osPath, this._logService)?.[0] || text;
+			cwdResolvedText =
+				updateLinkWithRelativeCwd(this._capabilities, link.bufferRange.start.y, text, osPath, this._logService)?.[0] ||
+				text;
 		}
 
 		// Try open the cwd resolved link first
@@ -264,7 +269,9 @@ export class TerminalSearchLinkOpener implements ITerminalLinkOpener {
 					type: link.type
 				};
 				if (uri) {
-					await (isDirectory ? this._localFolderInWorkspaceOpener.open(linkToOpen) : this._localFileOpener.open(linkToOpen));
+					await (isDirectory
+						? this._localFolderInWorkspaceOpener.open(linkToOpen)
+						: this._localFileOpener.open(linkToOpen));
 					return true;
 				}
 			}
@@ -291,9 +298,8 @@ export class TerminalUrlLinkOpener implements ITerminalLinkOpener {
 		@IFileService private readonly _fileService: IFileService,
 		@IUriIdentityService private readonly _uriIdentityService: IUriIdentityService,
 		@IWorkspaceContextService private readonly _workspaceContextService: IWorkspaceContextService,
-		@ITerminalLogService private readonly _logService: ITerminalLogService,
-	) {
-	}
+		@ITerminalLogService private readonly _logService: ITerminalLogService
+	) {}
 
 	async open(link: ITerminalSimpleLink): Promise<void> {
 		if (!link.uri) {

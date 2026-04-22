@@ -4,7 +4,14 @@
  *--------------------------------------------------------------------------------------------*/
 
 import type { IDisposable } from '../../../base/common/lifecycle.js';
-import type { ViewConfigurationChangedEvent, ViewLinesChangedEvent, ViewLinesDeletedEvent, ViewLinesInsertedEvent, ViewScrollChangedEvent, ViewTokensChangedEvent } from '../../common/viewEvents.js';
+import type {
+	ViewConfigurationChangedEvent,
+	ViewLinesChangedEvent,
+	ViewLinesDeletedEvent,
+	ViewLinesInsertedEvent,
+	ViewScrollChangedEvent,
+	ViewTokensChangedEvent
+} from '../../common/viewEvents.js';
 import type { ViewportData } from '../../common/viewLayout/viewLinesViewportData.js';
 import type { ViewLineOptions } from '../viewParts/viewLines/viewLineOptions.js';
 import type { IGlyphRasterizer } from './raster/raster.js';
@@ -16,7 +23,7 @@ export const enum BindingId {
 	Texture,
 	LayoutInfoUniform,
 	AtlasDimensionsUniform,
-	ScrollOffset,
+	ScrollOffset
 }
 
 export interface IGpuRenderStrategy extends IDisposable {

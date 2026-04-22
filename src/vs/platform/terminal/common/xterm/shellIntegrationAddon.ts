@@ -8,7 +8,15 @@ import { Disposable, dispose, IDisposable, toDisposable } from '../../../../base
 import { TerminalCapabilityStore } from '../capabilities/terminalCapabilityStore.js';
 import { CommandDetectionCapability } from '../capabilities/commandDetectionCapability.js';
 import { CwdDetectionCapability } from '../capabilities/cwdDetectionCapability.js';
-import { IBufferMarkCapability, ICommandDetectionCapability, ICwdDetectionCapability, IPromptTypeDetectionCapability, ISerializedCommandDetectionCapability, IShellEnvDetectionCapability, TerminalCapability } from '../capabilities/capabilities.js';
+import {
+	IBufferMarkCapability,
+	ICommandDetectionCapability,
+	ICwdDetectionCapability,
+	IPromptTypeDetectionCapability,
+	ISerializedCommandDetectionCapability,
+	IShellEnvDetectionCapability,
+	TerminalCapability
+} from '../capabilities/capabilities.js';
 import { PartialCommandDetectionCapability } from '../capabilities/partialCommandDetectionCapability.js';
 import { ILogService } from '../../../log/common/log.js';
 import { ITelemetryService } from '../../../telemetry/common/telemetry.js';
@@ -85,7 +93,7 @@ const enum FinalTermOscPt {
 	 *
 	 * Format: `OSC 133 ; D [; <ExitCode>] ST`
 	 */
-	CommandFinished = 'D',
+	CommandFinished = 'D'
 }
 
 /**
@@ -335,10 +343,14 @@ export class ShellIntegrationAddon extends Disposable implements IShellIntegrati
 	private _commonProtocolDisposables: IDisposable[] = [];
 
 	private _seenSequences: Set<string> = new Set();
-	get seenSequences(): ReadonlySet<string> { return this._seenSequences; }
+	get seenSequences(): ReadonlySet<string> {
+		return this._seenSequences;
+	}
 
 	private _status: ShellIntegrationStatus = ShellIntegrationStatus.Off;
-	get status(): ShellIntegrationStatus { return this._status; }
+	get status(): ShellIntegrationStatus {
+		return this._status;
+	}
 
 	private readonly _onDidChangeStatus = this._register(new Emitter<ShellIntegrationStatus>());
 	readonly onDidChangeStatus = this._onDidChangeStatus.event;
@@ -353,10 +365,12 @@ export class ShellIntegrationAddon extends Disposable implements IShellIntegrati
 		private readonly _logService: ILogService
 	) {
 		super();
-		this._register(toDisposable(() => {
-			this._clearActivationTimeout();
-			this._disposeCommonProtocol();
-		}));
+		this._register(
+			toDisposable(() => {
+				this._clearActivationTimeout();
+				this._disposeCommonProtocol();
+			})
+		);
 	}
 
 	private _disposeCommonProtocol(): void {
@@ -366,14 +380,25 @@ export class ShellIntegrationAddon extends Disposable implements IShellIntegrati
 
 	activate(xterm: Terminal) {
 		this._terminal = xterm;
-		this.capabilities.add(TerminalCapability.PartialCommandDetection, this._register(new PartialCommandDetectionCapability(this._terminal, this._onDidExecuteText)));
-		this._register(xterm.parser.registerOscHandler(ShellIntegrationOscPs.VSCode, data => this._handleVSCodeSequence(data)));
-		this._register(xterm.parser.registerOscHandler(ShellIntegrationOscPs.ITerm, data => this._doHandleITermSequence(data)));
+		this.capabilities.add(
+			TerminalCapability.PartialCommandDetection,
+			this._register(new PartialCommandDetectionCapability(this._terminal, this._onDidExecuteText))
+		);
+		this._register(
+			xterm.parser.registerOscHandler(ShellIntegrationOscPs.VSCode, data => this._handleVSCodeSequence(data))
+		);
+		this._register(
+			xterm.parser.registerOscHandler(ShellIntegrationOscPs.ITerm, data => this._doHandleITermSequence(data))
+		);
 		this._commonProtocolDisposables.push(
 			xterm.parser.registerOscHandler(ShellIntegrationOscPs.FinalTerm, data => this._handleFinalTermSequence(data))
 		);
 		this._register(xterm.parser.registerOscHandler(ShellIntegrationOscPs.SetCwd, data => this._doHandleSetCwd(data)));
-		this._register(xterm.parser.registerOscHandler(ShellIntegrationOscPs.SetWindowsFriendlyCwd, data => this._doHandleSetWindowsFriendlyCwd(data)));
+		this._register(
+			xterm.parser.registerOscHandler(ShellIntegrationOscPs.SetWindowsFriendlyCwd, data =>
+				this._doHandleSetWindowsFriendlyCwd(data)
+			)
+		);
 		this._ensureCapabilitiesOrAddFailureTelemetry();
 	}
 
@@ -438,7 +463,10 @@ export class ShellIntegrationAddon extends Disposable implements IShellIntegrati
 	private _handleVSCodeSequence(data: string): boolean {
 		const didHandle = this._doHandleVSCodeSequence(data);
 		if (!this._hasUpdatedTelemetry && didHandle) {
-			this._telemetryService?.publicLog2<{}, { owner: 'meganrogge'; comment: 'Indicates shell integration was activated' }>('terminal/shellIntegrationActivationSucceeded');
+			this._telemetryService?.publicLog2<
+				{},
+				{ owner: 'meganrogge'; comment: 'Indicates shell integration was activated' }
+			>('terminal/shellIntegrationActivationSucceeded');
 			this._hasUpdatedTelemetry = true;
 			this._clearActivationTimeout();
 		}
@@ -454,8 +482,14 @@ export class ShellIntegrationAddon extends Disposable implements IShellIntegrati
 			return;
 		}
 		this._activationTimeout = setTimeout(() => {
-			if (!this.capabilities.get(TerminalCapability.CommandDetection) && !this.capabilities.get(TerminalCapability.CwdDetection)) {
-				this._telemetryService?.publicLog2<{}, { owner: 'meganrogge'; comment: 'Indicates shell integration activation timeout' }>('terminal/shellIntegrationActivationTimeout');
+			if (
+				!this.capabilities.get(TerminalCapability.CommandDetection) &&
+				!this.capabilities.get(TerminalCapability.CwdDetection)
+			) {
+				this._telemetryService?.publicLog2<
+					{},
+					{ owner: 'meganrogge'; comment: 'Indicates shell integration activation timeout' }
+				>('terminal/shellIntegrationActivationTimeout');
 				this._logService.warn('Shell integration failed to add capabilities within 10 seconds');
 			}
 			this._hasUpdatedTelemetry = true;
@@ -587,7 +621,9 @@ export class ShellIntegrationAddon extends Disposable implements IShellIntegrati
 						return true;
 					}
 					case 'HasRichCommandDetection': {
-						this._createOrGetCommandDetection(this._terminal).setHasRichCommandDetection(value === 'True' ? true : false);
+						this._createOrGetCommandDetection(this._terminal).setHasRichCommandDetection(
+							value === 'True' ? true : false
+						);
 						return true;
 					}
 					case 'Prompt': {
@@ -630,13 +666,12 @@ export class ShellIntegrationAddon extends Disposable implements IShellIntegrati
 		}
 		const lastPromptLine = prompt.substring(prompt.lastIndexOf('\n') + 1);
 		const lastPromptLineTrimmed = lastPromptLine.trim();
-		const promptTerminator = (
+		const promptTerminator =
 			lastPromptLineTrimmed.length === 1
-				// The prompt line contains a single character, treat the full line as the
-				// terminator for example "\u2b9e "
-				? lastPromptLine
-				: lastPromptLine.substring(lastPromptLine.lastIndexOf(' '))
-		);
+				? // The prompt line contains a single character, treat the full line as the
+					// terminator for example "\u2b9e "
+					lastPromptLine
+				: lastPromptLine.substring(lastPromptLine.lastIndexOf(' '));
 		if (promptTerminator) {
 			this._createOrGetCommandDetection(this._terminal).setPromptTerminator(promptTerminator, lastPromptLine);
 		}
@@ -733,7 +768,7 @@ export class ShellIntegrationAddon extends Disposable implements IShellIntegrati
 				isWindowsPty: false,
 				hasRichCommandDetection: false,
 				commands: [],
-				promptInputModel: undefined,
+				promptInputModel: undefined
 			};
 		}
 		const result = this._createOrGetCommandDetection(this._terminal).serialize();
@@ -804,7 +839,8 @@ export function deserializeVSCodeOscMessage(message: string): string {
 		/\\(\\|x([0-9a-f]{2}))/gi,
 		// If it's a hex value, parse it to a character.
 		// Otherwise the operator is '\', which we return literally, now unescaped.
-		(_match: string, op: string, hex?: string) => hex ? String.fromCharCode(parseInt(hex, 16)) : op);
+		(_match: string, op: string, hex?: string) => (hex ? String.fromCharCode(parseInt(hex, 16)) : op)
+	);
 }
 
 export function serializeVSCodeOscMessage(message: string): string {
@@ -833,7 +869,6 @@ export function parseKeyValueAssignment(message: string): { key: string; value: 
 		value: message.substring(1 + separatorIndex)
 	};
 }
-
 
 export function parseMarkSequence(sequence: (string | undefined)[]): { id?: string; hidden?: boolean } {
 	let id = undefined;

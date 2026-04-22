@@ -16,16 +16,16 @@ export class WebviewService extends Disposable implements IWebviewService {
 
 	protected readonly _webviewThemeDataProvider: WebviewThemeDataProvider;
 
-	constructor(
-		@IInstantiationService protected readonly _instantiationService: IInstantiationService,
-	) {
+	constructor(@IInstantiationService protected readonly _instantiationService: IInstantiationService) {
 		super();
 		this._webviewThemeDataProvider = this._instantiationService.createInstance(WebviewThemeDataProvider);
 	}
 
 	private _activeWebview?: IWebview;
 
-	public get activeWebview() { return this._activeWebview; }
+	public get activeWebview() {
+		return this._activeWebview;
+	}
 
 	private _updateActiveWebview(value: IWebview | undefined) {
 		if (value !== this._activeWebview) {
@@ -60,9 +60,11 @@ export class WebviewService extends Disposable implements IWebviewService {
 
 		const store = new DisposableStore();
 
-		store.add(webview.onDidFocus(() => {
-			this._updateActiveWebview(webview);
-		}));
+		store.add(
+			webview.onDidFocus(() => {
+				this._updateActiveWebview(webview);
+			})
+		);
 
 		const onBlur = () => {
 			if (this._activeWebview === webview) {
@@ -71,10 +73,12 @@ export class WebviewService extends Disposable implements IWebviewService {
 		};
 
 		store.add(webview.onDidBlur(onBlur));
-		store.add(webview.onDidDispose(() => {
-			onBlur();
-			store.dispose();
-			this._webviews.delete(webview);
-		}));
+		store.add(
+			webview.onDidDispose(() => {
+				onBlur();
+				store.dispose();
+				this._webviews.delete(webview);
+			})
+		);
 	}
 }

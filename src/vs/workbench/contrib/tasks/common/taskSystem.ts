@@ -44,15 +44,31 @@ export class VerifiedTask {
 
 	public verify(): boolean {
 		let verified = false;
-		if (this.trigger && this.resolvedVariables && this.workspaceFolder && (this.shellLaunchConfig !== undefined)) {
+		if (this.trigger && this.resolvedVariables && this.workspaceFolder && this.shellLaunchConfig !== undefined) {
 			verified = true;
 		}
 		return verified;
 	}
 
-	public getVerifiedTask(): { task: Task; resolver: ITaskResolver; trigger: string; resolvedVariables: IResolvedVariables; systemInfo: ITaskSystemInfo; workspaceFolder: IWorkspaceFolder; shellLaunchConfig: IShellLaunchConfig } {
+	public getVerifiedTask(): {
+		task: Task;
+		resolver: ITaskResolver;
+		trigger: string;
+		resolvedVariables: IResolvedVariables;
+		systemInfo: ITaskSystemInfo;
+		workspaceFolder: IWorkspaceFolder;
+		shellLaunchConfig: IShellLaunchConfig;
+	} {
 		if (this.verify()) {
-			return { task: this.task, resolver: this.resolver, trigger: this.trigger, resolvedVariables: this.resolvedVariables!, systemInfo: this.systemInfo!, workspaceFolder: this.workspaceFolder!, shellLaunchConfig: this.shellLaunchConfig! };
+			return {
+				task: this.task,
+				resolver: this.resolver,
+				trigger: this.trigger,
+				resolvedVariables: this.resolvedVariables!,
+				systemInfo: this.systemInfo!,
+				workspaceFolder: this.workspaceFolder!,
+				shellLaunchConfig: this.shellLaunchConfig!
+			};
 		} else {
 			throw new Error('VerifiedTask was not checked. verify must be checked before getVerifiedTask.');
 		}
@@ -128,7 +144,11 @@ export interface ITaskSystemInfo {
 	platform: Platform;
 	context: unknown;
 	uriProvider: (this: void, path: string) => URI;
-	resolveVariables(workspaceFolder: IWorkspaceFolder, toResolve: IResolveSet, target: ConfigurationTarget): Promise<IResolvedVariables | undefined>;
+	resolveVariables(
+		workspaceFolder: IWorkspaceFolder,
+		toResolve: IResolveSet,
+		target: ConfigurationTarget
+	): Promise<IResolvedVariables | undefined>;
 	findExecutable(command: string, cwd?: string, paths?: string[]): Promise<string | undefined>;
 }
 

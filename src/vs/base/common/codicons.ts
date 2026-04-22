@@ -6,7 +6,6 @@ import { ThemeIcon } from './themables.js';
 import { register } from './codiconsUtil.js';
 import { codiconsLibrary } from './codiconsLibrary.js';
 
-
 /**
  * Only to be used by the iconRegistry.
  */
@@ -48,8 +47,7 @@ export const codiconsDerived = {
 	lightbulbSparkleAutofix: register('lightbulb-sparkle-autofix', 0xec1f),
 	debugBreakpointPending: register('debug-breakpoint-pending', 0xebd9),
 	chatImport: register('chat-import', 0xec86),
-	chatExport: register('chat-export', 0xec87),
-
+	chatExport: register('chat-export', 0xec87)
 } as const;
 
 /**
@@ -62,5 +60,4 @@ export const codiconsDerived = {
 export const Codicon = {
 	...codiconsLibrary,
 	...codiconsDerived
-
 } as const;

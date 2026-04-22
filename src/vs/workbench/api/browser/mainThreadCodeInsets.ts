@@ -11,13 +11,18 @@ import { IActiveCodeEditor, IViewZone } from '../../../editor/browser/editorBrow
 import { ICodeEditorService } from '../../../editor/browser/services/codeEditorService.js';
 import { ExtensionIdentifier } from '../../../platform/extensions/common/extensions.js';
 import { reviveWebviewContentOptions } from './mainThreadWebviews.js';
-import { ExtHostContext, ExtHostEditorInsetsShape, IWebviewContentOptions, MainContext, MainThreadEditorInsetsShape } from '../common/extHost.protocol.js';
+import {
+	ExtHostContext,
+	ExtHostEditorInsetsShape,
+	IWebviewContentOptions,
+	MainContext,
+	MainThreadEditorInsetsShape
+} from '../common/extHost.protocol.js';
 import { IWebviewService, IWebviewElement } from '../../contrib/webview/browser/webview.js';
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
 
 // todo@jrieken move these things back into something like contrib/insets
 class EditorWebviewZone implements IViewZone {
-
 	readonly domNode: HTMLElement;
 	readonly afterLineNumber: number;
 	readonly afterColumn: number;
@@ -35,7 +40,7 @@ class EditorWebviewZone implements IViewZone {
 		readonly editor: IActiveCodeEditor,
 		readonly line: number,
 		readonly height: number,
-		readonly webview: IWebviewElement,
+		readonly webview: IWebviewElement
 	) {
 		this.domNode = document.createElement('div');
 		this.domNode.style.zIndex = '10'; // without this, the webview is not interactive
@@ -43,7 +48,7 @@ class EditorWebviewZone implements IViewZone {
 		this.afterColumn = 1;
 		this.heightInLines = height;
 
-		editor.changeViewZones(accessor => this._id = accessor.addZone(this));
+		editor.changeViewZones(accessor => (this._id = accessor.addZone(this)));
 		webview.mountTo(this.domNode, getWindow(editor.getDomNode()));
 	}
 
@@ -54,7 +59,6 @@ class EditorWebviewZone implements IViewZone {
 
 @extHostNamedCustomer(MainContext.MainThreadEditorInsets)
 export class MainThreadEditorInsets implements MainThreadEditorInsetsShape {
-
 	private readonly _proxy: ExtHostEditorInsetsShape;
 	private readonly _disposables = new DisposableStore();
 	private readonly _insets = new Map<number, EditorWebviewZone>();
@@ -62,7 +66,7 @@ export class MainThreadEditorInsets implements MainThreadEditorInsetsShape {
 	constructor(
 		context: IExtHostContext,
 		@ICodeEditorService private readonly _editorService: ICodeEditorService,
-		@IWebviewService private readonly _webviewService: IWebviewService,
+		@IWebviewService private readonly _webviewService: IWebviewService
 	) {
 		this._proxy = context.getProxy(ExtHostContext.ExtHostEditorInsets);
 	}
@@ -71,8 +75,16 @@ export class MainThreadEditorInsets implements MainThreadEditorInsetsShape {
 		this._disposables.dispose();
 	}
 
-	async $createEditorInset(handle: number, id: string, uri: UriComponents, line: number, height: number, options: IWebviewContentOptions, extensionId: ExtensionIdentifier, extensionLocation: UriComponents): Promise<void> {
-
+	async $createEditorInset(
+		handle: number,
+		id: string,
+		uri: UriComponents,
+		line: number,
+		height: number,
+		options: IWebviewContentOptions,
+		extensionId: ExtensionIdentifier,
+		extensionLocation: UriComponents
+	): Promise<void> {
 		let editor: IActiveCodeEditor | undefined;
 		id = id.substr(0, id.indexOf(',')); //todo@jrieken HACK
 
@@ -93,7 +105,7 @@ export class MainThreadEditorInsets implements MainThreadEditorInsetsShape {
 		const webview = this._webviewService.createWebviewElement({
 			title: undefined,
 			options: {
-				enableFindWidget: false,
+				enableFindWidget: false
 			},
 			contentOptions: reviveWebviewContentOptions(options),
 			extension: { id: extensionId, location: URI.revive(extensionLocation) }

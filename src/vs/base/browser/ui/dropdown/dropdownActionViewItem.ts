@@ -15,7 +15,12 @@ import { IContextMenuProvider } from '../../contextmenu.js';
 import { $, addDisposableListener, append, EventType, h } from '../../dom.js';
 import { StandardKeyboardEvent } from '../../keyboardEvent.js';
 import { IActionViewItemProvider } from '../actionbar/actionbar.js';
-import { ActionViewItem, BaseActionViewItem, IActionViewItemOptions, IBaseActionViewItemOptions } from '../actionbar/actionViewItems.js';
+import {
+	ActionViewItem,
+	BaseActionViewItem,
+	IActionViewItemOptions,
+	IBaseActionViewItemOptions
+} from '../actionbar/actionViewItems.js';
 import { AnchorAlignment } from '../contextview/contextview.js';
 import { getBaseLayerHoverDelegate } from '../hover/hoverDelegate2.js';
 import { getDefaultHoverDelegate } from '../hover/hoverDelegateFactory.js';
@@ -47,7 +52,9 @@ export class DropdownMenuActionViewItem extends BaseActionViewItem {
 	private actionItem: HTMLElement | null = null;
 
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
-	get onDidChangeVisibility() { return this._onDidChangeVisibility.event; }
+	get onDidChangeVisibility() {
+		return this._onDidChangeVisibility.event;
+	}
 
 	protected override readonly options: IDropdownMenuActionViewItemOptions;
 
@@ -82,16 +89,18 @@ export class DropdownMenuActionViewItem extends BaseActionViewItem {
 			contextMenuProvider: this.contextMenuProvider,
 			labelRenderer: labelRenderer,
 			menuAsChild: this.options.menuAsChild,
-			actions: isActionsArray ? this.menuActionsOrProvider as IAction[] : undefined,
-			actionProvider: isActionsArray ? undefined : this.menuActionsOrProvider as IActionProvider,
+			actions: isActionsArray ? (this.menuActionsOrProvider as IAction[]) : undefined,
+			actionProvider: isActionsArray ? undefined : (this.menuActionsOrProvider as IActionProvider),
 			skipTelemetry: this.options.skipTelemetry
 		};
 
 		this.dropdownMenu = this._register(new DropdownMenu(container, options));
-		this._register(this.dropdownMenu.onDidChangeVisibility(visible => {
-			this.element?.setAttribute('aria-expanded', `${visible}`);
-			this._onDidChangeVisibility.fire(visible);
-		}));
+		this._register(
+			this.dropdownMenu.onDidChangeVisibility(visible => {
+				this.element?.setAttribute('aria-expanded', `${visible}`);
+				this._onDidChangeVisibility.fire(visible);
+			})
+		);
 
 		this.dropdownMenu.menuOptions = {
 			actionViewItemProvider: this.options.actionViewItemProvider,
@@ -132,7 +141,13 @@ export class DropdownMenuActionViewItem extends BaseActionViewItem {
 		element.classList.add(...classNames);
 
 		if (this._action.label) {
-			this._register(getBaseLayerHoverDelegate().setupManagedHover(this.options.hoverDelegate ?? getDefaultHoverDelegate('mouse'), element, this._action.label));
+			this._register(
+				getBaseLayerHoverDelegate().setupManagedHover(
+					this.options.hoverDelegate ?? getDefaultHoverDelegate('mouse'),
+					element,
+					this._action.label
+				)
+			);
 		}
 
 		return null;
@@ -186,7 +201,6 @@ export interface IActionWithDropdownActionViewItemOptions extends IActionViewIte
 }
 
 export class ActionWithDropdownActionViewItem extends ActionViewItem {
-
 	protected dropdownMenuActionViewItem: DropdownMenuActionViewItem | undefined;
 
 	constructor(
@@ -214,30 +228,42 @@ export class ActionWithDropdownActionViewItem extends ActionViewItem {
 			separator.classList.toggle('prominent', menuActionClassNames.includes('prominent'));
 			append(this.element, separator);
 
-			this.dropdownMenuActionViewItem = this._register(new DropdownMenuActionViewItem(this._register(new Action('dropdownAction', nls.localize('moreActions', "More Actions..."))), menuActionsProvider, this.contextMenuProvider, { classNames: ['dropdown', ...ThemeIcon.asClassNameArray(Codicon.dropDownButton), ...menuActionClassNames], hoverDelegate: this.options.hoverDelegate }));
+			this.dropdownMenuActionViewItem = this._register(
+				new DropdownMenuActionViewItem(
+					this._register(new Action('dropdownAction', nls.localize('moreActions', 'More Actions...'))),
+					menuActionsProvider,
+					this.contextMenuProvider,
+					{
+						classNames: ['dropdown', ...ThemeIcon.asClassNameArray(Codicon.dropDownButton), ...menuActionClassNames],
+						hoverDelegate: this.options.hoverDelegate
+					}
+				)
+			);
 			this.dropdownMenuActionViewItem.render(this.element);
 
-			this._register(addDisposableListener(this.element, EventType.KEY_DOWN, e => {
-				// If we don't have any actions then the dropdown is hidden so don't try to focus it #164050
-				if (menuActionsProvider.getActions().length === 0) {
-					return;
-				}
-				const event = new StandardKeyboardEvent(e);
-				let handled: boolean = false;
-				if (this.dropdownMenuActionViewItem?.isFocused() && event.equals(KeyCode.LeftArrow)) {
-					handled = true;
-					this.dropdownMenuActionViewItem?.blur();
-					this.focus();
-				} else if (this.isFocused() && event.equals(KeyCode.RightArrow)) {
-					handled = true;
-					this.blur();
-					this.dropdownMenuActionViewItem?.focus();
-				}
-				if (handled) {
-					event.preventDefault();
-					event.stopPropagation();
-				}
-			}));
+			this._register(
+				addDisposableListener(this.element, EventType.KEY_DOWN, e => {
+					// If we don't have any actions then the dropdown is hidden so don't try to focus it #164050
+					if (menuActionsProvider.getActions().length === 0) {
+						return;
+					}
+					const event = new StandardKeyboardEvent(e);
+					let handled: boolean = false;
+					if (this.dropdownMenuActionViewItem?.isFocused() && event.equals(KeyCode.LeftArrow)) {
+						handled = true;
+						this.dropdownMenuActionViewItem?.blur();
+						this.focus();
+					} else if (this.isFocused() && event.equals(KeyCode.RightArrow)) {
+						handled = true;
+						this.blur();
+						this.dropdownMenuActionViewItem?.focus();
+					}
+					if (handled) {
+						event.preventDefault();
+						event.stopPropagation();
+					}
+				})
+			);
 		}
 	}
 

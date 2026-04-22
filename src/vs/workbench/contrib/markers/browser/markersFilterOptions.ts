@@ -4,7 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IFilter, matchesFuzzy, matchesFuzzy2 } from '../../../../base/common/filters.js';
-import { IExpression, splitGlobAware, getEmptyExpression, ParsedExpression, parse } from '../../../../base/common/glob.js';
+import {
+	IExpression,
+	splitGlobAware,
+	getEmptyExpression,
+	ParsedExpression,
+	parse
+} from '../../../../base/common/glob.js';
 import * as strings from '../../../../base/common/strings.js';
 import { URI } from '../../../../base/common/uri.js';
 import { relativePath } from '../../../../base/common/resources.js';
@@ -14,7 +20,6 @@ import { IUriIdentityService } from '../../../../platform/uriIdentity/common/uri
 const SOURCE_FILTER_REGEX = /(!)?@source:("[^"]*"|[^\s,]+)(\s*)/i;
 
 export class ResourceGlobMatcher {
-
 	private readonly globalExpression: ParsedExpression;
 	private readonly expressionsByRoot: TernarySearchTree<URI, { root: URI; expression: ParsedExpression }>;
 
@@ -24,7 +29,9 @@ export class ResourceGlobMatcher {
 		uriIdentityService: IUriIdentityService
 	) {
 		this.globalExpression = parse(globalExpression);
-		this.expressionsByRoot = TernarySearchTree.forUris<{ root: URI; expression: ParsedExpression }>(uri => uriIdentityService.extUri.ignorePathCasing(uri));
+		this.expressionsByRoot = TernarySearchTree.forUris<{ root: URI; expression: ParsedExpression }>(uri =>
+			uriIdentityService.extUri.ignorePathCasing(uri)
+		);
 		for (const expression of rootExpressions) {
 			this.expressionsByRoot.set(expression.root, { root: expression.root, expression: parse(expression.expression) });
 		}
@@ -43,7 +50,6 @@ export class ResourceGlobMatcher {
 }
 
 export class FilterOptions {
-
 	static readonly _filter: IFilter = matchesFuzzy2;
 	static readonly _messageFilter: IFilter = matchesFuzzy;
 
@@ -57,7 +63,9 @@ export class FilterOptions {
 	readonly includeSourceFilters: string[];
 	readonly excludeSourceFilters: string[];
 
-	static EMPTY(uriIdentityService: IUriIdentityService) { return new FilterOptions('', [], false, false, false, uriIdentityService); }
+	static EMPTY(uriIdentityService: IUriIdentityService) {
+		return new FilterOptions('', [], false, false, false, uriIdentityService);
+	}
 
 	constructor(
 		readonly filter: string,
@@ -100,7 +108,9 @@ export class FilterOptions {
 				includeSourceFilters.push(source.toLowerCase());
 			}
 			// Remove the entire match (including trailing whitespace)
-			filter = (filter.substring(0, sourceMatch.index) + filter.substring(sourceMatch.index + sourceMatch[0].length)).trim();
+			filter = (
+				filter.substring(0, sourceMatch.index) + filter.substring(sourceMatch.index + sourceMatch[0].length)
+			).trim();
 		}
 		this.includeSourceFilters = includeSourceFilters;
 		this.excludeSourceFilters = excludeSourceFilters;
@@ -110,7 +120,9 @@ export class FilterOptions {
 		const includeExpression: IExpression = getEmptyExpression();
 
 		if (filter) {
-			const filters = splitGlobAware(filter, ',').map(s => s.trim()).filter(s => !!s.length);
+			const filters = splitGlobAware(filter, ',')
+				.map(s => s.trim())
+				.filter(s => !!s.length);
 			for (const f of filters) {
 				if (f.startsWith('!')) {
 					const filterText = strings.ltrim(f, '!');

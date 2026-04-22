@@ -41,7 +41,7 @@ export class TerminalIconPicker extends Disposable {
 	constructor(
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IHoverService private readonly _hoverService: IHoverService,
-		@ILayoutService private readonly _layoutService: ILayoutService,
+		@ILayoutService private readonly _layoutService: ILayoutService
 	) {
 		super();
 
@@ -54,27 +54,32 @@ export class TerminalIconPicker extends Disposable {
 	async pickIcons(): Promise<ThemeIcon | undefined> {
 		const dimension = new Dimension(486, 260);
 		return new Promise<ThemeIcon | undefined>(resolve => {
-			this._register(this._iconSelectBox.onDidSelect(e => {
-				resolve(e);
-				this._iconSelectBox.dispose();
-			}));
+			this._register(
+				this._iconSelectBox.onDidSelect(e => {
+					resolve(e);
+					this._iconSelectBox.dispose();
+				})
+			);
 			this._iconSelectBox.clearInput();
 			const body = getActiveDocument().body;
 			const bodyRect = body.getBoundingClientRect();
-			const hoverWidget = this._hoverService.showInstantHover({
-				content: this._iconSelectBox.domNode,
-				target: {
-					targetElements: [body],
-					x: bodyRect.left + (bodyRect.width - dimension.width) / 2,
-					y: bodyRect.top + this._layoutService.activeContainerOffset.top
+			const hoverWidget = this._hoverService.showInstantHover(
+				{
+					content: this._iconSelectBox.domNode,
+					target: {
+						targetElements: [body],
+						x: bodyRect.left + (bodyRect.width - dimension.width) / 2,
+						y: bodyRect.top + this._layoutService.activeContainerOffset.top
+					},
+					position: {
+						hoverPosition: HoverPosition.BELOW
+					},
+					persistence: {
+						sticky: true
+					}
 				},
-				position: {
-					hoverPosition: HoverPosition.BELOW,
-				},
-				persistence: {
-					sticky: true,
-				},
-			}, true);
+				true
+			);
 			if (hoverWidget) {
 				this._register(hoverWidget);
 			}

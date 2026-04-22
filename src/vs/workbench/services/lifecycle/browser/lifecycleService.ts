@@ -15,7 +15,6 @@ import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { mainWindow } from '../../../../base/browser/window.js';
 
 export class BrowserLifecycleService extends AbstractLifecycleService {
-
 	private beforeUnloadListener: IDisposable | undefined = undefined;
 	private unloadListener: IDisposable | undefined = undefined;
 
@@ -23,19 +22,17 @@ export class BrowserLifecycleService extends AbstractLifecycleService {
 
 	private didUnload = false;
 
-	constructor(
-		@ILogService logService: ILogService,
-		@IStorageService storageService: IStorageService
-	) {
+	constructor(@ILogService logService: ILogService, @IStorageService storageService: IStorageService) {
 		super(logService, storageService);
 
 		this.registerListeners();
 	}
 
 	private registerListeners(): void {
-
 		// Listen to `beforeUnload` to support to veto
-		this.beforeUnloadListener = addDisposableListener(mainWindow, EventType.BEFORE_UNLOAD, (e: BeforeUnloadEvent) => this.onBeforeUnload(e));
+		this.beforeUnloadListener = addDisposableListener(mainWindow, EventType.BEFORE_UNLOAD, (e: BeforeUnloadEvent) =>
+			this.onBeforeUnload(e)
+		);
 
 		// Listen to `pagehide` to support orderly shutdown
 		// We explicitly do not listen to `unload` event
@@ -46,7 +43,6 @@ export class BrowserLifecycleService extends AbstractLifecycleService {
 	}
 
 	private onBeforeUnload(event: BeforeUnloadEvent): void {
-
 		// Before unload ignored (once)
 		if (this.ignoreBeforeUnload) {
 			this.logService.info('[lifecycle] onBeforeUnload triggered but ignored once');
@@ -64,13 +60,18 @@ export class BrowserLifecycleService extends AbstractLifecycleService {
 
 	private vetoBeforeUnload(event: BeforeUnloadEvent): void {
 		event.preventDefault();
-		event.returnValue = localize('lifecycleVeto', "Changes that you made may not be saved. Please check press 'Cancel' and try again.");
+		event.returnValue = localize(
+			'lifecycleVeto',
+			"Changes that you made may not be saved. Please check press 'Cancel' and try again."
+		);
 	}
 
 	withExpectedShutdown(reason: ShutdownReason): Promise<void>;
 	withExpectedShutdown(reason: { disableShutdownHandling: true }, callback: Function): void;
-	withExpectedShutdown(reason: ShutdownReason | { disableShutdownHandling: true }, callback?: Function): Promise<void> | void {
-
+	withExpectedShutdown(
+		reason: ShutdownReason | { disableShutdownHandling: true },
+		callback?: Function
+	): Promise<void> | void {
 		// Standard shutdown
 		if (typeof reason === 'number') {
 			this.shutdownReason = reason;
@@ -164,21 +165,25 @@ export class BrowserLifecycleService extends AbstractLifecycleService {
 		this._willShutdown = true;
 
 		// Register a late `pageshow` listener specifically on unload
-		this._register(addDisposableListener(mainWindow, EventType.PAGE_SHOW, (e: PageTransitionEvent) => this.onLoadAfterUnload(e)));
+		this._register(
+			addDisposableListener(mainWindow, EventType.PAGE_SHOW, (e: PageTransitionEvent) => this.onLoadAfterUnload(e))
+		);
 
 		// First indicate will-shutdown
 		const logService = this.logService;
 		this._onWillShutdown.fire({
 			reason: ShutdownReason.QUIT,
-			joiners: () => [], 				// Unsupported in web
-			token: CancellationToken.None, 	// Unsupported in web
+			joiners: () => [], // Unsupported in web
+			token: CancellationToken.None, // Unsupported in web
 			join(promise, joiner) {
 				if (typeof promise === 'function') {
 					promise();
 				}
 				logService.debug(`[lifecycle] Skipping long-running shutdown operation in web (id: ${joiner.id})`);
 			},
-			force: () => { /* No-Op in web */ },
+			force: () => {
+				/* No-Op in web */
+			}
 		});
 
 		// Finally end with did-shutdown
@@ -186,7 +191,6 @@ export class BrowserLifecycleService extends AbstractLifecycleService {
 	}
 
 	private onLoadAfterUnload(event: PageTransitionEvent): void {
-
 		// We only really care about page-show events
 		// where the browser indicates to us that the
 		// page was restored from cache and not freshly

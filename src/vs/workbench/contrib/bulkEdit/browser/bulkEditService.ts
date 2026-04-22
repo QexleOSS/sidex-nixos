@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *  SideX - A fast, native code editor
+ *  Copyright (c) Siden Technologies, Inc. MIT Licensed.
  *--------------------------------------------------------------------------------------------*/
 
 import { CancellationToken } from '../../../../base/common/cancellation.js';
@@ -9,7 +9,15 @@ import { LinkedList } from '../../../../base/common/linkedList.js';
 import { ResourceMap, ResourceSet } from '../../../../base/common/map.js';
 import { URI } from '../../../../base/common/uri.js';
 import { ICodeEditor, isCodeEditor, isDiffEditor } from '../../../../editor/browser/editorBrowser.js';
-import { IBulkEditOptions, IBulkEditPreviewHandler, IBulkEditResult, IBulkEditService, ResourceEdit, ResourceFileEdit, ResourceTextEdit } from '../../../../editor/browser/services/bulkEditService.js';
+import {
+	IBulkEditOptions,
+	IBulkEditPreviewHandler,
+	IBulkEditResult,
+	IBulkEditService,
+	ResourceEdit,
+	ResourceFileEdit,
+	ResourceTextEdit
+} from '../../../../editor/browser/services/bulkEditService.js';
 import { EditorOption } from '../../../../editor/common/config/editorOptions.js';
 import { WorkspaceEdit } from '../../../../editor/common/languages.js';
 import { localize } from '../../../../nls.js';
@@ -53,7 +61,6 @@ function liftEdits(edits: ResourceEdit[]): ResourceEdit[] {
 }
 
 class BulkEdit {
-
 	constructor(
 		private readonly _label: string | undefined,
 		private readonly _code: string | undefined,
@@ -65,13 +72,10 @@ class BulkEdit {
 		private readonly _undoRedoSource: UndoRedoSource | undefined,
 		private readonly _confirmBeforeUndo: boolean,
 		@IInstantiationService private readonly _instaService: IInstantiationService,
-		@ILogService private readonly _logService: ILogService,
-	) {
-
-	}
+		@ILogService private readonly _logService: ILogService
+	) {}
 
 	ariaMessage(): string {
-
 		const otherResources = new ResourceMap<boolean>();
 		const textEditResources = new ResourceMap<boolean>();
 		let textEditCount = 0;
@@ -84,20 +88,25 @@ class BulkEdit {
 			}
 		}
 		if (this._edits.length === 0) {
-			return localize('summary.0', "Made no edits");
+			return localize('summary.0', 'Made no edits');
 		} else if (otherResources.size === 0) {
 			if (textEditCount > 1 && textEditResources.size > 1) {
-				return localize('summary.nm', "Made {0} text edits in {1} files", textEditCount, textEditResources.size);
+				return localize('summary.nm', 'Made {0} text edits in {1} files', textEditCount, textEditResources.size);
 			} else {
-				return localize('summary.n0', "Made {0} text edits in one file", textEditCount);
+				return localize('summary.n0', 'Made {0} text edits in one file', textEditCount);
 			}
 		} else {
-			return localize('summary.textFiles', "Made {0} text edits in {1} files, also created or deleted {2} files", textEditCount, textEditResources.size, otherResources.size);
+			return localize(
+				'summary.textFiles',
+				'Made {0} text edits in {1} files, also created or deleted {2} files',
+				textEditCount,
+				textEditResources.size,
+				otherResources.size
+			);
 		}
 	}
 
 	async perform(reason?: TextModelEditSource): Promise<readonly URI[]> {
-
 		if (this._edits.length === 0) {
 			return [];
 		}
@@ -125,13 +134,43 @@ class BulkEdit {
 			}
 			const group = this._edits.slice(index, index + range);
 			if (group[0] instanceof ResourceFileEdit) {
-				resources.push(await this._performFileEdits(<ResourceFileEdit[]>group, this._undoRedoGroup, this._undoRedoSource, this._confirmBeforeUndo, progress));
+				resources.push(
+					await this._performFileEdits(
+						<ResourceFileEdit[]>group,
+						this._undoRedoGroup,
+						this._undoRedoSource,
+						this._confirmBeforeUndo,
+						progress
+					)
+				);
 			} else if (group[0] instanceof ResourceTextEdit) {
-				resources.push(await this._performTextEdits(<ResourceTextEdit[]>group, this._undoRedoGroup, this._undoRedoSource, progress, reason));
+				resources.push(
+					await this._performTextEdits(
+						<ResourceTextEdit[]>group,
+						this._undoRedoGroup,
+						this._undoRedoSource,
+						progress,
+						reason
+					)
+				);
 			} else if (group[0] instanceof ResourceNotebookCellEdit) {
-				resources.push(await this._performCellEdits(<ResourceNotebookCellEdit[]>group, this._undoRedoGroup, this._undoRedoSource, progress));
+				resources.push(
+					await this._performCellEdits(
+						<ResourceNotebookCellEdit[]>group,
+						this._undoRedoGroup,
+						this._undoRedoSource,
+						progress
+					)
+				);
 			} else if (group[0] instanceof ResourceAttachmentEdit) {
-				resources.push(await this._performOpaqueEdits(<ResourceAttachmentEdit[]>group, this._undoRedoGroup, this._undoRedoSource, progress));
+				resources.push(
+					await this._performOpaqueEdits(
+						<ResourceAttachmentEdit[]>group,
+						this._undoRedoGroup,
+						this._undoRedoSource,
+						progress
+					)
+				);
 			} else {
 				console.log('UNKNOWN EDIT');
 			}
@@ -141,33 +180,88 @@ class BulkEdit {
 		return resources.flat();
 	}
 
-	private async _performFileEdits(edits: ResourceFileEdit[], undoRedoGroup: UndoRedoGroup, undoRedoSource: UndoRedoSource | undefined, confirmBeforeUndo: boolean, progress: IProgress<void>): Promise<readonly URI[]> {
+	private async _performFileEdits(
+		edits: ResourceFileEdit[],
+		undoRedoGroup: UndoRedoGroup,
+		undoRedoSource: UndoRedoSource | undefined,
+		confirmBeforeUndo: boolean,
+		progress: IProgress<void>
+	): Promise<readonly URI[]> {
 		this._logService.debug('_performFileEdits', JSON.stringify(edits));
-		const model = this._instaService.createInstance(BulkFileEdits, this._label || localize('workspaceEdit', "Workspace Edit"), this._code || 'undoredo.workspaceEdit', undoRedoGroup, undoRedoSource, confirmBeforeUndo, progress, this._token, edits);
+		const model = this._instaService.createInstance(
+			BulkFileEdits,
+			this._label || localize('workspaceEdit', 'Workspace Edit'),
+			this._code || 'undoredo.workspaceEdit',
+			undoRedoGroup,
+			undoRedoSource,
+			confirmBeforeUndo,
+			progress,
+			this._token,
+			edits
+		);
 		return await model.apply();
 	}
 
-	private async _performTextEdits(edits: ResourceTextEdit[], undoRedoGroup: UndoRedoGroup, undoRedoSource: UndoRedoSource | undefined, progress: IProgress<void>, reason: TextModelEditSource | undefined): Promise<readonly URI[]> {
+	private async _performTextEdits(
+		edits: ResourceTextEdit[],
+		undoRedoGroup: UndoRedoGroup,
+		undoRedoSource: UndoRedoSource | undefined,
+		progress: IProgress<void>,
+		reason: TextModelEditSource | undefined
+	): Promise<readonly URI[]> {
 		this._logService.debug('_performTextEdits', JSON.stringify(edits));
-		const model = this._instaService.createInstance(BulkTextEdits, this._label || localize('workspaceEdit', "Workspace Edit"), this._code || 'undoredo.workspaceEdit', this._editor, undoRedoGroup, undoRedoSource, progress, this._token, edits);
+		const model = this._instaService.createInstance(
+			BulkTextEdits,
+			this._label || localize('workspaceEdit', 'Workspace Edit'),
+			this._code || 'undoredo.workspaceEdit',
+			this._editor,
+			undoRedoGroup,
+			undoRedoSource,
+			progress,
+			this._token,
+			edits
+		);
 		return await model.apply(reason);
 	}
 
-	private async _performCellEdits(edits: ResourceNotebookCellEdit[], undoRedoGroup: UndoRedoGroup, undoRedoSource: UndoRedoSource | undefined, progress: IProgress<void>): Promise<readonly URI[]> {
+	private async _performCellEdits(
+		edits: ResourceNotebookCellEdit[],
+		undoRedoGroup: UndoRedoGroup,
+		undoRedoSource: UndoRedoSource | undefined,
+		progress: IProgress<void>
+	): Promise<readonly URI[]> {
 		this._logService.debug('_performCellEdits', JSON.stringify(edits));
-		const model = this._instaService.createInstance(BulkCellEdits, undoRedoGroup, undoRedoSource, progress, this._token, edits);
+		const model = this._instaService.createInstance(
+			BulkCellEdits,
+			undoRedoGroup,
+			undoRedoSource,
+			progress,
+			this._token,
+			edits
+		);
 		return await model.apply();
 	}
 
-	private async _performOpaqueEdits(edits: ResourceAttachmentEdit[], undoRedoGroup: UndoRedoGroup, undoRedoSource: UndoRedoSource | undefined, progress: IProgress<void>): Promise<readonly URI[]> {
+	private async _performOpaqueEdits(
+		edits: ResourceAttachmentEdit[],
+		undoRedoGroup: UndoRedoGroup,
+		undoRedoSource: UndoRedoSource | undefined,
+		progress: IProgress<void>
+	): Promise<readonly URI[]> {
 		this._logService.debug('_performOpaqueEdits', JSON.stringify(edits));
-		const model = this._instaService.createInstance(OpaqueEdits, undoRedoGroup, undoRedoSource, progress, this._token, edits);
+		const model = this._instaService.createInstance(
+			OpaqueEdits,
+			undoRedoGroup,
+			undoRedoSource,
+			progress,
+			this._token,
+			edits
+		);
 		return await model.apply();
 	}
 }
 
 export class BulkEditService implements IBulkEditService {
-
 	declare readonly _serviceBrand: undefined;
 
 	private readonly _activeUndoRedoGroups = new LinkedList<UndoRedoGroup>();
@@ -180,8 +274,8 @@ export class BulkEditService implements IBulkEditService {
 		@ILifecycleService private readonly _lifecycleService: ILifecycleService,
 		@IDialogService private readonly _dialogService: IDialogService,
 		@IWorkingCopyService private readonly _workingCopyService: IWorkingCopyService,
-		@IConfigurationService private readonly _configService: IConfigurationService,
-	) { }
+		@IConfigurationService private readonly _configService: IConfigurationService
+	) {}
 
 	setPreviewHandler(handler: IBulkEditPreviewHandler): IDisposable {
 		this._previewHandler = handler;
@@ -200,7 +294,7 @@ export class BulkEditService implements IBulkEditService {
 		let edits = liftEdits(Array.isArray(editsIn) ? editsIn : editsIn.edits);
 
 		if (edits.length === 0) {
-			return { ariaSummary: localize('nothing', "Made no edits"), isApplied: false };
+			return { ariaSummary: localize('nothing', 'Made no edits'), isApplied: false };
 		}
 
 		if (this._previewHandler && (options?.showPreview || edits.some(value => value.metadata?.needsConfirmation))) {
@@ -227,7 +321,7 @@ export class BulkEditService implements IBulkEditService {
 		// in the list of active edits. otherwise (or when not found)
 		// create a separate undo-redo-group
 		let undoRedoGroup: UndoRedoGroup | undefined;
-		let undoRedoGroupRemove = () => { };
+		let undoRedoGroupRemove = () => {};
 		if (typeof options?.undoRedoGroupId === 'number') {
 			for (const candidate of this._activeUndoRedoGroups) {
 				if (candidate.id === options.undoRedoGroupId) {
@@ -257,19 +351,23 @@ export class BulkEditService implements IBulkEditService {
 
 		let listener: IDisposable | undefined;
 		try {
-			listener = this._lifecycleService.onBeforeShutdown(e => e.veto(this._shouldVeto(label, e.reason), 'veto.blukEditService'));
+			listener = this._lifecycleService.onBeforeShutdown(e =>
+				e.veto(this._shouldVeto(label, e.reason), 'veto.blukEditService')
+			);
 			const resources = await bulkEdit.perform(options?.reason);
 
 			// when enabled (option AND setting) loop over all dirty working copies and trigger save
 			// for those that were involved in this bulk edit operation.
-			if (options?.respectAutoSaveConfig && this._configService.getValue(autoSaveSetting) === true && resources.length > 1) {
+			if (
+				options?.respectAutoSaveConfig &&
+				this._configService.getValue(autoSaveSetting) === true &&
+				resources.length > 1
+			) {
 				await this._saveAll(resources);
 			}
 
 			return { ariaSummary: bulkEdit.ariaMessage(), isApplied: edits.length > 0 };
 		} catch (err) {
-			// console.log('apply FAILED');
-			// console.log(err);
 			this._logService.error(err);
 			throw err;
 		} finally {
@@ -280,7 +378,7 @@ export class BulkEditService implements IBulkEditService {
 
 	private async _saveAll(resources: readonly URI[]) {
 		const set = new ResourceSet(resources);
-		const saves = this._workingCopyService.dirtyWorkingCopies.map(async (copy) => {
+		const saves = this._workingCopyService.dirtyWorkingCopies.map(async copy => {
 			if (set.has(copy.resource)) {
 				await copy.save();
 			}
@@ -298,22 +396,28 @@ export class BulkEditService implements IBulkEditService {
 		let message: string;
 		switch (reason) {
 			case ShutdownReason.CLOSE:
-				message = localize('closeTheWindow.message', "Are you sure you want to close the window?");
+				message = localize('closeTheWindow.message', 'Are you sure you want to close the window?');
 				break;
 			case ShutdownReason.LOAD:
-				message = localize('changeWorkspace.message', "Are you sure you want to change the workspace?");
+				message = localize('changeWorkspace.message', 'Are you sure you want to change the workspace?');
 				break;
 			case ShutdownReason.RELOAD:
-				message = localize('reloadTheWindow.message', "Are you sure you want to reload the window?");
+				message = localize('reloadTheWindow.message', 'Are you sure you want to reload the window?');
 				break;
 			default:
-				message = isMacintosh ? localize('quitMessageMac', "Are you sure you want to quit?") : localize('quitMessage', "Are you sure you want to exit?");
+				message = isMacintosh
+					? localize('quitMessageMac', 'Are you sure you want to quit?')
+					: localize('quitMessage', 'Are you sure you want to exit?');
 				break;
 		}
 
 		const result = await this._dialogService.confirm({
 			message,
-			detail: localize('areYouSureQuiteBulkEdit.detail', "'{0}' is in progress.", label || localize('fileOperation', "File operation")),
+			detail: localize(
+				'areYouSureQuiteBulkEdit.detail',
+				"'{0}' is in progress.",
+				label || localize('fileOperation', 'File operation')
+			)
 		});
 
 		return !result.confirmed;
@@ -328,7 +432,10 @@ Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfigurat
 	id: 'files',
 	properties: {
 		[autoSaveSetting]: {
-			description: localize('refactoring.autoSave', "Controls if files that were part of a refactoring are saved automatically"),
+			description: localize(
+				'refactoring.autoSave',
+				'Controls if files that were part of a refactoring are saved automatically'
+			),
 			default: true,
 			type: 'boolean'
 		}

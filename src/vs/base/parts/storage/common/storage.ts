@@ -10,7 +10,6 @@ import { parse, stringify } from '../../../common/marshalling.js';
 import { isObject, isUndefinedOrNull } from '../../../common/types.js';
 
 export enum StorageHint {
-
 	// A hint to the storage that the storage
 	// does not exist on disk yet. This allows
 	// the storage library to improve startup
@@ -43,7 +42,6 @@ export function isStorageItemsChangeEvent(thing: unknown): thing is IStorageItem
 }
 
 export interface IStorageDatabase {
-
 	readonly onDidChangeItemsExternal: Event<IStorageItemsChangeEvent>;
 
 	getItems(): Promise<Map<string, string>>;
@@ -55,7 +53,6 @@ export interface IStorageDatabase {
 }
 
 export interface IStorageChangeEvent {
-
 	/**
 	 * The `key` of the storage entry that was changed
 	 * or was removed.
@@ -75,7 +72,6 @@ export interface IStorageChangeEvent {
 export type StorageValue = string | boolean | number | undefined | null | object;
 
 export interface IStorage extends IDisposable {
-
 	readonly onDidChangeStorage: Event<IStorageChangeEvent>;
 
 	readonly items: Map<string, string>;
@@ -113,7 +109,6 @@ export enum StorageState {
 }
 
 export class Storage extends Disposable implements IStorage {
-
 	private static readonly DEFAULT_FLUSH_DELAY = 100;
 
 	private readonly _onDidChangeStorage = this._register(new PauseableEmitter<IStorageChangeEvent>());
@@ -155,7 +150,6 @@ export class Storage extends Disposable implements IStorage {
 
 			e.changed?.forEach((value, key) => this.acceptExternal(key, value));
 			e.deleted?.forEach(key => this.acceptExternal(key, undefined));
-
 		} finally {
 			this._onDidChangeStorage.resume();
 		}
@@ -261,7 +255,11 @@ export class Storage extends Disposable implements IStorage {
 		return parse(value);
 	}
 
-	async set(key: string, value: string | boolean | number | null | undefined | object, external = false): Promise<void> {
+	async set(
+		key: string,
+		value: string | boolean | number | null | undefined | object,
+		external = false
+	): Promise<void> {
 		if (this.state === StorageState.Closed) {
 			return; // Return early if we are already closed
 		}
@@ -337,7 +335,6 @@ export class Storage extends Disposable implements IStorage {
 	}
 
 	private async doClose(): Promise<void> {
-
 		// Update state
 		this.state = StorageState.Closed;
 
@@ -385,8 +382,8 @@ export class Storage extends Disposable implements IStorage {
 
 	async flush(delay?: number): Promise<void> {
 		if (
-			this.state === StorageState.Closed || 	// Return early if we are already closed
-			this.pendingClose 						// return early if nothing to do
+			this.state === StorageState.Closed || // Return early if we are already closed
+			this.pendingClose // return early if nothing to do
 		) {
 			return;
 		}
@@ -416,7 +413,6 @@ export class Storage extends Disposable implements IStorage {
 }
 
 export class InMemoryStorageDatabase implements IStorageDatabase {
-
 	readonly onDidChangeItemsExternal = Event.None;
 
 	private readonly items = new Map<string, string>();
@@ -431,6 +427,6 @@ export class InMemoryStorageDatabase implements IStorageDatabase {
 		request.delete?.forEach(key => this.items.delete(key));
 	}
 
-	async optimize(): Promise<void> { }
-	async close(): Promise<void> { }
+	async optimize(): Promise<void> {}
+	async close(): Promise<void> {}
 }

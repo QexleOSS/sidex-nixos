@@ -23,7 +23,6 @@ import './inputBox.css';
 import * as nls from '../../../../nls.js';
 import { MutableDisposable, type IDisposable } from '../../../common/lifecycle.js';
 
-
 const $ = dom.$;
 
 export interface IInputOptions {
@@ -119,10 +118,14 @@ export class InputBox extends Widget {
 	private readonly hover: MutableDisposable<IDisposable> = this._register(new MutableDisposable());
 
 	private _onDidChange = this._register(new Emitter<string>());
-	public get onDidChange(): Event<string> { return this._onDidChange.event; }
+	public get onDidChange(): Event<string> {
+		return this._onDidChange.event;
+	}
 
 	private _onDidHeightChange = this._register(new Emitter<number>());
-	public get onDidHeightChange(): Event<number> { return this._onDidHeightChange.event; }
+	public get onDidHeightChange(): Event<number> {
+		return this._onDidHeightChange.event;
+	}
 
 	constructor(container: HTMLElement, contextViewProvider: IContextViewProvider | undefined, options: IInputOptions) {
 		super();
@@ -153,7 +156,8 @@ export class InputBox extends Widget {
 		this.onblur(this.input, () => this.element.classList.remove('synthetic-focus'));
 
 		if (this.options.flexibleHeight) {
-			this.maxHeight = typeof this.options.flexibleMaxHeight === 'number' ? this.options.flexibleMaxHeight : Number.POSITIVE_INFINITY;
+			this.maxHeight =
+				typeof this.options.flexibleMaxHeight === 'number' ? this.options.flexibleMaxHeight : Number.POSITIVE_INFINITY;
 
 			this.mirror = dom.append(wrapper, $('div.mirror'));
 			this.mirror.innerText = '\u00a0';
@@ -170,7 +174,7 @@ export class InputBox extends Widget {
 			this._register(this.scrollableElement);
 
 			// from ScrollableElement to DOM
-			this._register(this.scrollableElement.onScroll(e => this.input.scrollTop = e.scrollTop));
+			this._register(this.scrollableElement.onScroll(e => (this.input.scrollTop = e.scrollTop)));
 
 			const onSelectionChange = this._register(new DomEmitter(container.ownerDocument, 'selectionchange'));
 			const onAnchoredSelectionChange = Event.filter(onSelectionChange.event, () => {
@@ -208,25 +212,32 @@ export class InputBox extends Widget {
 
 		// Support actions
 		if (this.options.actions) {
-			this.actionbar = this._register(new ActionBar(this.element, {
-				actionViewItemProvider: this.options.actionViewItemProvider
-			}));
+			this.actionbar = this._register(
+				new ActionBar(this.element, {
+					actionViewItemProvider: this.options.actionViewItemProvider
+				})
+			);
 			this.actionbar.push(this.options.actions, { icon: true, label: false });
 		}
 
 		this.applyStyles();
 	}
 
-	public setActions(actions: ReadonlyArray<IAction> | undefined, actionViewItemProvider?: IActionViewItemProvider): void {
+	public setActions(
+		actions: ReadonlyArray<IAction> | undefined,
+		actionViewItemProvider?: IActionViewItemProvider
+	): void {
 		if (this.actionbar) {
 			this.actionbar.clear();
 			if (actions) {
 				this.actionbar.push(actions, { icon: true, label: false });
 			}
 		} else if (actions) {
-			this.actionbar = this._register(new ActionBar(this.element, {
-				actionViewItemProvider: actionViewItemProvider ?? this.options.actionViewItemProvider
-			}));
+			this.actionbar = this._register(
+				new ActionBar(this.element, {
+					actionViewItemProvider: actionViewItemProvider ?? this.options.actionViewItemProvider
+				})
+			);
 			this.actionbar.push(actions, { icon: true, label: false });
 		}
 	}
@@ -253,12 +264,14 @@ export class InputBox extends Widget {
 	public setTooltip(tooltip: string): void {
 		this.tooltip = tooltip;
 		if (!this.hover.value) {
-			this.hover.value = this._register(getBaseLayerHoverDelegate().setupDelayedHoverAtMouse(this.input, () => ({
-				content: this.tooltip,
-				appearance: {
-					compact: true,
-				}
-			})));
+			this.hover.value = this._register(
+				getBaseLayerHoverDelegate().setupDelayedHoverAtMouse(this.input, () => ({
+					content: this.tooltip,
+					appearance: {
+						compact: true
+					}
+				}))
+			);
 		}
 	}
 
@@ -342,7 +355,7 @@ export class InputBox extends Widget {
 		const selectionEnd = this.input.selectionEnd ?? selectionStart;
 		return {
 			start: selectionStart,
-			end: selectionEnd,
+			end: selectionEnd
 		};
 	}
 
@@ -377,7 +390,7 @@ export class InputBox extends Widget {
 				const paddingRight = parseFloat(this.mirror.style.paddingRight || '') || 0;
 				horizontalPadding = paddingLeft + paddingRight;
 			}
-			this.input.style.width = (width - horizontalPadding) + 'px';
+			this.input.style.width = width - horizontalPadding + 'px';
 		} else {
 			this.input.style.width = width + 'px';
 		}
@@ -397,7 +410,11 @@ export class InputBox extends Widget {
 	}
 
 	private updateScrollDimensions(): void {
-		if (typeof this.cachedContentHeight !== 'number' || typeof this.cachedHeight !== 'number' || !this.scrollableElement) {
+		if (
+			typeof this.cachedContentHeight !== 'number' ||
+			typeof this.cachedHeight !== 'number' ||
+			!this.scrollableElement
+		) {
 			return;
 		}
 
@@ -456,8 +473,7 @@ export class InputBox extends Widget {
 			if (errorMsg) {
 				this.inputElement.setAttribute('aria-invalid', 'true');
 				this.showMessage(errorMsg);
-			}
-			else if (this.inputElement.hasAttribute('aria-invalid')) {
+			} else if (this.inputElement.hasAttribute('aria-invalid')) {
 				this.inputElement.removeAttribute('aria-invalid');
 				this.hideMessage();
 			}
@@ -466,20 +482,42 @@ export class InputBox extends Widget {
 		return errorMsg?.type;
 	}
 
-	public stylesForType(type: MessageType | undefined): { border: string | undefined; background: string | undefined; foreground: string | undefined } {
+	public stylesForType(type: MessageType | undefined): {
+		border: string | undefined;
+		background: string | undefined;
+		foreground: string | undefined;
+	} {
 		const styles = this.options.inputBoxStyles;
 		switch (type) {
-			case MessageType.INFO: return { border: styles.inputValidationInfoBorder, background: styles.inputValidationInfoBackground, foreground: styles.inputValidationInfoForeground };
-			case MessageType.WARNING: return { border: styles.inputValidationWarningBorder, background: styles.inputValidationWarningBackground, foreground: styles.inputValidationWarningForeground };
-			default: return { border: styles.inputValidationErrorBorder, background: styles.inputValidationErrorBackground, foreground: styles.inputValidationErrorForeground };
+			case MessageType.INFO:
+				return {
+					border: styles.inputValidationInfoBorder,
+					background: styles.inputValidationInfoBackground,
+					foreground: styles.inputValidationInfoForeground
+				};
+			case MessageType.WARNING:
+				return {
+					border: styles.inputValidationWarningBorder,
+					background: styles.inputValidationWarningBackground,
+					foreground: styles.inputValidationWarningForeground
+				};
+			default:
+				return {
+					border: styles.inputValidationErrorBorder,
+					background: styles.inputValidationErrorBackground,
+					foreground: styles.inputValidationErrorForeground
+				};
 		}
 	}
 
 	private classForType(type: MessageType | undefined): string {
 		switch (type) {
-			case MessageType.INFO: return 'info';
-			case MessageType.WARNING: return 'warning';
-			default: return 'error';
+			case MessageType.INFO:
+				return 'info';
+			case MessageType.WARNING:
+				return 'warning';
+			default:
+				return 'error';
 		}
 	}
 
@@ -489,7 +527,7 @@ export class InputBox extends Widget {
 		}
 
 		let div: HTMLElement;
-		const layout = () => div.style.width = dom.getTotalWidth(this.element) + 'px';
+		const layout = () => (div.style.width = dom.getTotalWidth(this.element) + 'px');
 
 		this.contextViewProvider.showContextView({
 			getAnchor: () => this.element,
@@ -501,7 +539,6 @@ export class InputBox extends Widget {
 
 				div = dom.append(container, $('.monaco-inputbox-container'));
 				layout();
-
 
 				const spanElement = $('span.monaco-inputbox-message');
 				if (this.message.formatContent) {
@@ -530,11 +567,11 @@ export class InputBox extends Widget {
 		// ARIA Support
 		let alertText: string;
 		if (this.message.type === MessageType.ERROR) {
-			alertText = nls.localize('alertErrorMessage', "Error: {0}", this.message.content);
+			alertText = nls.localize('alertErrorMessage', 'Error: {0}', this.message.content);
 		} else if (this.message.type === MessageType.WARNING) {
-			alertText = nls.localize('alertWarningMessage', "Warning: {0}", this.message.content);
+			alertText = nls.localize('alertWarningMessage', 'Warning: {0}', this.message.content);
 		} else {
-			alertText = nls.localize('alertInfoMessage', "Info: {0}", this.message.content);
+			alertText = nls.localize('alertInfoMessage', 'Info: {0}', this.message.content);
 		}
 
 		aria.alert(alertText);
@@ -584,8 +621,7 @@ export class InputBox extends Widget {
 		const value = this.value;
 		const lastCharCode = value.charCodeAt(value.length - 1);
 		const suffix = lastCharCode === 10 ? ' ' : '';
-		const mirrorTextContent = (value + suffix)
-			.replace(/\u000c/g, ''); // Don't measure with the form feed character, which messes up sizing
+		const mirrorTextContent = (value + suffix).replace(/\u000c/g, ''); // Don't measure with the form feed character, which messes up sizing
 
 		if (mirrorTextContent) {
 			this.mirror.textContent = value + suffix;
@@ -659,7 +695,6 @@ export interface IHistoryInputOptions extends IInputOptions {
 }
 
 export class HistoryInputBox extends InputBox implements IHistoryNavigationWidget {
-
 	private readonly history: HistoryNavigator<string>;
 	private observer: MutationObserver | undefined;
 
@@ -669,28 +704,51 @@ export class HistoryInputBox extends InputBox implements IHistoryNavigationWidge
 	private readonly _onDidBlur = this._register(new Emitter<void>());
 	readonly onDidBlur = this._onDidBlur.event;
 
-	constructor(container: HTMLElement, contextViewProvider: IContextViewProvider | undefined, options: IHistoryInputOptions) {
-		const NLS_PLACEHOLDER_HISTORY_HINT_SUFFIX_NO_PARENS = nls.localize({
-			key: 'history.inputbox.hint.suffix.noparens',
-			comment: ['Text is the suffix of an input field placeholder coming after the action the input field performs, this will be used when the input field ends in a closing parenthesis ")", for example "Filter (e.g. text, !exclude)". The character inserted into the final string is \u21C5 to represent the up and down arrow keys.']
-		}, ' or {0} for history', `\u21C5`);
-		const NLS_PLACEHOLDER_HISTORY_HINT_SUFFIX_IN_PARENS = nls.localize({
-			key: 'history.inputbox.hint.suffix.inparens',
-			comment: ['Text is the suffix of an input field placeholder coming after the action the input field performs, this will be used when the input field does NOT end in a closing parenthesis (eg. "Find"). The character inserted into the final string is \u21C5 to represent the up and down arrow keys.']
-		}, ' ({0} for history)', `\u21C5`);
+	constructor(
+		container: HTMLElement,
+		contextViewProvider: IContextViewProvider | undefined,
+		options: IHistoryInputOptions
+	) {
+		const NLS_PLACEHOLDER_HISTORY_HINT_SUFFIX_NO_PARENS = nls.localize(
+			{
+				key: 'history.inputbox.hint.suffix.noparens',
+				comment: [
+					'Text is the suffix of an input field placeholder coming after the action the input field performs, this will be used when the input field ends in a closing parenthesis ")", for example "Filter (e.g. text, !exclude)". The character inserted into the final string is \u21C5 to represent the up and down arrow keys.'
+				]
+			},
+			' or {0} for history',
+			`\u21C5`
+		);
+		const NLS_PLACEHOLDER_HISTORY_HINT_SUFFIX_IN_PARENS = nls.localize(
+			{
+				key: 'history.inputbox.hint.suffix.inparens',
+				comment: [
+					'Text is the suffix of an input field placeholder coming after the action the input field performs, this will be used when the input field does NOT end in a closing parenthesis (eg. "Find"). The character inserted into the final string is \u21C5 to represent the up and down arrow keys.'
+				]
+			},
+			' ({0} for history)',
+			`\u21C5`
+		);
 
 		super(container, contextViewProvider, options);
 		this.history = this._register(new HistoryNavigator<string>(options.history, 100));
 
 		// Function to append the history suffix to the placeholder if necessary
 		const addSuffix = () => {
-			if (options.showHistoryHint && options.showHistoryHint() && !this.placeholder.endsWith(NLS_PLACEHOLDER_HISTORY_HINT_SUFFIX_NO_PARENS) && !this.placeholder.endsWith(NLS_PLACEHOLDER_HISTORY_HINT_SUFFIX_IN_PARENS) && this.history.getHistory().length) {
-				const suffix = this.placeholder.endsWith(')') ? NLS_PLACEHOLDER_HISTORY_HINT_SUFFIX_NO_PARENS : NLS_PLACEHOLDER_HISTORY_HINT_SUFFIX_IN_PARENS;
+			if (
+				options.showHistoryHint &&
+				options.showHistoryHint() &&
+				!this.placeholder.endsWith(NLS_PLACEHOLDER_HISTORY_HINT_SUFFIX_NO_PARENS) &&
+				!this.placeholder.endsWith(NLS_PLACEHOLDER_HISTORY_HINT_SUFFIX_IN_PARENS) &&
+				this.history.getHistory().length
+			) {
+				const suffix = this.placeholder.endsWith(')')
+					? NLS_PLACEHOLDER_HISTORY_HINT_SUFFIX_NO_PARENS
+					: NLS_PLACEHOLDER_HISTORY_HINT_SUFFIX_IN_PARENS;
 				const suffixedPlaceholder = this.placeholder + suffix;
 				if (options.showPlaceholderOnFocus && !dom.isActiveElement(this.input)) {
 					this.placeholder = suffixedPlaceholder;
-				}
-				else {
+				} else {
 					this.setPlaceHolder(suffixedPlaceholder);
 				}
 			}
@@ -712,13 +770,11 @@ export class HistoryInputBox extends InputBox implements IHistoryNavigationWidge
 			const resetPlaceholder = (historyHint: string) => {
 				if (!this.placeholder.endsWith(historyHint)) {
 					return false;
-				}
-				else {
+				} else {
 					const revertedPlaceholder = this.placeholder.slice(0, this.placeholder.length - historyHint.length);
 					if (options.showPlaceholderOnFocus) {
 						this.placeholder = revertedPlaceholder;
-					}
-					else {
+					} else {
 						this.setPlaceHolder(revertedPlaceholder);
 					}
 					return true;
@@ -748,7 +804,7 @@ export class HistoryInputBox extends InputBox implements IHistoryNavigationWidge
 		const newHistory = this.getHistory();
 		this.clearHistory();
 
-		restoredHistory.forEach((item) => {
+		restoredHistory.forEach(item => {
 			this.history.add(item);
 		});
 
@@ -784,7 +840,7 @@ export class HistoryInputBox extends InputBox implements IHistoryNavigationWidge
 		}
 
 		this.value = next ?? '';
-		aria.status(this.value ? this.value : nls.localize('clearedInput', "Cleared Input"));
+		aria.status(this.value ? this.value : nls.localize('clearedInput', 'Cleared Input'));
 	}
 
 	public showPreviousValue(): void {

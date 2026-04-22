@@ -81,7 +81,6 @@ export class ScrollbarVisibilityController extends Disposable {
 	}
 
 	public ensureVisibility(): void {
-
 		if (!this._isNeeded) {
 			// Nothing to be rendered
 			this._hide(false);

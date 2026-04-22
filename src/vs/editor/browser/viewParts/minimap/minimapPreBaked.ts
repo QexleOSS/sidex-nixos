@@ -27,7 +27,7 @@ const charTable: { [hex: string]: number } = {
 const decodeData = (str: string) => {
 	const output = new Uint8ClampedArray(str.length / 2);
 	for (let i = 0; i < str.length; i += 2) {
-		output[i >> 1] = (charTable[str[i]] << 4) | (charTable[str[i + 1]] & 0xF);
+		output[i >> 1] = (charTable[str[i]] << 4) | (charTable[str[i + 1]] & 0xf);
 	}
 
 	return output;

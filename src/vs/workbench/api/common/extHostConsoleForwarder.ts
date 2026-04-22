@@ -10,14 +10,13 @@ import { IExtHostInitDataService } from './extHostInitDataService.js';
 import { IExtHostRpcService } from './extHostRpcService.js';
 
 export abstract class AbstractExtHostConsoleForwarder {
-
 	private readonly _mainThreadConsole: MainThreadConsoleShape;
 	private readonly _includeStack: boolean;
 	private readonly _logNative: boolean;
 
 	constructor(
 		@IExtHostRpcService extHostRpc: IExtHostRpcService,
-		@IExtHostInitDataService initData: IExtHostInitDataService,
+		@IExtHostInitDataService initData: IExtHostInitDataService
 	) {
 		this._mainThreadConsole = extHostRpc.getProxy(MainContext.MainThreadConsole);
 		this._includeStack = initData.consoleForward.includeStack;
@@ -40,19 +39,29 @@ export abstract class AbstractExtHostConsoleForwarder {
 	 * The wrapped property is not defined with `writable: false` to avoid
 	 * throwing errors, but rather a no-op setting. See https://github.com/microsoft/vscode-extension-telemetry/issues/88
 	 */
-	private _wrapConsoleMethod(method: 'log' | 'info' | 'warn' | 'error' | 'debug', severity: 'log' | 'warn' | 'error' | 'debug') {
+	private _wrapConsoleMethod(
+		method: 'log' | 'info' | 'warn' | 'error' | 'debug',
+		severity: 'log' | 'warn' | 'error' | 'debug'
+	) {
 		const that = this;
 		const original = console[method];
 
 		Object.defineProperty(console, method, {
-			set: () => { },
-			get: () => (...args: unknown[]) => {
-				that._handleConsoleCall(method, severity, original, args);
-			},
+			set: () => {},
+			get:
+				() =>
+				(...args: unknown[]) => {
+					that._handleConsoleCall(method, severity, original, args);
+				}
 		});
 	}
 
-	private _handleConsoleCall(method: 'log' | 'info' | 'warn' | 'error' | 'debug', severity: 'log' | 'warn' | 'error' | 'debug', original: (...args: unknown[]) => void, args: unknown[]): void {
+	private _handleConsoleCall(
+		method: 'log' | 'info' | 'warn' | 'error' | 'debug',
+		severity: 'log' | 'warn' | 'error' | 'debug',
+		original: (...args: unknown[]) => void,
+		args: unknown[]
+	): void {
 		this._mainThreadConsole.$logExtensionHostMessage({
 			type: '__$console',
 			severity,
@@ -63,8 +72,11 @@ export abstract class AbstractExtHostConsoleForwarder {
 		}
 	}
 
-	protected abstract _nativeConsoleLogMessage(method: 'log' | 'info' | 'warn' | 'error' | 'debug', original: (...args: unknown[]) => void, args: unknown[]): void;
-
+	protected abstract _nativeConsoleLogMessage(
+		method: 'log' | 'info' | 'warn' | 'error' | 'debug',
+		original: (...args: unknown[]) => void,
+		args: unknown[]
+	): void;
 }
 
 const MAX_LENGTH = 100000;

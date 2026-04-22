@@ -13,13 +13,13 @@ import { IEditorWorkerService } from '../../../common/services/editorWorker.js';
 import { BracketSelectionRangeProvider } from '../../smartSelect/browser/bracketSelections.js';
 
 export abstract class WordDistance {
-
-	static readonly None = new class extends WordDistance {
-		distance() { return 0; }
-	};
+	static readonly None = new (class extends WordDistance {
+		distance() {
+			return 0;
+		}
+	})();
 
 	static async create(service: IEditorWorkerService, editor: ICodeEditor): Promise<WordDistance> {
-
 		if (!editor.getOption(EditorOption.suggest).localityBonus) {
 			return WordDistance.None;
 		}
@@ -49,7 +49,7 @@ export abstract class WordDistance {
 		const wordUntilPos = model.getWordUntilPosition(position);
 		delete wordRanges[wordUntilPos.word];
 
-		return new class extends WordDistance {
+		return new (class extends WordDistance {
 			distance(anchor: IPosition, item: CompletionItem) {
 				if (!position.equals(editor.getPosition())) {
 					return 0;
@@ -73,7 +73,7 @@ export abstract class WordDistance {
 				}
 				return blockDistance;
 			}
-		};
+		})();
 	}
 
 	abstract distance(anchor: IPosition, suggestion: CompletionItem): number;

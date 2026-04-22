@@ -11,7 +11,12 @@ import { KeyCode } from '../../../../base/common/keyCodes.js';
 import { StandardKeyboardEvent } from '../../../../base/browser/keyboardEvent.js';
 import { IContextViewService } from '../../../../platform/contextview/browser/contextView.js';
 import { toDisposable, IDisposable } from '../../../../base/common/lifecycle.js';
-import { badgeBackground, badgeForeground, contrastBorder, asCssVariable } from '../../../../platform/theme/common/colorRegistry.js';
+import {
+	badgeBackground,
+	badgeForeground,
+	contrastBorder,
+	asCssVariable
+} from '../../../../platform/theme/common/colorRegistry.js';
 import { localize } from '../../../../nls.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ContextScopedHistoryInputBox } from '../../../../platform/history/browser/contextScopedHistoryWidget.js';
@@ -33,13 +38,12 @@ const viewFilterMenu = new MenuId('menu.view.filter');
 export const viewFilterSubmenu = new MenuId('submenu.view.filter');
 MenuRegistry.appendMenuItem(viewFilterMenu, {
 	submenu: viewFilterSubmenu,
-	title: localize('more filters', "More Filters..."),
+	title: localize('more filters', 'More Filters...'),
 	group: 'navigation',
-	icon: Codicon.filter,
+	icon: Codicon.filter
 });
 
 class MoreFiltersActionViewItem extends SubmenuEntryActionViewItem {
-
 	private _checked: boolean = false;
 	set checked(checked: boolean) {
 		if (this._checked !== checked) {
@@ -69,7 +73,6 @@ export interface IFilterWidgetOptions {
 }
 
 export class FilterWidget extends Widget {
-
 	readonly element: HTMLElement;
 	private readonly delayedFilterUpdate: Delayer<void>;
 	private readonly filterInputBox: HistoryInputBox;
@@ -96,8 +99,12 @@ export class FilterWidget extends Widget {
 	private _labelResetTimeout: IDisposable | undefined;
 
 	private readonly focusTracker: DOM.IFocusTracker;
-	get onDidFocus() { return this.focusTracker.onDidFocus; }
-	get onDidBlur() { return this.focusTracker.onDidBlur; }
+	get onDidFocus() {
+		return this.focusTracker.onDidFocus;
+	}
+	get onDidBlur() {
+		return this.focusTracker.onDidBlur;
+	}
 
 	constructor(
 		private readonly options: IFilterWidgetOptions,
@@ -144,20 +151,24 @@ export class FilterWidget extends Widget {
 	 * The hint is only announced once per focus cycle to prevent double-speak.
 	 */
 	private _updateFilterInputAriaLabel(): void {
-		let ariaLabel = this.options.ariaLabel || localize('viewFilter', "Filter");
+		let ariaLabel = this.options.ariaLabel || localize('viewFilter', 'Filter');
 
 		// Include accessibility help hint when screen reader is active and setting is enabled
 		// Note: Using string literal for setting ID to avoid layering violation (viewFilter.ts cannot import from contrib modules)
-		if (!this._accessibilityHelpHintAnnounced && this.configurationService.getValue<boolean>('accessibility.verbosity.find') && this.accessibilityService.isScreenReaderOptimized()) {
+		if (
+			!this._accessibilityHelpHintAnnounced &&
+			this.configurationService.getValue<boolean>('accessibility.verbosity.find') &&
+			this.accessibilityService.isScreenReaderOptimized()
+		) {
 			const keybinding = this.keybindingService.lookupKeybinding('editor.action.accessibilityHelp')?.getAriaLabel();
 			if (keybinding) {
-				ariaLabel += ', ' + localize('accessibilityHelpHintInLabel', "Press {0} for accessibility help", keybinding);
+				ariaLabel += ', ' + localize('accessibilityHelpHintInLabel', 'Press {0} for accessibility help', keybinding);
 				this._accessibilityHelpHintAnnounced = true;
 
 				// Reset to plain label after delay to avoid repeated announcement on focus changes
 				this._labelResetTimeout?.dispose();
 				this._labelResetTimeout = disposableTimeout(() => {
-					this.filterInputBox.setAriaLabel(this.options.ariaLabel || localize('viewFilter', "Filter"));
+					this.filterInputBox.setAriaLabel(this.options.ariaLabel || localize('viewFilter', 'Filter'));
 				}, 1000);
 			}
 		}
@@ -209,24 +220,42 @@ export class FilterWidget extends Widget {
 
 	private createInput(container: HTMLElement): [ContextScopedHistoryInputBox, DOM.IFocusTracker] {
 		const history = this.options.history || [];
-		const inputBox = this._register(this.instantiationService.createInstance(ContextScopedHistoryInputBox, container, this.contextViewService, {
-			placeholder: this.options.placeholder,
-			ariaLabel: this.options.ariaLabel,
-			history: new Set(history),
-			showHistoryHint: () => showHistoryKeybindingHint(this.keybindingService),
-			inputBoxStyles: defaultInputBoxStyles
-		}));
+		const inputBox = this._register(
+			this.instantiationService.createInstance(ContextScopedHistoryInputBox, container, this.contextViewService, {
+				placeholder: this.options.placeholder,
+				ariaLabel: this.options.ariaLabel,
+				history: new Set(history),
+				showHistoryHint: () => showHistoryKeybindingHint(this.keybindingService),
+				inputBoxStyles: defaultInputBoxStyles
+			})
+		);
 		if (this.options.text) {
 			inputBox.value = this.options.text;
 		}
-		this._register(inputBox.onDidChange(filter => this.delayedFilterUpdate.trigger(() => this.onDidInputChange(inputBox))));
-		this._register(DOM.addStandardDisposableListener(inputBox.inputElement, DOM.EventType.KEY_DOWN, (e: StandardKeyboardEvent) => this.onInputKeyDown(e)));
-		this._register(DOM.addStandardDisposableListener(container, DOM.EventType.KEY_DOWN, (e: StandardKeyboardEvent) => this.handleKeyboardEvent(e)));
-		this._register(DOM.addStandardDisposableListener(container, DOM.EventType.KEY_UP, (e: StandardKeyboardEvent) => this.handleKeyboardEvent(e)));
-		this._register(DOM.addStandardDisposableListener(inputBox.inputElement, DOM.EventType.CLICK, (e) => {
-			e.stopPropagation();
-			e.preventDefault();
-		}));
+		this._register(
+			inputBox.onDidChange(filter => this.delayedFilterUpdate.trigger(() => this.onDidInputChange(inputBox)))
+		);
+		this._register(
+			DOM.addStandardDisposableListener(inputBox.inputElement, DOM.EventType.KEY_DOWN, (e: StandardKeyboardEvent) =>
+				this.onInputKeyDown(e)
+			)
+		);
+		this._register(
+			DOM.addStandardDisposableListener(container, DOM.EventType.KEY_DOWN, (e: StandardKeyboardEvent) =>
+				this.handleKeyboardEvent(e)
+			)
+		);
+		this._register(
+			DOM.addStandardDisposableListener(container, DOM.EventType.KEY_UP, (e: StandardKeyboardEvent) =>
+				this.handleKeyboardEvent(e)
+			)
+		);
+		this._register(
+			DOM.addStandardDisposableListener(inputBox.inputElement, DOM.EventType.CLICK, e => {
+				e.stopPropagation();
+				e.preventDefault();
+			})
+		);
 
 		const focusTracker = this._register(DOM.trackFocus(inputBox.inputElement));
 		if (this.focusContextKey) {
@@ -246,18 +275,21 @@ export class FilterWidget extends Widget {
 	}
 
 	private createToolBar(container: HTMLElement): MenuWorkbenchToolBar {
-		return this.instantiationService.createInstance(MenuWorkbenchToolBar, container, viewFilterMenu,
-			{
-				hiddenItemStrategy: HiddenItemStrategy.NoHide,
-				actionViewItemProvider: (action: IAction, options: IActionViewItemOptions) => {
-					if (action instanceof SubmenuItemAction && action.item.submenu.id === viewFilterSubmenu.id) {
-						this.moreFiltersActionViewItem = this.instantiationService.createInstance(MoreFiltersActionViewItem, action, options);
-						this.moreFiltersActionViewItem.checked = this.isMoreFiltersChecked;
-						return this.moreFiltersActionViewItem;
-					}
-					return undefined;
+		return this.instantiationService.createInstance(MenuWorkbenchToolBar, container, viewFilterMenu, {
+			hiddenItemStrategy: HiddenItemStrategy.NoHide,
+			actionViewItemProvider: (action: IAction, options: IActionViewItemOptions) => {
+				if (action instanceof SubmenuItemAction && action.item.submenu.id === viewFilterSubmenu.id) {
+					this.moreFiltersActionViewItem = this.instantiationService.createInstance(
+						MoreFiltersActionViewItem,
+						action,
+						options
+					);
+					this.moreFiltersActionViewItem.checked = this.isMoreFiltersChecked;
+					return this.moreFiltersActionViewItem;
 				}
-			});
+				return undefined;
+			}
+		});
 	}
 
 	private onDidInputChange(inputbox: HistoryInputBox) {
@@ -266,16 +298,18 @@ export class FilterWidget extends Widget {
 	}
 
 	private adjustInputBox(): void {
-		this.filterInputBox.inputElement.style.paddingRight = this.element.classList.contains('small') || this.filterBadge.classList.contains('hidden') ? '25px' : '150px';
+		this.filterInputBox.inputElement.style.paddingRight =
+			this.element.classList.contains('small') || this.filterBadge.classList.contains('hidden') ? '25px' : '150px';
 	}
 
 	// Action toolbar is swallowing some keys for action items which should not be for an input box
 	private handleKeyboardEvent(event: StandardKeyboardEvent) {
-		if (event.equals(KeyCode.Space)
-			|| event.equals(KeyCode.LeftArrow)
-			|| event.equals(KeyCode.RightArrow)
-			|| event.equals(KeyCode.Home)
-			|| event.equals(KeyCode.End)
+		if (
+			event.equals(KeyCode.Space) ||
+			event.equals(KeyCode.LeftArrow) ||
+			event.equals(KeyCode.RightArrow) ||
+			event.equals(KeyCode.Home) ||
+			event.equals(KeyCode.End)
 		) {
 			event.stopPropagation();
 		}

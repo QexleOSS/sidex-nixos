@@ -14,7 +14,12 @@ import { EditorInput, IEditorCloseHandler } from '../../../common/editor/editorI
 import { ITerminalInstance, ITerminalInstanceService, terminalEditorId } from './terminal.js';
 import { getColorClass, getUriClasses } from './terminalIcon.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
-import { IShellLaunchConfig, TerminalExitReason, TerminalLocation, TerminalSettingId } from '../../../../platform/terminal/common/terminal.js';
+import {
+	IShellLaunchConfig,
+	TerminalExitReason,
+	TerminalLocation,
+	TerminalSettingId
+} from '../../../../platform/terminal/common/terminal.js';
 import { IEditorGroup } from '../../../services/editor/common/editorGroupsService.js';
 import { ILifecycleService, ShutdownReason, WillShutdownEvent } from '../../../services/lifecycle/common/lifecycle.js';
 import { ConfirmOnKill } from '../common/terminal.js';
@@ -25,7 +30,6 @@ import { ConfirmResult, IDialogService } from '../../../../platform/dialogs/comm
 import { Emitter } from '../../../../base/common/event.js';
 
 export class TerminalEditorInput extends EditorInput implements IEditorCloseHandler {
-
 	static readonly ID = 'workbench.editors.terminal';
 
 	override readonly closeHandler = this;
@@ -60,7 +64,12 @@ export class TerminalEditorInput extends EditorInput implements IEditorCloseHand
 	}
 
 	override get capabilities(): EditorInputCapabilities {
-		return EditorInputCapabilities.Readonly | EditorInputCapabilities.ForceReveal | EditorInputCapabilities.CanDropIntoEditor | EditorInputCapabilities.ForceDescription;
+		return (
+			EditorInputCapabilities.Readonly |
+			EditorInputCapabilities.ForceReveal |
+			EditorInputCapabilities.CanDropIntoEditor |
+			EditorInputCapabilities.ForceDescription
+		);
 	}
 
 	setTerminalInstance(instance: ITerminalInstance): void {
@@ -72,7 +81,10 @@ export class TerminalEditorInput extends EditorInput implements IEditorCloseHand
 	}
 
 	override copy(): EditorInput {
-		const instance = this._terminalInstanceService.createInstance(this._copyLaunchConfig || {}, TerminalLocation.Editor);
+		const instance = this._terminalInstanceService.createInstance(
+			this._copyLaunchConfig || {},
+			TerminalLocation.Editor
+		);
 		instance.focusWhenReady();
 		this._copyLaunchConfig = undefined;
 		return this._instantiationService.createInstance(TerminalEditorInput, instance.resource, instance);
@@ -107,11 +119,17 @@ export class TerminalEditorInput extends EditorInput implements IEditorCloseHand
 	async confirm(terminals: ReadonlyArray<IEditorIdentifier>): Promise<ConfirmResult> {
 		const { confirmed } = await this._dialogService.confirm({
 			type: Severity.Warning,
-			message: localize('confirmDirtyTerminal.message', "Do you want to terminate running processes?"),
-			primaryButton: localize({ key: 'confirmDirtyTerminal.button', comment: ['&& denotes a mnemonic'] }, "&&Terminate"),
-			detail: terminals.length > 1 ?
-				terminals.map(terminal => terminal.editor.getName()).join('\n') + '\n\n' + localize('confirmDirtyTerminals.detail', "Closing will terminate the running processes in the terminals.") :
-				localize('confirmDirtyTerminal.detail', "Closing will terminate the running processes in this terminal.")
+			message: localize('confirmDirtyTerminal.message', 'Do you want to terminate running processes?'),
+			primaryButton: localize(
+				{ key: 'confirmDirtyTerminal.button', comment: ['&& denotes a mnemonic'] },
+				'&&Terminate'
+			),
+			detail:
+				terminals.length > 1
+					? terminals.map(terminal => terminal.editor.getName()).join('\n') +
+						'\n\n' +
+						localize('confirmDirtyTerminals.detail', 'Closing will terminate the running processes in the terminals.')
+					: localize('confirmDirtyTerminal.detail', 'Closing will terminate the running processes in this terminal.')
 		});
 
 		return confirmed ? ConfirmResult.DONT_SAVE : ConfirmResult.CANCEL;
@@ -152,7 +170,7 @@ export class TerminalEditorInput extends EditorInput implements IEditorCloseHand
 		const instanceOnDidBlurListener = instance.onDidBlur(() => this._terminalEditorFocusContextKey.reset());
 
 		const disposeListeners = [
-			instance.onExit((e) => {
+			instance.onExit(e => {
 				if (!instance.waitOnExit) {
 					this.dispose();
 				}
@@ -165,30 +183,36 @@ export class TerminalEditorInput extends EditorInput implements IEditorCloseHand
 			instance.statusList.onDidChangePrimaryStatus(() => this._onDidChangeLabel.fire())
 		];
 
-		this._register(toDisposable(() => {
-			if (!this._isDetached && !this._isShuttingDown) {
-				// Will be ignored if triggered by onExit or onDisposed terminal events
-				// as disposed was already called
-				instance.dispose(TerminalExitReason.User);
-			}
-			dispose(disposeListeners);
-			dispose([instanceOnDidFocusListener, instanceOnDidBlurListener]);
-		}));
+		this._register(
+			toDisposable(() => {
+				if (!this._isDetached && !this._isShuttingDown) {
+					// Will be ignored if triggered by onExit or onDisposed terminal events
+					// as disposed was already called
+					instance.dispose(TerminalExitReason.User);
+				}
+				dispose(disposeListeners);
+				dispose([instanceOnDidFocusListener, instanceOnDidBlurListener]);
+			})
+		);
 
 		// Don't dispose editor when instance is torn down on shutdown to avoid extra work and so
 		// the editor/tabs don't disappear
-		this._register(this._lifecycleService.onWillShutdown((e: WillShutdownEvent) => {
-			this._isShuttingDown = true;
-			dispose(disposeListeners);
+		this._register(
+			this._lifecycleService.onWillShutdown((e: WillShutdownEvent) => {
+				this._isShuttingDown = true;
+				dispose(disposeListeners);
 
-			// Don't touch processes if the shutdown was a result of reload as they will be reattached
-			const shouldPersistTerminals = this._configurationService.getValue<boolean>(TerminalSettingId.EnablePersistentSessions) && e.reason === ShutdownReason.RELOAD;
-			if (shouldPersistTerminals) {
-				instance.detachProcessAndDispose(TerminalExitReason.Shutdown);
-			} else {
-				instance.dispose(TerminalExitReason.Shutdown);
-			}
-		}));
+				// Don't touch processes if the shutdown was a result of reload as they will be reattached
+				const shouldPersistTerminals =
+					this._configurationService.getValue<boolean>(TerminalSettingId.EnablePersistentSessions) &&
+					e.reason === ShutdownReason.RELOAD;
+				if (shouldPersistTerminals) {
+					instance.detachProcessAndDispose(TerminalExitReason.Shutdown);
+				} else {
+					instance.dispose(TerminalExitReason.Shutdown);
+				}
+			})
+		);
 	}
 
 	override getName() {

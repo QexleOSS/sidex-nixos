@@ -89,11 +89,15 @@ export class QuickDiffService extends Disposable implements IQuickDiffService {
 			.filter(provider => !provider.rootUri || this.uriIdentityService.extUri.isEqualOrParent(uri, provider.rootUri))
 			.sort(createProviderComparer(uri));
 
-		const quickDiffOriginalResources = await Promise.allSettled(providers.map(async provider => {
-			const scoreValue = provider.selector ? score(provider.selector, uri, language, isSynchronized, undefined, undefined) : 10;
-			const originalResource = scoreValue > 0 ? await provider.getOriginalResource(uri) ?? undefined : undefined;
-			return { provider, originalResource };
-		}));
+		const quickDiffOriginalResources = await Promise.allSettled(
+			providers.map(async provider => {
+				const scoreValue = provider.selector
+					? score(provider.selector, uri, language, isSynchronized, undefined, undefined)
+					: 10;
+				const originalResource = scoreValue > 0 ? ((await provider.getOriginalResource(uri)) ?? undefined) : undefined;
+				return { provider, originalResource };
+			})
+		);
 
 		const quickDiffs: QuickDiff[] = [];
 		for (const quickDiffOriginalResource of quickDiffOriginalResources) {
@@ -110,7 +114,7 @@ export class QuickDiffService extends Disposable implements IQuickDiffService {
 				id: provider.id,
 				label: provider.label,
 				kind: provider.kind,
-				originalResource,
+				originalResource
 			} satisfies QuickDiff);
 		}
 
@@ -137,7 +141,7 @@ export class QuickDiffService extends Disposable implements IQuickDiffService {
 		if (raw) {
 			try {
 				this.hiddenQuickDiffProviders = new Set(JSON.parse(raw));
-			} catch { }
+			} catch {}
 		}
 	}
 
@@ -145,12 +149,22 @@ export class QuickDiffService extends Disposable implements IQuickDiffService {
 		if (this.hiddenQuickDiffProviders.size === 0) {
 			this.storageService.remove(QuickDiffService.STORAGE_KEY, StorageScope.PROFILE);
 		} else {
-			this.storageService.store(QuickDiffService.STORAGE_KEY, JSON.stringify(Array.from(this.hiddenQuickDiffProviders)), StorageScope.PROFILE, StorageTarget.USER);
+			this.storageService.store(
+				QuickDiffService.STORAGE_KEY,
+				JSON.stringify(Array.from(this.hiddenQuickDiffProviders)),
+				StorageScope.PROFILE,
+				StorageTarget.USER
+			);
 		}
 	}
 }
 
-export async function getOriginalResource(quickDiffService: IQuickDiffService, uri: URI, language: string | undefined, isSynchronized: boolean | undefined): Promise<URI | null> {
+export async function getOriginalResource(
+	quickDiffService: IQuickDiffService,
+	uri: URI,
+	language: string | undefined,
+	isSynchronized: boolean | undefined
+): Promise<URI | null> {
 	const quickDiffs = await quickDiffService.getQuickDiffs(uri, language, isSynchronized);
 	const primaryQuickDiffs = quickDiffs.find(quickDiff => quickDiff.kind === 'primary');
 	return primaryQuickDiffs ? primaryQuickDiffs.originalResource : null;

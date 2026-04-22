@@ -9,7 +9,7 @@ import type { IConfigurationPropertySchema } from '../../../../../platform/confi
 
 export const enum TerminalAccessibilitySettingId {
 	AccessibleViewPreserveCursorPosition = 'terminal.integrated.accessibleViewPreserveCursorPosition',
-	AccessibleViewFocusOnCommandExecution = 'terminal.integrated.accessibleViewFocusOnCommandExecution',
+	AccessibleViewFocusOnCommandExecution = 'terminal.integrated.accessibleViewFocusOnCommandExecution'
 }
 
 export interface ITerminalAccessibilityConfiguration {
@@ -19,13 +19,19 @@ export interface ITerminalAccessibilityConfiguration {
 
 export const terminalAccessibilityConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
 	[TerminalAccessibilitySettingId.AccessibleViewPreserveCursorPosition]: {
-		markdownDescription: localize('terminal.integrated.accessibleViewPreserveCursorPosition', "Preserve the cursor position on reopen of the terminal's accessible view rather than setting it to the bottom of the buffer."),
+		markdownDescription: localize(
+			'terminal.integrated.accessibleViewPreserveCursorPosition',
+			"Preserve the cursor position on reopen of the terminal's accessible view rather than setting it to the bottom of the buffer."
+		),
 		type: 'boolean',
 		default: false
 	},
 	[TerminalAccessibilitySettingId.AccessibleViewFocusOnCommandExecution]: {
-		markdownDescription: localize('terminal.integrated.accessibleViewFocusOnCommandExecution', "Focus the terminal accessible view when a command is executed."),
+		markdownDescription: localize(
+			'terminal.integrated.accessibleViewFocusOnCommandExecution',
+			'Focus the terminal accessible view when a command is executed.'
+		),
 		type: 'boolean',
 		default: false
-	},
+	}
 };

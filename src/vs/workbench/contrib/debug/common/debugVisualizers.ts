@@ -6,11 +6,26 @@
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { IDisposable, IReference, toDisposable } from '../../../../base/common/lifecycle.js';
 import { isDefined } from '../../../../base/common/types.js';
-import { ContextKeyExpr, ContextKeyExpression, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import {
+	ContextKeyExpr,
+	ContextKeyExpression,
+	IContextKeyService
+} from '../../../../platform/contextkey/common/contextkey.js';
 import { ExtensionIdentifier, IExtensionDescription } from '../../../../platform/extensions/common/extensions.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
-import { CONTEXT_VARIABLE_NAME, CONTEXT_VARIABLE_TYPE, CONTEXT_VARIABLE_VALUE, MainThreadDebugVisualization, IDebugVisualization, IDebugVisualizationContext, IExpression, IExpressionContainer, IDebugVisualizationTreeItem, IDebugSession } from './debug.js';
+import {
+	CONTEXT_VARIABLE_NAME,
+	CONTEXT_VARIABLE_TYPE,
+	CONTEXT_VARIABLE_VALUE,
+	MainThreadDebugVisualization,
+	IDebugVisualization,
+	IDebugVisualizationContext,
+	IExpression,
+	IExpressionContainer,
+	IDebugVisualizationTreeItem,
+	IDebugSession
+} from './debug.js';
 import { getContextForVariable } from './debugContext.js';
 import { Scope, Variable, VisualizedExpression } from './debugModel.js';
 import { IExtensionService } from '../../../services/extensions/common/extensions.js';
@@ -21,7 +36,10 @@ export const IDebugVisualizerService = createDecorator<IDebugVisualizerService>(
 interface VisualizerHandle {
 	id: string;
 	extensionId: ExtensionIdentifier;
-	provideDebugVisualizers(context: IDebugVisualizationContext, token: CancellationToken): Promise<IDebugVisualization[]>;
+	provideDebugVisualizers(
+		context: IDebugVisualizationContext,
+		token: CancellationToken
+	): Promise<IDebugVisualization[]>;
 	resolveDebugVisualizer(viz: IDebugVisualization, token: CancellationToken): Promise<MainThreadDebugVisualization>;
 	executeDebugVisualizerCommand(id: number): Promise<void>;
 	disposeDebugVisualizers(ids: number[]): void;
@@ -47,10 +65,13 @@ export class DebugVisualizer {
 		return this.viz.iconClass;
 	}
 
-	constructor(private readonly handle: VisualizerHandle, private readonly viz: IDebugVisualization) { }
+	constructor(
+		private readonly handle: VisualizerHandle,
+		private readonly viz: IDebugVisualization
+	) {}
 
 	public async resolve(token: CancellationToken) {
-		return this.viz.visualization ??= await this.handle.resolveDebugVisualizer(this.viz, token);
+		return (this.viz.visualization ??= await this.handle.resolveDebugVisualizer(this.viz, token));
 	}
 
 	public async execute() {
@@ -84,7 +105,11 @@ export interface IDebugVisualizerService {
 	/**
 	 * Gets children for a visualized tree node.
 	 */
-	getVisualizedChildren(session: IDebugSession | undefined, treeId: string, treeElementId: number): Promise<IExpression[]>;
+	getVisualizedChildren(
+		session: IDebugSession | undefined,
+		treeId: string,
+		treeElementId: number
+	): Promise<IExpression[]>;
 
 	/**
 	 * Gets children for a visualized tree node.
@@ -92,7 +117,7 @@ export interface IDebugVisualizerService {
 	editTreeItem(treeId: string, item: IDebugVisualizationTreeItem, newValue: string): Promise<void>;
 }
 
-const emptyRef: IReference<DebugVisualizer[]> = { object: [], dispose: () => { } };
+const emptyRef: IReference<DebugVisualizer[]> = { object: [], dispose: () => {} };
 
 export class DebugVisualizerService implements IDebugVisualizerService {
 	declare public readonly _serviceBrand: undefined;
@@ -105,22 +130,27 @@ export class DebugVisualizerService implements IDebugVisualizerService {
 	constructor(
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IExtensionService private readonly extensionService: IExtensionService,
-		@ILogService private readonly logService: ILogService,
+		@ILogService private readonly logService: ILogService
 	) {
 		visualizersExtensionPoint.setHandler((_, { added, removed }) => {
-			this.registrations = this.registrations.filter(r =>
-				!removed.some(e => ExtensionIdentifier.equals(e.description.identifier, r.extensionId)));
+			this.registrations = this.registrations.filter(
+				r => !removed.some(e => ExtensionIdentifier.equals(e.description.identifier, r.extensionId))
+			);
 			added.forEach(e => this.processExtensionRegistration(e.description));
 		});
 	}
 
 	/** @inheritdoc */
-	public async getApplicableFor(variable: IExpression, token: CancellationToken): Promise<IReference<DebugVisualizer[]>> {
+	public async getApplicableFor(
+		variable: IExpression,
+		token: CancellationToken
+	): Promise<IReference<DebugVisualizer[]>> {
 		if (!(variable instanceof Variable)) {
 			return emptyRef;
 		}
 		const threadId = variable.getThreadId();
-		if (threadId === undefined) { // an expression, not a variable
+		if (threadId === undefined) {
+			// an expression, not a variable
 			return emptyRef;
 		}
 
@@ -128,28 +158,30 @@ export class DebugVisualizerService implements IDebugVisualizerService {
 		const overlay = getContextForVariable(this.contextKeyService, variable, [
 			[CONTEXT_VARIABLE_NAME.key, variable.name],
 			[CONTEXT_VARIABLE_VALUE.key, variable.value],
-			[CONTEXT_VARIABLE_TYPE.key, variable.type],
+			[CONTEXT_VARIABLE_TYPE.key, variable.type]
 		]);
 
-		const maybeVisualizers = await Promise.all(this.registrations.map(async registration => {
-			if (!overlay.contextMatchesRules(registration.expr)) {
-				return;
-			}
+		const maybeVisualizers = await Promise.all(
+			this.registrations.map(async registration => {
+				if (!overlay.contextMatchesRules(registration.expr)) {
+					return;
+				}
 
-			let prom = this.didActivate.get(registration.id);
-			if (!prom) {
-				prom = this.extensionService.activateByEvent(`onDebugVisualizer:${registration.id}`);
-				this.didActivate.set(registration.id, prom);
-			}
+				let prom = this.didActivate.get(registration.id);
+				if (!prom) {
+					prom = this.extensionService.activateByEvent(`onDebugVisualizer:${registration.id}`);
+					this.didActivate.set(registration.id, prom);
+				}
 
-			await prom;
-			if (token.isCancellationRequested) {
-				return;
-			}
+				await prom;
+				if (token.isCancellationRequested) {
+					return;
+				}
 
-			const handle = this.handles.get(toKey(registration.extensionId, registration.id));
-			return handle && { handle, result: await handle.provideDebugVisualizers(context, token) };
-		}));
+				const handle = this.handles.get(toKey(registration.extensionId, registration.id));
+				return handle && { handle, result: await handle.provideDebugVisualizers(context, token) };
+			})
+		);
 
 		const ref = {
 			object: maybeVisualizers.filter(isDefined).flatMap(v => v.result.map(r => new DebugVisualizer(v.handle, r))),
@@ -157,7 +189,7 @@ export class DebugVisualizerService implements IDebugVisualizerService {
 				for (const viz of maybeVisualizers) {
 					viz?.handle.disposeDebugVisualizers(viz.result.map(r => r.id));
 				}
-			},
+			}
 		};
 
 		if (token.isCancellationRequested) {
@@ -210,9 +242,13 @@ export class DebugVisualizerService implements IDebugVisualizerService {
 	}
 
 	/** @inheritdoc */
-	public async getVisualizedChildren(session: IDebugSession | undefined, treeId: string, treeElementId: number): Promise<IExpression[]> {
+	public async getVisualizedChildren(
+		session: IDebugSession | undefined,
+		treeId: string,
+		treeElementId: number
+	): Promise<IExpression[]> {
 		const node = this.trees.get(treeId);
-		const children = await node?.getChildren(treeElementId) || [];
+		const children = (await node?.getChildren(treeElementId)) || [];
 		return children.map(c => new VisualizedExpression(session, this, treeId, c, undefined));
 	}
 
@@ -227,7 +263,7 @@ export class DebugVisualizerService implements IDebugVisualizerService {
 	private getVariableContext(threadId: number, variable: Variable) {
 		const context: IDebugVisualizationContext = {
 			sessionId: variable.getSession()?.getId() || '',
-			containerId: (variable.parent instanceof Variable ? variable.reference : undefined),
+			containerId: variable.parent instanceof Variable ? variable.reference : undefined,
 			threadId,
 			variable: {
 				name: variable.name,
@@ -238,7 +274,7 @@ export class DebugVisualizerService implements IDebugVisualizerService {
 				indexedVariables: variable.indexedVariables,
 				memoryReference: variable.memoryReference,
 				namedVariables: variable.namedVariables,
-				presentationHint: variable.presentationHint,
+				presentationHint: variable.presentationHint
 			}
 		};
 
@@ -264,7 +300,10 @@ export class DebugVisualizerService implements IDebugVisualizerService {
 					this.registrations.push({ expr, id, extensionId: ext.identifier });
 				}
 			} catch (e) {
-				this.logService.error(`Error processing debug visualizer registration from extension '${ext.identifier.value}'`, e);
+				this.logService.error(
+					`Error processing debug visualizer registration from extension '${ext.identifier.value}'`,
+					e
+				);
 			}
 		}
 	}

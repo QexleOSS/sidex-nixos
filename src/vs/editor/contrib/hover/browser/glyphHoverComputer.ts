@@ -21,14 +21,9 @@ export interface GlyphHoverComputerOptions {
 }
 
 export class GlyphHoverComputer implements IHoverComputer<GlyphHoverComputerOptions, IHoverMessage> {
-
-	constructor(
-		private readonly _editor: ICodeEditor
-	) {
-	}
+	constructor(private readonly _editor: ICodeEditor) {}
 
 	public computeSync(opts: GlyphHoverComputerOptions): IHoverMessage[] {
-
 		const toHoverMessage = (contents: IMarkdownString): IHoverMessage => {
 			return {
 				value: contents

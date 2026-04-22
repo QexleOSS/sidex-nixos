@@ -29,9 +29,12 @@ export interface IMarkdownRendererExtraOptions {
 }
 
 export interface IMarkdownCodeBlockRenderer {
-	renderCodeBlock(languageAlias: string | undefined, value: string, options: IMarkdownRendererExtraOptions): Promise<HTMLElement>;
+	renderCodeBlock(
+		languageAlias: string | undefined,
+		value: string,
+		options: IMarkdownRendererExtraOptions
+	): Promise<HTMLElement>;
 }
-
 
 export const IMarkdownRendererService = createDecorator<IMarkdownRendererService>('markdownRendererService');
 
@@ -46,22 +49,27 @@ export const IMarkdownRendererService = createDecorator<IMarkdownRendererService
 export interface IMarkdownRendererService extends IMarkdownRenderer {
 	readonly _serviceBrand: undefined;
 
-	render(markdown: IMarkdownString, options?: MarkdownRenderOptions & IMarkdownRendererExtraOptions, outElement?: HTMLElement): IRenderedMarkdown;
+	render(
+		markdown: IMarkdownString,
+		options?: MarkdownRenderOptions & IMarkdownRendererExtraOptions,
+		outElement?: HTMLElement
+	): IRenderedMarkdown;
 
 	setDefaultCodeBlockRenderer(renderer: IMarkdownCodeBlockRenderer): void;
 }
-
 
 export class MarkdownRendererService implements IMarkdownRendererService {
 	declare readonly _serviceBrand: undefined;
 
 	private _defaultCodeBlockRenderer: IMarkdownCodeBlockRenderer | undefined;
 
-	constructor(
-		@IOpenerService private readonly _openerService: IOpenerService,
-	) { }
+	constructor(@IOpenerService private readonly _openerService: IOpenerService) {}
 
-	render(markdown: IMarkdownString, options?: MarkdownRenderOptions & IMarkdownRendererExtraOptions, outElement?: HTMLElement): IRenderedMarkdown {
+	render(
+		markdown: IMarkdownString,
+		options?: MarkdownRenderOptions & IMarkdownRendererExtraOptions,
+		outElement?: HTMLElement
+	): IRenderedMarkdown {
 		const resolvedOptions = { ...options };
 
 		if (!resolvedOptions.actionHandler) {
@@ -72,7 +80,10 @@ export class MarkdownRendererService implements IMarkdownRendererService {
 
 		if (!resolvedOptions.codeBlockRenderer) {
 			resolvedOptions.codeBlockRenderer = (alias, value) => {
-				return this._defaultCodeBlockRenderer?.renderCodeBlock(alias, value, resolvedOptions ?? {}) ?? Promise.resolve(document.createElement('span'));
+				return (
+					this._defaultCodeBlockRenderer?.renderCodeBlock(alias, value, resolvedOptions ?? {}) ??
+					Promise.resolve(document.createElement('span'))
+				);
 			};
 		}
 
@@ -86,7 +97,12 @@ export class MarkdownRendererService implements IMarkdownRendererService {
 	}
 }
 
-export async function openLinkFromMarkdown(openerService: IOpenerService, link: string, isTrusted: boolean | MarkdownStringTrustedOptions | undefined, skipValidation?: boolean): Promise<boolean> {
+export async function openLinkFromMarkdown(
+	openerService: IOpenerService,
+	link: string,
+	isTrusted: boolean | MarkdownStringTrustedOptions | undefined,
+	skipValidation?: boolean
+): Promise<boolean> {
 	try {
 		return await openerService.open(link, {
 			fromUserGesture: true,
@@ -100,7 +116,9 @@ export async function openLinkFromMarkdown(openerService: IOpenerService, link: 
 	}
 }
 
-function toAllowCommandsOption(isTrusted: boolean | MarkdownStringTrustedOptions | undefined): boolean | readonly string[] {
+function toAllowCommandsOption(
+	isTrusted: boolean | MarkdownStringTrustedOptions | undefined
+): boolean | readonly string[] {
 	if (isTrusted === true) {
 		return true; // Allow all commands
 	}

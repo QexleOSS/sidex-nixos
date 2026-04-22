@@ -12,10 +12,12 @@ const enum PADDING {
 
 export function isMousePositionWithinElement(element: HTMLElement, posx: number, posy: number): boolean {
 	const elementRect = dom.getDomNodePagePosition(element);
-	if (posx < elementRect.left + PADDING.VALUE
-		|| posx > elementRect.left + elementRect.width - PADDING.VALUE
-		|| posy < elementRect.top + PADDING.VALUE
-		|| posy > elementRect.top + elementRect.height - PADDING.VALUE) {
+	if (
+		posx < elementRect.left + PADDING.VALUE ||
+		posx > elementRect.left + elementRect.width - PADDING.VALUE ||
+		posy < elementRect.top + PADDING.VALUE ||
+		posy > elementRect.top + elementRect.height - PADDING.VALUE
+	) {
 		return false;
 	}
 	return true;

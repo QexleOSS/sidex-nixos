@@ -21,7 +21,11 @@ import { IKeybindingService } from '../../../../platform/keybinding/common/keybi
 import { KeybindingsRegistry, KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { INotificationService, IStatusHandle } from '../../../../platform/notification/common/notification.js';
 
-export const ctxHasSymbols = new RawContextKey('hasSymbols', false, localize('hasSymbols', "Whether there are symbol locations that can be navigated via keyboard-only."));
+export const ctxHasSymbols = new RawContextKey(
+	'hasSymbols',
+	false,
+	localize('hasSymbols', 'Whether there are symbol locations that can be navigated via keyboard-only.')
+);
 
 export const ISymbolNavigationService = createDecorator<ISymbolNavigationService>('ISymbolNavigationService');
 
@@ -33,7 +37,6 @@ export interface ISymbolNavigationService {
 }
 
 class SymbolNavigationService implements ISymbolNavigationService {
-
 	declare readonly _serviceBrand: undefined;
 
 	private readonly _ctxHasSymbols: IContextKey<boolean>;
@@ -48,7 +51,7 @@ class SymbolNavigationService implements ISymbolNavigationService {
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@ICodeEditorService private readonly _editorService: ICodeEditorService,
 		@INotificationService private readonly _notificationService: INotificationService,
-		@IKeybindingService private readonly _keybindingService: IKeybindingService,
+		@IKeybindingService private readonly _keybindingService: IKeybindingService
 	) {
 		this._ctxHasSymbols = ctxHasSymbols.bindTo(contextKeyService);
 	}
@@ -76,7 +79,6 @@ class SymbolNavigationService implements ISymbolNavigationService {
 
 		const editorState = new EditorState(this._editorService);
 		const listener = editorState.onDidChange(_ => {
-
 			if (this._ignoreEditorChange) {
 				return;
 			}
@@ -124,26 +126,35 @@ class SymbolNavigationService implements ISymbolNavigationService {
 
 		// open editor, ignore events while that happens
 		this._ignoreEditorChange = true;
-		return this._editorService.openCodeEditor({
-			resource: reference.uri,
-			options: {
-				selection: Range.collapseToStart(reference.range),
-				selectionRevealType: TextEditorSelectionRevealType.NearTopIfOutsideViewport
-			}
-		}, source).finally(() => {
-			this._ignoreEditorChange = false;
-		});
-
+		return this._editorService
+			.openCodeEditor(
+				{
+					resource: reference.uri,
+					options: {
+						selection: Range.collapseToStart(reference.range),
+						selectionRevealType: TextEditorSelectionRevealType.NearTopIfOutsideViewport
+					}
+				},
+				source
+			)
+			.finally(() => {
+				this._ignoreEditorChange = false;
+			});
 	}
 
 	private _showMessage(): void {
-
 		this._currentMessage?.close();
 
 		const kb = this._keybindingService.lookupKeybinding('editor.gotoNextSymbolFromResult');
 		const message = kb
-			? localize('location.kb', "Symbol {0} of {1}, {2} for next", this._currentIdx + 1, this._currentModel!.references.length, kb.getLabel())
-			: localize('location', "Symbol {0} of {1}", this._currentIdx + 1, this._currentModel!.references.length);
+			? localize(
+					'location.kb',
+					'Symbol {0} of {1}, {2} for next',
+					this._currentIdx + 1,
+					this._currentModel!.references.length,
+					kb.getLabel()
+				)
+			: localize('location', 'Symbol {0} of {1}', this._currentIdx + 1, this._currentModel!.references.length);
 
 		this._currentMessage = this._notificationService.status(message);
 	}
@@ -151,23 +162,24 @@ class SymbolNavigationService implements ISymbolNavigationService {
 
 registerSingleton(ISymbolNavigationService, SymbolNavigationService, InstantiationType.Delayed);
 
-registerEditorCommand(new class extends EditorCommand {
+registerEditorCommand(
+	new (class extends EditorCommand {
+		constructor() {
+			super({
+				id: 'editor.gotoNextSymbolFromResult',
+				precondition: ctxHasSymbols,
+				kbOpts: {
+					weight: KeybindingWeight.EditorContrib,
+					primary: KeyCode.F12
+				}
+			});
+		}
 
-	constructor() {
-		super({
-			id: 'editor.gotoNextSymbolFromResult',
-			precondition: ctxHasSymbols,
-			kbOpts: {
-				weight: KeybindingWeight.EditorContrib,
-				primary: KeyCode.F12
-			}
-		});
-	}
-
-	runEditorCommand(accessor: ServicesAccessor, editor: ICodeEditor): void | Promise<void> {
-		return accessor.get(ISymbolNavigationService).revealNext(editor);
-	}
-});
+		runEditorCommand(accessor: ServicesAccessor, editor: ICodeEditor): void | Promise<void> {
+			return accessor.get(ISymbolNavigationService).revealNext(editor);
+		}
+	})()
+);
 
 KeybindingsRegistry.registerCommandAndKeybindingRule({
 	id: 'editor.gotoNextSymbolFromResult.cancel',
@@ -182,7 +194,6 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 //
 
 class EditorState {
-
 	private readonly _listener = new Map<ICodeEditor, IDisposable>();
 	private readonly _disposables = new DisposableStore();
 
@@ -202,10 +213,13 @@ class EditorState {
 	}
 
 	private _onDidAddEditor(editor: ICodeEditor): void {
-		this._listener.set(editor, combinedDisposable(
-			editor.onDidChangeCursorPosition(_ => this._onDidChange.fire({ editor })),
-			editor.onDidChangeModelContent(_ => this._onDidChange.fire({ editor })),
-		));
+		this._listener.set(
+			editor,
+			combinedDisposable(
+				editor.onDidChangeCursorPosition(_ => this._onDidChange.fire({ editor })),
+				editor.onDidChangeModelContent(_ => this._onDidChange.fire({ editor }))
+			)
+		);
 	}
 
 	private _onDidRemoveEditor(editor: ICodeEditor): void {

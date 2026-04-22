@@ -52,8 +52,7 @@ export class ModelLineProjectionData {
 		 */
 		public breakOffsetsVisibleColumn: number[],
 		public wrappedTextIndentLength: number
-	) {
-	}
+	) {}
 
 	public getOutputLineCount(): number {
 		return this.breakOffsets.length;
@@ -87,7 +86,8 @@ export class ModelLineProjectionData {
 			outputOffset = Math.max(0, outputOffset - this.wrappedTextIndentLength);
 		}
 
-		const offsetInInputWithInjection = outputLineIndex === 0 ? outputOffset : this.breakOffsets[outputLineIndex - 1] + outputOffset;
+		const offsetInInputWithInjection =
+			outputLineIndex === 0 ? outputOffset : this.breakOffsets[outputLineIndex - 1] + outputOffset;
 		let offsetInInput = offsetInInputWithInjection;
 
 		if (this.injectionOffsets !== null) {
@@ -108,7 +108,10 @@ export class ModelLineProjectionData {
 		return offsetInInput;
 	}
 
-	public translateToOutputPosition(inputOffset: number, affinity: PositionAffinity = PositionAffinity.None): OutputPosition {
+	public translateToOutputPosition(
+		inputOffset: number,
+		affinity: PositionAffinity = PositionAffinity.None
+	): OutputPosition {
 		let inputOffsetInInputWithInjection = inputOffset;
 		if (this.injectionOffsets !== null) {
 			for (let i = 0; i < this.injectionOffsets.length; i++) {
@@ -127,14 +130,17 @@ export class ModelLineProjectionData {
 		return this.offsetInInputWithInjectionsToOutputPosition(inputOffsetInInputWithInjection, affinity);
 	}
 
-	private offsetInInputWithInjectionsToOutputPosition(offsetInInputWithInjections: number, affinity: PositionAffinity = PositionAffinity.None): OutputPosition {
+	private offsetInInputWithInjectionsToOutputPosition(
+		offsetInInputWithInjections: number,
+		affinity: PositionAffinity = PositionAffinity.None
+	): OutputPosition {
 		let low = 0;
 		let high = this.breakOffsets.length - 1;
 		let mid = 0;
 		let midStart = 0;
 
 		while (low <= high) {
-			mid = low + ((high - low) / 2) | 0;
+			mid = (low + (high - low) / 2) | 0;
 
 			const midStop = this.breakOffsets[mid];
 			midStart = mid > 0 ? this.breakOffsets[mid - 1] : 0;
@@ -166,10 +172,20 @@ export class ModelLineProjectionData {
 		return new OutputPosition(mid, outputOffset);
 	}
 
-	public normalizeOutputPosition(outputLineIndex: number, outputOffset: number, affinity: PositionAffinity): OutputPosition {
+	public normalizeOutputPosition(
+		outputLineIndex: number,
+		outputOffset: number,
+		affinity: PositionAffinity
+	): OutputPosition {
 		if (this.injectionOffsets !== null) {
-			const offsetInInputWithInjections = this.outputPositionToOffsetInInputWithInjections(outputLineIndex, outputOffset);
-			const normalizedOffsetInUnwrappedLine = this.normalizeOffsetInInputWithInjectionsAroundInjections(offsetInInputWithInjections, affinity);
+			const offsetInInputWithInjections = this.outputPositionToOffsetInInputWithInjections(
+				outputLineIndex,
+				outputOffset
+			);
+			const normalizedOffsetInUnwrappedLine = this.normalizeOffsetInInputWithInjectionsAroundInjections(
+				offsetInInputWithInjections,
+				affinity
+			);
 			if (normalizedOffsetInUnwrappedLine !== offsetInInputWithInjections) {
 				// injected text caused a change
 				return this.offsetInInputWithInjectionsToOutputPosition(normalizedOffsetInUnwrappedLine, affinity);
@@ -180,8 +196,7 @@ export class ModelLineProjectionData {
 			if (outputLineIndex > 0 && outputOffset === this.getMinOutputOffset(outputLineIndex)) {
 				return new OutputPosition(outputLineIndex - 1, this.getMaxOutputOffset(outputLineIndex - 1));
 			}
-		}
-		else if (affinity === PositionAffinity.Right) {
+		} else if (affinity === PositionAffinity.Right) {
 			const maxOutputLineIndex = this.getOutputLineCount() - 1;
 			if (outputLineIndex < maxOutputLineIndex && outputOffset === this.getMaxOutputOffset(outputLineIndex)) {
 				return new OutputPosition(outputLineIndex + 1, this.getMinOutputOffset(outputLineIndex + 1));
@@ -199,15 +214,20 @@ export class ModelLineProjectionData {
 		return result;
 	}
 
-	private normalizeOffsetInInputWithInjectionsAroundInjections(offsetInInputWithInjections: number, affinity: PositionAffinity): number {
+	private normalizeOffsetInInputWithInjectionsAroundInjections(
+		offsetInInputWithInjections: number,
+		affinity: PositionAffinity
+	): number {
 		const injectedText = this.getInjectedTextAtOffset(offsetInInputWithInjections);
 		if (!injectedText) {
 			return offsetInInputWithInjections;
 		}
 
 		if (affinity === PositionAffinity.None) {
-			if (offsetInInputWithInjections === injectedText.offsetInInputWithInjections + injectedText.length
-				&& hasRightCursorStop(this.injectionOptions![injectedText.injectedTextIndex].cursorStops)) {
+			if (
+				offsetInInputWithInjections === injectedText.offsetInInputWithInjections + injectedText.length &&
+				hasRightCursorStop(this.injectionOptions![injectedText.injectedTextIndex].cursorStops)
+			) {
 				return injectedText.offsetInInputWithInjections + injectedText.length;
 			} else {
 				let result = injectedText.offsetInInputWithInjections;
@@ -233,7 +253,10 @@ export class ModelLineProjectionData {
 			let result = injectedText.offsetInInputWithInjections + injectedText.length;
 			let index = injectedText.injectedTextIndex;
 			// traverse all injected text that touch each other
-			while (index + 1 < this.injectionOffsets!.length && this.injectionOffsets![index + 1] === this.injectionOffsets![index]) {
+			while (
+				index + 1 < this.injectionOffsets!.length &&
+				this.injectionOffsets![index + 1] === this.injectionOffsets![index]
+			) {
 				result += this.injectionOptions![index + 1].content.length;
 				index++;
 			}
@@ -264,7 +287,9 @@ export class ModelLineProjectionData {
 		};
 	}
 
-	private getInjectedTextAtOffset(offsetInInputWithInjections: number): { injectedTextIndex: number; offsetInInputWithInjections: number; length: number } | undefined {
+	private getInjectedTextAtOffset(
+		offsetInInputWithInjections: number
+	): { injectedTextIndex: number; offsetInInputWithInjections: number; length: number } | undefined {
 		const injectionOffsets = this.injectionOffsets;
 		const injectionOptions = this.injectionOptions;
 
@@ -298,16 +323,20 @@ export class ModelLineProjectionData {
 }
 
 function hasRightCursorStop(cursorStop: InjectedTextCursorStops | null | undefined): boolean {
-	if (cursorStop === null || cursorStop === undefined) { return true; }
+	if (cursorStop === null || cursorStop === undefined) {
+		return true;
+	}
 	return cursorStop === InjectedTextCursorStops.Right || cursorStop === InjectedTextCursorStops.Both;
 }
 function hasLeftCursorStop(cursorStop: InjectedTextCursorStops | null | undefined): boolean {
-	if (cursorStop === null || cursorStop === undefined) { return true; }
+	if (cursorStop === null || cursorStop === undefined) {
+		return true;
+	}
 	return cursorStop === InjectedTextCursorStops.Left || cursorStop === InjectedTextCursorStops.Both;
 }
 
 export class InjectedText {
-	constructor(public readonly options: InjectedTextOptions) { }
+	constructor(public readonly options: InjectedTextOptions) {}
 }
 
 export class OutputPosition {
@@ -334,7 +363,15 @@ export interface ILineBreaksComputerContext {
 }
 
 export interface ILineBreaksComputerFactory {
-	createLineBreaksComputer(context: ILineBreaksComputerContext, fontInfo: FontInfo, tabSize: number, wrappingColumn: number, wrappingIndent: WrappingIndent, wordBreak: 'normal' | 'keepAll', wrapOnEscapedLineFeeds: boolean): ILineBreaksComputer;
+	createLineBreaksComputer(
+		context: ILineBreaksComputerContext,
+		fontInfo: FontInfo,
+		tabSize: number,
+		wrappingColumn: number,
+		wrappingIndent: WrappingIndent,
+		wordBreak: 'normal' | 'keepAll',
+		wrapOnEscapedLineFeeds: boolean
+	): ILineBreaksComputer;
 }
 
 export interface ILineBreaksComputer {

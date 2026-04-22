@@ -5,7 +5,10 @@
 
 import { IContextMenuProvider } from '../../../base/browser/contextmenu.js';
 import { IActionProvider } from '../../../base/browser/ui/dropdown/dropdown.js';
-import { DropdownMenuActionViewItem, IDropdownMenuActionViewItemOptions } from '../../../base/browser/ui/dropdown/dropdownActionViewItem.js';
+import {
+	DropdownMenuActionViewItem,
+	IDropdownMenuActionViewItemOptions
+} from '../../../base/browser/ui/dropdown/dropdownActionViewItem.js';
 import { IAction } from '../../../base/common/actions.js';
 import { IContextKeyService } from '../../contextkey/common/contextkey.js';
 import { IKeybindingService } from '../../keybinding/common/keybinding.js';
@@ -17,7 +20,7 @@ export class DropdownMenuActionViewItemWithKeybinding extends DropdownMenuAction
 		contextMenuProvider: IContextMenuProvider,
 		options: IDropdownMenuActionViewItemOptions = Object.create(null),
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
+		@IContextKeyService private readonly contextKeyService: IContextKeyService
 	) {
 		super(action, menuActionsOrProvider, contextMenuProvider, options);
 	}

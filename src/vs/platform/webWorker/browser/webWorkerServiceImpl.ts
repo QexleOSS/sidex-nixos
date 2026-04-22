@@ -18,7 +18,9 @@ export class WebWorkerService implements IWebWorkerService {
 	private static _workerIdPool: number = 0;
 	declare readonly _serviceBrand: undefined;
 
-	createWorkerClient<T extends object>(workerDescriptor: WebWorkerDescriptor | Worker | Promise<Worker>): IWebWorkerClient<T> {
+	createWorkerClient<T extends object>(
+		workerDescriptor: WebWorkerDescriptor | Worker | Promise<Worker>
+	): IWebWorkerClient<T> {
 		let worker: Worker | Promise<Worker>;
 		const id = ++WebWorkerService._workerIdPool;
 		if (workerDescriptor instanceof Worker || isPromiseLike<Worker>(workerDescriptor)) {
@@ -33,8 +35,15 @@ export class WebWorkerService implements IWebWorkerService {
 	protected _createWorker(descriptor: WebWorkerDescriptor): Promise<Worker> {
 		const workerRunnerUrl = this.getWorkerUrl(descriptor);
 
-		const workerUrlWithNls = getWorkerBootstrapUrl(descriptor.label, workerRunnerUrl, this._getWorkerLoadingFailedErrorMessage(descriptor));
-		const worker = new Worker(ttPolicy ? ttPolicy.createScriptURL(workerUrlWithNls) as unknown as string : workerUrlWithNls, { name: descriptor.label, type: 'module' });
+		const workerUrlWithNls = getWorkerBootstrapUrl(
+			descriptor.label,
+			workerRunnerUrl,
+			this._getWorkerLoadingFailedErrorMessage(descriptor)
+		);
+		const worker = new Worker(
+			ttPolicy ? (ttPolicy.createScriptURL(workerUrlWithNls) as unknown as string) : workerUrlWithNls,
+			{ name: descriptor.label, type: 'module' }
+		);
 		return whenESMWorkerReady(worker);
 	}
 
@@ -43,7 +52,9 @@ export class WebWorkerService implements IWebWorkerService {
 	}
 
 	getWorkerUrl(descriptor: WebWorkerDescriptor): string {
-		const isTauriProduction = (globalThis as typeof globalThis & { __SIDEX_TAURI__?: boolean }).__SIDEX_TAURI__ === true && globalThis.location?.protocol === 'tauri:';
+		const isTauriProduction =
+			(globalThis as typeof globalThis & { __SIDEX_TAURI__?: boolean }).__SIDEX_TAURI__ === true &&
+			globalThis.location?.protocol === 'tauri:';
 		if (isTauriProduction) {
 			if (descriptor.label === 'editorWorkerService') {
 				return `${globalThis.location.origin}/assets/editorWorker.js`;
@@ -58,13 +69,19 @@ export class WebWorkerService implements IWebWorkerService {
 
 		// Prefer bundler location for Vite/Webpack compatibility
 		if (descriptor.esmModuleLocationBundler) {
-			const url = typeof descriptor.esmModuleLocationBundler === 'function' ? descriptor.esmModuleLocationBundler() : descriptor.esmModuleLocationBundler;
+			const url =
+				typeof descriptor.esmModuleLocationBundler === 'function'
+					? descriptor.esmModuleLocationBundler()
+					: descriptor.esmModuleLocationBundler;
 			return url.toString();
 		}
 		if (!descriptor.esmModuleLocation) {
 			throw new Error('Missing esmModuleLocation in WebWorkerDescriptor');
 		}
-		const uri = typeof descriptor.esmModuleLocation === 'function' ? descriptor.esmModuleLocation() : descriptor.esmModuleLocation;
+		const uri =
+			typeof descriptor.esmModuleLocation === 'function'
+				? descriptor.esmModuleLocation()
+				: descriptor.esmModuleLocation;
 		const urlStr = uri.toString(true);
 		return urlStr;
 	}
@@ -79,7 +96,12 @@ const ttPolicy = ((): ReturnType<typeof createTrustedTypesPolicy> => {
 	// when available.
 	// Refs https://github.com/microsoft/vscode/issues/222193
 	const workerGlobalThis = globalThis as WorkerGlobalWithPolicy;
-	if (typeof self === 'object' && self.constructor && self.constructor.name === 'DedicatedWorkerGlobalScope' && workerGlobalThis.workerttPolicy !== undefined) {
+	if (
+		typeof self === 'object' &&
+		self.constructor &&
+		self.constructor.name === 'DedicatedWorkerGlobalScope' &&
+		workerGlobalThis.workerttPolicy !== undefined
+	) {
 		return workerGlobalThis.workerttPolicy;
 	} else {
 		return createTrustedTypesPolicy('defaultWorkerFactory', { createScriptURL: value => value });
@@ -90,19 +112,30 @@ export function createBlobWorker(blobUrl: string, options?: WorkerOptions): Work
 	if (!blobUrl.startsWith('blob:')) {
 		throw new URIError('Not a blob-url: ' + blobUrl);
 	}
-	return new Worker(ttPolicy ? ttPolicy.createScriptURL(blobUrl) as unknown as string : blobUrl, { ...options, type: 'module' });
+	return new Worker(ttPolicy ? (ttPolicy.createScriptURL(blobUrl) as unknown as string) : blobUrl, {
+		...options,
+		type: 'module'
+	});
 }
 
-function getWorkerBootstrapUrl(label: string, workerScriptUrl: string, workerLoadingFailedErrorMessage: string | undefined): string {
-	if (/^((http:)|(https:)|(file:))/.test(workerScriptUrl) && workerScriptUrl.substring(0, globalThis.origin.length) !== globalThis.origin) {
+function getWorkerBootstrapUrl(
+	label: string,
+	workerScriptUrl: string,
+	workerLoadingFailedErrorMessage: string | undefined
+): string {
+	if (
+		/^((http:)|(https:)|(file:))/.test(workerScriptUrl) &&
+		workerScriptUrl.substring(0, globalThis.origin.length) !== globalThis.origin
+	) {
 		// this is the cross-origin case
 		// i.e. the webpage is running at a different origin than where the scripts are loaded from
 	} else {
 		const start = workerScriptUrl.lastIndexOf('?');
 		const end = workerScriptUrl.lastIndexOf('#', start);
-		const params = start > 0
-			? new URLSearchParams(workerScriptUrl.substring(start + 1, ~end ? end : undefined))
-			: new URLSearchParams();
+		const params =
+			start > 0
+				? new URLSearchParams(workerScriptUrl.substring(start + 1, ~end ? end : undefined))
+				: new URLSearchParams();
 
 		COI.addSearchParam(params, true, true);
 		const search = params.toString();
@@ -116,29 +149,36 @@ function getWorkerBootstrapUrl(label: string, workerScriptUrl: string, workerLoa
 	// In below blob code, we are using JSON.stringify to ensure the passed
 	// in values are not breaking our script. The values may contain string
 	// terminating characters (such as ' or ").
-	const blob = new Blob([coalesce([
-		`/*${label}*/`,
-		`globalThis._VSCODE_NLS_MESSAGES = ${JSON.stringify(getNLSMessages())};`,
-		`globalThis._VSCODE_NLS_LANGUAGE = ${JSON.stringify(getNLSLanguage())};`,
-		`globalThis._VSCODE_FILE_ROOT = ${JSON.stringify(globalThis._VSCODE_FILE_ROOT)};`,
-		`globalThis.__SIDEX_TAURI__ = ${JSON.stringify(!!(globalThis as any).__SIDEX_TAURI__)};`,
-		`const ttPolicy = globalThis.trustedTypes?.createPolicy('defaultWorkerFactory', { createScriptURL: value => value });`,
-		`globalThis.workerttPolicy = ttPolicy;`,
-		`const __sidexImportUrlRaw = (ttPolicy?.createScriptURL(${JSON.stringify(workerScriptUrl)}) ?? ${JSON.stringify(workerScriptUrl)});`,
-		`let __sidexImportUrl = String(__sidexImportUrlRaw);`,
-		`if (__sidexImportUrl.startsWith('tauri://')) {`,
-		`	const hashIndex = __sidexImportUrl.indexOf('#');`,
-		`	if (hashIndex >= 0) {`,
-		`		__sidexImportUrl = __sidexImportUrl.slice(0, hashIndex);`,
-		`	}`,
-		`}`,
-		workerLoadingFailedErrorMessage ? 'try {' : '',
-		`await import(__sidexImportUrl);`,
-		workerLoadingFailedErrorMessage ? `} catch (err) { console.error(${JSON.stringify(workerLoadingFailedErrorMessage)}, err); throw err; }` : '',
+	const blob = new Blob(
+		[
+			coalesce([
+				`/*${label}*/`,
+				`globalThis._VSCODE_NLS_MESSAGES = ${JSON.stringify(getNLSMessages())};`,
+				`globalThis._VSCODE_NLS_LANGUAGE = ${JSON.stringify(getNLSLanguage())};`,
+				`globalThis._VSCODE_FILE_ROOT = ${JSON.stringify(globalThis._VSCODE_FILE_ROOT)};`,
+				`globalThis.__SIDEX_TAURI__ = ${JSON.stringify(!!(globalThis as any).__SIDEX_TAURI__)};`,
+				`const ttPolicy = globalThis.trustedTypes?.createPolicy('defaultWorkerFactory', { createScriptURL: value => value });`,
+				`globalThis.workerttPolicy = ttPolicy;`,
+				`const __sidexImportUrlRaw = (ttPolicy?.createScriptURL(${JSON.stringify(workerScriptUrl)}) ?? ${JSON.stringify(workerScriptUrl)});`,
+				`let __sidexImportUrl = String(__sidexImportUrlRaw);`,
+				`if (__sidexImportUrl.startsWith('tauri://')) {`,
+				`	const hashIndex = __sidexImportUrl.indexOf('#');`,
+				`	if (hashIndex >= 0) {`,
+				`		__sidexImportUrl = __sidexImportUrl.slice(0, hashIndex);`,
+				`	}`,
+				`}`,
+				workerLoadingFailedErrorMessage ? 'try {' : '',
+				`await import(__sidexImportUrl);`,
+				workerLoadingFailedErrorMessage
+					? `} catch (err) { console.error(${JSON.stringify(workerLoadingFailedErrorMessage)}, err); throw err; }`
+					: '',
 
-		`globalThis.postMessage({ type: 'vscode-worker-ready' });`,
-		`/*${label}*/`
-	]).join('')], { type: 'application/javascript' });
+				`globalThis.postMessage({ type: 'vscode-worker-ready' });`,
+				`/*${label}*/`
+			]).join('')
+		],
+		{ type: 'application/javascript' }
+	);
 	return URL.createObjectURL(blob);
 }
 
@@ -176,26 +216,28 @@ export class WebWorker extends Disposable implements IWebWorker {
 		const errorHandler = (ev: ErrorEvent) => {
 			this._onError.fire(ev);
 		};
-		this.worker.then((w) => {
-			w.onmessage = (ev) => {
+		this.worker.then(w => {
+			w.onmessage = ev => {
 				this._onMessage.fire(ev.data);
 			};
-			w.onmessageerror = (ev) => {
+			w.onmessageerror = ev => {
 				this._onError.fire(ev);
 			};
 			if (typeof w.addEventListener === 'function') {
 				w.addEventListener('error', errorHandler);
 			}
 		});
-		this._register(toDisposable(() => {
-			this.worker?.then(w => {
-				w.onmessage = null;
-				w.onmessageerror = null;
-				w.removeEventListener('error', errorHandler);
-				w.terminate();
-			});
-			this.worker = null;
-		}));
+		this._register(
+			toDisposable(() => {
+				this.worker?.then(w => {
+					w.onmessage = null;
+					w.onmessageerror = null;
+					w.removeEventListener('error', errorHandler);
+					w.terminate();
+				});
+				this.worker = null;
+			})
+		);
 	}
 
 	public getId(): number {

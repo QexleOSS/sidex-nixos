@@ -103,12 +103,17 @@ const GLOBAL_STORAGE_DIR = process.env.SIDEX_GLOBAL_STORAGE_DIR || path.join(USE
 
 let rustInitData = null;
 try {
-  if (process.env.SIDEX_INIT_DATA) {
+  if (process.env.SIDEX_INIT_DATA_FILE) {
+    const raw = fs.readFileSync(process.env.SIDEX_INIT_DATA_FILE, 'utf8');
+    rustInitData = JSON.parse(raw);
+    log(`received Rust-generated init data with ${(rustInitData.extensions || []).length} extensions`);
+    try { fs.unlinkSync(process.env.SIDEX_INIT_DATA_FILE); } catch {}
+  } else if (process.env.SIDEX_INIT_DATA) {
     rustInitData = JSON.parse(process.env.SIDEX_INIT_DATA);
     log(`received Rust-generated init data with ${(rustInitData.extensions || []).length} extensions`);
   }
 } catch (e) {
-  log(`failed to parse SIDEX_INIT_DATA: ${e.message}`);
+  log(`failed to parse init data: ${e.message}`);
 }
 
 // ── Extension search paths (from Rust) ──────────────────────────────────
@@ -157,17 +162,26 @@ function getExtensionSearchPaths() {
 
 class ExtensionHostManager {
   constructor() {
-    this._processes = new Map();
+    this._sharedEntry = null;
     this._connectionToken = crypto.randomUUID();
+    this._listeners = new Set();
   }
 
   get connectionToken() {
     return this._connectionToken;
   }
 
-  createExtensionHostProcess(reconnectionToken, initData) {
-    if (this._processes.has(reconnectionToken)) {
-      return this._processes.get(reconnectionToken);
+  getOrCreateSharedProcess(initData) {
+    if (this._sharedEntry && this._sharedEntry.child.connected) {
+      return this._sharedEntry;
+    }
+
+    const reconnectionToken = crypto.randomUUID();
+    const initDataFile = path.join(os.tmpdir(), `sidex-host-${reconnectionToken}.json`);
+    try {
+      fs.writeFileSync(initDataFile, JSON.stringify(initData));
+    } catch (e) {
+      log(`failed to write host init data file: ${e.message}`);
     }
 
     const hostPath = path.join(__dirname, 'host.cjs');
@@ -177,21 +191,33 @@ class ExtensionHostManager {
         ...process.env,
         VSCODE_HANDLES_UNCAUGHT_ERRORS: 'true',
         SIDEX_EXTENSION_HOST: 'true',
-        SIDEX_INIT_DATA: JSON.stringify(initData),
+        SIDEX_INIT_DATA_FILE: initDataFile,
       },
     });
 
     const entry = { child, reconnectionToken, initData };
-    this._processes.set(reconnectionToken, entry);
+    this._sharedEntry = entry;
 
     child.on('exit', (code, signal) => {
       log(`ext-host process <${child.pid}> exited: code=${code} signal=${signal}`);
-      this._processes.delete(reconnectionToken);
+      if (this._sharedEntry === entry) {
+        this._sharedEntry = null;
+      }
     });
 
     child.on('error', (err) => {
       log(`ext-host process error: ${err.message}`);
-      this._processes.delete(reconnectionToken);
+      if (this._sharedEntry === entry) {
+        this._sharedEntry = null;
+      }
+    });
+
+    child.on('message', (msg) => {
+      for (const listener of this._listeners) {
+        try {
+          listener(msg);
+        } catch {}
+      }
     });
 
     if (child.stdout) {
@@ -203,19 +229,34 @@ class ExtensionHostManager {
       child.stderr.on('data', (d) => log(`<${child.pid}><stderr> ${d.trimEnd()}`));
     }
 
-    log(`spawned ext-host process <${child.pid}>`);
+    log(`spawned shared ext-host process <${child.pid}>`);
     return entry;
   }
 
-  shutdown() {
-    for (const [, entry] of this._processes) {
-      try {
-        entry.child.kill();
-      } catch {
-        // best-effort
-      }
+  addMessageListener(listener) {
+    this._listeners.add(listener);
+  }
+
+  removeMessageListener(listener) {
+    this._listeners.delete(listener);
+  }
+
+  sendToHost(msg) {
+    if (this._sharedEntry && this._sharedEntry.child.connected) {
+      this._sharedEntry.child.send(msg);
+      return true;
     }
-    this._processes.clear();
+    return false;
+  }
+
+  shutdown() {
+    if (this._sharedEntry) {
+      try {
+        this._sharedEntry.child.kill();
+      } catch {}
+      this._sharedEntry = null;
+    }
+    this._listeners.clear();
   }
 }
 
@@ -252,8 +293,9 @@ class ClientConnection {
     this._socket = socket;
     this._urlPath = urlPath;
     this._buffer = Buffer.alloc(0);
-    this._extensionHostEntry = null;
     this._disposed = false;
+    this._messageListener = null;
+    this._pendingClientIds = new Set();
   }
 
   start() {
@@ -270,7 +312,6 @@ class ClientConnection {
   }
 
   _performHandshake() {
-    // Use Rust-provided init data if available; otherwise build from scan
     const initData = rustInitData || this._buildFallbackInitData();
     const extensions = initData.extensions || [];
 
@@ -279,9 +320,8 @@ class ClientConnection {
     const reconnectionToken = crypto.randomUUID();
     const connectionToken = hostManager.connectionToken;
 
-    this._extensionHostEntry = hostManager.createExtensionHostProcess(reconnectionToken, initData);
-
-    this._setupIPC(this._extensionHostEntry);
+    hostManager.getOrCreateSharedProcess(initData);
+    this._setupIPC();
 
     this._sendJson({
       type: 'sidex:handshake',
@@ -341,35 +381,36 @@ class ClientConnection {
     };
   }
 
-  _setupIPC(entry) {
-    const child = entry.child;
-
-    child.on('message', (msg) => {
+  _setupIPC() {
+    this._messageListener = (msg) => {
       if (msg && msg.type === 'VSCODE_EXTHOST_IPC_READY') {
-        log(`ext-host <${child.pid}> IPC ready`);
         return;
       }
 
       if (msg && msg.type === 'sidex:host-event') {
-        this._sendJson(msg.event);
+        const event = msg.event;
+        if (event && event.id !== undefined && this._pendingClientIds.has(event.id)) {
+          this._pendingClientIds.delete(event.id);
+          this._sendJson(event);
+        } else if (event && event.id === undefined) {
+          this._sendJson(event);
+        } else if (event && event.type) {
+          this._sendJson(event);
+        }
         return;
       }
 
       if (msg && msg.type === 'sidex:host-reply') {
-        this._sendJson(msg.reply);
+        const reply = msg.reply;
+        if (reply && reply.id !== undefined && this._pendingClientIds.has(reply.id)) {
+          this._pendingClientIds.delete(reply.id);
+          this._sendJson(reply);
+        }
         return;
       }
+    };
 
-      if (msg && typeof msg === 'object') {
-        this._sendJson({ type: 'sidex:exthost-message', data: msg });
-      }
-    });
-
-    child.on('exit', () => {
-      if (!this._disposed) {
-        this._sendJson({ type: 'sidex:exthost-exit' });
-      }
-    });
+    hostManager.addMessageListener(this._messageListener);
   }
 
   _onData(chunk) {
@@ -461,9 +502,14 @@ class ClientConnection {
   }
 
   _forwardToExtHost(id, msg) {
-    if (this._extensionHostEntry && this._extensionHostEntry.child.connected) {
-      this._extensionHostEntry.child.send({ ...msg, _clientId: id });
-    } else {
+    if (id !== undefined) {
+      this._pendingClientIds.add(id);
+    }
+    const sent = hostManager.sendToHost({ ...msg, _clientId: id });
+    if (!sent) {
+      if (id !== undefined) {
+        this._pendingClientIds.delete(id);
+      }
       this._sendJson({ id, error: 'extension host not connected' });
     }
   }
@@ -489,6 +535,11 @@ class ClientConnection {
       return;
     }
     this._disposed = true;
+    if (this._messageListener) {
+      hostManager.removeMessageListener(this._messageListener);
+      this._messageListener = null;
+    }
+    this._pendingClientIds.clear();
   }
 }
 

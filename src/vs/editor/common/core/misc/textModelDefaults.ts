@@ -12,6 +12,6 @@ export const EDITOR_MODEL_DEFAULTS = {
 	largeFileOptimizations: true,
 	bracketPairColorizationOptions: {
 		enabled: false,
-		independentColorPoolPerBracketType: false,
-	},
+		independentColorPoolPerBracketType: false
+	}
 };

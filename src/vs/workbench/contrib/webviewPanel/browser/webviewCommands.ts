@@ -11,16 +11,25 @@ import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextke
 import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
 import { KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { Categories } from '../../../../platform/action/common/actionCommonCategories.js';
-import { IWebviewService, KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_ENABLED, KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_FOCUSED, KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_VISIBLE, IWebview } from '../../webview/browser/webview.js';
+import {
+	IWebviewService,
+	KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_ENABLED,
+	KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_FOCUSED,
+	KEYBINDING_CONTEXT_WEBVIEW_FIND_WIDGET_VISIBLE,
+	IWebview
+} from '../../webview/browser/webview.js';
 import { WebviewEditor } from './webviewEditor.js';
 import { WebviewInput } from './webviewEditorInput.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 
-const webviewActiveContextKeyExpr = ContextKeyExpr.and(ContextKeyExpr.equals('activeEditor', WebviewEditor.ID), EditorContextKeys.focus.toNegated() /* https://github.com/microsoft/vscode/issues/58668 */)!;
+const webviewActiveContextKeyExpr = ContextKeyExpr.and(
+	ContextKeyExpr.equals('activeEditor', WebviewEditor.ID),
+	EditorContextKeys.focus.toNegated() /* https://github.com/microsoft/vscode/issues/58668 */
+)!;
 
 export class ShowWebViewEditorFindWidgetAction extends Action2 {
 	public static readonly ID = 'editor.action.webvieweditor.showFind';
-	public static readonly LABEL = nls.localize('editor.action.webvieweditor.showFind', "Show find");
+	public static readonly LABEL = nls.localize('editor.action.webvieweditor.showFind', 'Show find');
 
 	constructor() {
 		super({
@@ -41,7 +50,7 @@ export class ShowWebViewEditorFindWidgetAction extends Action2 {
 
 export class HideWebViewEditorFindCommand extends Action2 {
 	public static readonly ID = 'editor.action.webvieweditor.hideFind';
-	public static readonly LABEL = nls.localize('editor.action.webvieweditor.hideFind', "Stop find");
+	public static readonly LABEL = nls.localize('editor.action.webvieweditor.hideFind', 'Stop find');
 
 	constructor() {
 		super({
@@ -104,16 +113,18 @@ export class WebViewEditorFindPreviousCommand extends Action2 {
 
 export class ReloadWebviewAction extends Action2 {
 	static readonly ID = 'workbench.action.webview.reloadWebviewAction';
-	static readonly LABEL = nls.localize2('refreshWebviewLabel', "Reload Webviews");
+	static readonly LABEL = nls.localize2('refreshWebviewLabel', 'Reload Webviews');
 
 	public constructor() {
 		super({
 			id: ReloadWebviewAction.ID,
 			title: ReloadWebviewAction.LABEL,
 			category: Categories.Developer,
-			menu: [{
-				id: MenuId.CommandPalette
-			}]
+			menu: [
+				{
+					id: MenuId.CommandPalette
+				}
+			]
 		});
 	}
 

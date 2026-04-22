@@ -18,7 +18,12 @@ export type DocumentTokensProvider = DocumentSemanticTokensProvider | DocumentRa
 export interface IModelService {
 	readonly _serviceBrand: undefined;
 
-	createModel(value: string | ITextBufferFactory, languageSelection: ILanguageSelection | null, resource?: URI, isForSimpleWidget?: boolean): ITextModel;
+	createModel(
+		value: string | ITextBufferFactory,
+		languageSelection: ILanguageSelection | null,
+		resource?: URI,
+		isForSimpleWidget?: boolean
+	): ITextModel;
 
 	updateModel(model: ITextModel, value: string | ITextBufferFactory, reason?: TextModelEditSource): void;
 

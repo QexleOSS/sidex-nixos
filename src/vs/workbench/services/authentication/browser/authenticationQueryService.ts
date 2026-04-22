@@ -7,7 +7,12 @@ import { Emitter } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
-import { AuthenticationSessionAccount, IAuthenticationService, IAuthenticationExtensionsService, INTERNAL_AUTH_PROVIDER_PREFIX } from '../common/authentication.js';
+import {
+	AuthenticationSessionAccount,
+	IAuthenticationService,
+	IAuthenticationExtensionsService,
+	INTERNAL_AUTH_PROVIDER_PREFIX
+} from '../common/authentication.js';
 import {
 	IAuthenticationQueryService,
 	IProviderQuery,
@@ -32,7 +37,7 @@ abstract class BaseQuery implements IBaseQuery {
 	constructor(
 		public readonly providerId: string,
 		protected readonly queryService: AuthenticationQueryService
-	) { }
+	) {}
 }
 
 /**
@@ -49,15 +54,17 @@ class AccountExtensionQuery extends BaseQuery implements IAccountExtensionQuery 
 	}
 
 	isAccessAllowed(): boolean | undefined {
-		return this.queryService.authenticationAccessService.isAccessAllowed(this.providerId, this.accountName, this.extensionId);
+		return this.queryService.authenticationAccessService.isAccessAllowed(
+			this.providerId,
+			this.accountName,
+			this.extensionId
+		);
 	}
 
 	setAccessAllowed(allowed: boolean, extensionName?: string): void {
-		this.queryService.authenticationAccessService.updateAllowedExtensions(
-			this.providerId,
-			this.accountName,
-			[{ id: this.extensionId, name: extensionName || this.extensionId, allowed }]
-		);
+		this.queryService.authenticationAccessService.updateAllowedExtensions(this.providerId, this.accountName, [
+			{ id: this.extensionId, name: extensionName || this.extensionId, allowed }
+		]);
 	}
 
 	addUsage(scopes: readonly string[], extensionName: string): void {
@@ -106,20 +113,25 @@ class AccountExtensionQuery extends BaseQuery implements IAccountExtensionQuery 
 	}
 
 	setAsPreferred(): void {
-		this.queryService.authenticationExtensionsService.updateAccountPreference(
-			this.extensionId,
-			this.providerId,
-			{ label: this.accountName, id: this.accountName }
-		);
+		this.queryService.authenticationExtensionsService.updateAccountPreference(this.extensionId, this.providerId, {
+			label: this.accountName,
+			id: this.accountName
+		});
 	}
 
 	isPreferred(): boolean {
-		const preferredAccount = this.queryService.authenticationExtensionsService.getAccountPreference(this.extensionId, this.providerId);
+		const preferredAccount = this.queryService.authenticationExtensionsService.getAccountPreference(
+			this.extensionId,
+			this.providerId
+		);
 		return preferredAccount === this.accountName;
 	}
 
 	isTrusted(): boolean {
-		const allowedExtensions = this.queryService.authenticationAccessService.readAllowedExtensions(this.providerId, this.accountName);
+		const allowedExtensions = this.queryService.authenticationAccessService.readAllowedExtensions(
+			this.providerId,
+			this.accountName
+		);
 		const extension = allowedExtensions.find(ext => ext.id === this.extensionId);
 		return extension?.trusted === true;
 	}
@@ -138,7 +150,10 @@ class AccountExtensionsQuery extends BaseQuery implements IAccountExtensionsQuer
 	}
 
 	getAllowedExtensions(): { id: string; name: string; allowed?: boolean; lastUsed?: number; trusted?: boolean }[] {
-		const allowedExtensions = this.queryService.authenticationAccessService.readAllowedExtensions(this.providerId, this.accountName);
+		const allowedExtensions = this.queryService.authenticationAccessService.readAllowedExtensions(
+			this.providerId,
+			this.accountName
+		);
 		const usages = this.queryService.authenticationUsageService.readAccountUsages(this.providerId, this.accountName);
 
 		return allowedExtensions
@@ -164,17 +179,28 @@ class AccountExtensionsQuery extends BaseQuery implements IAccountExtensionsQuer
 
 	allowAccess(extensionIds: string[]): void {
 		const extensionsToAllow = extensionIds.map(id => ({ id, name: id, allowed: true }));
-		this.queryService.authenticationAccessService.updateAllowedExtensions(this.providerId, this.accountName, extensionsToAllow);
+		this.queryService.authenticationAccessService.updateAllowedExtensions(
+			this.providerId,
+			this.accountName,
+			extensionsToAllow
+		);
 	}
 
 	removeAccess(extensionIds: string[]): void {
 		const extensionsToRemove = extensionIds.map(id => ({ id, name: id, allowed: false }));
-		this.queryService.authenticationAccessService.updateAllowedExtensions(this.providerId, this.accountName, extensionsToRemove);
+		this.queryService.authenticationAccessService.updateAllowedExtensions(
+			this.providerId,
+			this.accountName,
+			extensionsToRemove
+		);
 	}
 
 	forEach(callback: (extensionQuery: IAccountExtensionQuery) => void): void {
 		const usages = this.queryService.authenticationUsageService.readAccountUsages(this.providerId, this.accountName);
-		const allowedExtensions = this.queryService.authenticationAccessService.readAllowedExtensions(this.providerId, this.accountName);
+		const allowedExtensions = this.queryService.authenticationAccessService.readAllowedExtensions(
+			this.providerId,
+			this.accountName
+		);
 
 		// Combine extensions from both usage and access data
 		const extensionIds = new Set<string>();
@@ -182,7 +208,12 @@ class AccountExtensionsQuery extends BaseQuery implements IAccountExtensionsQuer
 		allowedExtensions.forEach(ext => extensionIds.add(ext.id));
 
 		for (const extensionId of extensionIds) {
-			const extensionQuery = new AccountExtensionQuery(this.providerId, this.accountName, extensionId, this.queryService);
+			const extensionQuery = new AccountExtensionQuery(
+				this.providerId,
+				this.accountName,
+				extensionId,
+				this.queryService
+			);
 			callback(extensionQuery);
 		}
 	}
@@ -201,12 +232,18 @@ class AccountEntitiesQuery extends BaseQuery implements IAccountEntitiesQuery {
 	}
 
 	hasAnyUsage(): boolean {
-		const extensionUsages = this.queryService.authenticationUsageService.readAccountUsages(this.providerId, this.accountName);
+		const extensionUsages = this.queryService.authenticationUsageService.readAccountUsages(
+			this.providerId,
+			this.accountName
+		);
 		if (extensionUsages.length > 0) {
 			return true;
 		}
 
-		const allowedExtensions = this.queryService.authenticationAccessService.readAllowedExtensions(this.providerId, this.accountName);
+		const allowedExtensions = this.queryService.authenticationAccessService.readAllowedExtensions(
+			this.providerId,
+			this.accountName
+		);
 		if (allowedExtensions.some(ext => ext.allowed !== false)) {
 			return true;
 		}
@@ -215,8 +252,13 @@ class AccountEntitiesQuery extends BaseQuery implements IAccountEntitiesQuery {
 	}
 
 	getEntityCount(): { extensions: number; total: number } {
-		const extensionUsages = this.queryService.authenticationUsageService.readAccountUsages(this.providerId, this.accountName);
-		const allowedExtensions = this.queryService.authenticationAccessService.readAllowedExtensions(this.providerId, this.accountName).filter(ext => ext.allowed);
+		const extensionUsages = this.queryService.authenticationUsageService.readAccountUsages(
+			this.providerId,
+			this.accountName
+		);
+		const allowedExtensions = this.queryService.authenticationAccessService
+			.readAllowedExtensions(this.providerId, this.accountName)
+			.filter(ext => ext.allowed);
 		const extensionIds = new Set<string>();
 		extensionUsages.forEach(usage => extensionIds.add(usage.extensionId));
 		allowedExtensions.forEach(ext => extensionIds.add(ext.id));
@@ -291,7 +333,11 @@ class ProviderExtensionQuery extends BaseQuery implements IProviderExtensionQuer
 	}
 
 	setPreferredAccount(account: AuthenticationSessionAccount): void {
-		this.queryService.authenticationExtensionsService.updateAccountPreference(this.extensionId, this.providerId, account);
+		this.queryService.authenticationExtensionsService.updateAccountPreference(
+			this.extensionId,
+			this.providerId,
+			account
+		);
 	}
 
 	removeAccountPreference(): void {
@@ -303,10 +349,7 @@ class ProviderExtensionQuery extends BaseQuery implements IProviderExtensionQuer
  * Implementation of provider query operations
  */
 class ProviderQuery extends BaseQuery implements IProviderQuery {
-	constructor(
-		providerId: string,
-		queryService: AuthenticationQueryService
-	) {
+	constructor(providerId: string, queryService: AuthenticationQueryService) {
 		super(providerId, queryService);
 	}
 
@@ -325,15 +368,17 @@ class ProviderQuery extends BaseQuery implements IProviderQuery {
 			const accounts = await this.queryService.authenticationService.getAccounts(this.providerId);
 
 			for (const account of accounts) {
-				const extensionUsages = this.queryService.authenticationUsageService.readAccountUsages(this.providerId, account.label);
+				const extensionUsages = this.queryService.authenticationUsageService.readAccountUsages(
+					this.providerId,
+					account.label
+				);
 				for (const usage of extensionUsages) {
 					if (!extensions.includes(usage.extensionId)) {
 						extensions.push(usage.extensionId);
 					}
 				}
 			}
-		} catch {
-		}
+		} catch {}
 
 		return { extensions };
 	}
@@ -357,7 +402,10 @@ class ProviderQuery extends BaseQuery implements IProviderQuery {
 			totalAccounts = accounts.length;
 
 			for (const account of accounts) {
-				const allUsages = this.queryService.authenticationUsageService.readAccountUsages(this.providerId, account.label);
+				const allUsages = this.queryService.authenticationUsageService.readAccountUsages(
+					this.providerId,
+					account.label
+				);
 
 				const usageCount = allUsages.length;
 				const lastUsed = Math.max(...allUsages.map(u => u.lastUsed), 0);
@@ -399,7 +447,7 @@ class ExtensionQuery implements IExtensionQuery {
 	constructor(
 		public readonly extensionId: string,
 		private readonly queryService: AuthenticationQueryService
-	) { }
+	) {}
 
 	async getProvidersWithAccess(includeInternal?: boolean): Promise<string[]> {
 		const providersWithAccess: string[] = [];
@@ -414,7 +462,11 @@ class ExtensionQuery implements IExtensionQuery {
 			try {
 				const accounts = await this.queryService.authenticationService.getAccounts(providerId);
 				const hasAccess = accounts.some(account => {
-					const accessAllowed = this.queryService.authenticationAccessService.isAccessAllowed(providerId, account.label, this.extensionId);
+					const accessAllowed = this.queryService.authenticationAccessService.isAccessAllowed(
+						providerId,
+						account.label,
+						this.extensionId
+					);
 					return accessAllowed === true;
 				});
 
@@ -439,7 +491,10 @@ class ExtensionQuery implements IExtensionQuery {
 				continue;
 			}
 
-			const preferredAccount = this.queryService.authenticationExtensionsService.getAccountPreference(this.extensionId, providerId);
+			const preferredAccount = this.queryService.authenticationExtensionsService.getAccountPreference(
+				this.extensionId,
+				providerId
+			);
 			if (preferredAccount) {
 				preferences.set(providerId, preferredAccount);
 			}
@@ -459,17 +514,21 @@ class ExtensionQuery implements IExtensionQuery {
 export class AuthenticationQueryService extends Disposable implements IAuthenticationQueryService {
 	declare readonly _serviceBrand: undefined;
 
-	private readonly _onDidChangePreferences = this._register(new Emitter<{
-		readonly providerId: string;
-		readonly entityType: 'extension';
-		readonly entityIds: string[];
-	}>());
+	private readonly _onDidChangePreferences = this._register(
+		new Emitter<{
+			readonly providerId: string;
+			readonly entityType: 'extension';
+			readonly entityIds: string[];
+		}>()
+	);
 	readonly onDidChangePreferences = this._onDidChangePreferences.event;
 
-	private readonly _onDidChangeAccess = this._register(new Emitter<{
-		readonly providerId: string;
-		readonly accountName: string;
-	}>());
+	private readonly _onDidChangeAccess = this._register(
+		new Emitter<{
+			readonly providerId: string;
+			readonly accountName: string;
+		}>()
+	);
 	readonly onDidChangeAccess = this._onDidChangeAccess.event;
 
 	constructor(
@@ -481,20 +540,24 @@ export class AuthenticationQueryService extends Disposable implements IAuthentic
 	) {
 		super();
 
-		this._register(this.authenticationExtensionsService.onDidChangeAccountPreference(e => {
-			this._onDidChangePreferences.fire({
-				providerId: e.providerId,
-				entityType: 'extension',
-				entityIds: e.extensionIds
-			});
-		}));
+		this._register(
+			this.authenticationExtensionsService.onDidChangeAccountPreference(e => {
+				this._onDidChangePreferences.fire({
+					providerId: e.providerId,
+					entityType: 'extension',
+					entityIds: e.extensionIds
+				});
+			})
+		);
 
-		this._register(this.authenticationAccessService.onDidChangeExtensionSessionAccess(e => {
-			this._onDidChangeAccess.fire({
-				providerId: e.providerId,
-				accountName: e.accountName
-			});
-		}));
+		this._register(
+			this.authenticationAccessService.onDidChangeExtensionSessionAccess(e => {
+				this._onDidChangeAccess.fire({
+					providerId: e.providerId,
+					accountName: e.accountName
+				});
+			})
+		);
 	}
 
 	provider(providerId: string): IProviderQuery {

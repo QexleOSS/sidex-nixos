@@ -101,7 +101,6 @@ export function getAnchorRect(anchor: HTMLElement | StandardMouseEvent | IAnchor
 }
 
 export class ContextView extends Disposable {
-
 	private static readonly BUBBLE_UP_EVENTS = ['click', 'keydown', 'focus', 'blur'];
 	private static readonly BUBBLE_DOWN_EVENTS = ['click'];
 
@@ -166,15 +165,24 @@ export class ContextView extends Disposable {
 			const toDisposeOnSetContainer = new DisposableStore();
 
 			ContextView.BUBBLE_UP_EVENTS.forEach(event => {
-				toDisposeOnSetContainer.add(DOM.addStandardDisposableListener(this.container!, event, e => {
-					this.onDOMEvent(e, false);
-				}));
+				toDisposeOnSetContainer.add(
+					DOM.addStandardDisposableListener(this.container!, event, e => {
+						this.onDOMEvent(e, false);
+					})
+				);
 			});
 
 			ContextView.BUBBLE_DOWN_EVENTS.forEach(event => {
-				toDisposeOnSetContainer.add(DOM.addStandardDisposableListener(this.container!, event, e => {
-					this.onDOMEvent(e, true);
-				}, true));
+				toDisposeOnSetContainer.add(
+					DOM.addStandardDisposableListener(
+						this.container!,
+						event,
+						e => {
+							this.onDOMEvent(e, true);
+						},
+						true
+					)
+				);
 			});
 
 			this.toDisposeOnSetContainer = toDisposeOnSetContainer;
@@ -236,7 +244,12 @@ export class ContextView extends Disposable {
 		// Get anchor
 		const anchor = getAnchorRect(this.delegate!.getAnchor());
 		const containerWindow = this.container ? DOM.getWindow(this.container) : DOM.getActiveWindow();
-		const viewport = { top: containerWindow.pageYOffset, left: containerWindow.pageXOffset, width: containerWindow.innerWidth, height: containerWindow.innerHeight };
+		const viewport = {
+			top: containerWindow.pageYOffset,
+			left: containerWindow.pageXOffset,
+			width: containerWindow.innerWidth,
+			height: containerWindow.innerHeight
+		};
 		const view = { width: DOM.getTotalWidth(this.view), height: DOM.getTotalHeight(this.view) };
 		const anchorPosition = this.delegate!.anchorPosition;
 		const anchorAlignment = this.delegate!.anchorAlignment;

@@ -100,10 +100,7 @@ export class LineBasedText extends AbstractText {
 
 export class ArrayText extends LineBasedText {
 	constructor(lines: string[]) {
-		super(
-			lineNumber => lines[lineNumber - 1],
-			lines.length
-		);
+		super(lineNumber => lines[lineNumber - 1], lines.length);
 	}
 }
 

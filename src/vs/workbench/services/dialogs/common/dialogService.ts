@@ -5,14 +5,26 @@
 
 import Severity from '../../../../base/common/severity.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
-import { IAsyncPromptResult, IAsyncPromptResultWithCancel, IConfirmation, IConfirmationResult, IDialogService, IInput, IInputResult, IPrompt, IPromptResult, IPromptResultWithCancel, IPromptWithCustomCancel, IPromptWithDefaultCancel } from '../../../../platform/dialogs/common/dialogs.js';
+import {
+	IAsyncPromptResult,
+	IAsyncPromptResultWithCancel,
+	IConfirmation,
+	IConfirmationResult,
+	IDialogService,
+	IInput,
+	IInputResult,
+	IPrompt,
+	IPromptResult,
+	IPromptResultWithCancel,
+	IPromptWithCustomCancel,
+	IPromptWithDefaultCancel
+} from '../../../../platform/dialogs/common/dialogs.js';
 import { DialogsModel } from '../../../common/dialogs.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { IWorkbenchEnvironmentService } from '../../environment/common/environmentService.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 
 export class DialogService extends Disposable implements IDialogService {
-
 	declare readonly _serviceBrand: undefined;
 
 	readonly model = this._register(new DialogsModel());
@@ -45,20 +57,22 @@ export class DialogService extends Disposable implements IDialogService {
 
 		const handle = this.model.show({ confirmArgs: { confirmation } });
 
-		return await handle.result as IConfirmationResult;
+		return (await handle.result) as IConfirmationResult;
 	}
 
 	prompt<T>(prompt: IPromptWithCustomCancel<T>): Promise<IPromptResultWithCancel<T>>;
 	prompt<T>(prompt: IPromptWithDefaultCancel<T>): Promise<IPromptResult<T>>;
 	prompt<T>(prompt: IPrompt<T>): Promise<IPromptResult<T>>;
-	async prompt<T>(prompt: IPrompt<T> | IPromptWithCustomCancel<T> | IPromptWithDefaultCancel<T>): Promise<IPromptResult<T> | IPromptResultWithCancel<T>> {
+	async prompt<T>(
+		prompt: IPrompt<T> | IPromptWithCustomCancel<T> | IPromptWithDefaultCancel<T>
+	): Promise<IPromptResult<T> | IPromptResultWithCancel<T>> {
 		if (this.skipDialogs()) {
 			throw new Error(`DialogService: refused to show dialog in tests. Contents: ${prompt.message}`);
 		}
 
 		const handle = this.model.show({ promptArgs: { prompt } });
 
-		const dialogResult = await handle.result as IAsyncPromptResult<T> | IAsyncPromptResultWithCancel<T>;
+		const dialogResult = (await handle.result) as IAsyncPromptResult<T> | IAsyncPromptResultWithCancel<T>;
 
 		return {
 			result: await dialogResult.result,
@@ -73,7 +87,7 @@ export class DialogService extends Disposable implements IDialogService {
 
 		const handle = this.model.show({ inputArgs: { input } });
 
-		return await handle.result as IInputResult;
+		return (await handle.result) as IInputResult;
 	}
 
 	async info(message: string, detail?: string): Promise<void> {

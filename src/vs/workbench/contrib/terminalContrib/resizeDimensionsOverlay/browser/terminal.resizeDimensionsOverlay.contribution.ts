@@ -6,7 +6,10 @@
 import type { Terminal as RawXtermTerminal } from '@xterm/xterm';
 import { Disposable, MutableDisposable, type IDisposable } from '../../../../../base/common/lifecycle.js';
 import type { ITerminalContribution, IXtermTerminal } from '../../../terminal/browser/terminal.js';
-import { registerTerminalContribution, type ITerminalContributionContext } from '../../../terminal/browser/terminalExtensions.js';
+import {
+	registerTerminalContribution,
+	type ITerminalContributionContext
+} from '../../../terminal/browser/terminalExtensions.js';
 import { timeout } from '../../../../../base/common/async.js';
 import { TerminalResizeDimensionsOverlay } from './terminalResizeDimensionsOverlay.js';
 
@@ -15,9 +18,7 @@ class TerminalResizeDimensionsOverlayContribution extends Disposable implements 
 
 	private readonly _overlay: MutableDisposable<IDisposable> = this._register(new MutableDisposable());
 
-	constructor(
-		private readonly _ctx: ITerminalContributionContext,
-	) {
+	constructor(private readonly _ctx: ITerminalContributionContext) {
 		super();
 	}
 
@@ -34,4 +35,7 @@ class TerminalResizeDimensionsOverlayContribution extends Disposable implements 
 		});
 	}
 }
-registerTerminalContribution(TerminalResizeDimensionsOverlayContribution.ID, TerminalResizeDimensionsOverlayContribution);
+registerTerminalContribution(
+	TerminalResizeDimensionsOverlayContribution.ID,
+	TerminalResizeDimensionsOverlayContribution
+);

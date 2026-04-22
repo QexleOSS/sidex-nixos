@@ -18,14 +18,13 @@ export interface IWebviewPortMapping {
  * Manages port mappings for a single webview.
  */
 export class WebviewPortMappingManager implements IDisposable {
-
 	private readonly _tunnels = new Map<number, RemoteTunnel>();
 
 	constructor(
 		private readonly _getExtensionLocation: () => URI | undefined,
 		private readonly _getMappings: () => readonly IWebviewPortMapping[],
 		private readonly tunnelService: ITunnelService
-	) { }
+	) {}
 
 	public async getRedirect(resolveAuthority: IAddress | null | undefined, url: string): Promise<string | undefined> {
 		const uri = URI.parse(url);
@@ -38,21 +37,30 @@ export class WebviewPortMappingManager implements IDisposable {
 			if (mapping.webviewPort === requestLocalHostInfo.port) {
 				const extensionLocation = this._getExtensionLocation();
 				if (extensionLocation && extensionLocation.scheme === Schemas.vscodeRemote) {
-					const tunnel = resolveAuthority && await this.getOrCreateTunnel(resolveAuthority, mapping.extensionHostPort);
+					const tunnel =
+						resolveAuthority && (await this.getOrCreateTunnel(resolveAuthority, mapping.extensionHostPort));
 					if (tunnel) {
 						if (tunnel.tunnelLocalPort === mapping.webviewPort) {
 							return undefined;
 						}
-						return encodeURI(uri.with({
-							authority: `127.0.0.1:${tunnel.tunnelLocalPort}`,
-						}).toString(true));
+						return encodeURI(
+							uri
+								.with({
+									authority: `127.0.0.1:${tunnel.tunnelLocalPort}`
+								})
+								.toString(true)
+						);
 					}
 				}
 
 				if (mapping.webviewPort !== mapping.extensionHostPort) {
-					return encodeURI(uri.with({
-						authority: `${requestLocalHostInfo.address}:${mapping.extensionHostPort}`
-					}).toString(true));
+					return encodeURI(
+						uri
+							.with({
+								authority: `${requestLocalHostInfo.address}:${mapping.extensionHostPort}`
+							})
+							.toString(true)
+					);
 				}
 			}
 		}
@@ -72,7 +80,11 @@ export class WebviewPortMappingManager implements IDisposable {
 		if (existing) {
 			return existing;
 		}
-		const tunnelOrError = await this.tunnelService.openTunnel({ getAddress: async () => remoteAuthority }, undefined, remotePort);
+		const tunnelOrError = await this.tunnelService.openTunnel(
+			{ getAddress: async () => remoteAuthority },
+			undefined,
+			remotePort
+		);
 		let tunnel: RemoteTunnel | undefined;
 		if (typeof tunnelOrError === 'string') {
 			tunnel = undefined;

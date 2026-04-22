@@ -14,7 +14,6 @@ import { NotebookFindInputFilterButton } from '../../notebook/browser/contrib/fi
 import * as nls from '../../../../nls.js';
 import { Emitter } from '../../../../base/common/event.js';
 
-
 export class SearchFindInput extends ContextScopedFindInput {
 	private _findFilter: NotebookFindInputFilterButton;
 	private _filterChecked: boolean = false;
@@ -38,9 +37,9 @@ export class SearchFindInput extends ContextScopedFindInput {
 				contextMenuService,
 				instantiationService,
 				options,
-				nls.localize('searchFindInputNotebookFilter.label', "Notebook Find Filters")
-			));
-
+				nls.localize('searchFindInputNotebookFilter.label', 'Notebook Find Filters')
+			)
+		);
 
 		this._updatePadding();
 
@@ -75,10 +74,7 @@ export class SearchFindInput extends ContextScopedFindInput {
 	updateFilterStyles() {
 		// filter is checked if it's in a non-default state
 		this._filterChecked =
-			!this.filters.markupInput ||
-			!this.filters.markupPreview ||
-			!this.filters.codeInput ||
-			!this.filters.codeOutput;
+			!this.filters.markupInput || !this.filters.markupPreview || !this.filters.codeInput || !this.filters.codeOutput;
 
 		// TODO: find a way to express that searching notebook output and markdown preview don't support regex.
 		this._findFilter.applyStyles(this._filterChecked);

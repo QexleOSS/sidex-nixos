@@ -46,7 +46,6 @@ export interface IProblemReporter {
 }
 
 export abstract class Parser {
-
 	private _problemReporter: IProblemReporter;
 
 	constructor(problemReporter: IProblemReporter) {

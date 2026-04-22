@@ -3,13 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-
 // #######################################################################
 // ###                                                                 ###
 // ### !!! PLEASE ADD COMMON IMPORTS INTO WORKBENCH.COMMON.MAIN.TS !!! ###
 // ###                                                                 ###
 // #######################################################################
-
 
 //#region --- workbench common
 
@@ -17,13 +15,11 @@ import './workbench.common.main.js';
 
 //#endregion
 
-
 //#region --- workbench parts
 
 import './browser/parts/dialogs/dialog.web.contribution.js';
 
 //#endregion
-
 
 //#region --- workbench (web main)
 
@@ -31,10 +27,10 @@ import './browser/web.main.js';
 
 //#endregion
 
-
 //#region --- workbench services
 
 import './services/remote/browser/nullRemoteAgentService.js';
+import './services/remote/browser/nullRemoteExtensionsScannerService.js';
 import './services/integrity/browser/integrityService.js';
 import './services/search/browser/tauriSearchService.js';
 import './services/textfile/browser/browserTextFileService.js';
@@ -59,7 +55,8 @@ import './services/localization/browser/localeService.js';
 import './services/path/browser/pathService.js';
 import './services/themes/browser/browserHostColorSchemeService.js';
 import './services/encryption/browser/encryptionService.js';
-import './services/imageResize/browser/imageResizeService.js';
+// SideX: removed — image resize not essential
+// import './services/imageResize/browser/imageResizeService.js';
 import './services/secrets/browser/secretStorageService.js';
 import './services/workingCopy/browser/workingCopyBackupService.js';
 import './services/tunnel/browser/tunnelService.js';
@@ -69,7 +66,6 @@ import './services/userDataProfile/browser/userDataProfileStorageService.js';
 import './services/configurationResolver/browser/configurationResolverService.js';
 import '../platform/extensionResourceLoader/browser/extensionResourceLoaderService.js';
 import './services/auxiliaryWindow/browser/auxiliaryWindowService.js';
-import './services/browserElements/browser/webBrowserElementsService.js';
 import './services/power/browser/powerService.js';
 import '../platform/sandbox/browser/sandboxHelperService.js';
 
@@ -92,7 +88,12 @@ import { ITimerService, TimerService } from './services/timer/browser/timerServi
 import { IDiagnosticsService, NullDiagnosticsService } from '../platform/diagnostics/common/diagnostics.js';
 import { ILanguagePackService } from '../platform/languagePacks/common/languagePacks.js';
 import { WebLanguagePacksService } from '../platform/languagePacks/browser/languagePacks.js';
-import { IWebContentExtractorService, NullWebContentExtractorService, ISharedWebContentExtractorService, NullSharedWebContentExtractorService } from '../platform/webContentExtractor/common/webContentExtractor.js';
+import {
+	IWebContentExtractorService,
+	NullWebContentExtractorService,
+	ISharedWebContentExtractorService,
+	NullSharedWebContentExtractorService
+} from '../platform/webContentExtractor/common/webContentExtractor.js';
 
 registerSingleton(IWorkbenchExtensionManagementService, ExtensionManagementService, InstantiationType.Delayed);
 registerSingleton(IAccessibilityService, AccessibilityService, InstantiationType.Delayed);
@@ -108,17 +109,16 @@ registerSingleton(ISharedWebContentExtractorService, NullSharedWebContentExtract
 
 //#endregion
 
-
 //#region --- workbench contributions
 
 // Logs
 import './contrib/logs/browser/logs.contribution.js';
 
-// Localization
-import './contrib/localization/browser/localization.contribution.js';
+// SideX: removed — localization
+// import './contrib/localization/browser/localization.contribution.js';
 
-// Performance
-import './contrib/performance/browser/performance.web.contribution.js';
+// Performance — removed: SideX has its own performance monitoring
+// import './contrib/performance/browser/performance.web.contribution.js';
 
 // Preferences
 import './contrib/preferences/browser/keyboardLayoutPicker.js';
@@ -126,8 +126,8 @@ import './contrib/preferences/browser/keyboardLayoutPicker.js';
 // Debug
 import './contrib/debug/browser/extensionHostDebugService.js';
 
-// Welcome Banner
-import './contrib/welcomeBanner/browser/welcomeBanner.contribution.js';
+// SideX: removed — welcome banner
+// import './contrib/welcomeBanner/browser/welcomeBanner.contribution.js';
 
 // Webview
 import './contrib/webview/browser/webview.web.contribution.js';
@@ -142,19 +142,19 @@ import './contrib/terminal/browser/terminalInstanceService.js';
 // Tasks
 import './contrib/tasks/browser/taskService.js';
 
-// Tags
-import './contrib/tags/browser/workspaceTagsService.js';
+// SideX: removed — tags
+// import './contrib/tags/browser/workspaceTagsService.js';
 
-// Issues
-import './contrib/issue/browser/issue.contribution.js';
+// Issues — removed: SideX has its own issue reporter
+// import './contrib/issue/browser/issue.contribution.js';
 
-// Splash
-import './contrib/splash/browser/splash.contribution.js';
+// Splash — removed: SideX has its own splash screen
+// import './contrib/splash/browser/splash.contribution.js';
 
-// Process Explorer
-import './contrib/processExplorer/browser/processExplorer.web.contribution.js';
+// SideX: removed — process explorer
+// import './contrib/processExplorer/browser/processExplorer.web.contribution.js';
 
-// Browser View
-import './contrib/browserView/browser/browserView.contribution.js';
+// SideX: removed — browser view
+// import './contrib/browserView/browser/browserView.contribution.js';
 
 //#endregion

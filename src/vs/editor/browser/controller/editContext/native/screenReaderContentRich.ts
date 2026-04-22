@@ -7,7 +7,12 @@ import { addDisposableListener, getActiveWindow, isHTMLElement } from '../../../
 import { FastDomNode } from '../../../../../base/browser/fastDomNode.js';
 import { createTrustedTypesPolicy } from '../../../../../base/browser/trustedTypes.js';
 import { IAccessibilityService } from '../../../../../platform/accessibility/common/accessibility.js';
-import { EditorFontLigatures, EditorOption, FindComputedEditorOptionValueById, IComputedEditorOptions } from '../../../../common/config/editorOptions.js';
+import {
+	EditorFontLigatures,
+	EditorOption,
+	FindComputedEditorOptionValueById,
+	IComputedEditorOptions
+} from '../../../../common/config/editorOptions.js';
 import { Range } from '../../../../common/core/range.js';
 import { Selection } from '../../../../common/core/selection.js';
 import { StringBuilder } from '../../../../common/core/stringBuilder.js';
@@ -27,7 +32,6 @@ const ttPolicy = createTrustedTypesPolicy('richScreenReaderContent', { createHTM
 const LINE_NUMBER_ATTRIBUTE = 'data-line-number';
 
 export class RichScreenReaderContent extends Disposable implements IScreenReaderContent {
-
 	private readonly _selectionChangeListener = this._register(new MutableDisposable());
 
 	private _accessibilityPageSize: number = 1;
@@ -80,7 +84,9 @@ export class RichScreenReaderContent extends Disposable implements IScreenReader
 		const viewLayout = this._context.viewModel.viewLayout;
 		const stateStartLineNumber = intervals[0].startLine;
 		const verticalOffsetOfStateStartLineNumber = viewLayout.getVerticalOffsetForLineNumber(stateStartLineNumber);
-		const verticalOffsetOfPositionLineNumber = viewLayout.getVerticalOffsetForLineNumber(primarySelection.positionLineNumber);
+		const verticalOffsetOfPositionLineNumber = viewLayout.getVerticalOffsetForLineNumber(
+			primarySelection.positionLineNumber
+		);
 		this._domNode.domNode.scrollTop = verticalOffsetOfPositionLineNumber - verticalOffsetOfStateStartLineNumber;
 	}
 
@@ -175,7 +181,12 @@ export class RichScreenReaderContent extends Disposable implements IScreenReader
 		const renderControlCharacters = options.get(EditorOption.renderControlCharacters);
 		const fontLigatures = options.get(EditorOption.fontLigatures);
 		const disableMonospaceOptimizations = options.get(EditorOption.disableMonospaceOptimizations);
-		const lineDecorations = LineDecoration.filter(positionLineData.inlineDecorations, viewLineNumber, positionLineData.minColumn, positionLineData.maxColumn);
+		const lineDecorations = LineDecoration.filter(
+			positionLineData.inlineDecorations,
+			viewLineNumber,
+			positionLineData.minColumn,
+			positionLineData.maxColumn
+		);
 		const useMonospaceOptimizations = fontInfo.isMonospace && !disableMonospaceOptimizations;
 		const useFontLigatures = fontLigatures !== EditorFontLigatures.OFF;
 		let renderWhitespace: FindComputedEditorOptionValueById<EditorOption.renderWhitespace>;
@@ -222,7 +233,11 @@ export class RichScreenReaderContent extends Disposable implements IScreenReader
 		return new RichRenderedScreenReaderLine(domNode, renderOutput.characterMapping);
 	}
 
-	private _setSelectionOnScreenReaderContent(context: ViewContext, renderedLines: Map<number, RichRenderedScreenReaderLine>, viewSelection: Selection): void {
+	private _setSelectionOnScreenReaderContent(
+		context: ViewContext,
+		renderedLines: Map<number, RichRenderedScreenReaderLine>,
+		viewSelection: Selection
+	): void {
 		const activeDocument = getActiveWindow().document;
 		const activeDocumentSelection = activeDocument.getSelection();
 		if (!activeDocumentSelection) {
@@ -308,19 +323,9 @@ export class RichScreenReaderContent extends Disposable implements IScreenReader
 		const startColumn = getColumnOfNodeOffset(startMapping, startSpanElement, range.startOffset);
 		const endColumn = getColumnOfNodeOffset(endMapping, endSpanElement, range.endOffset);
 		if (selection.direction === 'forward') {
-			return new Selection(
-				startLineNumber,
-				startColumn,
-				endLineNumber,
-				endColumn
-			);
+			return new Selection(startLineNumber, startColumn, endLineNumber, endColumn);
 		} else {
-			return new Selection(
-				endLineNumber,
-				endColumn,
-				startLineNumber,
-				startColumn
-			);
+			return new Selection(endLineNumber, endColumn, startLineNumber, startColumn);
 		}
 	}
 }
@@ -329,21 +334,23 @@ class RichRenderedScreenReaderLine {
 	constructor(
 		public readonly domNode: HTMLDivElement,
 		public readonly characterMapping: CharacterMapping
-	) { }
+	) {}
 }
 
 class LineInterval {
 	constructor(
 		public readonly startLine: number,
 		public readonly endLine: number
-	) { }
+	) {}
 }
 
 class RichScreenReaderState {
-
 	public readonly value: string;
 
-	constructor(model: ISimpleModel, public readonly intervals: LineInterval[]) {
+	constructor(
+		model: ISimpleModel,
+		public readonly intervals: LineInterval[]
+	) {
 		let value = '';
 		for (const interval of intervals) {
 			for (let lineNumber = interval.startLine; lineNumber <= interval.endLine; lineNumber++) {
@@ -371,8 +378,7 @@ class RichScreenReaderState {
 }
 
 class RichPagedScreenReaderStrategy implements IPagedScreenReaderStrategy<RichScreenReaderState> {
-
-	constructor() { }
+	constructor() {}
 
 	private _getPageOfLine(lineNumber: number, linesPerPage: number): number {
 		return Math.floor((lineNumber - 1) / linesPerPage);
@@ -385,12 +391,18 @@ class RichPagedScreenReaderStrategy implements IPagedScreenReaderStrategy<RichSc
 		return new LineInterval(startLineNumber, endLineNumber);
 	}
 
-	public fromEditorSelection(context: ISimpleModel, viewSelection: Selection, linesPerPage: number): RichScreenReaderState {
+	public fromEditorSelection(
+		context: ISimpleModel,
+		viewSelection: Selection,
+		linesPerPage: number
+	): RichScreenReaderState {
 		const selectionStartPage = this._getPageOfLine(viewSelection.startLineNumber, linesPerPage);
 		const selectionStartPageRange = this._getRangeForPage(context, selectionStartPage, linesPerPage);
 		const selectionEndPage = this._getPageOfLine(viewSelection.endLineNumber, linesPerPage);
 		const selectionEndPageRange = this._getRangeForPage(context, selectionEndPage, linesPerPage);
-		const lineIntervals: LineInterval[] = [{ startLine: selectionStartPageRange.startLine, endLine: selectionStartPageRange.endLine }];
+		const lineIntervals: LineInterval[] = [
+			{ startLine: selectionStartPageRange.startLine, endLine: selectionStartPageRange.endLine }
+		];
 		if (selectionStartPage + 1 < selectionEndPage) {
 			lineIntervals.push({ startLine: selectionEndPageRange.startLine, endLine: selectionEndPageRange.endLine });
 		}

@@ -23,7 +23,6 @@ export function themeColorFromId(id: ColorIdentifier) {
 	return { id };
 }
 
-
 export interface ThemeIcon {
 	readonly id: string;
 	readonly color?: ThemeColor;
@@ -59,10 +58,17 @@ export namespace ThemeIcon {
 	}
 
 	export function isThemeIcon(obj: unknown): obj is ThemeIcon {
-		return !!obj && typeof obj === 'object' && typeof (<ThemeIcon>obj).id === 'string' && (typeof (<ThemeIcon>obj).color === 'undefined' || ThemeColor.isThemeColor((<ThemeIcon>obj).color));
+		return (
+			!!obj &&
+			typeof obj === 'object' &&
+			typeof (<ThemeIcon>obj).id === 'string' &&
+			(typeof (<ThemeIcon>obj).color === 'undefined' || ThemeColor.isThemeColor((<ThemeIcon>obj).color))
+		);
 	}
 
-	const _regexFromString = new RegExp(`^\\$\\((${ThemeIcon.iconNameExpression}(?:${ThemeIcon.iconModifierExpression})?)\\)$`);
+	const _regexFromString = new RegExp(
+		`^\\$\\((${ThemeIcon.iconNameExpression}(?:${ThemeIcon.iconModifierExpression})?)\\)$`
+	);
 
 	export function fromString(str: string): ThemeIcon | undefined {
 		const match = _regexFromString.exec(str);

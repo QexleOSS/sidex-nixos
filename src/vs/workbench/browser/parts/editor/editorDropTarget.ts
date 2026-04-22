@@ -5,7 +5,15 @@
 
 import './media/editordroptarget.css';
 import { DataTransfers } from '../../../../base/browser/dnd.js';
-import { $, addDisposableListener, DragAndDropObserver, EventHelper, EventType, getWindow, isAncestor } from '../../../../base/browser/dom.js';
+import {
+	$,
+	addDisposableListener,
+	DragAndDropObserver,
+	EventHelper,
+	EventType,
+	getWindow,
+	isAncestor
+} from '../../../../base/browser/dom.js';
 import { renderFormattedText } from '../../../../base/browser/formattedTextRenderer.js';
 import { RunOnceScheduler } from '../../../../base/common/async.js';
 import { toDisposable } from '../../../../base/common/lifecycle.js';
@@ -18,12 +26,35 @@ import { Registry } from '../../../../platform/registry/common/platform.js';
 import { activeContrastBorder } from '../../../../platform/theme/common/colorRegistry.js';
 import { IThemeService, Themable } from '../../../../platform/theme/common/themeService.js';
 import { isTemporaryWorkspace, IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
-import { CodeDataTransfers, containsDragType, Extensions as DragAndDropExtensions, IDragAndDropContributionRegistry, LocalSelectionTransfer } from '../../../../platform/dnd/browser/dnd.js';
-import { DraggedEditorGroupIdentifier, DraggedEditorIdentifier, extractTreeDropData, ResourcesDropHandler } from '../../dnd.js';
+import {
+	CodeDataTransfers,
+	containsDragType,
+	Extensions as DragAndDropExtensions,
+	IDragAndDropContributionRegistry,
+	LocalSelectionTransfer
+} from '../../../../platform/dnd/browser/dnd.js';
+import {
+	DraggedEditorGroupIdentifier,
+	DraggedEditorIdentifier,
+	extractTreeDropData,
+	ResourcesDropHandler
+} from '../../dnd.js';
 import { IEditorGroupsView, IEditorGroupView, prepareMoveCopyEditors } from './editor.js';
 import { EditorInputCapabilities, IEditorIdentifier, IUntypedEditorInput } from '../../../common/editor.js';
-import { EDITOR_DRAG_AND_DROP_BACKGROUND, EDITOR_DROP_INTO_PROMPT_BACKGROUND, EDITOR_DROP_INTO_PROMPT_BORDER, EDITOR_DROP_INTO_PROMPT_FOREGROUND } from '../../../common/theme.js';
-import { GroupDirection, IEditorDropTargetDelegate, IEditorGroup, IEditorGroupsService, IMergeGroupOptions, MergeGroupMode } from '../../../services/editor/common/editorGroupsService.js';
+import {
+	EDITOR_DRAG_AND_DROP_BACKGROUND,
+	EDITOR_DROP_INTO_PROMPT_BACKGROUND,
+	EDITOR_DROP_INTO_PROMPT_BORDER,
+	EDITOR_DROP_INTO_PROMPT_FOREGROUND
+} from '../../../common/theme.js';
+import {
+	GroupDirection,
+	IEditorDropTargetDelegate,
+	IEditorGroup,
+	IEditorGroupsService,
+	IMergeGroupOptions,
+	MergeGroupMode
+} from '../../../services/editor/common/editorGroupsService.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { ITreeViewsDnDService } from '../../../../editor/common/services/treeViewsDndService.js';
 import { DraggedTreeItemsIdentifier } from '../../../../editor/common/services/treeViewsDnd.js';
@@ -41,7 +72,6 @@ function isDragIntoEditorEvent(e: DragEvent): boolean {
 }
 
 class DropOverlay extends Themable {
-
 	private static readonly OVERLAY_ID = 'monaco-workbench-editor-drop-overlay';
 
 	private container: HTMLElement | undefined;
@@ -51,7 +81,9 @@ class DropOverlay extends Themable {
 	private currentDropOperation: IDropOperation | undefined;
 
 	private _disposed: boolean | undefined;
-	get disposed(): boolean { return !!this._disposed; }
+	get disposed(): boolean {
+		return !!this._disposed;
+	}
 
 	private cleanupOverlayScheduler: RunOnceScheduler;
 
@@ -75,7 +107,8 @@ class DropOverlay extends Themable {
 
 		this.cleanupOverlayScheduler = this._register(new RunOnceScheduler(() => this.dispose(), 300));
 
-		this.enableDropIntoEditor = isDropIntoEditorEnabledGlobally(this.configurationService) && this.isDropIntoActiveEditorEnabled();
+		this.enableDropIntoEditor =
+			isDropIntoEditorEnabledGlobally(this.configurationService) && this.isDropIntoActiveEditorEnabled();
 
 		this.create();
 	}
@@ -84,23 +117,28 @@ class DropOverlay extends Themable {
 		const overlayOffsetHeight = this.getOverlayOffsetHeight();
 
 		// Container
-		const container = this.container = $('div', { id: DropOverlay.OVERLAY_ID });
+		const container = (this.container = $('div', { id: DropOverlay.OVERLAY_ID }));
 		container.style.top = `${overlayOffsetHeight}px`;
 
 		// Parent
 		this.groupView.element.appendChild(container);
 		this.groupView.element.classList.add('dragged-over');
-		this._register(toDisposable(() => {
-			container.remove();
-			this.groupView.element.classList.remove('dragged-over');
-		}));
+		this._register(
+			toDisposable(() => {
+				container.remove();
+				this.groupView.element.classList.remove('dragged-over');
+			})
+		);
 
 		// Overlay
 		this.overlay = $('.editor-group-overlay-indicator');
 		container.appendChild(this.overlay);
 
 		if (this.enableDropIntoEditor) {
-			this.dropIntoPromptElement = renderFormattedText(localize('dropIntoEditorPrompt', "Hold __{0}__ to drop into editor", isMacintosh ? '⇧' : 'Shift'), {});
+			this.dropIntoPromptElement = renderFormattedText(
+				localize('dropIntoEditorPrompt', 'Hold __{0}__ to drop into editor', isMacintosh ? '⇧' : 'Shift'),
+				{}
+			);
 			this.dropIntoPromptElement.classList.add('editor-group-overlay-drop-into-prompt');
 			this.overlay.appendChild(this.dropIntoPromptElement);
 		}
@@ -141,86 +179,90 @@ class DropOverlay extends Themable {
 	}
 
 	private registerListeners(container: HTMLElement): void {
-		this._register(new DragAndDropObserver(container, {
-			onDragOver: e => {
-				if (this.enableDropIntoEditor && isDragIntoEditorEvent(e)) {
-					this.dispose();
-					return;
-				}
-
-				const isDraggingGroup = this.groupTransfer.hasData(DraggedEditorGroupIdentifier.prototype);
-				const isDraggingEditor = this.editorTransfer.hasData(DraggedEditorIdentifier.prototype);
-
-				// Update the dropEffect to "copy" if there is no local data to be dragged because
-				// in that case we can only copy the data into and not move it from its source
-				if (!isDraggingEditor && !isDraggingGroup && e.dataTransfer) {
-					e.dataTransfer.dropEffect = 'copy';
-				}
-
-				// Find out if operation is valid
-				let isCopy = true;
-				if (isDraggingGroup) {
-					isCopy = this.isCopyOperation(e);
-				} else if (isDraggingEditor) {
-					const data = this.editorTransfer.getData(DraggedEditorIdentifier.prototype);
-					if (Array.isArray(data) && data.length > 0) {
-						isCopy = this.isCopyOperation(e, data[0].identifier);
+		this._register(
+			new DragAndDropObserver(container, {
+				onDragOver: e => {
+					if (this.enableDropIntoEditor && isDragIntoEditorEvent(e)) {
+						this.dispose();
+						return;
 					}
-				}
 
-				if (!isCopy) {
-					const sourceGroupView = this.findSourceGroupView();
-					if (sourceGroupView === this.groupView) {
-						if (isDraggingGroup || (isDraggingEditor && sourceGroupView.count < 2)) {
-							this.hideOverlay();
-							return; // do not allow to drop group/editor on itself if this results in an empty group
+					const isDraggingGroup = this.groupTransfer.hasData(DraggedEditorGroupIdentifier.prototype);
+					const isDraggingEditor = this.editorTransfer.hasData(DraggedEditorIdentifier.prototype);
+
+					// Update the dropEffect to "copy" if there is no local data to be dragged because
+					// in that case we can only copy the data into and not move it from its source
+					if (!isDraggingEditor && !isDraggingGroup && e.dataTransfer) {
+						e.dataTransfer.dropEffect = 'copy';
+					}
+
+					// Find out if operation is valid
+					let isCopy = true;
+					if (isDraggingGroup) {
+						isCopy = this.isCopyOperation(e);
+					} else if (isDraggingEditor) {
+						const data = this.editorTransfer.getData(DraggedEditorIdentifier.prototype);
+						if (Array.isArray(data) && data.length > 0) {
+							isCopy = this.isCopyOperation(e, data[0].identifier);
 						}
 					}
+
+					if (!isCopy) {
+						const sourceGroupView = this.findSourceGroupView();
+						if (sourceGroupView === this.groupView) {
+							if (isDraggingGroup || (isDraggingEditor && sourceGroupView.count < 2)) {
+								this.hideOverlay();
+								return; // do not allow to drop group/editor on itself if this results in an empty group
+							}
+						}
+					}
+
+					// Position overlay and conditionally enable or disable
+					// editor group splitting support based on setting and
+					// keymodifiers used.
+					let splitOnDragAndDrop = !!this.groupView.groupsView.partOptions.splitOnDragAndDrop;
+					if (this.isToggleSplitOperation(e)) {
+						splitOnDragAndDrop = !splitOnDragAndDrop;
+					}
+					this.positionOverlay(e.offsetX, e.offsetY, isDraggingGroup, splitOnDragAndDrop);
+
+					// Make sure to stop any running cleanup scheduler to remove the overlay
+					if (this.cleanupOverlayScheduler.isScheduled()) {
+						this.cleanupOverlayScheduler.cancel();
+					}
+				},
+
+				onDragLeave: e => this.dispose(),
+				onDragEnd: e => this.dispose(),
+
+				onDrop: e => {
+					EventHelper.stop(e, true);
+
+					// Dispose overlay
+					this.dispose();
+
+					// Handle drop if we have a valid operation
+					if (this.currentDropOperation) {
+						this.handleDrop(e, this.currentDropOperation.splitDirection);
+					}
 				}
+			})
+		);
 
-				// Position overlay and conditionally enable or disable
-				// editor group splitting support based on setting and
-				// keymodifiers used.
-				let splitOnDragAndDrop = !!this.groupView.groupsView.partOptions.splitOnDragAndDrop;
-				if (this.isToggleSplitOperation(e)) {
-					splitOnDragAndDrop = !splitOnDragAndDrop;
+		this._register(
+			addDisposableListener(container, EventType.MOUSE_OVER, () => {
+				// Under some circumstances we have seen reports where the drop overlay is not being
+				// cleaned up and as such the editor area remains under the overlay so that you cannot
+				// type into the editor anymore. This seems related to using VMs and DND via host and
+				// guest OS, though some users also saw it without VMs.
+				// To protect against this issue we always destroy the overlay as soon as we detect a
+				// mouse event over it. The delay is used to guarantee we are not interfering with the
+				// actual DROP event that can also trigger a mouse over event.
+				if (!this.cleanupOverlayScheduler.isScheduled()) {
+					this.cleanupOverlayScheduler.schedule();
 				}
-				this.positionOverlay(e.offsetX, e.offsetY, isDraggingGroup, splitOnDragAndDrop);
-
-				// Make sure to stop any running cleanup scheduler to remove the overlay
-				if (this.cleanupOverlayScheduler.isScheduled()) {
-					this.cleanupOverlayScheduler.cancel();
-				}
-			},
-
-			onDragLeave: e => this.dispose(),
-			onDragEnd: e => this.dispose(),
-
-			onDrop: e => {
-				EventHelper.stop(e, true);
-
-				// Dispose overlay
-				this.dispose();
-
-				// Handle drop if we have a valid operation
-				if (this.currentDropOperation) {
-					this.handleDrop(e, this.currentDropOperation.splitDirection);
-				}
-			}
-		}));
-
-		this._register(addDisposableListener(container, EventType.MOUSE_OVER, () => {
-			// Under some circumstances we have seen reports where the drop overlay is not being
-			// cleaned up and as such the editor area remains under the overlay so that you cannot
-			// type into the editor anymore. This seems related to using VMs and DND via host and
-			// guest OS, though some users also saw it without VMs.
-			// To protect against this issue we always destroy the overlay as soon as we detect a
-			// mouse event over it. The delay is used to guarantee we are not interfering with the
-			// actual DROP event that can also trigger a mouse over event.
-			if (!this.cleanupOverlayScheduler.isScheduled()) {
-				this.cleanupOverlayScheduler.schedule();
-			}
-		}));
+			})
+		);
 	}
 
 	private isDropIntoActiveEditorEnabled(): boolean {
@@ -228,7 +270,6 @@ class DropOverlay extends Themable {
 	}
 
 	private findSourceGroupView(): IEditorGroup | undefined {
-
 		// Check for group transfer
 		if (this.groupTransfer.hasData(DraggedEditorGroupIdentifier.prototype)) {
 			const data = this.groupTransfer.getData(DraggedEditorGroupIdentifier.prototype);
@@ -249,7 +290,6 @@ class DropOverlay extends Themable {
 	}
 
 	private async handleDrop(event: DragEvent, splitDirection?: GroupDirection): Promise<void> {
-
 		// Determine target group
 		const ensureTargetGroup = () => {
 			let targetGroup: IEditorGroup;
@@ -316,7 +356,12 @@ class DropOverlay extends Themable {
 					// Optimization: if we move the last editor of an editor group
 					// and we are configured to close empty editor groups, we can
 					// rather move the entire editor group according to the direction
-					if (this.groupView.groupsView.partOptions.closeEmptyGroups && sourceGroup.count === 1 && typeof splitDirection === 'number' && !copyEditor) {
+					if (
+						this.groupView.groupsView.partOptions.closeEmptyGroups &&
+						sourceGroup.count === 1 &&
+						typeof splitDirection === 'number' &&
+						!copyEditor
+					) {
 						targetGroup = this.editorGroupService.moveGroup(sourceGroup, this.groupView, splitDirection);
 					}
 
@@ -327,7 +372,10 @@ class DropOverlay extends Themable {
 							return;
 						}
 
-						const editorsWithOptions = prepareMoveCopyEditors(this.groupView, draggedEditors.map(editor => editor.identifier.editor));
+						const editorsWithOptions = prepareMoveCopyEditors(
+							this.groupView,
+							draggedEditors.map(editor => editor.identifier.editor)
+						);
 						if (!copyEditor) {
 							sourceGroup.moveEditors(editorsWithOptions, targetGroup);
 						} else {
@@ -365,8 +413,15 @@ class DropOverlay extends Themable {
 
 		// Check for URI transfer
 		else {
-			const dropHandler = this.instantiationService.createInstance(ResourcesDropHandler, { allowWorkspaceOpen: !isWeb || isTemporaryWorkspace(this.contextService.getWorkspace()) });
-			dropHandler.handleDrop(event, getWindow(this.groupView.element), () => ensureTargetGroup(), targetGroup => targetGroup?.focus());
+			const dropHandler = this.instantiationService.createInstance(ResourcesDropHandler, {
+				allowWorkspaceOpen: !isWeb || isTemporaryWorkspace(this.contextService.getWorkspace())
+			});
+			dropHandler.handleDrop(
+				event,
+				getWindow(this.groupView.element),
+				() => ensureTargetGroup(),
+				targetGroup => targetGroup?.focus()
+			);
 		}
 	}
 
@@ -382,7 +437,12 @@ class DropOverlay extends Themable {
 		return (e.altKey && !isMacintosh) || (e.shiftKey && isMacintosh);
 	}
 
-	private positionOverlay(mousePosX: number, mousePosY: number, isDraggingGroup: boolean, enableSplitting: boolean): void {
+	private positionOverlay(
+		mousePosX: number,
+		mousePosY: number,
+		isDraggingGroup: boolean,
+		enableSplitting: boolean
+	): void {
 		const preferSplitVertically = this.groupView.groupsView.partOptions.openSideBySideDirection === 'right';
 
 		const editorControlWidth = this.groupView.element.clientWidth;
@@ -410,21 +470,22 @@ class DropOverlay extends Themable {
 		const edgeWidthThreshold = editorControlWidth * edgeWidthThresholdFactor;
 		const edgeHeightThreshold = editorControlHeight * edgeHeightThresholdFactor;
 
-		const splitWidthThreshold = editorControlWidth / 3;		// offer to split left/right at 33%
-		const splitHeightThreshold = editorControlHeight / 3;	// offer to split up/down at 33%
+		const splitWidthThreshold = editorControlWidth / 3; // offer to split left/right at 33%
+		const splitHeightThreshold = editorControlHeight / 3; // offer to split up/down at 33%
 
 		// No split if mouse is above certain threshold in the center of the view
 		let splitDirection: GroupDirection | undefined;
 		if (
-			mousePosX > edgeWidthThreshold && mousePosX < editorControlWidth - edgeWidthThreshold &&
-			mousePosY > edgeHeightThreshold && mousePosY < editorControlHeight - edgeHeightThreshold
+			mousePosX > edgeWidthThreshold &&
+			mousePosX < editorControlWidth - edgeWidthThreshold &&
+			mousePosY > edgeHeightThreshold &&
+			mousePosY < editorControlHeight - edgeHeightThreshold
 		) {
 			splitDirection = undefined;
 		}
 
 		// Offer to split otherwise
 		else {
-
 			// User prefers to split vertically: offer a larger hitzone
 			// for this direction like so:
 			// ----------------------------------------------
@@ -521,7 +582,6 @@ class DropOverlay extends Themable {
 	}
 
 	private getOverlayOffsetHeight(): number {
-
 		// With tabs and opened editors: use the area below tabs as drop target
 		if (!this.groupView.isEmpty && this.groupView.groupsView.partOptions.showTabs === 'multiple') {
 			return this.groupView.titleHeight.offset;
@@ -562,7 +622,6 @@ class DropOverlay extends Themable {
 }
 
 export class EditorDropTarget extends Themable {
-
 	private _overlay?: DropOverlay;
 
 	private counter = 0;
@@ -613,9 +672,21 @@ export class EditorDropTarget extends Themable {
 			!this.groupTransfer.hasData(DraggedEditorGroupIdentifier.prototype) &&
 			event.dataTransfer
 		) {
-			const dndContributions = Registry.as<IDragAndDropContributionRegistry>(DragAndDropExtensions.DragAndDropContribution).getAll();
+			const dndContributions = Registry.as<IDragAndDropContributionRegistry>(
+				DragAndDropExtensions.DragAndDropContribution
+			).getAll();
 			const dndContributionKeys = Array.from(dndContributions).map(e => e.dataFormatKey);
-			if (!containsDragType(event, DataTransfers.FILES, CodeDataTransfers.FILES, DataTransfers.RESOURCES, CodeDataTransfers.EDITORS, ...dndContributionKeys)) { // see https://github.com/microsoft/vscode/issues/25789
+			if (
+				!containsDragType(
+					event,
+					DataTransfers.FILES,
+					CodeDataTransfers.FILES,
+					DataTransfers.RESOURCES,
+					CodeDataTransfers.EDITORS,
+					...dndContributionKeys
+				)
+			) {
+				// see https://github.com/microsoft/vscode/issues/25789
 				event.dataTransfer.dropEffect = 'none';
 				return; // unsupported transfer
 			}
@@ -634,7 +705,6 @@ export class EditorDropTarget extends Themable {
 
 		const target = event.target as HTMLElement;
 		if (target) {
-
 			// Somehow we managed to move the mouse quickly out of the current overlay, so destroy it
 			if (this.overlay && !this.overlay.contains(target)) {
 				this.disposeOverlay();

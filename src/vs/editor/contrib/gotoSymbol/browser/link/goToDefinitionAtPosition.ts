@@ -33,7 +33,6 @@ import { ILanguageFeaturesService } from '../../../../common/services/languageFe
 import { ModelDecorationInjectedTextOptions } from '../../../../common/model/textModel.js';
 
 export class GotoDefinitionAtPositionEditorContribution implements IEditorContribution {
-
 	public static readonly ID = 'editor.contrib.gotodefinitionatposition';
 	static readonly MAX_SOURCE_PREVIEW_LINES = 8;
 
@@ -48,7 +47,7 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 		editor: ICodeEditor,
 		@ITextModelService private readonly textModelResolverService: ITextModelService,
 		@ILanguageService private readonly languageService: ILanguageService,
-		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
+		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService
 	) {
 		this.editor = editor;
 		this.linkDecorations = this.editor.createDecorationsCollection();
@@ -56,30 +55,38 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 		const linkGesture = new ClickLinkGesture(editor);
 		this.toUnhook.add(linkGesture);
 
-		this.toUnhook.add(linkGesture.onMouseMoveOrRelevantKeyDown(([mouseEvent, keyboardEvent]) => {
-			this.startFindDefinitionFromMouse(mouseEvent, keyboardEvent ?? undefined);
-		}));
+		this.toUnhook.add(
+			linkGesture.onMouseMoveOrRelevantKeyDown(([mouseEvent, keyboardEvent]) => {
+				this.startFindDefinitionFromMouse(mouseEvent, keyboardEvent ?? undefined);
+			})
+		);
 
-		this.toUnhook.add(linkGesture.onExecute((mouseEvent: ClickLinkMouseEvent) => {
-			if (this.isEnabled(mouseEvent)) {
-				this.gotoDefinition(mouseEvent.target.position!, mouseEvent.hasSideBySideModifier)
-					.catch((error: Error) => {
-						onUnexpectedError(error);
-					})
-					.finally(() => {
-						this.removeLinkDecorations();
-					});
-			}
-		}));
+		this.toUnhook.add(
+			linkGesture.onExecute((mouseEvent: ClickLinkMouseEvent) => {
+				if (this.isEnabled(mouseEvent)) {
+					this.gotoDefinition(mouseEvent.target.position!, mouseEvent.hasSideBySideModifier)
+						.catch((error: Error) => {
+							onUnexpectedError(error);
+						})
+						.finally(() => {
+							this.removeLinkDecorations();
+						});
+				}
+			})
+		);
 
-		this.toUnhook.add(linkGesture.onCancel(() => {
-			this.removeLinkDecorations();
-			this.currentWordAtPosition = null;
-		}));
+		this.toUnhook.add(
+			linkGesture.onCancel(() => {
+				this.removeLinkDecorations();
+				this.currentWordAtPosition = null;
+			})
+		);
 	}
 
 	static get(editor: ICodeEditor): GotoDefinitionAtPositionEditorContribution | null {
-		return editor.getContribution<GotoDefinitionAtPositionEditorContribution>(GotoDefinitionAtPositionEditorContribution.ID);
+		return editor.getContribution<GotoDefinitionAtPositionEditorContribution>(
+			GotoDefinitionAtPositionEditorContribution.ID
+		);
 	}
 
 	async startFindDefinitionFromCursor(position: Position) {
@@ -94,22 +101,25 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 		// the hover widget. There is no event for the widget itself so these
 		// serve as a best effort. After removing the link decorations, the hover
 		// widget is clean and will only show declarations per next request.
-		this.toUnhookForKeyboard.add(this.editor.onDidChangeCursorPosition(() => {
-			this.currentWordAtPosition = null;
-			this.removeLinkDecorations();
-			this.toUnhookForKeyboard.clear();
-		}));
-		this.toUnhookForKeyboard.add(this.editor.onKeyDown((e: IKeyboardEvent) => {
-			if (e) {
+		this.toUnhookForKeyboard.add(
+			this.editor.onDidChangeCursorPosition(() => {
 				this.currentWordAtPosition = null;
 				this.removeLinkDecorations();
 				this.toUnhookForKeyboard.clear();
-			}
-		}));
+			})
+		);
+		this.toUnhookForKeyboard.add(
+			this.editor.onKeyDown((e: IKeyboardEvent) => {
+				if (e) {
+					this.currentWordAtPosition = null;
+					this.removeLinkDecorations();
+					this.toUnhookForKeyboard.clear();
+				}
+			})
+		);
 	}
 
 	private startFindDefinitionFromMouse(mouseEvent: ClickLinkMouseEvent, withKey?: ClickLinkKeyboardEvent): void {
-
 		// check if we are active and on a content widget
 		if (mouseEvent.target.type === MouseTargetType.CONTENT_WIDGET && this.linkDecorations.length > 0) {
 			return;
@@ -127,7 +137,6 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 	}
 
 	private async startFindDefinition(position: Position): Promise<void> {
-
 		// Dispose listeners for updating decorations when using keyboard to show definition hover
 		this.toUnhookForKeyboard.clear();
 
@@ -140,14 +149,25 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 		}
 
 		// Return early if word at position is still the same
-		if (this.currentWordAtPosition && this.currentWordAtPosition.startColumn === word.startColumn && this.currentWordAtPosition.endColumn === word.endColumn && this.currentWordAtPosition.word === word.word) {
+		if (
+			this.currentWordAtPosition &&
+			this.currentWordAtPosition.startColumn === word.startColumn &&
+			this.currentWordAtPosition.endColumn === word.endColumn &&
+			this.currentWordAtPosition.word === word.word
+		) {
 			return;
 		}
 
 		this.currentWordAtPosition = word;
 
 		// Find definition and decorate word if found
-		const state = new EditorState(this.editor, CodeEditorStateFlag.Position | CodeEditorStateFlag.Value | CodeEditorStateFlag.Selection | CodeEditorStateFlag.Scroll);
+		const state = new EditorState(
+			this.editor,
+			CodeEditorStateFlag.Position |
+				CodeEditorStateFlag.Value |
+				CodeEditorStateFlag.Selection |
+				CodeEditorStateFlag.Scroll
+		);
 
 		if (this.previousPromise) {
 			this.previousPromise.cancel();
@@ -159,7 +179,6 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 		let results: LocationLink[] | null;
 		try {
 			results = await this.previousPromise;
-
 		} catch (error) {
 			onUnexpectedError(error);
 			return;
@@ -176,7 +195,6 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 
 		// Multiple results
 		if (results.length > 1) {
-
 			let combinedRange = linkRange;
 			for (const { originSelectionRange } of results) {
 				if (originSelectionRange) {
@@ -186,7 +204,9 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 
 			this.addDecoration(
 				combinedRange,
-				new MarkdownString().appendText(nls.localize('multipleResults', "Click to show {0} definitions.", results.length))
+				new MarkdownString().appendText(
+					nls.localize('multipleResults', 'Click to show {0} definitions.', results.length)
+				)
 			);
 		} else {
 			// Single result
@@ -197,13 +217,14 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 			}
 
 			return this.textModelResolverService.createModelReference(result.uri).then(ref => {
-
 				if (!ref.object || !ref.object.textEditorModel) {
 					ref.dispose();
 					return;
 				}
 
-				const { object: { textEditorModel } } = ref;
+				const {
+					object: { textEditorModel }
+				} = ref;
 				const { startLineNumber } = result.range;
 
 				if (startLineNumber < 1 || startLineNumber > textEditorModel.getLineCount()) {
@@ -243,13 +264,19 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 			minIndent = Math.min(minIndent, endIndent);
 		}
 
-		const previewValue = textEditorModel.getValueInRange(previewRange).replace(new RegExp(`^\\s{${minIndent - 1}}`, 'gm'), '').trim();
+		const previewValue = textEditorModel
+			.getValueInRange(previewRange)
+			.replace(new RegExp(`^\\s{${minIndent - 1}}`, 'gm'), '')
+			.trim();
 		return previewValue;
 	}
 
 	private getPreviewRangeBasedOnIndentation(textEditorModel: ITextModel, startLineNumber: number) {
 		const startIndent = textEditorModel.getLineFirstNonWhitespaceColumn(startLineNumber);
-		const maxLineNumber = Math.min(textEditorModel.getLineCount(), startLineNumber + GotoDefinitionAtPositionEditorContribution.MAX_SOURCE_PREVIEW_LINES);
+		const maxLineNumber = Math.min(
+			textEditorModel.getLineCount(),
+			startLineNumber + GotoDefinitionAtPositionEditorContribution.MAX_SOURCE_PREVIEW_LINES
+		);
 		let endLineNumber = startLineNumber + 1;
 
 		for (; endLineNumber < maxLineNumber; endLineNumber++) {
@@ -264,7 +291,6 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 	}
 
 	private addDecoration(range: Range, hoverMessage: MarkdownString | undefined): void {
-
 		const newDecorations: IModelDeltaDecoration = {
 			range: range,
 			options: {
@@ -282,13 +308,15 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 	}
 
 	private isEnabled(mouseEvent: ClickLinkMouseEvent, withKey?: ClickLinkKeyboardEvent): boolean {
-		return this.editor.hasModel()
-			&& mouseEvent.isLeftClick
-			&& mouseEvent.isNoneOrSingleMouseDown
-			&& mouseEvent.target.type === MouseTargetType.CONTENT_TEXT
-			&& !(mouseEvent.target.detail.injectedText?.options instanceof ModelDecorationInjectedTextOptions)
-			&& (mouseEvent.hasTriggerModifier || (withKey ? withKey.keyCodeIsTriggerKey : false))
-			&& this.languageFeaturesService.definitionProvider.has(this.editor.getModel());
+		return (
+			this.editor.hasModel() &&
+			mouseEvent.isLeftClick &&
+			mouseEvent.isNoneOrSingleMouseDown &&
+			mouseEvent.target.type === MouseTargetType.CONTENT_TEXT &&
+			!(mouseEvent.target.detail.injectedText?.options instanceof ModelDecorationInjectedTextOptions) &&
+			(mouseEvent.hasTriggerModifier || (withKey ? withKey.keyCodeIsTriggerKey : false)) &&
+			this.languageFeaturesService.definitionProvider.has(this.editor.getModel())
+		);
 	}
 
 	private findDefinition(position: Position, token: CancellationToken): Promise<LocationLink[] | null> {
@@ -302,9 +330,13 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 
 	private async gotoDefinition(position: Position, openToSide: boolean): Promise<unknown> {
 		this.editor.setPosition(position);
-		return this.editor.invokeWithinContext((accessor) => {
-			const canPeek = !openToSide && this.editor.getOption(EditorOption.definitionLinkOpensInPeek) && !this.isInPeekEditor(accessor);
-			const action = new DefinitionAction({ openToSide, openInPeek: canPeek, muteMessage: true }, { title: { value: '', original: '' }, id: '', precondition: undefined });
+		return this.editor.invokeWithinContext(accessor => {
+			const canPeek =
+				!openToSide && this.editor.getOption(EditorOption.definitionLinkOpensInPeek) && !this.isInPeekEditor(accessor);
+			const action = new DefinitionAction(
+				{ openToSide, openInPeek: canPeek, muteMessage: true },
+				{ title: { value: '', original: '' }, id: '', precondition: undefined }
+			);
 			return action.run(accessor);
 		});
 	}
@@ -320,4 +352,8 @@ export class GotoDefinitionAtPositionEditorContribution implements IEditorContri
 	}
 }
 
-registerEditorContribution(GotoDefinitionAtPositionEditorContribution.ID, GotoDefinitionAtPositionEditorContribution, EditorContributionInstantiation.BeforeFirstInteraction);
+registerEditorContribution(
+	GotoDefinitionAtPositionEditorContribution.ID,
+	GotoDefinitionAtPositionEditorContribution,
+	EditorContributionInstantiation.BeforeFirstInteraction
+);

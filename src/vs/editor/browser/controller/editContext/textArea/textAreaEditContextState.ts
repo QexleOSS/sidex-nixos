@@ -28,7 +28,6 @@ export interface ITypeData {
 }
 
 export class TextAreaState {
-
 	public static readonly EMPTY = new TextAreaState('', 0, 0, null, undefined);
 
 	constructor(
@@ -40,8 +39,8 @@ export class TextAreaState {
 		/** the editor range in the view coordinate system that matches the selection inside `value` */
 		public readonly selection: Range | null,
 		/** the visible line count (wrapped, not necessarily matching \n characters) for the text in `value` before `selectionStart` */
-		public readonly newlineCountBeforeSelection: number | undefined,
-	) { }
+		public readonly newlineCountBeforeSelection: number | undefined
+	) {}
 
 	public toString(): string {
 		return `[ <${this.value}>, selectionStart: ${this.selectionStart}, selectionEnd: ${this.selectionEnd}]`;
@@ -74,7 +73,8 @@ export class TextAreaState {
 		if (!select) {
 			return valuesEqual;
 		}
-		const selectionsEqual = this.selectionStart === textArea.getSelectionStart() && this.selectionEnd === textArea.getSelectionEnd();
+		const selectionsEqual =
+			this.selectionStart === textArea.getSelectionStart() && this.selectionEnd === textArea.getSelectionEnd();
 		return selectionsEqual && valuesEqual;
 	}
 
@@ -105,7 +105,11 @@ export class TextAreaState {
 		return this._finishDeduceEditorPosition(this.selection?.getEndPosition() ?? null, str2, -1);
 	}
 
-	private _finishDeduceEditorPosition(anchor: Position | null, deltaText: string, signum: number): [Position | null, number, number] {
+	private _finishDeduceEditorPosition(
+		anchor: Position | null,
+		deltaText: string,
+		signum: number
+	): [Position | null, number, number] {
 		let lineFeedCnt = 0;
 		let lastLineFeedIndex = -1;
 		while ((lastLineFeedIndex = deltaText.indexOf('\n', lastLineFeedIndex + 1)) !== -1) {
@@ -114,7 +118,11 @@ export class TextAreaState {
 		return [anchor, signum * deltaText.length, lineFeedCnt];
 	}
 
-	public static deduceInput(previousState: TextAreaState, currentState: TextAreaState, couldBeEmojiInput: boolean): ITypeData {
+	public static deduceInput(
+		previousState: TextAreaState,
+		currentState: TextAreaState,
+		couldBeEmojiInput: boolean
+	): ITypeData {
 		if (!previousState) {
 			// This is the EMPTY state
 			return {
@@ -149,13 +157,17 @@ export class TextAreaState {
 		const currentSelectionEnd = currentState.selectionEnd - prefixLength;
 
 		if (_debugComposition) {
-			console.log(`AFTER DIFFING PREVIOUS STATE: <${previousValue}>, selectionStart: ${previousSelectionStart}, selectionEnd: ${previousSelectionEnd}`);
-			console.log(`AFTER DIFFING CURRENT STATE: <${currentValue}>, selectionStart: ${currentSelectionStart}, selectionEnd: ${currentSelectionEnd}`);
+			console.log(
+				`AFTER DIFFING PREVIOUS STATE: <${previousValue}>, selectionStart: ${previousSelectionStart}, selectionEnd: ${previousSelectionEnd}`
+			);
+			console.log(
+				`AFTER DIFFING CURRENT STATE: <${currentValue}>, selectionStart: ${currentSelectionStart}, selectionEnd: ${currentSelectionEnd}`
+			);
 		}
 
 		if (currentSelectionStart === currentSelectionEnd) {
 			// no current selection
-			const replacePreviousCharacters = (previousState.selectionStart - prefixLength);
+			const replacePreviousCharacters = previousState.selectionStart - prefixLength;
 			if (_debugComposition) {
 				console.log(`REMOVE PREVIOUS: ${replacePreviousCharacters} chars`);
 			}
@@ -204,8 +216,14 @@ export class TextAreaState {
 			};
 		}
 
-		const prefixLength = Math.min(commonPrefixLength(previousState.value, currentState.value), previousState.selectionEnd);
-		const suffixLength = Math.min(commonSuffixLength(previousState.value, currentState.value), previousState.value.length - previousState.selectionEnd);
+		const prefixLength = Math.min(
+			commonPrefixLength(previousState.value, currentState.value),
+			previousState.selectionEnd
+		);
+		const suffixLength = Math.min(
+			commonSuffixLength(previousState.value, currentState.value),
+			previousState.value.length - previousState.selectionEnd
+		);
 		const previousValue = previousState.value.substring(prefixLength, previousState.value.length - suffixLength);
 		const currentValue = currentState.value.substring(prefixLength, currentState.value.length - suffixLength);
 		const previousSelectionStart = previousState.selectionStart - prefixLength;
@@ -214,8 +232,12 @@ export class TextAreaState {
 		const currentSelectionEnd = currentState.selectionEnd - prefixLength;
 
 		if (_debugComposition) {
-			console.log(`AFTER DIFFING PREVIOUS STATE: <${previousValue}>, selectionStart: ${previousSelectionStart}, selectionEnd: ${previousSelectionEnd}`);
-			console.log(`AFTER DIFFING CURRENT STATE: <${currentValue}>, selectionStart: ${currentSelectionStart}, selectionEnd: ${currentSelectionEnd}`);
+			console.log(
+				`AFTER DIFFING PREVIOUS STATE: <${previousValue}>, selectionStart: ${previousSelectionStart}, selectionEnd: ${previousSelectionEnd}`
+			);
+			console.log(
+				`AFTER DIFFING CURRENT STATE: <${currentValue}>, selectionStart: ${currentSelectionStart}, selectionEnd: ${currentSelectionEnd}`
+			);
 		}
 
 		return {

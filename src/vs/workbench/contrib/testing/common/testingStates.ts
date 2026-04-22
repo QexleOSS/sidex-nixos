@@ -20,16 +20,20 @@ export const statePriority: { [K in TestResultState]: number } = {
 	[TestResultState.Queued]: 3,
 	[TestResultState.Passed]: 2,
 	[TestResultState.Unset]: 0,
-	[TestResultState.Skipped]: 1,
+	[TestResultState.Skipped]: 1
 };
 
 export const isFailedState = (s: TestResultState) => s === TestResultState.Errored || s === TestResultState.Failed;
-export const isStateWithResult = (s: TestResultState) => s === TestResultState.Errored || s === TestResultState.Failed || s === TestResultState.Passed;
+export const isStateWithResult = (s: TestResultState) =>
+	s === TestResultState.Errored || s === TestResultState.Failed || s === TestResultState.Passed;
 
-export const stateNodes: { [K in TestResultState]: TreeStateNode } = mapValues(statePriority, (priority, stateStr): TreeStateNode => {
-	const state = Number(stateStr) as TestResultState;
-	return { statusNode: true, state, priority };
-});
+export const stateNodes: { [K in TestResultState]: TreeStateNode } = mapValues(
+	statePriority,
+	(priority, stateStr): TreeStateNode => {
+		const state = Number(stateStr) as TestResultState;
+		return { statusNode: true, state, priority };
+	}
+);
 
 export const cmpPriority = (a: TestResultState, b: TestResultState) => statePriority[b] - statePriority[a];
 
@@ -54,7 +58,9 @@ export const maxPriority = (...states: TestResultState[]) => {
 	}
 };
 
-export const statesInOrder = Object.keys(statePriority).map(s => Number(s) as TestResultState).sort(cmpPriority);
+export const statesInOrder = Object.keys(statePriority)
+	.map(s => Number(s) as TestResultState)
+	.sort(cmpPriority);
 
 /**
  * Some states are considered terminal; once these are set for a given test run, they
@@ -65,7 +71,7 @@ export const terminalStatePriorities: { [key in TestResultState]?: number } = {
 	[TestResultState.Passed]: 0,
 	[TestResultState.Skipped]: 1,
 	[TestResultState.Failed]: 2,
-	[TestResultState.Errored]: 3,
+	[TestResultState.Errored]: 3
 };
 
 /**

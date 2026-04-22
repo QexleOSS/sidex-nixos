@@ -6,19 +6,50 @@
 // This is a facade for the observable implementation. Only import from here!
 
 export { observableValueOpts } from './observables/observableValueOpts.js';
-export { autorun, autorunDelta, autorunHandleChanges, autorunOpts, autorunWithStore, autorunWithStoreHandleChanges, autorunIterableDelta, autorunSelfDisposable } from './reactions/autorun.js';
-export { type IObservable, type IObservableWithChange, type IObserver, type IReader, type ISettable, type IReaderWithStore, type ISettableObservable, type ITransaction } from './base.js';
+export {
+	autorun,
+	autorunDelta,
+	autorunHandleChanges,
+	autorunOpts,
+	autorunWithStore,
+	autorunWithStoreHandleChanges,
+	autorunIterableDelta,
+	autorunSelfDisposable
+} from './reactions/autorun.js';
+export {
+	type IObservable,
+	type IObservableWithChange,
+	type IObserver,
+	type IReader,
+	type ISettable,
+	type IReaderWithStore,
+	type ISettableObservable,
+	type ITransaction
+} from './base.js';
 export { disposableObservableValue } from './observables/observableValue.js';
-export { derived, derivedDisposable, derivedHandleChanges, derivedOpts, derivedWithSetter, derivedWithStore } from './observables/derived.js';
+export {
+	derived,
+	derivedDisposable,
+	derivedHandleChanges,
+	derivedOpts,
+	derivedWithSetter,
+	derivedWithStore
+} from './observables/derived.js';
 export { type IDerivedReader } from './observables/derivedImpl.js';
-export { ObservableLazy, ObservableLazyPromise, ObservablePromise, PromiseResult, } from './utils/promise.js';
+export { ObservableLazy, ObservableLazyPromise, ObservablePromise, PromiseResult } from './utils/promise.js';
 export { derivedWithCancellationToken, waitForState } from './utils/utilsCancellation.js';
 export {
-	debouncedObservable, debouncedObservable2, derivedObservableWithCache,
-	derivedObservableWithWritableCache, keepObserved, mapObservableArrayCached, observableFromPromise,
+	debouncedObservable,
+	debouncedObservable2,
+	derivedObservableWithCache,
+	derivedObservableWithWritableCache,
+	keepObserved,
+	mapObservableArrayCached,
+	observableFromPromise,
 	recomputeInitiallyAndOnChange,
-	signalFromObservable, wasEventTriggeredRecently,
-	isObservable,
+	signalFromObservable,
+	wasEventTriggeredRecently,
+	isObservable
 } from './utils/utils.js';
 export { type DebugOwner } from './debugName.js';
 export { type IChangeContext, type IChangeTracker, recordChanges, recordChangesLazy } from './changeTracker.js';
@@ -27,8 +58,16 @@ export { type IObservableSignal, observableSignal } from './observables/observab
 export { observableFromEventOpts } from './observables/observableFromEvent.js';
 export { observableSignalFromEvent } from './observables/observableSignalFromEvent.js';
 export { asyncTransaction, globalTransaction, subtransaction, transaction, TransactionImpl } from './transaction.js';
-export { observableFromValueWithChangeEvent, ValueWithChangeEventFromObservable } from './utils/valueWithChangeEvent.js';
-export { runOnChange, runOnChangeWithCancellationToken, runOnChangeWithStore, type RemoveUndefined } from './utils/runOnChange.js';
+export {
+	observableFromValueWithChangeEvent,
+	ValueWithChangeEventFromObservable
+} from './utils/valueWithChangeEvent.js';
+export {
+	runOnChange,
+	runOnChangeWithCancellationToken,
+	runOnChangeWithStore,
+	type RemoveUndefined
+} from './utils/runOnChange.js';
 export { derivedConstOnceDefined, latestChangedValue } from './experimental/utils.js';
 export { observableFromEvent } from './observables/observableFromEvent.js';
 export { observableValue } from './observables/observableValue.js';
@@ -48,10 +87,8 @@ _setDebugGetObservableGraph(debugGetObservableGraph);
 setLogObservableFn(logObservableToConsole);
 
 // Remove "//" in the next line to enable logging
-const enableLogging = false
-	// || Boolean("true") // done "weirdly" so that a lint warning prevents you from pushing this
-	;
-
+const enableLogging = false;
+// || Boolean("true") // done "weirdly" so that a lint warning prevents you from pushing this
 if (enableLogging) {
 	addLogger(new ConsoleObservableLogger());
 }

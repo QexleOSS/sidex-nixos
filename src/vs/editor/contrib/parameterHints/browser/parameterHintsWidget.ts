@@ -13,7 +13,12 @@ import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.j
 import { escapeRegExpCharacters } from '../../../../base/common/strings.js';
 import { assertReturnsDefined } from '../../../../base/common/types.js';
 import './parameterHints.css';
-import { ContentWidgetPositionPreference, ICodeEditor, IContentWidget, IContentWidgetPosition } from '../../../browser/editorBrowser.js';
+import {
+	ContentWidgetPositionPreference,
+	ICodeEditor,
+	IContentWidget,
+	IContentWidgetPosition
+} from '../../../browser/editorBrowser.js';
 import { EditorOption } from '../../../common/config/editorOptions.js';
 import { EDITOR_FONT_DEFAULTS } from '../../../common/config/fontInfo.js';
 import * as languages from '../../../common/languages.js';
@@ -29,11 +34,18 @@ import { ThemeIcon } from '../../../../base/common/themables.js';
 
 const $ = dom.$;
 
-const parameterHintsNextIcon = registerIcon('parameter-hints-next', Codicon.chevronDown, nls.localize('parameterHintsNextIcon', 'Icon for show next parameter hint.'));
-const parameterHintsPreviousIcon = registerIcon('parameter-hints-previous', Codicon.chevronUp, nls.localize('parameterHintsPreviousIcon', 'Icon for show previous parameter hint.'));
+const parameterHintsNextIcon = registerIcon(
+	'parameter-hints-next',
+	Codicon.chevronDown,
+	nls.localize('parameterHintsNextIcon', 'Icon for show next parameter hint.')
+);
+const parameterHintsPreviousIcon = registerIcon(
+	'parameter-hints-previous',
+	Codicon.chevronUp,
+	nls.localize('parameterHintsPreviousIcon', 'Icon for show previous parameter hint.')
+);
 
 export class ParameterHintsWidget extends Disposable implements IContentWidget {
-
 	private static readonly ID = 'editor.widget.parameterHintsWidget';
 
 	private readonly renderDisposeables = this._register(new DisposableStore());
@@ -58,7 +70,7 @@ export class ParameterHintsWidget extends Disposable implements IContentWidget {
 		private readonly editor: ICodeEditor,
 		private readonly model: ParameterHintsModel,
 		@IContextKeyService contextKeyService: IContextKeyService,
-		@IMarkdownRendererService private readonly markdownRendererService: IMarkdownRendererService,
+		@IMarkdownRendererService private readonly markdownRendererService: IMarkdownRendererService
 	) {
 		super();
 
@@ -76,19 +88,23 @@ export class ParameterHintsWidget extends Disposable implements IContentWidget {
 		const overloads = dom.append(controls, $('.overloads'));
 		const next = dom.append(controls, $('.button' + ThemeIcon.asCSSSelector(parameterHintsNextIcon)));
 
-		this._register(dom.addDisposableListener(previous, 'click', e => {
-			dom.EventHelper.stop(e);
-			this.previous();
-		}));
+		this._register(
+			dom.addDisposableListener(previous, 'click', e => {
+				dom.EventHelper.stop(e);
+				this.previous();
+			})
+		);
 
-		this._register(dom.addDisposableListener(next, 'click', e => {
-			dom.EventHelper.stop(e);
-			this.next();
-		}));
+		this._register(
+			dom.addDisposableListener(next, 'click', e => {
+				dom.EventHelper.stop(e);
+				this.next();
+			})
+		);
 
 		const body = $('.body');
 		const scrollbar = new DomScrollableElement(body, {
-			alwaysConsumeMouseWheel: true,
+			alwaysConsumeMouseWheel: true
 		});
 		this._register(scrollbar);
 		wrapper.appendChild(scrollbar.getDomNode());
@@ -103,17 +119,19 @@ export class ParameterHintsWidget extends Disposable implements IContentWidget {
 			signature,
 			overloads,
 			docs,
-			scrollbar,
+			scrollbar
 		};
 
 		this.editor.addContentWidget(this);
 		this.hide();
 
-		this._register(this.editor.onDidChangeCursorSelection(e => {
-			if (this.visible) {
-				this.editor.layoutContentWidget(this);
-			}
-		}));
+		this._register(
+			this.editor.onDidChangeCursorSelection(e => {
+				if (this.visible) {
+					this.editor.layoutContentWidget(this);
+				}
+			})
+		);
 
 		const updateFont = () => {
 			if (!this.domNodes) {
@@ -125,15 +143,19 @@ export class ParameterHintsWidget extends Disposable implements IContentWidget {
 			element.style.fontSize = `${fontInfo.fontSize}px`;
 			element.style.lineHeight = `${fontInfo.lineHeight / fontInfo.fontSize}`;
 			element.style.setProperty('--vscode-parameterHintsWidget-editorFontFamily', fontInfo.fontFamily);
-			element.style.setProperty('--vscode-parameterHintsWidget-editorFontFamilyDefault', EDITOR_FONT_DEFAULTS.fontFamily);
+			element.style.setProperty(
+				'--vscode-parameterHintsWidget-editorFontFamilyDefault',
+				EDITOR_FONT_DEFAULTS.fontFamily
+			);
 		};
 
 		updateFont();
 
-		this._register(Event.chain(
-			this.editor.onDidChangeConfiguration.bind(this.editor),
-			$ => $.filter(e => e.hasChanged(EditorOption.fontInfo))
-		)(updateFont));
+		this._register(
+			Event.chain(this.editor.onDidChangeConfiguration.bind(this.editor), $ =>
+				$.filter(e => e.hasChanged(EditorOption.fontInfo))
+			)(updateFont)
+		);
 
 		this._register(this.editor.onDidLayoutChange(e => this.updateMaxHeight()));
 		this.updateMaxHeight();
@@ -237,7 +259,9 @@ export class ParameterHintsWidget extends Disposable implements IContentWidget {
 		this.domNodes.docs.classList.toggle('empty', !hasDocs);
 
 		this.domNodes.overloads.textContent =
-			String(hints.activeSignature + 1).padStart(hints.signatures.length.toString().length, '0') + '/' + hints.signatures.length;
+			String(hints.activeSignature + 1).padStart(hints.signatures.length.toString().length, '0') +
+			'/' +
+			hints.signatures.length;
 
 		if (activeParameter) {
 			let labelToAnnounce = '';
@@ -248,17 +272,21 @@ export class ParameterHintsWidget extends Disposable implements IContentWidget {
 				labelToAnnounce = param.label;
 			}
 			if (param.documentation) {
-				labelToAnnounce += typeof param.documentation === 'string' ? `, ${param.documentation}` : `, ${param.documentation.value}`;
+				labelToAnnounce +=
+					typeof param.documentation === 'string' ? `, ${param.documentation}` : `, ${param.documentation.value}`;
 			}
 			if (signature.documentation) {
-				labelToAnnounce += typeof signature.documentation === 'string' ? `, ${signature.documentation}` : `, ${signature.documentation.value}`;
+				labelToAnnounce +=
+					typeof signature.documentation === 'string'
+						? `, ${signature.documentation}`
+						: `, ${signature.documentation.value}`;
 			}
 
 			// Select method gets called on every user type while parameter hints are visible.
 			// We do not want to spam the user with same announcements, so we only announce if the current parameter changed.
 
 			if (this.announcedLabel !== labelToAnnounce) {
-				aria.alert(nls.localize('hint', "{0}, hint", labelToAnnounce));
+				aria.alert(nls.localize('hint', '{0}, hint', labelToAnnounce));
 				this.announcedLabel = labelToAnnounce;
 			}
 		}
@@ -268,33 +296,58 @@ export class ParameterHintsWidget extends Disposable implements IContentWidget {
 	}
 
 	private renderMarkdownDocs(markdown: IMarkdownString): IRenderedMarkdown {
-		const renderedContents = this.renderDisposeables.add(this.markdownRendererService.render(markdown, {
-			context: this.editor,
-			asyncRenderCallback: () => {
-				this.domNodes?.scrollbar.scanDomNode();
-			}
-		}));
+		const renderedContents = this.renderDisposeables.add(
+			this.markdownRendererService.render(markdown, {
+				context: this.editor,
+				asyncRenderCallback: () => {
+					this.domNodes?.scrollbar.scanDomNode();
+				}
+			})
+		);
 		renderedContents.element.classList.add('markdown-docs');
 		return renderedContents;
 	}
 
-	private hasDocs(signature: languages.SignatureInformation, activeParameter: languages.ParameterInformation | undefined): boolean {
-		if (activeParameter && typeof activeParameter.documentation === 'string' && assertReturnsDefined(activeParameter.documentation).length > 0) {
+	private hasDocs(
+		signature: languages.SignatureInformation,
+		activeParameter: languages.ParameterInformation | undefined
+	): boolean {
+		if (
+			activeParameter &&
+			typeof activeParameter.documentation === 'string' &&
+			assertReturnsDefined(activeParameter.documentation).length > 0
+		) {
 			return true;
 		}
-		if (activeParameter && typeof activeParameter.documentation === 'object' && assertReturnsDefined(activeParameter.documentation).value.length > 0) {
+		if (
+			activeParameter &&
+			typeof activeParameter.documentation === 'object' &&
+			assertReturnsDefined(activeParameter.documentation).value.length > 0
+		) {
 			return true;
 		}
-		if (signature.documentation && typeof signature.documentation === 'string' && assertReturnsDefined(signature.documentation).length > 0) {
+		if (
+			signature.documentation &&
+			typeof signature.documentation === 'string' &&
+			assertReturnsDefined(signature.documentation).length > 0
+		) {
 			return true;
 		}
-		if (signature.documentation && typeof signature.documentation === 'object' && assertReturnsDefined(signature.documentation.value).length > 0) {
+		if (
+			signature.documentation &&
+			typeof signature.documentation === 'object' &&
+			assertReturnsDefined(signature.documentation.value).length > 0
+		) {
 			return true;
 		}
 		return false;
 	}
 
-	private renderParameters(parent: HTMLElement, signature: languages.SignatureInformation, activeParameterIndex: number): void {
+	private renderParameters(
+		parent: HTMLElement,
+		signature: languages.SignatureInformation,
+		activeParameterIndex: number
+	): void {
 		const [start, end] = this.getParameterLabelOffsets(signature, activeParameterIndex);
 
 		const beforeSpan = document.createElement('span');
@@ -322,9 +375,7 @@ export class ParameterHintsWidget extends Disposable implements IContentWidget {
 			const regex = new RegExp(`(\\W|^)${escapeRegExpCharacters(param.label)}(?=\\W|$)`, 'g');
 			regex.test(signature.label);
 			const idx = regex.lastIndex - param.label.length;
-			return idx >= 0
-				? [idx, regex.lastIndex]
-				: [0, 0];
+			return idx >= 0 ? [idx, regex.lastIndex] : [0, 0];
 		}
 	}
 
@@ -356,7 +407,7 @@ export class ParameterHintsWidget extends Disposable implements IContentWidget {
 		const height = Math.max(this.editor.getLayoutInfo().height / 4, 250);
 		const maxHeight = `${height}px`;
 		this.domNodes.element.style.maxHeight = maxHeight;
-		// eslint-disable-next-line no-restricted-syntax
+
 		const wrapper = this.domNodes.element.getElementsByClassName('phwrapper') as HTMLCollectionOf<HTMLElement>;
 		if (wrapper.length) {
 			wrapper[0].style.maxHeight = maxHeight;
@@ -364,4 +415,8 @@ export class ParameterHintsWidget extends Disposable implements IContentWidget {
 	}
 }
 
-registerColor('editorHoverWidget.highlightForeground', listHighlightForeground, nls.localize('editorHoverWidgetHighlightForeground', 'Foreground color of the active item in the parameter hint.'));
+registerColor(
+	'editorHoverWidget.highlightForeground',
+	listHighlightForeground,
+	nls.localize('editorHoverWidgetHighlightForeground', 'Foreground color of the active item in the parameter hint.')
+);

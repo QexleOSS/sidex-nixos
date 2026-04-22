@@ -6,7 +6,6 @@
 import { Range } from '../core/range.js';
 import { GlyphMarginLane, IGlyphMarginLanesModel } from '../model.js';
 
-
 const MAX_LANE = GlyphMarginLane.Right;
 
 export class GlyphMarginLanesModel implements IGlyphMarginLanesModel {
@@ -34,11 +33,11 @@ export class GlyphMarginLanesModel implements IGlyphMarginLanesModel {
 
 	public push(lane: GlyphMarginLane, range: Range, persist?: boolean): void {
 		if (persist) {
-			this.persist |= (1 << (lane - 1));
+			this.persist |= 1 << (lane - 1);
 		}
 		for (let i = range.startLineNumber; i <= range.endLineNumber; i++) {
-			const bit = (MAX_LANE * i) + (lane - 1);
-			this.lanes[bit >>> 3] |= (1 << (bit % 8));
+			const bit = MAX_LANE * i + (lane - 1);
+			this.lanes[bit >>> 3] |= 1 << (bit % 8);
 			this._requiredLanes = Math.max(this._requiredLanes, this.countAtLine(i));
 		}
 	}

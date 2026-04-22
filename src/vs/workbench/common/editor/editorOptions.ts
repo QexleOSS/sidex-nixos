@@ -4,8 +4,17 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IRange } from '../../../editor/common/core/range.js';
-import { ICodeEditorViewState, IDiffEditorViewState, IEditor, ScrollType } from '../../../editor/common/editorCommon.js';
-import { ITextEditorOptions, TextEditorSelectionRevealType, TextEditorSelectionSource } from '../../../platform/editor/common/editor.js';
+import {
+	ICodeEditorViewState,
+	IDiffEditorViewState,
+	IEditor,
+	ScrollType
+} from '../../../editor/common/editorCommon.js';
+import {
+	ITextEditorOptions,
+	TextEditorSelectionRevealType,
+	TextEditorSelectionSource
+} from '../../../platform/editor/common/editor.js';
 import { isTextEditorViewState } from '../editor.js';
 
 export function applyTextEditorOptions(options: ITextEditorOptions, editor: IEditor, scrollType: ScrollType): boolean {
@@ -52,7 +61,6 @@ export function applyTextEditorOptions(options: ITextEditorOptions, editor: IEdi
 }
 
 function massageEditorViewState(options: ITextEditorOptions): object | undefined {
-
 	// Without a selection or view state, just return immediately
 	if (!options.selection || !options.viewState) {
 		return options.viewState;

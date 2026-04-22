@@ -5,17 +5,24 @@
 
 import { Disposable } from '../../../base/common/lifecycle.js';
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
-import { ExtHostContext, ExtHostPowerShape, MainContext, MainThreadPowerShape, PowerSaveBlockerType, PowerSystemIdleState, PowerThermalState } from '../common/extHost.protocol.js';
+import {
+	ExtHostContext,
+	ExtHostPowerShape,
+	MainContext,
+	MainThreadPowerShape,
+	PowerSaveBlockerType,
+	PowerSystemIdleState,
+	PowerThermalState
+} from '../common/extHost.protocol.js';
 import { IPowerService } from '../../services/power/common/powerService.js';
 
 @extHostNamedCustomer(MainContext.MainThreadPower)
 export class MainThreadPower extends Disposable implements MainThreadPowerShape {
-
 	private readonly proxy: ExtHostPowerShape;
 
 	constructor(
 		extHostContext: IExtHostContext,
-		@IPowerService private readonly powerService: IPowerService,
+		@IPowerService private readonly powerService: IPowerService
 	) {
 		super();
 		this.proxy = extHostContext.getProxy(ExtHostContext.ExtHostPower);
@@ -24,7 +31,12 @@ export class MainThreadPower extends Disposable implements MainThreadPowerShape 
 		this._register(this.powerService.onDidSuspend(this.proxy.$onDidSuspend, this.proxy));
 		this._register(this.powerService.onDidResume(this.proxy.$onDidResume, this.proxy));
 		this._register(this.powerService.onDidChangeOnBatteryPower(this.proxy.$onDidChangeOnBatteryPower, this.proxy));
-		this._register(this.powerService.onDidChangeThermalState((state: PowerThermalState) => this.proxy.$onDidChangeThermalState(state), this));
+		this._register(
+			this.powerService.onDidChangeThermalState(
+				(state: PowerThermalState) => this.proxy.$onDidChangeThermalState(state),
+				this
+			)
+		);
 		this._register(this.powerService.onDidChangeSpeedLimit(this.proxy.$onDidChangeSpeedLimit, this.proxy));
 		this._register(this.powerService.onWillShutdown(this.proxy.$onWillShutdown, this.proxy));
 		this._register(this.powerService.onDidLockScreen(this.proxy.$onDidLockScreen, this.proxy));

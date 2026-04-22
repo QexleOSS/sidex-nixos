@@ -11,11 +11,14 @@ import { ICommandService } from '../../../../platform/commands/common/commands.j
 import { IDialogService } from '../../../../platform/dialogs/common/dialogs.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
-import { AbstractCommandsQuickAccessProvider, ICommandQuickPick, ICommandsQuickAccessOptions } from '../../../../platform/quickinput/browser/commandsQuickAccess.js';
+import {
+	AbstractCommandsQuickAccessProvider,
+	ICommandQuickPick,
+	ICommandsQuickAccessOptions
+} from '../../../../platform/quickinput/browser/commandsQuickAccess.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 
 export abstract class AbstractEditorCommandsQuickAccessProvider extends AbstractCommandsQuickAccessProvider {
-
 	constructor(
 		options: ICommandsQuickAccessOptions,
 		instantiationService: IInstantiationService,
@@ -45,14 +48,17 @@ export abstract class AbstractEditorCommandsQuickAccessProvider extends Abstract
 				if (isLocalizedString(editorAction.metadata.description)) {
 					commandDescription = editorAction.metadata.description;
 				} else {
-					commandDescription = { original: editorAction.metadata.description, value: editorAction.metadata.description };
+					commandDescription = {
+						original: editorAction.metadata.description,
+						value: editorAction.metadata.description
+					};
 				}
 			}
 			editorCommandPicks.push({
 				commandId: editorAction.id,
 				commandAlias: editorAction.alias,
 				commandDescription,
-				label: stripIcons(editorAction.label) || editorAction.id,
+				label: stripIcons(editorAction.label) || editorAction.id
 			});
 		}
 

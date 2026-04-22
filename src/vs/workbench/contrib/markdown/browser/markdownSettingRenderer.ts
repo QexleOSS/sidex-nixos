@@ -29,9 +29,11 @@ export class SimpleSettingRenderer {
 		@IContextMenuService private readonly _contextMenuService: IContextMenuService,
 		@IPreferencesService private readonly _preferencesService: IPreferencesService,
 		@ITelemetryService private readonly _telemetryService: ITelemetryService,
-		@IClipboardService private readonly _clipboardService: IClipboardService,
+		@IClipboardService private readonly _clipboardService: IClipboardService
 	) {
-		this.codeSettingAnchorRegex = new RegExp(`^<a (href)=".*code.*://settings/([^\\s"]+)"(?:\\s*codesetting="([^"]+)")?>`);
+		this.codeSettingAnchorRegex = new RegExp(
+			`^<a (href)=".*code.*://settings/([^\\s"]+)"(?:\\s*codesetting="([^"]+)")?>`
+		);
 		this.codeSettingSimpleRegex = new RegExp(`^setting\\(([^\\s:)]+)(?::([^)]+))?\\)$`);
 	}
 
@@ -129,62 +131,88 @@ export class SimpleSettingRenderer {
 
 	private viewInSettingsMessage(settingId: string, alreadyDisplayed: boolean) {
 		if (alreadyDisplayed) {
-			return nls.localize('viewInSettings', "View in Settings");
+			return nls.localize('viewInSettings', 'View in Settings');
 		} else {
 			const displayName = settingKeyToDisplayFormat(settingId);
-			return nls.localize('viewInSettingsDetailed', "View \"{0}: {1}\" in Settings", displayName.category, displayName.label);
+			return nls.localize(
+				'viewInSettingsDetailed',
+				'View "{0}: {1}" in Settings',
+				displayName.category,
+				displayName.label
+			);
 		}
 	}
 
 	private restorePreviousSettingMessage(settingId: string): string {
 		const displayName = settingKeyToDisplayFormat(settingId);
-		return nls.localize('restorePreviousValue', "Restore value of \"{0}: {1}\"", displayName.category, displayName.label);
+		return nls.localize('restorePreviousValue', 'Restore value of "{0}: {1}"', displayName.category, displayName.label);
 	}
 
 	private isAlreadySet(setting: ISetting, value: string | number | boolean): boolean {
 		const currentValue = this._configurationService.getValue<boolean>(setting.key);
-		return (currentValue === value || (currentValue === undefined && setting.value === value));
+		return currentValue === value || (currentValue === undefined && setting.value === value);
 	}
 
 	private booleanSettingMessage(setting: ISetting, booleanValue: boolean): string | undefined {
 		const displayName = settingKeyToDisplayFormat(setting.key);
 		if (this.isAlreadySet(setting, booleanValue)) {
 			if (booleanValue) {
-				return nls.localize('alreadysetBoolTrue', "\"{0}: {1}\" is already enabled", displayName.category, displayName.label);
+				return nls.localize(
+					'alreadysetBoolTrue',
+					'"{0}: {1}" is already enabled',
+					displayName.category,
+					displayName.label
+				);
 			} else {
-				return nls.localize('alreadysetBoolFalse', "\"{0}: {1}\" is already disabled", displayName.category, displayName.label);
+				return nls.localize(
+					'alreadysetBoolFalse',
+					'"{0}: {1}" is already disabled',
+					displayName.category,
+					displayName.label
+				);
 			}
 		}
 
 		if (booleanValue) {
-			return nls.localize('trueMessage', "Enable \"{0}: {1}\"", displayName.category, displayName.label);
+			return nls.localize('trueMessage', 'Enable "{0}: {1}"', displayName.category, displayName.label);
 		} else {
-			return nls.localize('falseMessage', "Disable \"{0}: {1}\"", displayName.category, displayName.label);
+			return nls.localize('falseMessage', 'Disable "{0}: {1}"', displayName.category, displayName.label);
 		}
 	}
 
 	private stringSettingMessage(setting: ISetting, stringValue: string): string | undefined {
 		const displayName = settingKeyToDisplayFormat(setting.key);
 		if (this.isAlreadySet(setting, stringValue)) {
-			return nls.localize('alreadysetString', "\"{0}: {1}\" is already set to \"{2}\"", displayName.category, displayName.label, stringValue);
+			return nls.localize(
+				'alreadysetString',
+				'"{0}: {1}" is already set to "{2}"',
+				displayName.category,
+				displayName.label,
+				stringValue
+			);
 		}
 
-		return nls.localize('stringValue', "Set \"{0}: {1}\" to \"{2}\"", displayName.category, displayName.label, stringValue);
+		return nls.localize('stringValue', 'Set "{0}: {1}" to "{2}"', displayName.category, displayName.label, stringValue);
 	}
 
 	private numberSettingMessage(setting: ISetting, numberValue: number): string | undefined {
 		const displayName = settingKeyToDisplayFormat(setting.key);
 		if (this.isAlreadySet(setting, numberValue)) {
-			return nls.localize('alreadysetNum', "\"{0}: {1}\" is already set to {2}", displayName.category, displayName.label, numberValue);
+			return nls.localize(
+				'alreadysetNum',
+				'"{0}: {1}" is already set to {2}',
+				displayName.category,
+				displayName.label,
+				numberValue
+			);
 		}
 
-		return nls.localize('numberValue', "Set \"{0}: {1}\" to {2}", displayName.category, displayName.label, numberValue);
-
+		return nls.localize('numberValue', 'Set "{0}: {1}" to {2}', displayName.category, displayName.label, numberValue);
 	}
 
 	private renderSetting(setting: ISetting, newValue: string | undefined): string | undefined {
 		const href = this.settingToUriString(setting.key, newValue);
-		const title = nls.localize('changeSettingTitle', "View or change setting");
+		const title = nls.localize('changeSettingTitle', 'View or change setting');
 		return `<code tabindex="0"><a href="${href}" class="codesetting" title="${title}" aria-role="button"><svg width="14" height="14" viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M9.1 4.4L8.6 2H7.4l-.5 2.4-.7.3-2-1.3-.9.8 1.3 2-.2.7-2.4.5v1.2l2.4.5.3.8-1.3 2 .8.8 2-1.3.8.3.4 2.3h1.2l.5-2.4.8-.3 2 1.3.8-.8-1.3-2 .3-.8 2.3-.4V7.4l-2.4-.5-.3-.8 1.3-2-.8-.8-2 1.3-.7-.2zM9.4 1l.5 2.4L12 2.1l2 2-1.4 2.1 2.4.4v2.8l-2.4.5L14 12l-2 2-2.1-1.4-.5 2.4H6.6l-.5-2.4L4 13.9l-2-2 1.4-2.1L1 9.4V6.6l2.4-.5L2.1 4l2-2 2.1 1.4.4-2.4h2.8zm.6 7c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zM8 9c.6 0 1-.4 1-1s-.4-1-1-1-1 .4-1 1 .4 1 1 1z"/></svg>
 			<span class="separator"></span>
 			<span class="setting-name">${setting.key}</span>
@@ -224,7 +252,11 @@ export class SimpleSettingRenderer {
 		const newSettingValue = this.parseValue(uri.authority, uri.path.substring(1));
 		const currentSettingValue = this._configurationService.inspect(settingId).userValue;
 
-		if ((newSettingValue !== undefined) && newSettingValue === currentSettingValue && this._updatedSettings.has(settingId)) {
+		if (
+			newSettingValue !== undefined &&
+			newSettingValue === currentSettingValue &&
+			this._updatedSettings.has(settingId)
+		) {
 			const restoreMessage = this.restorePreviousSettingMessage(settingId);
 			actions.push({
 				class: undefined,
@@ -270,8 +302,8 @@ export class SimpleSettingRenderer {
 			class: undefined,
 			enabled: true,
 			id: 'copySettingId',
-			tooltip: nls.localize('copySettingId', "Copy Setting ID"),
-			label: nls.localize('copySettingId', "Copy Setting ID"),
+			tooltip: nls.localize('copySettingId', 'Copy Setting ID'),
+			label: nls.localize('copySettingId', 'Copy Setting ID'),
 			run: () => {
 				this._clipboardService.writeText(settingId);
 			}
@@ -289,9 +321,9 @@ export class SimpleSettingRenderer {
 		this._contextMenuService.showContextMenu({
 			getAnchor: () => ({ x, y }),
 			getActions: () => actions,
-			getActionViewItem: (action) => {
+			getActionViewItem: action => {
 				return new ActionViewItem(action, action, { label: true });
-			},
+			}
 		});
 	}
 
@@ -300,14 +332,21 @@ export class SimpleSettingRenderer {
 			type ReleaseNotesSettingUsedClassification = {
 				owner: 'alexr00';
 				comment: 'Used to understand if the action to update settings from the release notes is used.';
-				settingId: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The id of the setting that was clicked on in the release notes' };
+				settingId: {
+					classification: 'SystemMetaData';
+					purpose: 'FeatureInsight';
+					comment: 'The id of the setting that was clicked on in the release notes';
+				};
 			};
 			type ReleaseNotesSettingUsed = {
 				settingId: string;
 			};
-			this._telemetryService.publicLog2<ReleaseNotesSettingUsed, ReleaseNotesSettingUsedClassification>('releaseNotesSettingAction', {
-				settingId: uri.authority
-			});
+			this._telemetryService.publicLog2<ReleaseNotesSettingUsed, ReleaseNotesSettingUsedClassification>(
+				'releaseNotesSettingAction',
+				{
+					settingId: uri.authority
+				}
+			);
 			return this.showContextMenu(uri, x, y);
 		}
 	}

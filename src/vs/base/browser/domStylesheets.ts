@@ -9,7 +9,10 @@ import { isFirefox } from './browser.js';
 import { getWindows, sharedMutationObserver } from './dom.js';
 import { mainWindow } from './window.js';
 
-const globalStylesheets = new Map<HTMLStyleElement /* main stylesheet */, Set<HTMLStyleElement /* aux window clones that track the main stylesheet */>>();
+const globalStylesheets = new Map<
+	HTMLStyleElement /* main stylesheet */,
+	Set<HTMLStyleElement /* aux window clones that track the main stylesheet */>
+>();
 
 export function isGlobalStylesheet(node: Node): boolean {
 	return globalStylesheets.has(node as HTMLStyleElement);
@@ -26,7 +29,7 @@ class WrappedStyleElement extends Disposable {
 		this._currentCssStyle = cssStyle;
 
 		if (!this._styleSheet) {
-			this._styleSheet = createStyleSheet(mainWindow.document.head, s => s.textContent = cssStyle, this._store);
+			this._styleSheet = createStyleSheet(mainWindow.document.head, s => (s.textContent = cssStyle), this._store);
 		} else {
 			this._styleSheet.textContent = cssStyle;
 		}
@@ -39,7 +42,11 @@ class WrappedStyleElement extends Disposable {
 	}
 }
 
-export function createStyleSheet(container: HTMLElement = mainWindow.document.head, beforeAppend?: (style: HTMLStyleElement) => void, disposableStore?: DisposableStore): HTMLStyleElement {
+export function createStyleSheet(
+	container: HTMLElement = mainWindow.document.head,
+	beforeAppend?: (style: HTMLStyleElement) => void,
+	disposableStore?: DisposableStore
+): HTMLStyleElement {
 	const style = document.createElement('style');
 	style.type = 'text/css';
 	style.media = 'screen';
@@ -82,7 +89,11 @@ export function cloneGlobalStylesheets(targetWindow: Window): IDisposable {
 	return disposables;
 }
 
-function cloneGlobalStyleSheet(globalStylesheet: HTMLStyleElement, globalStylesheetClones: Set<HTMLStyleElement>, targetWindow: Window): IDisposable {
+function cloneGlobalStyleSheet(
+	globalStylesheet: HTMLStyleElement,
+	globalStylesheetClones: Set<HTMLStyleElement>,
+	targetWindow: Window
+): IDisposable {
 	const disposables = new DisposableStore();
 
 	const clone = globalStylesheet.cloneNode(true) as HTMLStyleElement;
@@ -93,9 +104,15 @@ function cloneGlobalStyleSheet(globalStylesheet: HTMLStyleElement, globalStylesh
 		clone.sheet?.insertRule(rule.cssText, clone.sheet?.cssRules.length);
 	}
 
-	disposables.add(sharedMutationObserver.observe(globalStylesheet, disposables, { childList: true, subtree: isFirefox, characterData: isFirefox })(() => {
-		clone.textContent = globalStylesheet.textContent;
-	}));
+	disposables.add(
+		sharedMutationObserver.observe(globalStylesheet, disposables, {
+			childList: true,
+			subtree: isFirefox,
+			characterData: isFirefox
+		})(() => {
+			clone.textContent = globalStylesheet.textContent;
+		})
+	);
 
 	globalStylesheetClones.add(clone);
 	disposables.add(toDisposable(() => globalStylesheetClones.delete(clone)));
@@ -165,8 +182,10 @@ function isCSSStyleRule(rule: CSSRule): rule is CSSStyleRule {
 export function createStyleSheetFromObservable(css: IObservable<string>): IDisposable {
 	const store = new DisposableStore();
 	const w = store.add(new WrappedStyleElement());
-	store.add(autorun(reader => {
-		w.setStyle(css.read(reader));
-	}));
+	store.add(
+		autorun(reader => {
+			w.setStyle(css.read(reader));
+		})
+	);
 	return store;
 }

@@ -74,23 +74,52 @@ export class DebugEditContext {
 	private readonly _oncompositionstartWrapper = new EventListenerWrapper('compositionstart', this);
 	private readonly _oncompositionendWrapper = new EventListenerWrapper('compositionend', this);
 
-	get ontextupdate(): EventHandler | null { return this._ontextupdateWrapper.eventHandler; }
-	set ontextupdate(value: EventHandler | null) { this._ontextupdateWrapper.eventHandler = value; }
-	get ontextformatupdate(): EventHandler | null { return this._ontextformatupdateWrapper.eventHandler; }
-	set ontextformatupdate(value: EventHandler | null) { this._ontextformatupdateWrapper.eventHandler = value; }
-	get oncharacterboundsupdate(): EventHandler | null { return this._oncharacterboundsupdateWrapper.eventHandler; }
-	set oncharacterboundsupdate(value: EventHandler | null) { this._oncharacterboundsupdateWrapper.eventHandler = value; }
-	get oncompositionstart(): EventHandler | null { return this._oncompositionstartWrapper.eventHandler; }
-	set oncompositionstart(value: EventHandler | null) { this._oncompositionstartWrapper.eventHandler = value; }
-	get oncompositionend(): EventHandler | null { return this._oncompositionendWrapper.eventHandler; }
-	set oncompositionend(value: EventHandler | null) { this._oncompositionendWrapper.eventHandler = value; }
-
+	get ontextupdate(): EventHandler | null {
+		return this._ontextupdateWrapper.eventHandler;
+	}
+	set ontextupdate(value: EventHandler | null) {
+		this._ontextupdateWrapper.eventHandler = value;
+	}
+	get ontextformatupdate(): EventHandler | null {
+		return this._ontextformatupdateWrapper.eventHandler;
+	}
+	set ontextformatupdate(value: EventHandler | null) {
+		this._ontextformatupdateWrapper.eventHandler = value;
+	}
+	get oncharacterboundsupdate(): EventHandler | null {
+		return this._oncharacterboundsupdateWrapper.eventHandler;
+	}
+	set oncharacterboundsupdate(value: EventHandler | null) {
+		this._oncharacterboundsupdateWrapper.eventHandler = value;
+	}
+	get oncompositionstart(): EventHandler | null {
+		return this._oncompositionstartWrapper.eventHandler;
+	}
+	set oncompositionstart(value: EventHandler | null) {
+		this._oncompositionstartWrapper.eventHandler = value;
+	}
+	get oncompositionend(): EventHandler | null {
+		return this._oncompositionendWrapper.eventHandler;
+	}
+	set oncompositionend(value: EventHandler | null) {
+		this._oncompositionendWrapper.eventHandler = value;
+	}
 
 	private readonly _listenerMap = new Map<EventListenerOrEventListenerObject, EventListenerOrEventListenerObject>();
 
-	addEventListener<K extends keyof EditContextEventHandlersEventMap>(type: K, listener: (this: GlobalEventHandlers, ev: EditContextEventHandlersEventMap[K]) => void, options?: boolean | AddEventListenerOptions): void;
-	addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void {
-		if (!listener) { return; }
+	addEventListener<K extends keyof EditContextEventHandlersEventMap>(
+		type: K,
+		listener: (this: GlobalEventHandlers, ev: EditContextEventHandlersEventMap[K]) => void,
+		options?: boolean | AddEventListenerOptions
+	): void;
+	addEventListener(
+		type: string,
+		listener: EventListenerOrEventListenerObject,
+		options?: boolean | AddEventListenerOptions
+	): void {
+		if (!listener) {
+			return;
+		}
 
 		const debugListener = (event: Event) => {
 			if (this._isDebugging) {
@@ -108,8 +137,14 @@ export class DebugEditContext {
 		this.renderDebug();
 	}
 
-	removeEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | EventListenerOptions | undefined): void {
-		if (!listener) { return; }
+	removeEventListener(
+		type: string,
+		listener: EventListenerOrEventListenerObject | null,
+		options?: boolean | EventListenerOptions | undefined
+	): void {
+		if (!listener) {
+			return;
+		}
 		const debugListener = this._listenerMap.get(listener);
 		if (debugListener) {
 			this._editContext.removeEventListener(type, debugListener, options);
@@ -151,7 +186,9 @@ export class DebugEditContext {
 				this._disposables.push(createRect(rect, COLOR_FOR_CHARACTER_BOUNDS));
 			}
 		}
-		this._disposables.push(createDiv(this._editContext.text, this._editContext.selectionStart, this._editContext.selectionEnd));
+		this._disposables.push(
+			createDiv(this._editContext.text, this._editContext.selectionStart, this._editContext.selectionEnd)
+		);
 	}
 }
 
@@ -187,7 +224,6 @@ function createDiv(text: string, selectionStart: number, selectionEnd: number) {
 	const afterNode = document.createTextNode(after);
 	ret.appendChild(afterNode);
 
-	// eslint-disable-next-line no-restricted-syntax
 	document.body.appendChild(ret);
 
 	return {
@@ -210,7 +246,6 @@ function createRect(rect: DOMRect, color: 'green' | 'blue' | 'red') {
 	ret.style.width = rect.width + 'px';
 	ret.style.height = rect.height + 'px';
 
-	// eslint-disable-next-line no-restricted-syntax
 	document.body.appendChild(ret);
 
 	return {
@@ -225,9 +260,8 @@ class EventListenerWrapper {
 
 	constructor(
 		private readonly _eventType: string,
-		private readonly _target: EventTarget,
-	) {
-	}
+		private readonly _target: EventTarget
+	) {}
 
 	get eventHandler(): EventHandler | null {
 		return this._eventHandler;

@@ -36,7 +36,7 @@ export interface IAuthenticationUsageService {
 	 * @param providerId The id of the authentication provider to get usages for
 	 * @param accountName The name of the account to get usages for
 	 */
-	readAccountUsages(providerId: string, accountName: string,): IAccountUsage[];
+	readAccountUsages(providerId: string, accountName: string): IAccountUsage[];
 	/**
 	 *
 	 * @param providerId The id of the authentication provider to get usages for
@@ -50,7 +50,13 @@ export interface IAuthenticationUsageService {
 	 * @param extensionId The id of the extension to add a usage for
 	 * @param extensionName The name of the extension to add a usage for
 	 */
-	addAccountUsage(providerId: string, accountName: string, scopes: ReadonlyArray<string> | undefined, extensionId: string, extensionName: string): void;
+	addAccountUsage(
+		providerId: string,
+		accountName: string,
+		scopes: ReadonlyArray<string> | undefined,
+		extensionId: string,
+		extensionName: string
+	): void;
 }
 
 export class AuthenticationUsageService extends Disposable implements IAuthenticationUsageService {
@@ -65,10 +71,10 @@ export class AuthenticationUsageService extends Disposable implements IAuthentic
 		@IStorageService private readonly _storageService: IStorageService,
 		@IAuthenticationService private readonly _authenticationService: IAuthenticationService,
 		@ILogService private readonly _logService: ILogService,
-		@IProductService productService: IProductService,
+		@IProductService productService: IProductService
 	) {
 		super();
-		this._register(toDisposable(() => this._disposed = true));
+		this._register(toDisposable(() => (this._disposed = true)));
 		// If an extension is listed in `trustedExtensionAuthAccess` we should consider it as using auth
 		const trustedExtensionAuthAccess = productService.trustedExtensionAuthAccess;
 		if (Array.isArray(trustedExtensionAuthAccess)) {
@@ -83,15 +89,19 @@ export class AuthenticationUsageService extends Disposable implements IAuthentic
 			}
 		}
 
-		this._register(this._authenticationService.onDidRegisterAuthenticationProvider(
-			provider => this._queue.queue(
-				() => this._addExtensionsToCache(provider.id)
+		this._register(
+			this._authenticationService.onDidRegisterAuthenticationProvider(provider =>
+				this._queue.queue(() => this._addExtensionsToCache(provider.id))
 			)
-		));
+		);
 	}
 
 	async initializeExtensionUsageCache(): Promise<void> {
-		await this._queue.queue(() => Promise.all(this._authenticationService.getProviderIds().map(providerId => this._addExtensionsToCache(providerId))));
+		await this._queue.queue(() =>
+			Promise.all(
+				this._authenticationService.getProviderIds().map(providerId => this._addExtensionsToCache(providerId))
+			)
+		);
 	}
 
 	async extensionUsesAuth(extensionId: string): Promise<boolean> {
@@ -119,7 +129,13 @@ export class AuthenticationUsageService extends Disposable implements IAuthentic
 		this._storageService.remove(accountKey, StorageScope.APPLICATION);
 	}
 
-	addAccountUsage(providerId: string, accountName: string, scopes: string[] | undefined, extensionId: string, extensionName: string): void {
+	addAccountUsage(
+		providerId: string,
+		accountName: string,
+		scopes: string[] | undefined,
+		extensionId: string,
+		extensionName: string
+	): void {
 		const accountKey = `${providerId}-${accountName}-usages`;
 		const usages = this.readAccountUsages(providerId, accountName);
 

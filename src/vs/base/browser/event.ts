@@ -10,7 +10,11 @@ import { IDisposable } from '../common/lifecycle.js';
 export type EventHandler = HTMLElement | HTMLDocument | Window;
 
 export interface IDomEvent {
-	<K extends keyof HTMLElementEventMap>(element: EventHandler, type: K, useCapture?: boolean): BaseEvent<HTMLElementEventMap[K]>;
+	<K extends keyof HTMLElementEventMap>(
+		element: EventHandler,
+		type: K,
+		useCapture?: boolean
+	): BaseEvent<HTMLElementEventMap[K]>;
 	(element: EventHandler, type: string, useCapture?: boolean): BaseEvent<unknown>;
 }
 
@@ -20,13 +24,12 @@ export interface DOMEventMap extends HTMLElementEventMap, DocumentEventMap, Wind
 	'-monaco-gesturestart': GestureEvent;
 	'-monaco-gesturesend': GestureEvent;
 	'-monaco-gesturecontextmenu': GestureEvent;
-	'compositionstart': CompositionEvent;
-	'compositionupdate': CompositionEvent;
-	'compositionend': CompositionEvent;
+	compositionstart: CompositionEvent;
+	compositionupdate: CompositionEvent;
+	compositionend: CompositionEvent;
 }
 
 export class DomEmitter<K extends keyof DOMEventMap> implements IDisposable {
-
 	private readonly emitter: Emitter<DOMEventMap[K]>;
 
 	get event(): BaseEvent<DOMEventMap[K]> {

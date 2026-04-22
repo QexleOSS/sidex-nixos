@@ -14,7 +14,6 @@ import { ColorPickerWidgetType } from '../colorPickerParticipantUtils.js';
 const $ = dom.$;
 
 export abstract class Strip extends Disposable {
-
 	protected domNode: HTMLElement;
 	protected overlay: HTMLElement;
 	protected slider: HTMLElement;
@@ -26,7 +25,11 @@ export abstract class Strip extends Disposable {
 	private readonly _onColorFlushed = this._register(new Emitter<void>());
 	readonly onColorFlushed: Event<void> = this._onColorFlushed.event;
 
-	constructor(container: HTMLElement, protected model: ColorPickerModel, type: ColorPickerWidgetType) {
+	constructor(
+		container: HTMLElement,
+		protected model: ColorPickerModel,
+		type: ColorPickerWidgetType
+	) {
 		super();
 		if (type === ColorPickerWidgetType.Standalone) {
 			this.domNode = dom.append(container, $('.standalone-strip'));
@@ -67,18 +70,29 @@ export abstract class Strip extends Disposable {
 			this.onDidChangeTop(e.offsetY);
 		}
 
-		monitor.startMonitoring(e.target, e.pointerId, e.buttons, event => this.onDidChangeTop(event.pageY - origin.top), () => null);
+		monitor.startMonitoring(
+			e.target,
+			e.pointerId,
+			e.buttons,
+			event => this.onDidChangeTop(event.pageY - origin.top),
+			() => null
+		);
 
-		const pointerUpListener = dom.addDisposableListener(e.target.ownerDocument, dom.EventType.POINTER_UP, () => {
-			this._onColorFlushed.fire();
-			pointerUpListener.dispose();
-			monitor.stopMonitoring(true);
-			this.domNode.classList.remove('grabbing');
-		}, true);
+		const pointerUpListener = dom.addDisposableListener(
+			e.target.ownerDocument,
+			dom.EventType.POINTER_UP,
+			() => {
+				this._onColorFlushed.fire();
+				pointerUpListener.dispose();
+				monitor.stopMonitoring(true);
+				this.domNode.classList.remove('grabbing');
+			},
+			true
+		);
 	}
 
 	private onDidChangeTop(top: number): void {
-		const value = Math.max(0, Math.min(1, 1 - (top / this.height)));
+		const value = Math.max(0, Math.min(1, 1 - top / this.height));
 
 		this.updateSliderPosition(value);
 		this._onDidChange.fire(value);
@@ -92,7 +106,6 @@ export abstract class Strip extends Disposable {
 }
 
 export class OpacityStrip extends Strip {
-
 	constructor(container: HTMLElement, model: ColorPickerModel, type: ColorPickerWidgetType) {
 		super(container, model, type);
 		this.domNode.classList.add('opacity-strip');
@@ -115,13 +128,12 @@ export class OpacityStrip extends Strip {
 }
 
 export class HueStrip extends Strip {
-
 	constructor(container: HTMLElement, model: ColorPickerModel, type: ColorPickerWidgetType) {
 		super(container, model, type);
 		this.domNode.classList.add('hue-strip');
 	}
 
 	protected getValue(color: Color): number {
-		return 1 - (color.hsva.h / 360);
+		return 1 - color.hsva.h / 360;
 	}
 }

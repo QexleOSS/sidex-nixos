@@ -10,7 +10,6 @@ import { ISearchTreeFileMatch, ISearchTreeMatch, FileMatchOrMatch } from './sear
 export const IReplaceService = createDecorator<IReplaceService>('replaceService');
 
 export interface IReplaceService {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -27,7 +26,12 @@ export interface IReplaceService {
 	/**
 	 * Opens the replace preview for given file match or match
 	 */
-	openReplacePreview(element: FileMatchOrMatch, preserveFocus?: boolean, sideBySide?: boolean, pinned?: boolean): Promise<any>;
+	openReplacePreview(
+		element: FileMatchOrMatch,
+		preserveFocus?: boolean,
+		sideBySide?: boolean,
+		pinned?: boolean
+	): Promise<any>;
 
 	/**
 	 * Update the replace preview for the given file.

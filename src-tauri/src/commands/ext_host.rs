@@ -3,13 +3,12 @@ use crate::commands::extension_platform::{
     resolve_builtin_extensions_dir, resolve_node_runtime, resolve_server_script, scan_extensions,
     user_extensions_dir, ExtensionHostInitData, ExtensionKind, ExtensionManifest, NodeRuntimeInfo,
 };
-use crate::commands::extension_wasm::WasmExtensionRuntime;
 use serde::{Deserialize, Serialize};
 use std::io::BufRead;
 use std::process::{Child, Command, Stdio};
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use std::time::Instant;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::AppHandle;
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
@@ -19,7 +18,9 @@ struct ExtHostSession {
     port: u16,
     session_id: String,
     started_at: Instant,
+    #[allow(dead_code)]
     init_data: ExtensionHostInitData,
+    #[allow(dead_code)]
     manifests: Vec<ExtensionManifest>,
     restart_count: u32,
 }
@@ -127,6 +128,7 @@ impl ExtensionPlatformSupervisor {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExtensionTransportInfo {
@@ -134,6 +136,7 @@ pub struct ExtensionTransportInfo {
     pub endpoint: String,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExtensionPathsInfo {
@@ -143,6 +146,7 @@ pub struct ExtensionPathsInfo {
     pub global_storage_dir: String,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExtensionPlatformBootstrap {
@@ -154,6 +158,7 @@ pub struct ExtensionPlatformBootstrap {
     pub init_data_json: String,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExtensionPlatformStatus {
@@ -166,6 +171,7 @@ pub struct ExtensionPlatformStatus {
     pub total_crashes: u32,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExtensionManifestSummary {
@@ -241,6 +247,10 @@ fn spawn_host_process(
     )
     .map_err(|e| format!("failed to encode search paths: {e}"))?;
 
+    let init_data_file = std::env::temp_dir().join(format!("sidex-init-{}.json", &session_id));
+    std::fs::write(&init_data_file, &init_data_json)
+        .map_err(|e| format!("failed to write init data file: {e}"))?;
+
     let mut child_cmd = Command::new(&runtime.path);
     child_cmd
         .arg("--max-old-space-size=3072")
@@ -249,7 +259,7 @@ fn spawn_host_process(
         .env("SIDEX_BUILTIN_EXTENSIONS_DIR", &builtin_ext_dir)
         .env("SIDEX_GLOBAL_STORAGE_DIR", &global_store_dir)
         .env("SIDEX_EXTENSION_SEARCH_PATHS", &search_paths_json)
-        .env("SIDEX_INIT_DATA", &init_data_json)
+        .env("SIDEX_INIT_DATA_FILE", &init_data_file)
         .env("SIDEX_SESSION_ID", &session_id)
         .env("NODE_ENV", "production")
         .stdin(Stdio::piped())
@@ -284,17 +294,13 @@ fn spawn_host_process(
     if let Some(stderr) = child.stderr.take() {
         std::thread::spawn(move || {
             let reader = std::io::BufReader::new(stderr);
-            for line in reader.lines().flatten() {
-                log::info!("{}", line);
+            for line in reader.lines().map_while(Result::ok) {
+                log::info!("{line}");
             }
         });
     }
 
-    log::info!(
-        "extension host started on port {} (session={})",
-        port,
-        session_id
-    );
+    log::info!("extension host started on port {port} (session={session_id})");
 
     Ok(StartedSession {
         port,
@@ -305,6 +311,7 @@ fn spawn_host_process(
     })
 }
 
+#[allow(dead_code)]
 fn build_manifest_summaries(manifests: &[ExtensionManifest]) -> Vec<ExtensionManifestSummary> {
     manifests
         .iter()
@@ -326,6 +333,7 @@ fn build_manifest_summaries(manifests: &[ExtensionManifest]) -> Vec<ExtensionMan
         .collect()
 }
 
+#[allow(dead_code)]
 fn ensure_session(guard: &mut SupervisorState, app: &AppHandle) -> Result<(), String> {
     if guard.session.is_some() {
         return Ok(());
@@ -343,6 +351,7 @@ fn ensure_session(guard: &mut SupervisorState, app: &AppHandle) -> Result<(), St
     Ok(())
 }
 
+#[allow(dead_code)]
 fn kill_session(session: &mut ExtHostSession) {
     let _ = session.child.kill();
     let _ = session.child.wait();

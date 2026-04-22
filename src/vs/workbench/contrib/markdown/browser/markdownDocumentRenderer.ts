@@ -157,15 +157,12 @@ pre code {
 }
 `;
 
-const defaultAllowedLinkProtocols = Object.freeze([
-	Schemas.http,
-	Schemas.https,
-]);
+const defaultAllowedLinkProtocols = Object.freeze([Schemas.http, Schemas.https]);
 
 function sanitize(documentContent: string, sanitizerConfig: MarkdownDocumentSanitizerConfig | undefined): TrustedHTML {
 	return sanitizeHtml(documentContent, {
 		allowedLinkProtocols: {
-			override: sanitizerConfig?.allowedLinkProtocols?.override ?? defaultAllowedLinkProtocols,
+			override: sanitizerConfig?.allowedLinkProtocols?.override ?? defaultAllowedLinkProtocols
 		},
 		allowRelativeLinkPaths: sanitizerConfig?.allowRelativeLinkPaths,
 		allowedMediaProtocols: sanitizerConfig?.allowedMediaProtocols,
@@ -175,16 +172,8 @@ function sanitize(documentContent: string, sanitizerConfig: MarkdownDocumentSani
 			augment: sanitizerConfig?.allowedTags?.augment
 		},
 		allowedAttributes: {
-			override: [
-				...allowedMarkdownHtmlAttributes,
-				'name',
-				'id',
-				'class',
-				'role',
-				'tabindex',
-				'placeholder',
-			],
-			augment: sanitizerConfig?.allowedAttributes?.augment ?? [],
+			override: [...allowedMarkdownHtmlAttributes, 'name', 'id', 'class', 'role', 'tabindex', 'placeholder'],
+			augment: sanitizerConfig?.allowedAttributes?.augment ?? []
 		}
 	});
 }
@@ -225,7 +214,7 @@ export async function renderMarkdownDocument(
 	extensionService: IExtensionService,
 	languageService: ILanguageService,
 	options?: IRenderMarkdownDocumentOptions,
-	token: CancellationToken = CancellationToken.None,
+	token: CancellationToken = CancellationToken.None
 ): Promise<TrustedHTML> {
 	const m = new marked.Marked(
 		MarkedHighlight.markedHighlight({
@@ -240,12 +229,14 @@ export async function renderMarkdownDocument(
 					return '';
 				}
 
-				const languageId = languageService.getLanguageIdByLanguageName(lang) ?? languageService.getLanguageIdByLanguageName(lang.split(/\s+|:|,|(?!^)\{|\?]/, 1)[0]);
+				const languageId =
+					languageService.getLanguageIdByLanguageName(lang) ??
+					languageService.getLanguageIdByLanguageName(lang.split(/\s+|:|,|(?!^)\{|\?]/, 1)[0]);
 				return tokenizeToString(languageService, code, languageId);
 			}
 		}),
 		markedGfmHeadingIdPlugin(),
-		...(options?.markedExtensions ?? []),
+		...(options?.markedExtensions ?? [])
 	);
 
 	const raw = await raceCancellationError(m.parse(text, { async: true }), token ?? CancellationToken.None);
@@ -255,10 +246,12 @@ export async function renderMarkdownDocument(
 namespace MarkedHighlight {
 	// Copied from https://github.com/markedjs/marked-highlight/blob/main/src/index.js
 
-	export function markedHighlight(options: marked.MarkedOptions & { highlight: (code: string, lang: string) => string | Promise<string> }): marked.MarkedExtension {
+	export function markedHighlight(
+		options: marked.MarkedOptions & { highlight: (code: string, lang: string) => string | Promise<string> }
+	): marked.MarkedExtension {
 		if (typeof options === 'function') {
 			options = {
-				highlight: options,
+				highlight: options
 			};
 		}
 
@@ -279,19 +272,19 @@ namespace MarkedHighlight {
 
 				const code = options.highlight(token.text, token.lang);
 				if (code instanceof Promise) {
-					throw new Error('markedHighlight is not set to async but the highlight function is async. Set the async option to true on markedHighlight to await the async highlight function.');
+					throw new Error(
+						'markedHighlight is not set to async but the highlight function is async. Set the async option to true on markedHighlight to await the async highlight function.'
+					);
 				}
 				updateToken(token)(code);
 			},
 			renderer: {
 				code({ text, lang, escaped }: marked.Tokens.Code) {
-					const classAttr = lang
-						? ` class="language-${escape(lang)}"`
-						: '';
+					const classAttr = lang ? ` class="language-${escape(lang)}"` : '';
 					text = text.replace(/\n$/, '');
 					return `<pre><code${classAttr}>${escaped ? text : escape(text, true)}\n</code></pre>`;
-				},
-			},
+				}
+			}
 		};
 	}
 
@@ -314,7 +307,7 @@ namespace MarkedHighlight {
 		'<': '&lt;',
 		'>': '&gt;',
 		'"': '&quot;',
-		[`'`]: '&#39;',
+		[`'`]: '&#39;'
 	};
 	const getEscapeReplacement = (ch: string) => escapeReplacement[ch];
 	function escape(html: string, encode?: boolean) {

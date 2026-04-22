@@ -108,7 +108,7 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 		const key = isWindows ? 'windows' : isMacintosh ? 'osx' : isLinux ? 'linux' : undefined;
 
 		if (key && config && typeof config === 'object' && config.hasOwnProperty(key)) {
-			Object.keys(config[key]).forEach(k => config[k] = config[key][k]);
+			Object.keys(config[key]).forEach(k => (config[k] = config[key][k]));
 		}
 
 		delete config.windows;
@@ -185,7 +185,13 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 		}
 	}
 
-	private parseString(object: any, propertyName: string | number, value: string, replaceKeyName?: boolean, replacementPath?: string[]): void {
+	private parseString(
+		object: any,
+		propertyName: string | number,
+		value: string,
+		replaceKeyName?: boolean,
+		replacementPath?: string[]
+	): void {
 		let pos = 0;
 		while (pos < value.length) {
 			const match = value.indexOf('${', pos);
@@ -199,7 +205,10 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 					continue;
 				}
 
-				const locations = this.locations.get(parsed.replacement.id) || { locations: [], replacement: parsed.replacement };
+				const locations = this.locations.get(parsed.replacement.id) || {
+					locations: [],
+					replacement: parsed.replacement
+				};
 				const newLocation: PropertyLocation = { object, propertyName, replaceKeyName };
 				locations.locations.push(newLocation);
 				this.locations.set(parsed.replacement.id, locations);
@@ -244,7 +253,10 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 	}
 
 	public resolved(): Iterable<[Replacement, IResolvedValue]> {
-		return Iterable.map(Iterable.filter(this.locations.values(), l => !!l.resolved), l => [l.replacement, l.resolved!]);
+		return Iterable.map(
+			Iterable.filter(this.locations.values(), l => !!l.resolved),
+			l => [l.replacement, l.resolved!]
+		);
 	}
 
 	public resolve(replacement: Replacement, data: string | IResolvedValue): void {
@@ -266,7 +278,12 @@ export class ConfigurationResolverExpression<T> implements IConfigurationResolve
 		}
 	}
 
-	private _resolveAtLocation(replacement: Replacement, { replaceKeyName, propertyName, object }: PropertyLocation, data: IResolvedValue, path: string[] = []) {
+	private _resolveAtLocation(
+		replacement: Replacement,
+		{ replaceKeyName, propertyName, object }: PropertyLocation,
+		data: IResolvedValue,
+		path: string[] = []
+	) {
 		if (data.value === undefined) {
 			return;
 		}

@@ -14,22 +14,25 @@ import { extHostCustomer, IExtHostContext } from '../../services/extensions/comm
 
 @extHostCustomer
 export class MainThreadWebviewManager extends Disposable {
-	constructor(
-		context: IExtHostContext,
-		@IInstantiationService instantiationService: IInstantiationService,
-	) {
+	constructor(context: IExtHostContext, @IInstantiationService instantiationService: IInstantiationService) {
 		super();
 
 		const webviews = this._register(instantiationService.createInstance(MainThreadWebviews, context));
 		context.set(extHostProtocol.MainContext.MainThreadWebviews, webviews);
 
-		const webviewPanels = this._register(instantiationService.createInstance(MainThreadWebviewPanels, context, webviews));
+		const webviewPanels = this._register(
+			instantiationService.createInstance(MainThreadWebviewPanels, context, webviews)
+		);
 		context.set(extHostProtocol.MainContext.MainThreadWebviewPanels, webviewPanels);
 
-		const customEditors = this._register(instantiationService.createInstance(MainThreadCustomEditors, context, webviews, webviewPanels));
+		const customEditors = this._register(
+			instantiationService.createInstance(MainThreadCustomEditors, context, webviews, webviewPanels)
+		);
 		context.set(extHostProtocol.MainContext.MainThreadCustomEditors, customEditors);
 
-		const webviewViews = this._register(instantiationService.createInstance(MainThreadWebviewsViews, context, webviews));
+		const webviewViews = this._register(
+			instantiationService.createInstance(MainThreadWebviewsViews, context, webviews)
+		);
 		context.set(extHostProtocol.MainContext.MainThreadWebviewViews, webviewViews);
 	}
 }

@@ -4,7 +4,30 @@
  *--------------------------------------------------------------------------------------------*/
 import { Emitter, Event } from '../../../base/common/event.js';
 import { Disposable, IDisposable, toDisposable } from '../../../base/common/lifecycle.js';
-import { IFileSystemProviderWithFileReadWriteCapability, IFileChange, IWatchOptions, IStat, IFileOverwriteOptions, FileType, IFileWriteOptions, IFileDeleteOptions, FileSystemProviderCapabilities, IFileSystemProviderWithFileReadStreamCapability, IFileReadStreamOptions, IFileSystemProviderWithFileAtomicReadCapability, hasFileFolderCopyCapability, IFileSystemProviderWithOpenReadWriteCloseCapability, IFileOpenOptions, IFileSystemProviderWithFileAtomicWriteCapability, IFileSystemProviderWithFileAtomicDeleteCapability, IFileSystemProviderWithFileFolderCopyCapability, IFileSystemProviderWithFileCloneCapability, hasFileCloneCapability, IFileAtomicReadOptions, IFileAtomicOptions } from '../../files/common/files.js';
+import {
+	IFileSystemProviderWithFileReadWriteCapability,
+	IFileChange,
+	IWatchOptions,
+	IStat,
+	IFileOverwriteOptions,
+	FileType,
+	IFileWriteOptions,
+	IFileDeleteOptions,
+	FileSystemProviderCapabilities,
+	IFileSystemProviderWithFileReadStreamCapability,
+	IFileReadStreamOptions,
+	IFileSystemProviderWithFileAtomicReadCapability,
+	hasFileFolderCopyCapability,
+	IFileSystemProviderWithOpenReadWriteCloseCapability,
+	IFileOpenOptions,
+	IFileSystemProviderWithFileAtomicWriteCapability,
+	IFileSystemProviderWithFileAtomicDeleteCapability,
+	IFileSystemProviderWithFileFolderCopyCapability,
+	IFileSystemProviderWithFileCloneCapability,
+	hasFileCloneCapability,
+	IFileAtomicReadOptions,
+	IFileAtomicOptions
+} from '../../files/common/files.js';
 import { URI } from '../../../base/common/uri.js';
 import { CancellationToken } from '../../../base/common/cancellation.js';
 import { ReadableStreamEvents } from '../../../base/common/stream.js';
@@ -19,16 +42,18 @@ import { IUriIdentityService } from '../../uriIdentity/common/uriIdentity.js';
  * 	- Convert the user data resources to file system scheme and vice-versa
  *  - Enforces atomic reads for user data
  */
-export class FileUserDataProvider extends Disposable implements
-	IFileSystemProviderWithFileReadWriteCapability,
-	IFileSystemProviderWithOpenReadWriteCloseCapability,
-	IFileSystemProviderWithFileReadStreamCapability,
-	IFileSystemProviderWithFileFolderCopyCapability,
-	IFileSystemProviderWithFileAtomicReadCapability,
-	IFileSystemProviderWithFileAtomicWriteCapability,
-	IFileSystemProviderWithFileAtomicDeleteCapability,
-	IFileSystemProviderWithFileCloneCapability {
-
+export class FileUserDataProvider
+	extends Disposable
+	implements
+		IFileSystemProviderWithFileReadWriteCapability,
+		IFileSystemProviderWithOpenReadWriteCloseCapability,
+		IFileSystemProviderWithFileReadStreamCapability,
+		IFileSystemProviderWithFileFolderCopyCapability,
+		IFileSystemProviderWithFileAtomicReadCapability,
+		IFileSystemProviderWithFileAtomicWriteCapability,
+		IFileSystemProviderWithFileAtomicDeleteCapability,
+		IFileSystemProviderWithFileCloneCapability
+{
 	readonly capabilities: FileSystemProviderCapabilities;
 	readonly onDidChangeCapabilities: Event<void>;
 
@@ -40,19 +65,28 @@ export class FileUserDataProvider extends Disposable implements
 
 	constructor(
 		private readonly fileSystemScheme: string,
-		private readonly fileSystemProvider: IFileSystemProviderWithFileReadWriteCapability & IFileSystemProviderWithOpenReadWriteCloseCapability & IFileSystemProviderWithFileReadStreamCapability & IFileSystemProviderWithFileAtomicReadCapability & IFileSystemProviderWithFileAtomicWriteCapability & IFileSystemProviderWithFileAtomicDeleteCapability,
+		private readonly fileSystemProvider: IFileSystemProviderWithFileReadWriteCapability &
+			IFileSystemProviderWithOpenReadWriteCloseCapability &
+			IFileSystemProviderWithFileReadStreamCapability &
+			IFileSystemProviderWithFileAtomicReadCapability &
+			IFileSystemProviderWithFileAtomicWriteCapability &
+			IFileSystemProviderWithFileAtomicDeleteCapability,
 		private readonly userDataScheme: string,
 		private readonly userDataProfilesService: IUserDataProfilesService,
 		private readonly uriIdentityService: IUriIdentityService,
-		private readonly logService: ILogService,
+		private readonly logService: ILogService
 	) {
 		super();
 		this.capabilities = this.fileSystemProvider.capabilities;
 		this.onDidChangeCapabilities = this.fileSystemProvider.onDidChangeCapabilities;
 		this._onDidChangeFile = this._register(new Emitter());
 		this.onDidChangeFile = this._onDidChangeFile.event;
-		this.watchResources = TernarySearchTree.forUris(() => !(this.capabilities & 1024 /* FileSystemProviderCapabilities.PathCaseSensitive */));
-		this.atomicReadWriteResources = new ResourceSet((uri) => this.uriIdentityService.extUri.getComparisonKey(this.toFileSystemResource(uri)));
+		this.watchResources = TernarySearchTree.forUris(
+			() => !((this.capabilities & 1024) /* FileSystemProviderCapabilities.PathCaseSensitive */)
+		);
+		this.atomicReadWriteResources = new ResourceSet(uri =>
+			this.uriIdentityService.extUri.getComparisonKey(this.toFileSystemResource(uri))
+		);
 		this.updateAtomicReadWritesResources();
 		this._register(userDataProfilesService.onDidChangeProfiles(() => this.updateAtomicReadWritesResources()));
 		this._register(this.fileSystemProvider.onDidChangeFile(e => this.handleFileChanges(e)));
@@ -109,7 +143,11 @@ export class FileUserDataProvider extends Disposable implements
 		return this.fileSystemProvider.readFile(this.toFileSystemResource(resource), opts);
 	}
 
-	readFileStream(resource: URI, opts: IFileReadStreamOptions, token: CancellationToken): ReadableStreamEvents<Uint8Array> {
+	readFileStream(
+		resource: URI,
+		opts: IFileReadStreamOptions,
+		token: CancellationToken
+	): ReadableStreamEvents<Uint8Array> {
 		return this.fileSystemProvider.readFileStream(this.toFileSystemResource(resource), opts, token);
 	}
 
@@ -180,5 +218,4 @@ export class FileUserDataProvider extends Disposable implements
 	private toUserDataResource(fileSystemResource: URI): URI {
 		return fileSystemResource.with({ scheme: this.userDataScheme });
 	}
-
 }

@@ -18,17 +18,25 @@ import { IWorkspaceBackupInfo, IFolderBackupInfo } from '../../backup/common/bac
 import { createDecorator } from '../../instantiation/common/instantiation.js';
 import { ILogService } from '../../log/common/log.js';
 import { getRemoteAuthority } from '../../remote/common/remoteHosts.js';
-import { IBaseWorkspace, IRawFileWorkspaceFolder, IRawUriWorkspaceFolder, IWorkspaceIdentifier, WorkspaceFolder } from '../../workspace/common/workspace.js';
+import {
+	IBaseWorkspace,
+	IRawFileWorkspaceFolder,
+	IRawUriWorkspaceFolder,
+	IWorkspaceIdentifier,
+	WorkspaceFolder
+} from '../../workspace/common/workspace.js';
 
 export const IWorkspacesService = createDecorator<IWorkspacesService>('workspacesService');
 
 export interface IWorkspacesService {
-
 	readonly _serviceBrand: undefined;
 
 	// Workspaces Management
 	enterWorkspace(workspaceUri: URI): Promise<IEnterWorkspaceResult | undefined>;
-	createUntitledWorkspace(folders?: IWorkspaceFolderCreationData[], remoteAuthority?: string): Promise<IWorkspaceIdentifier>;
+	createUntitledWorkspace(
+		folders?: IWorkspaceFolderCreationData[],
+		remoteAuthority?: string
+	): Promise<IWorkspaceIdentifier>;
 	deleteUntitledWorkspace(workspace: IWorkspaceIdentifier): Promise<void>;
 	getWorkspaceIdentifier(workspaceUri: URI): Promise<IWorkspaceIdentifier>;
 
@@ -134,8 +142,13 @@ export interface IEnterWorkspaceResult {
  * @param folderName a workspace name
  * @param targetConfigFolderURI the folder where the workspace is living in
  */
-export function getStoredWorkspaceFolder(folderURI: URI, forceAbsolute: boolean, folderName: string | undefined, targetConfigFolderURI: URI, extUri: IExtUri): IStoredWorkspaceFolder {
-
+export function getStoredWorkspaceFolder(
+	folderURI: URI,
+	forceAbsolute: boolean,
+	folderName: string | undefined,
+	targetConfigFolderURI: URI,
+	extUri: IExtUri
+): IStoredWorkspaceFolder {
 	// Scheme mismatch: use full absolute URI as `uri`
 	if (folderURI.scheme !== targetConfigFolderURI.scheme) {
 		return { name: folderName, uri: folderURI.toString(true) };
@@ -157,7 +170,6 @@ export function getStoredWorkspaceFolder(folderURI: URI, forceAbsolute: boolean,
 
 	// We could not resolve a relative path
 	else {
-
 		// Local file: use `fsPath`
 		if (folderURI.scheme === Schemas.file) {
 			folderPath = folderURI.fsPath;
@@ -181,7 +193,6 @@ export function getStoredWorkspaceFolder(folderURI: URI, forceAbsolute: boolean,
 }
 
 function massagePathForWindows(folderPath: string) {
-
 	// Drive letter should be upper case
 	folderPath = normalizeDriveLetter(folderPath);
 
@@ -195,7 +206,11 @@ function massagePathForWindows(folderPath: string) {
 	return folderPath;
 }
 
-export function toWorkspaceFolders(configuredFolders: IStoredWorkspaceFolder[], workspaceConfigFile: URI, extUri: IExtUri): WorkspaceFolder[] {
+export function toWorkspaceFolders(
+	configuredFolders: IStoredWorkspaceFolder[],
+	workspaceConfigFile: URI,
+	extUri: IExtUri
+): WorkspaceFolder[] {
 	const result: WorkspaceFolder[] = [];
 	const seen: Set<string> = new Set();
 
@@ -218,7 +233,6 @@ export function toWorkspaceFolders(configuredFolders: IStoredWorkspaceFolder[], 
 		}
 
 		if (uri) {
-
 			// remove duplicates
 			const comparisonKey = extUri.getComparisonKey(uri);
 			if (!seen.has(comparisonKey)) {
@@ -237,7 +251,13 @@ export function toWorkspaceFolders(configuredFolders: IStoredWorkspaceFolder[], 
  * Rewrites the content of a workspace file to be saved at a new location.
  * Throws an exception if file is not a valid workspace file
  */
-export function rewriteWorkspaceFileForNewLocation(rawWorkspaceContents: string, configPathURI: URI, isFromUntitledWorkspace: boolean, targetConfigPathURI: URI, extUri: IExtUri) {
+export function rewriteWorkspaceFileForNewLocation(
+	rawWorkspaceContents: string,
+	configPathURI: URI,
+	isFromUntitledWorkspace: boolean,
+	targetConfigPathURI: URI,
+	extUri: IExtUri
+) {
 	const storedWorkspace = doParseStoredWorkspace(configPathURI, rawWorkspaceContents);
 
 	const sourceConfigFolder = extUri.dirname(configPathURI);
@@ -246,7 +266,9 @@ export function rewriteWorkspaceFileForNewLocation(rawWorkspaceContents: string,
 	const rewrittenFolders: IStoredWorkspaceFolder[] = [];
 
 	for (const folder of storedWorkspace.folders) {
-		const folderURI = isRawFileWorkspaceFolder(folder) ? extUri.resolvePath(sourceConfigFolder, folder.path) : URI.parse(folder.uri);
+		const folderURI = isRawFileWorkspaceFolder(folder)
+			? extUri.resolvePath(sourceConfigFolder, folder.path)
+			: URI.parse(folder.uri);
 		let absolute;
 		if (isFromUntitledWorkspace) {
 			absolute = false; // if it was an untitled workspace, try to make paths relative
@@ -258,20 +280,26 @@ export function rewriteWorkspaceFileForNewLocation(rawWorkspaceContents: string,
 
 	// Preserve as much of the existing workspace as possible by using jsonEdit
 	// and only changing the folders portion.
-	const formattingOptions: FormattingOptions = { insertSpaces: false, tabSize: 4, eol: (isLinux || isMacintosh) ? '\n' : '\r\n' };
+	const formattingOptions: FormattingOptions = {
+		insertSpaces: false,
+		tabSize: 4,
+		eol: isLinux || isMacintosh ? '\n' : '\r\n'
+	};
 	const edits = jsonEdit.setProperty(rawWorkspaceContents, ['folders'], rewrittenFolders, formattingOptions);
 	let newContent = jsonEdit.applyEdits(rawWorkspaceContents, edits);
 
 	if (isEqualAuthority(storedWorkspace.remoteAuthority, getRemoteAuthority(targetConfigPathURI))) {
 		// unsaved remote workspaces have the remoteAuthority set. Remove it when no longer nexessary.
-		newContent = jsonEdit.applyEdits(newContent, jsonEdit.removeProperty(newContent, ['remoteAuthority'], formattingOptions));
+		newContent = jsonEdit.applyEdits(
+			newContent,
+			jsonEdit.removeProperty(newContent, ['remoteAuthority'], formattingOptions)
+		);
 	}
 
 	return newContent;
 }
 
 function doParseStoredWorkspace(path: URI, contents: string): IStoredWorkspace {
-
 	// Parse workspace file
 	const storedWorkspace: IStoredWorkspace = json.parse(contents); // use fault tolerant parser
 
@@ -319,7 +347,11 @@ export type RecentlyOpenedStorageData = object;
 function isSerializedRecentWorkspace(data: unknown): data is ISerializedRecentWorkspace {
 	const candidate = data as ISerializedRecentWorkspace | undefined;
 
-	return typeof candidate?.workspace === 'object' && typeof candidate.workspace.id === 'string' && typeof candidate.workspace.configPath === 'string';
+	return (
+		typeof candidate?.workspace === 'object' &&
+		typeof candidate.workspace.id === 'string' &&
+		typeof candidate.workspace.configPath === 'string'
+	);
 }
 
 function isSerializedRecentFolder(data: unknown): data is ISerializedRecentFolder {
@@ -334,7 +366,10 @@ function isSerializedRecentFile(data: unknown): data is ISerializedRecentFile {
 	return typeof candidate?.fileUri === 'string';
 }
 
-export function restoreRecentlyOpened(data: RecentlyOpenedStorageData | undefined, logService: ILogService): IRecentlyOpened {
+export function restoreRecentlyOpened(
+	data: RecentlyOpenedStorageData | undefined,
+	logService: ILogService
+): IRecentlyOpened {
 	const result: IRecentlyOpened = { workspaces: [], files: [] };
 	if (data) {
 		const restoreGracefully = function <T>(entries: T[], onEntry: (entry: T, index: number) => void) {
@@ -354,7 +389,11 @@ export function restoreRecentlyOpened(data: RecentlyOpenedStorageData | undefine
 				const remoteAuthority = entry.remoteAuthority;
 
 				if (isSerializedRecentWorkspace(entry)) {
-					result.workspaces.push({ label, remoteAuthority, workspace: { id: entry.workspace.id, configPath: URI.parse(entry.workspace.configPath) } });
+					result.workspaces.push({
+						label,
+						remoteAuthority,
+						workspace: { id: entry.workspace.id, configPath: URI.parse(entry.workspace.configPath) }
+					});
 				} else if (isSerializedRecentFolder(entry)) {
 					result.workspaces.push({ label, remoteAuthority, folderUri: URI.parse(entry.folderUri) });
 				} else if (isSerializedRecentFile(entry)) {

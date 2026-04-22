@@ -9,7 +9,10 @@ import { Event } from '../../../../../base/common/event.js';
 import { Disposable, MutableDisposable } from '../../../../../base/common/lifecycle.js';
 import { IAccessibilityService } from '../../../../../platform/accessibility/common/accessibility.js';
 import { IConfigurationService } from '../../../../../platform/configuration/common/configuration.js';
-import { ITerminalCapabilityStore, TerminalCapability } from '../../../../../platform/terminal/common/capabilities/capabilities.js';
+import {
+	ITerminalCapabilityStore,
+	TerminalCapability
+} from '../../../../../platform/terminal/common/capabilities/capabilities.js';
 import { ITerminalLogService, TerminalSettingId } from '../../../../../platform/terminal/common/terminal.js';
 
 export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
@@ -29,12 +32,17 @@ export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
 	) {
 		super();
 
-		this._register(Event.runAndSubscribe(Event.any(
-			this._capabilities.onDidChangeCapabilities,
-			this._accessibilityService.onDidChangeScreenReaderOptimized,
-		), () => {
-			this._refreshListeners();
-		}));
+		this._register(
+			Event.runAndSubscribe(
+				Event.any(
+					this._capabilities.onDidChangeCapabilities,
+					this._accessibilityService.onDidChangeScreenReaderOptimized
+				),
+				() => {
+					this._refreshListeners();
+				}
+			)
+		);
 	}
 
 	private _refreshListeners(): void {
@@ -43,7 +51,9 @@ export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
 			if (!this._listeners.value) {
 				const textarea = this._terminal?.textarea;
 				if (textarea) {
-					this._listeners.value = Event.runAndSubscribe(commandDetection.promptInputModel.onDidChangeInput, () => this._sync(textarea));
+					this._listeners.value = Event.runAndSubscribe(commandDetection.promptInputModel.onDidChangeInput, () =>
+						this._sync(textarea)
+					);
 				}
 			}
 		} else {
@@ -52,7 +62,10 @@ export class TextAreaSyncAddon extends Disposable implements ITerminalAddon {
 	}
 
 	private _shouldBeActive(): boolean {
-		return this._accessibilityService.isScreenReaderOptimized() || this._configurationService.getValue(TerminalSettingId.DevMode);
+		return (
+			this._accessibilityService.isScreenReaderOptimized() ||
+			this._configurationService.getValue(TerminalSettingId.DevMode)
+		);
 	}
 
 	@debounce(50)

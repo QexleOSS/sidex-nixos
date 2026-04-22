@@ -12,7 +12,10 @@ import { Range } from '../../../../editor/common/core/range.js';
 import { isWindows } from '../../../../base/common/platform.js';
 import { Schemas } from '../../../../base/common/network.js';
 import { IWebWorkerServerRequestHandler, IWebWorkerServer } from '../../../../base/common/worker/webWorker.js';
-import { WorkerTextModelSyncServer, ICommonModel } from '../../../../editor/common/services/textModelSync/textModelSync.impl.js';
+import {
+	WorkerTextModelSyncServer,
+	ICommonModel
+} from '../../../../editor/common/services/textModelSync/textModelSync.impl.js';
 
 export interface IResourceCreator {
 	toResource: (folderRelativePath: string) => URI | null;
@@ -33,7 +36,6 @@ export class OutputLinkComputer implements IWebWorkerServerRequestHandler {
 	}
 
 	private computePatterns(_workspaceFolders: string[]): void {
-
 		// Produce patterns for each workspace root we are configured with
 		// This means that we will be able to detect links for paths that
 		// contain any of the workspace roots as segments.
@@ -96,22 +98,43 @@ export class OutputLinkComputer implements IWebWorkerServerRequestHandler {
 			const strictPathPattern = `${validPathCharacterPattern}+`;
 
 			// Example: /workspaces/express/server.js on line 8, column 13
-			patterns.push(new RegExp(strings.escapeRegExpCharacters(workspaceFolderVariant) + `(${pathPattern}) on line ((\\d+)(, column (\\d+))?)`, 'gi'));
+			patterns.push(
+				new RegExp(
+					strings.escapeRegExpCharacters(workspaceFolderVariant) +
+						`(${pathPattern}) on line ((\\d+)(, column (\\d+))?)`,
+					'gi'
+				)
+			);
 
 			// Example: /workspaces/express/server.js:line 8, column 13
-			patterns.push(new RegExp(strings.escapeRegExpCharacters(workspaceFolderVariant) + `(${pathPattern}):line ((\\d+)(, column (\\d+))?)`, 'gi'));
+			patterns.push(
+				new RegExp(
+					strings.escapeRegExpCharacters(workspaceFolderVariant) + `(${pathPattern}):line ((\\d+)(, column (\\d+))?)`,
+					'gi'
+				)
+			);
 
 			// Example: /workspaces/mankala/Features.ts(45): error
 			// Example: /workspaces/mankala/Features.ts (45): error
 			// Example: /workspaces/mankala/Features.ts(45,18): error
 			// Example: /workspaces/mankala/Features.ts (45,18): error
 			// Example: /workspaces/mankala/Features Special.ts (45,18): error
-			patterns.push(new RegExp(strings.escapeRegExpCharacters(workspaceFolderVariant) + `(${pathPattern})(\\s?\\((\\d+)(,(\\d+))?)\\)`, 'gi'));
+			patterns.push(
+				new RegExp(
+					strings.escapeRegExpCharacters(workspaceFolderVariant) + `(${pathPattern})(\\s?\\((\\d+)(,(\\d+))?)\\)`,
+					'gi'
+				)
+			);
 
 			// Example: at /workspaces/mankala/Game.ts
 			// Example: at /workspaces/mankala/Game.ts:336
 			// Example: at /workspaces/mankala/Game.ts:336:9
-			patterns.push(new RegExp(strings.escapeRegExpCharacters(workspaceFolderVariant) + `(${strictPathPattern})(:(\\d+))?(:(\\d+))?`, 'gi'));
+			patterns.push(
+				new RegExp(
+					strings.escapeRegExpCharacters(workspaceFolderVariant) + `(${strictPathPattern})(:(\\d+))?(:(\\d+))?`,
+					'gi'
+				)
+			);
 		}
 
 		return patterns;
@@ -129,7 +152,6 @@ export class OutputLinkComputer implements IWebWorkerServerRequestHandler {
 			let match: RegExpExecArray | null;
 			let offset = 0;
 			while ((match = pattern.exec(line)) !== null) {
-
 				// Convert the relative path information to a resource that we can use in links
 				const folderRelativePath = strings.rtrim(match[1], '.').replace(/\\/g, '/'); // remove trailing "." that likely indicate end of sentence
 				let resourceString: string | undefined;

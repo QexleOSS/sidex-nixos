@@ -8,7 +8,11 @@ import { IKeyboardEvent } from '../../../../../base/browser/keyboardEvent.js';
 import { CountBadge } from '../../../../../base/browser/ui/countBadge/countBadge.js';
 import { HighlightedLabel } from '../../../../../base/browser/ui/highlightedlabel/highlightedLabel.js';
 import { IconLabel } from '../../../../../base/browser/ui/iconLabel/iconLabel.js';
-import { IIdentityProvider, IKeyboardNavigationLabelProvider, IListVirtualDelegate } from '../../../../../base/browser/ui/list/list.js';
+import {
+	IIdentityProvider,
+	IKeyboardNavigationLabelProvider,
+	IListVirtualDelegate
+} from '../../../../../base/browser/ui/list/list.js';
 import { IListAccessibilityProvider } from '../../../../../base/browser/ui/list/listWidget.js';
 import { IAsyncDataSource, ITreeNode, ITreeRenderer } from '../../../../../base/browser/ui/tree/tree.js';
 import { createMatches, FuzzyScore, IMatch } from '../../../../../base/common/filters.js';
@@ -27,8 +31,7 @@ import { FileReferences, OneReference, ReferencesModel } from '../referencesMode
 export type TreeElement = FileReferences | OneReference;
 
 export class DataSource implements IAsyncDataSource<ReferencesModel | FileReferences, TreeElement> {
-
-	constructor(@ITextModelService private readonly _resolverService: ITextModelService) { }
+	constructor(@ITextModelService private readonly _resolverService: ITextModelService) {}
 
 	hasChildren(element: ReferencesModel | FileReferences | TreeElement): boolean {
 		if (element instanceof ReferencesModel) {
@@ -76,8 +79,7 @@ export class Delegate implements IListVirtualDelegate<TreeElement> {
 }
 
 export class StringRepresentationProvider implements IKeyboardNavigationLabelProvider<TreeElement> {
-
-	constructor(@IKeybindingService private readonly _keybindingService: IKeybindingService) { }
+	constructor(@IKeybindingService private readonly _keybindingService: IKeybindingService) {}
 
 	getKeyboardNavigationLabel(element: TreeElement): { toString(): string } {
 		if (element instanceof OneReference) {
@@ -96,7 +98,6 @@ export class StringRepresentationProvider implements IKeyboardNavigationLabelPro
 }
 
 export class IdentityProvider implements IIdentityProvider<TreeElement> {
-
 	getId(element: TreeElement): { toString(): string } {
 		return element instanceof OneReference ? element.id : element.uri;
 	}
@@ -105,7 +106,6 @@ export class IdentityProvider implements IIdentityProvider<TreeElement> {
 //#region render: File
 
 class FileReferencesTemplate extends Disposable {
-
 	readonly file: IconLabel;
 	readonly badge: CountBadge;
 
@@ -133,20 +133,19 @@ class FileReferencesTemplate extends Disposable {
 		const len = element.children.length;
 		this.badge.setCount(len);
 		if (len > 1) {
-			this.badge.setTitleFormat(localize('referencesCount', "{0} references", len));
+			this.badge.setTitleFormat(localize('referencesCount', '{0} references', len));
 		} else {
-			this.badge.setTitleFormat(localize('referenceCount', "{0} reference", len));
+			this.badge.setTitleFormat(localize('referenceCount', '{0} reference', len));
 		}
 	}
 }
 
 export class FileReferencesRenderer implements ITreeRenderer<FileReferences, FuzzyScore, FileReferencesTemplate> {
-
 	static readonly id = 'FileReferencesRenderer';
 
 	readonly templateId: string = FileReferencesRenderer.id;
 
-	constructor(@IInstantiationService private readonly _instantiationService: IInstantiationService) { }
+	constructor(@IInstantiationService private readonly _instantiationService: IInstantiationService) {}
 
 	renderTemplate(container: HTMLElement): FileReferencesTemplate {
 		return this._instantiationService.createInstance(FileReferencesTemplate, container);
@@ -163,7 +162,6 @@ export class FileReferencesRenderer implements ITreeRenderer<FileReferences, Fuz
 
 //#region render: Reference
 class OneReferenceTemplate extends Disposable {
-
 	readonly label: HighlightedLabel;
 
 	constructor(container: HTMLElement) {
@@ -193,7 +191,6 @@ class OneReferenceTemplate extends Disposable {
 }
 
 export class OneReferenceRenderer implements ITreeRenderer<OneReference, FuzzyScore, OneReferenceTemplate> {
-
 	static readonly id = 'OneReferenceRenderer';
 
 	readonly templateId: string = OneReferenceRenderer.id;
@@ -211,11 +208,9 @@ export class OneReferenceRenderer implements ITreeRenderer<OneReference, FuzzySc
 
 //#endregion
 
-
 export class AccessibilityProvider implements IListAccessibilityProvider<FileReferences | OneReference> {
-
 	getWidgetAriaLabel(): string {
-		return localize('treeAriaLabel', "References");
+		return localize('treeAriaLabel', 'References');
 	}
 
 	getAriaLabel(element: FileReferences | OneReference): string | null {

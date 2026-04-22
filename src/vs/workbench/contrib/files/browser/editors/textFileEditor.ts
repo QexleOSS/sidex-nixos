@@ -9,14 +9,34 @@ import { assertReturnsDefined } from '../../../../../base/common/types.js';
 import { IPathService } from '../../../../services/path/common/pathService.js';
 import { IAction, toAction } from '../../../../../base/common/actions.js';
 import { VIEWLET_ID, TEXT_FILE_EDITOR_ID, BINARY_TEXT_FILE_MODE } from '../../common/files.js';
-import { ITextFileService, TextFileOperationError, TextFileOperationResult } from '../../../../services/textfile/common/textfiles.js';
+import {
+	ITextFileService,
+	TextFileOperationError,
+	TextFileOperationResult
+} from '../../../../services/textfile/common/textfiles.js';
 import { AbstractTextCodeEditor } from '../../../../browser/parts/editor/textCodeEditor.js';
-import { IEditorOpenContext, isTextEditorViewState, DEFAULT_EDITOR_ASSOCIATION, createEditorOpenError, IFileEditorInputOptions, createTooLargeFileError } from '../../../../common/editor.js';
+import {
+	IEditorOpenContext,
+	isTextEditorViewState,
+	DEFAULT_EDITOR_ASSOCIATION,
+	createEditorOpenError,
+	IFileEditorInputOptions,
+	createTooLargeFileError
+} from '../../../../common/editor.js';
 import { EditorInput } from '../../../../common/editor/editorInput.js';
 import { applyTextEditorOptions } from '../../../../common/editor/editorOptions.js';
 import { BinaryEditorModel } from '../../../../common/editor/binaryEditorModel.js';
 import { FileEditorInput } from './fileEditorInput.js';
-import { FileOperationError, FileOperationResult, FileChangesEvent, IFileService, FileOperationEvent, FileOperation, ByteSize, TooLargeFileOperationError } from '../../../../../platform/files/common/files.js';
+import {
+	FileOperationError,
+	FileOperationResult,
+	FileChangesEvent,
+	IFileService,
+	FileOperationEvent,
+	FileOperation,
+	ByteSize,
+	TooLargeFileOperationError
+} from '../../../../../platform/files/common/files.js';
 import { ITelemetryService } from '../../../../../platform/telemetry/common/telemetry.js';
 import { IWorkspaceContextService } from '../../../../../platform/workspace/common/workspace.js';
 import { IStorageService } from '../../../../../platform/storage/common/storage.js';
@@ -42,7 +62,6 @@ import { IFilesConfigurationService } from '../../../../services/filesConfigurat
  * An implementation of editor for file system resources.
  */
 export class TextFileEditor extends AbstractTextCodeEditor<ICodeEditorViewState> {
-
 	static readonly ID = TEXT_FILE_EDITOR_ID;
 
 	constructor(
@@ -66,7 +85,18 @@ export class TextFileEditor extends AbstractTextCodeEditor<ICodeEditorViewState>
 		@IHostService private readonly hostService: IHostService,
 		@IFilesConfigurationService private readonly filesConfigurationService: IFilesConfigurationService
 	) {
-		super(TextFileEditor.ID, group, telemetryService, instantiationService, storageService, textResourceConfigurationService, themeService, editorService, editorGroupService, fileService);
+		super(
+			TextFileEditor.ID,
+			group,
+			telemetryService,
+			instantiationService,
+			storageService,
+			textResourceConfigurationService,
+			themeService,
+			editorService,
+			editorGroupService,
+			fileService
+		);
 
 		// Clear view state for deleted files
 		this._register(this.fileService.onDidFilesChange(e => this.onDidFilesChange(e)));
@@ -92,14 +122,19 @@ export class TextFileEditor extends AbstractTextCodeEditor<ICodeEditorViewState>
 			return this.input.getName();
 		}
 
-		return localize('textFileEditor', "Text File Editor");
+		return localize('textFileEditor', 'Text File Editor');
 	}
 
 	override get input(): FileEditorInput | undefined {
 		return this._input as FileEditorInput;
 	}
 
-	override async setInput(input: FileEditorInput, options: IFileEditorInputOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
+	override async setInput(
+		input: FileEditorInput,
+		options: IFileEditorInputOptions | undefined,
+		context: IEditorOpenContext,
+		token: CancellationToken
+	): Promise<void> {
 		mark('code/willSetInputToTextFileEditor');
 
 		// Set input and resolve
@@ -162,8 +197,11 @@ export class TextFileEditor extends AbstractTextCodeEditor<ICodeEditorViewState>
 		mark('code/didSetInputToTextFileEditor');
 	}
 
-	protected async handleSetInputError(error: Error, input: FileEditorInput, options: ITextEditorOptions | undefined): Promise<void> {
-
+	protected async handleSetInputError(
+		error: Error,
+		input: FileEditorInput,
+		options: ITextEditorOptions | undefined
+	): Promise<void> {
 		// Handle case where content appears to be binary
 		if ((<TextFileOperationError>error).textFileOperationResult === TextFileOperationResult.FILE_IS_BINARY) {
 			return this.openAsBinary(input, options);
@@ -173,32 +211,51 @@ export class TextFileEditor extends AbstractTextCodeEditor<ICodeEditorViewState>
 		if ((<FileOperationError>error).fileOperationResult === FileOperationResult.FILE_IS_DIRECTORY) {
 			const actions: IAction[] = [];
 
-			actions.push(toAction({
-				id: 'workbench.files.action.openFolder', label: localize('openFolder', "Open Folder"), run: async () => {
-					return this.hostService.openWindow([{ folderUri: input.resource }], { forceNewWindow: true });
-				}
-			}));
+			actions.push(
+				toAction({
+					id: 'workbench.files.action.openFolder',
+					label: localize('openFolder', 'Open Folder'),
+					run: async () => {
+						return this.hostService.openWindow([{ folderUri: input.resource }], { forceNewWindow: true });
+					}
+				})
+			);
 
 			if (this.contextService.isInsideWorkspace(input.preferredResource)) {
-				actions.push(toAction({
-					id: 'workbench.files.action.reveal', label: localize('reveal', "Reveal Folder"), run: async () => {
-						await this.paneCompositeService.openPaneComposite(VIEWLET_ID, ViewContainerLocation.Sidebar, true);
+				actions.push(
+					toAction({
+						id: 'workbench.files.action.reveal',
+						label: localize('reveal', 'Reveal Folder'),
+						run: async () => {
+							await this.paneCompositeService.openPaneComposite(VIEWLET_ID, ViewContainerLocation.Sidebar, true);
 
-						return this.explorerService.select(input.preferredResource, true);
-					}
-				}));
+							return this.explorerService.select(input.preferredResource, true);
+						}
+					})
+				);
 			}
 
-			throw createEditorOpenError(localize('fileIsDirectory', "The file is not displayed in the text editor because it is a directory."), actions, { forceMessage: true });
+			throw createEditorOpenError(
+				localize('fileIsDirectory', 'The file is not displayed in the text editor because it is a directory.'),
+				actions,
+				{ forceMessage: true }
+			);
 		}
 
 		// Handle case where a file is too large to open without confirmation
 		if ((<FileOperationError>error).fileOperationResult === FileOperationResult.FILE_TOO_LARGE) {
 			let message: string;
 			if (error instanceof TooLargeFileOperationError) {
-				message = localize('fileTooLargeForHeapErrorWithSize', "The file is not displayed in the text editor because it is very large ({0}).", ByteSize.formatSize(error.size));
+				message = localize(
+					'fileTooLargeForHeapErrorWithSize',
+					'The file is not displayed in the text editor because it is very large ({0}).',
+					ByteSize.formatSize(error.size)
+				);
 			} else {
-				message = localize('fileTooLargeForHeapErrorWithoutSize', "The file is not displayed in the text editor because it is very large.");
+				message = localize(
+					'fileTooLargeForHeapErrorWithoutSize',
+					'The file is not displayed in the text editor because it is very large.'
+				);
 			}
 
 			throw createTooLargeFileError(this.group, input, options, message, this.preferencesService);
@@ -208,29 +265,40 @@ export class TextFileEditor extends AbstractTextCodeEditor<ICodeEditorViewState>
 		if (
 			(<FileOperationError>error).fileOperationResult === FileOperationResult.FILE_NOT_FOUND &&
 			!this.filesConfigurationService.isReadonly(input.preferredResource) &&
-			await this.pathService.hasValidBasename(input.preferredResource)
+			(await this.pathService.hasValidBasename(input.preferredResource))
 		) {
-			const fileNotFoundError = createEditorOpenError(new FileOperationError(localize('unavailableResourceErrorEditorText', "The editor could not be opened because the file was not found."), FileOperationResult.FILE_NOT_FOUND), [
-				toAction({
-					id: 'workbench.files.action.createMissingFile', label: localize('createFile', "Create File"), run: async () => {
-						await this.textFileService.create([{ resource: input.preferredResource }]);
+			const fileNotFoundError = createEditorOpenError(
+				new FileOperationError(
+					localize(
+						'unavailableResourceErrorEditorText',
+						'The editor could not be opened because the file was not found.'
+					),
+					FileOperationResult.FILE_NOT_FOUND
+				),
+				[
+					toAction({
+						id: 'workbench.files.action.createMissingFile',
+						label: localize('createFile', 'Create File'),
+						run: async () => {
+							await this.textFileService.create([{ resource: input.preferredResource }]);
 
-						return this.editorService.openEditor({
-							resource: input.preferredResource,
-							options: {
-								pinned: true // new file gets pinned by default
-							}
-						});
-					}
-				})
-			], {
+							return this.editorService.openEditor({
+								resource: input.preferredResource,
+								options: {
+									pinned: true // new file gets pinned by default
+								}
+							});
+						}
+					})
+				],
+				{
+					// Support the flow of directly pressing `Enter` on the dialog to
+					// create the file on the go. This is nice when for example following
+					// a link to a file that does not exist to scaffold it quickly.
 
-				// Support the flow of directly pressing `Enter` on the dialog to
-				// create the file on the go. This is nice when for example following
-				// a link to a file that does not exist to scaffold it quickly.
-
-				allowDialog: true
-			});
+					allowDialog: true
+				}
+			);
 
 			throw fileNotFoundError;
 		}
@@ -240,7 +308,9 @@ export class TextFileEditor extends AbstractTextCodeEditor<ICodeEditorViewState>
 	}
 
 	private openAsBinary(input: FileEditorInput, options: ITextEditorOptions | undefined): void {
-		const defaultBinaryEditor = this.configurationService.getValue<string | undefined>('workbench.editor.defaultBinaryEditor');
+		const defaultBinaryEditor = this.configurationService.getValue<string | undefined>(
+			'workbench.editor.defaultBinaryEditor'
+		);
 
 		const editorOptions = {
 			...options,
@@ -265,15 +335,29 @@ export class TextFileEditor extends AbstractTextCodeEditor<ICodeEditorViewState>
 		}
 	}
 
-	private doOpenAsBinaryInDifferentEditor(group: IEditorGroup, editorId: string | undefined, editor: FileEditorInput, editorOptions: ITextEditorOptions): void {
-		this.editorService.replaceEditors([{
-			editor,
-			replacement: { resource: editor.resource, options: { ...editorOptions, override: editorId } }
-		}], group);
+	private doOpenAsBinaryInDifferentEditor(
+		group: IEditorGroup,
+		editorId: string | undefined,
+		editor: FileEditorInput,
+		editorOptions: ITextEditorOptions
+	): void {
+		this.editorService.replaceEditors(
+			[
+				{
+					editor,
+					replacement: { resource: editor.resource, options: { ...editorOptions, override: editorId } }
+				}
+			],
+			group
+		);
 	}
 
-	private doOpenAsBinaryInSameEditor(group: IEditorGroup, editorId: string | undefined, editor: FileEditorInput, editorOptions: ITextEditorOptions): void {
-
+	private doOpenAsBinaryInSameEditor(
+		group: IEditorGroup,
+		editorId: string | undefined,
+		editor: FileEditorInput,
+		editorOptions: ITextEditorOptions
+	): void {
 		// Open binary as text
 		if (editorId === DEFAULT_EDITOR_ASSOCIATION.id) {
 			editor.setForceOpenAsText();

@@ -10,7 +10,12 @@ import { Disposable, MutableDisposable } from '../../../../base/common/lifecycle
 import { noBreakWhitespace } from '../../../../base/common/strings.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import './inlineProgressWidget.css';
-import { ContentWidgetPositionPreference, ICodeEditor, IContentWidget, IContentWidgetPosition } from '../../../browser/editorBrowser.js';
+import {
+	ContentWidgetPositionPreference,
+	ICodeEditor,
+	IContentWidget,
+	IContentWidgetPosition
+} from '../../../browser/editorBrowser.js';
 import { EditorOption } from '../../../common/config/editorOptions.js';
 import { IPosition } from '../../../common/core/position.js';
 import { Range } from '../../../common/core/range.js';
@@ -26,10 +31,9 @@ const inlineProgressDecoration = ModelDecorationOptions.register({
 	after: {
 		content: noBreakWhitespace,
 		inlineClassName: 'inline-editor-progress-decoration',
-		inlineClassNameAffectsLetterSpacing: true,
+		inlineClassNameAffectsLetterSpacing: true
 	}
 });
-
 
 class InlineProgressWidget extends Disposable implements IContentWidget {
 	private static readonly baseId = 'editor.widget.inlineProgressWidget';
@@ -44,7 +48,7 @@ class InlineProgressWidget extends Disposable implements IContentWidget {
 		private readonly editor: ICodeEditor,
 		private readonly range: Range,
 		title: string,
-		private readonly delegate: InlineProgressDelegate,
+		private readonly delegate: InlineProgressDelegate
 	) {
 		super();
 
@@ -71,15 +75,19 @@ class InlineProgressWidget extends Disposable implements IContentWidget {
 		};
 		updateSize();
 
-		this._register(this.editor.onDidChangeConfiguration(c => {
-			if (c.hasChanged(EditorOption.fontSize) || c.hasChanged(EditorOption.lineHeight)) {
-				updateSize();
-			}
-		}));
+		this._register(
+			this.editor.onDidChangeConfiguration(c => {
+				if (c.hasChanged(EditorOption.fontSize) || c.hasChanged(EditorOption.lineHeight)) {
+					updateSize();
+				}
+			})
+		);
 
-		this._register(dom.addDisposableListener(this.domNode, dom.EventType.CLICK, e => {
-			this.delegate.cancel();
-		}));
+		this._register(
+			dom.addDisposableListener(this.domNode, dom.EventType.CLICK, e => {
+				this.delegate.cancel();
+			})
+		);
 	}
 
 	getId(): string {
@@ -108,7 +116,6 @@ interface InlineProgressDelegate {
 }
 
 export class InlineProgressManager extends Disposable {
-
 	/** Delay before showing the progress widget */
 	private readonly _showDelay = 500; // ms
 	private readonly _showPromise = this._register(new MutableDisposable());
@@ -122,7 +129,7 @@ export class InlineProgressManager extends Disposable {
 	constructor(
 		private readonly id: string,
 		private readonly _editor: ICodeEditor,
-		@IInstantiationService private readonly _instantiationService: IInstantiationService,
+		@IInstantiationService private readonly _instantiationService: IInstantiationService
 	) {
 		super();
 
@@ -134,7 +141,13 @@ export class InlineProgressManager extends Disposable {
 		this._currentDecorations.clear();
 	}
 
-	public async showWhile<R>(position: IPosition, title: string, promise: Promise<R>, delegate: InlineProgressDelegate, delayOverride?: number): Promise<R> {
+	public async showWhile<R>(
+		position: IPosition,
+		title: string,
+		promise: Promise<R>,
+		delegate: InlineProgressDelegate,
+		delayOverride?: number
+	): Promise<R> {
 		const operationId = this._operationIdPool++;
 		this._currentOperation = operationId;
 
@@ -142,13 +155,22 @@ export class InlineProgressManager extends Disposable {
 
 		this._showPromise.value = disposableTimeout(() => {
 			const range = Range.fromPositions(position);
-			const decorationIds = this._currentDecorations.set([{
-				range: range,
-				options: inlineProgressDecoration,
-			}]);
+			const decorationIds = this._currentDecorations.set([
+				{
+					range: range,
+					options: inlineProgressDecoration
+				}
+			]);
 
 			if (decorationIds.length > 0) {
-				this._currentWidget.value = this._instantiationService.createInstance(InlineProgressWidget, this.id, this._editor, range, title, delegate);
+				this._currentWidget.value = this._instantiationService.createInstance(
+					InlineProgressWidget,
+					this.id,
+					this._editor,
+					range,
+					title,
+					delegate
+				);
 			}
 		}, delayOverride ?? this._showDelay);
 

@@ -48,9 +48,10 @@ struct TaskExitEvent {
     exit_code: Option<i32>,
 }
 
-/// Spawn a task process (non-PTY) and return its task_id.
+/// Spawn a task process (non-PTY) and return its `task_id`.
 /// Output is emitted as `task-output` events, exit as `task-exit`.
 #[tauri::command]
+#[allow(clippy::too_many_lines, clippy::needless_pass_by_value)]
 pub fn task_spawn(
     app: AppHandle,
     state: State<'_, Arc<TaskProcessStore>>,
@@ -71,7 +72,7 @@ pub fn task_spawn(
 
         let mut c = Command::new(&shell_path);
         if cfg!(target_os = "windows") {
-            c.args(&["-NoProfile", "-Command"]);
+            c.args(["-NoProfile", "-Command"]);
             let full_cmd = if let Some(ref a) = args {
                 let mut parts = vec![command.clone()];
                 parts.extend(a.iter().map(|arg| {
@@ -131,7 +132,7 @@ pub fn task_spawn(
 
     let mut child = cmd
         .spawn()
-        .map_err(|e| format!("Failed to spawn task '{}': {}", command, e))?;
+        .map_err(|e| format!("Failed to spawn task '{command}': {e}"))?;
 
     let stdout = child.stdout.take();
     let stderr = child.stderr.take();
@@ -158,8 +159,7 @@ pub fn task_spawn(
             let mut buf = [0u8; 8192];
             loop {
                 match reader.read(&mut buf) {
-                    Ok(0) => break,
-                    Ok(n) => {
+                    Ok(n) if n > 0 => {
                         let text = String::from_utf8_lossy(&buf[..n]).to_string();
                         let _ = app_out.emit(
                             "task-output",
@@ -170,23 +170,20 @@ pub fn task_spawn(
                             },
                         );
                     }
-                    Err(_) => break,
+                    Ok(_) | Err(_) => break,
                 }
             }
 
             let exit_code = {
-                let mut tasks = match state_clone.tasks.lock() {
-                    Ok(t) => t,
-                    Err(_) => {
-                        let _ = app_out.emit(
-                            "task-exit",
-                            TaskExitEvent {
-                                task_id,
-                                exit_code: None,
-                            },
-                        );
-                        return;
-                    }
+                let Ok(mut tasks) = state_clone.tasks.lock() else {
+                    let _ = app_out.emit(
+                        "task-exit",
+                        TaskExitEvent {
+                            task_id,
+                            exit_code: None,
+                        },
+                    );
+                    return;
                 };
                 if let Some(handle) = tasks.get_mut(&task_id) {
                     match handle.child.wait() {
@@ -209,8 +206,7 @@ pub fn task_spawn(
             let mut buf = [0u8; 4096];
             loop {
                 match reader.read(&mut buf) {
-                    Ok(0) => break,
-                    Ok(n) => {
+                    Ok(n) if n > 0 => {
                         let text = String::from_utf8_lossy(&buf[..n]).to_string();
                         let _ = app_err.emit(
                             "task-output",
@@ -221,7 +217,7 @@ pub fn task_spawn(
                             },
                         );
                     }
-                    Err(_) => break,
+                    Ok(_) | Err(_) => break,
                 }
             }
         });
@@ -232,16 +228,17 @@ pub fn task_spawn(
 
 /// Kill a running task process.
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn task_kill(state: State<'_, Arc<TaskProcessStore>>, task_id: u32) -> Result<(), String> {
     let mut tasks = state.tasks.lock().map_err(|e| e.to_string())?;
     let mut handle = tasks
         .remove(&task_id)
-        .ok_or_else(|| format!("Task {} not found", task_id))?;
+        .ok_or_else(|| format!("Task {task_id} not found"))?;
 
     handle
         .child
         .kill()
-        .map_err(|e| format!("Failed to kill task {}: {}", task_id, e))?;
+        .map_err(|e| format!("Failed to kill task {task_id}: {e}"))?;
 
     let _ = handle.child.wait();
 
@@ -250,7 +247,90 @@ pub fn task_kill(state: State<'_, Arc<TaskProcessStore>>, task_id: u32) -> Resul
 
 /// List currently running task process IDs.
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn task_list(state: State<'_, Arc<TaskProcessStore>>) -> Result<Vec<u32>, String> {
     let tasks = state.tasks.lock().map_err(|e| e.to_string())?;
-    Ok(tasks.keys().cloned().collect())
+    Ok(tasks.keys().copied().collect())
+}
+
+// ── Auto-detection & tasks.json parsing via sidex-tasks ─────────────
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DetectedTask {
+    pub label: String,
+    pub task_type: String,
+    pub command: String,
+    pub source: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TaskDefinition {
+    pub label: String,
+    pub task_type: String,
+    pub command: String,
+    pub args: Vec<String>,
+    pub group: Option<String>,
+}
+
+impl DetectedTask {
+    fn from_crate_task(t: &sidex_tasks::Task) -> Self {
+        Self {
+            label: t.name.clone(),
+            task_type: format!("{:?}", t.task_type),
+            command: t.full_command(),
+            source: format!("{:?}", t.source),
+        }
+    }
+}
+
+impl TaskDefinition {
+    fn from_crate_task(t: &sidex_tasks::Task) -> Self {
+        let group = match t.group {
+            sidex_tasks::TaskGroup::None => None,
+            other => Some(format!("{other:?}").to_lowercase()),
+        };
+        Self {
+            label: t.name.clone(),
+            task_type: format!("{:?}", t.task_type),
+            command: t.command.clone(),
+            args: t.args.clone(),
+            group,
+        }
+    }
+}
+
+/// Auto-detect tasks (npm scripts, cargo targets, make targets) in a workspace.
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::unnecessary_wraps)]
+pub fn tasks_detect(workspace: String) -> Result<Vec<DetectedTask>, String> {
+    let root = std::path::Path::new(&workspace);
+    let mut all = Vec::new();
+
+    for result in [
+        sidex_tasks::detect_npm_tasks(root),
+        sidex_tasks::detect_cargo_tasks(root),
+        sidex_tasks::detect_make_tasks(root),
+    ] {
+        match result {
+            Ok(tasks) => all.extend(tasks.iter().map(DetectedTask::from_crate_task)),
+            Err(e) => log::warn!("task detection error: {e}"),
+        }
+    }
+
+    Ok(all)
+}
+
+/// Parse `.vscode/tasks.json` from a workspace directory.
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn tasks_parse_config(workspace: String) -> Result<Vec<TaskDefinition>, String> {
+    let tasks_path = std::path::Path::new(&workspace)
+        .join(".vscode")
+        .join("tasks.json");
+    if !tasks_path.exists() {
+        return Ok(Vec::new());
+    }
+    let tasks = sidex_tasks::parse_tasks_json(&tasks_path).map_err(|e| e.to_string())?;
+    Ok(tasks.iter().map(TaskDefinition::from_crate_task).collect())
 }

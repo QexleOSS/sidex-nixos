@@ -5,7 +5,17 @@
 
 import { isFirefox } from '../../browser.js';
 import { DataTransfers } from '../../dnd.js';
-import { $, addDisposableListener, append, clearNode, EventHelper, EventType, getWindow, isHTMLElement, trackFocus } from '../../dom.js';
+import {
+	$,
+	addDisposableListener,
+	append,
+	clearNode,
+	EventHelper,
+	EventType,
+	getWindow,
+	isHTMLElement,
+	trackFocus
+} from '../../dom.js';
 import { DomEmitter } from '../../event.js';
 import { StandardKeyboardEvent } from '../../keyboardEvent.js';
 import { Gesture, EventType as TouchEventType } from '../../touch.js';
@@ -47,7 +57,6 @@ export interface IPaneStyles {
  * before the `render()` call, thus forbidding their use.
  */
 export abstract class Pane extends Disposable implements IView {
-
 	private static readonly HEADER_SIZE = 22;
 
 	readonly element: HTMLElement;
@@ -141,7 +150,7 @@ export abstract class Pane extends Disposable implements IView {
 	orthogonalSize: number = 0;
 
 	protected getAriaHeaderLabel(title: string): string {
-		return localize('viewSection', "{0} Section", title);
+		return localize('viewSection', '{0} Section', title);
 	}
 
 	constructor(options: IPaneOptions) {
@@ -149,8 +158,14 @@ export abstract class Pane extends Disposable implements IView {
 		this._expanded = typeof options.expanded === 'undefined' ? true : !!options.expanded;
 		this._orientation = typeof options.orientation === 'undefined' ? Orientation.VERTICAL : options.orientation;
 		this._ariaHeaderLabel = this.getAriaHeaderLabel(options.title);
-		this._minimumBodySize = typeof options.minimumBodySize === 'number' ? options.minimumBodySize : this._orientation === Orientation.HORIZONTAL ? 200 : 120;
-		this._maximumBodySize = typeof options.maximumBodySize === 'number' ? options.maximumBodySize : Number.POSITIVE_INFINITY;
+		this._minimumBodySize =
+			typeof options.minimumBodySize === 'number'
+				? options.minimumBodySize
+				: this._orientation === Orientation.HORIZONTAL
+					? 200
+					: 120;
+		this._maximumBodySize =
+			typeof options.maximumBodySize === 'number' ? options.maximumBodySize : Number.POSITIVE_INFINITY;
 
 		this.element = $('.pane');
 	}
@@ -266,21 +281,41 @@ export abstract class Pane extends Disposable implements IView {
 		const onKeyDown = this._register(new DomEmitter(this.header, 'keydown'));
 		const onHeaderKeyDown = Event.map(onKeyDown.event, e => new StandardKeyboardEvent(e), eventDisposables);
 
-		this._register(Event.filter(onHeaderKeyDown, e => e.keyCode === KeyCode.Enter || e.keyCode === KeyCode.Space, eventDisposables)(() => this.setExpanded(!this.isExpanded()), null));
+		this._register(
+			Event.filter(
+				onHeaderKeyDown,
+				e => e.keyCode === KeyCode.Enter || e.keyCode === KeyCode.Space,
+				eventDisposables
+			)(() => this.setExpanded(!this.isExpanded()), null)
+		);
 
-		this._register(Event.filter(onHeaderKeyDown, e => e.keyCode === KeyCode.LeftArrow, eventDisposables)(() => this.setExpanded(false), null));
+		this._register(
+			Event.filter(
+				onHeaderKeyDown,
+				e => e.keyCode === KeyCode.LeftArrow,
+				eventDisposables
+			)(() => this.setExpanded(false), null)
+		);
 
-		this._register(Event.filter(onHeaderKeyDown, e => e.keyCode === KeyCode.RightArrow, eventDisposables)(() => this.setExpanded(true), null));
+		this._register(
+			Event.filter(
+				onHeaderKeyDown,
+				e => e.keyCode === KeyCode.RightArrow,
+				eventDisposables
+			)(() => this.setExpanded(true), null)
+		);
 
 		this._register(Gesture.addTarget(this.header));
 
 		const header = this.header;
 		[EventType.CLICK, TouchEventType.Tap].forEach(eventType => {
-			this._register(addDisposableListener(header, eventType, e => {
-				if (!e.defaultPrevented) {
-					this.setExpanded(!this.isExpanded());
-				}
-			}));
+			this._register(
+				addDisposableListener(header, eventType, e => {
+					if (!e.defaultPrevented) {
+						this.setExpanded(!this.isExpanded());
+					}
+				})
+			);
 		});
 
 		this.body = append(this.element, $('.pane-body'));
@@ -340,10 +375,16 @@ export abstract class Pane extends Disposable implements IView {
 		this.header.classList.toggle('not-collapsible', !this.collapsible);
 		this.header.setAttribute('aria-expanded', String(expanded));
 
-		this.header.style.color = this.collapsible ? this.styles.headerForeground ?? '' : '';
+		this.header.style.color = this.collapsible ? (this.styles.headerForeground ?? '') : '';
 		this.header.style.backgroundColor = (this.collapsible ? this.styles.headerBackground : 'transparent') ?? '';
-		this.header.style.borderTop = this.styles.headerBorder && this.orientation === Orientation.VERTICAL ? `1px solid ${this.styles.headerBorder}` : '';
-		this.element.style.borderLeft = this.styles.leftBorder && this.orientation === Orientation.HORIZONTAL ? `1px solid ${this.styles.leftBorder}` : '';
+		this.header.style.borderTop =
+			this.styles.headerBorder && this.orientation === Orientation.VERTICAL
+				? `1px solid ${this.styles.headerBorder}`
+				: '';
+		this.element.style.borderLeft =
+			this.styles.leftBorder && this.orientation === Orientation.HORIZONTAL
+				? `1px solid ${this.styles.leftBorder}`
+				: '';
 	}
 
 	protected abstract renderHeader(container: HTMLElement): void;
@@ -356,7 +397,6 @@ interface IDndContext {
 }
 
 class PaneDraggable extends Disposable {
-
 	private static readonly DefaultDragOverBackgroundColor = new Color(new RGBA(128, 128, 128, 0.5));
 
 	private dragOverCounter = 0; // see https://github.com/microsoft/vscode/issues/14470
@@ -364,7 +404,11 @@ class PaneDraggable extends Disposable {
 	private _onDidDrop = this._register(new Emitter<{ from: Pane; to: Pane }>());
 	readonly onDidDrop = this._onDidDrop.event;
 
-	constructor(private pane: Pane, private dnd: IPaneDndController, private context: IDndContext) {
+	constructor(
+		private pane: Pane,
+		private dnd: IPaneDndController,
+		private context: IDndContext
+	) {
 		super();
 
 		pane.draggableElement!.draggable = true;
@@ -469,7 +513,6 @@ export interface IPaneDndController {
 }
 
 export class DefaultPaneDndController implements IPaneDndController {
-
 	canDrag(pane: Pane): boolean {
 		return true;
 	}
@@ -490,7 +533,6 @@ interface IPaneItem {
 }
 
 export class PaneView extends Disposable {
-
 	private dnd: IPaneDndController | undefined;
 	private dndContext: IDndContext = { draggable: null };
 	readonly element: HTMLElement;
@@ -522,10 +564,22 @@ export class PaneView extends Disposable {
 
 		const eventDisposables = this._register(new DisposableStore());
 		const onKeyDown = this._register(new DomEmitter(this.element, 'keydown'));
-		const onHeaderKeyDown = Event.map(Event.filter(onKeyDown.event, e => isHTMLElement(e.target) && e.target.classList.contains('pane-header'), eventDisposables), e => new StandardKeyboardEvent(e), eventDisposables);
+		const onHeaderKeyDown = Event.map(
+			Event.filter(
+				onKeyDown.event,
+				e => isHTMLElement(e.target) && e.target.classList.contains('pane-header'),
+				eventDisposables
+			),
+			e => new StandardKeyboardEvent(e),
+			eventDisposables
+		);
 
-		this._register(Event.filter(onHeaderKeyDown, e => e.keyCode === KeyCode.UpArrow, eventDisposables)(() => this.focusPrevious()));
-		this._register(Event.filter(onHeaderKeyDown, e => e.keyCode === KeyCode.DownArrow, eventDisposables)(() => this.focusNext()));
+		this._register(
+			Event.filter(onHeaderKeyDown, e => e.keyCode === KeyCode.UpArrow, eventDisposables)(() => this.focusPrevious())
+		);
+		this._register(
+			Event.filter(onHeaderKeyDown, e => e.keyCode === KeyCode.DownArrow, eventDisposables)(() => this.focusNext())
+		);
 	}
 
 	addPane(pane: Pane, size: number, index = this.splitview.length): void {
@@ -657,7 +711,6 @@ export class PaneView extends Disposable {
 	}
 
 	private getPaneHeaderElements(): HTMLElement[] {
-		// eslint-disable-next-line no-restricted-syntax
 		return [...this.element.querySelectorAll('.pane-header')] as HTMLElement[];
 	}
 

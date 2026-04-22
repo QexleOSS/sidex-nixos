@@ -14,15 +14,21 @@ import { ITextModel } from '../../../common/model.js';
 import { createCommandUri } from '../../../../base/common/htmlContent.js';
 
 export class InlayHintAnchor {
-	constructor(readonly range: Range, readonly direction: 'before' | 'after') { }
+	constructor(
+		readonly range: Range,
+		readonly direction: 'before' | 'after'
+	) {}
 }
 
 export class InlayHintItem {
-
 	private _isResolved: boolean = false;
 	private _currentResolve?: Promise<void>;
 
-	constructor(readonly hint: InlayHint, readonly anchor: InlayHintAnchor, readonly provider: InlayHintsProvider) { }
+	constructor(
+		readonly hint: InlayHint,
+		readonly anchor: InlayHintAnchor,
+		readonly provider: InlayHintsProvider
+	) {}
 
 	with(delta: { anchor: InlayHintAnchor }): InlayHintItem {
 		const result = new InlayHintItem(this.hint, delta.anchor, this.provider);
@@ -45,8 +51,7 @@ export class InlayHintItem {
 			return this.resolve(token);
 		}
 		if (!this._isResolved) {
-			this._currentResolve = this._doResolve(token)
-				.finally(() => this._currentResolve = undefined);
+			this._currentResolve = this._doResolve(token).finally(() => (this._currentResolve = undefined));
 		}
 		await this._currentResolve;
 	}
@@ -66,23 +71,31 @@ export class InlayHintItem {
 }
 
 export class InlayHintsFragments {
+	private static _emptyInlayHintList: InlayHintList = Object.freeze({ dispose() {}, hints: [] });
 
-	private static _emptyInlayHintList: InlayHintList = Object.freeze({ dispose() { }, hints: [] });
-
-	static async create(registry: LanguageFeatureRegistry<InlayHintsProvider>, model: ITextModel, ranges: Range[], token: CancellationToken): Promise<InlayHintsFragments> {
-
+	static async create(
+		registry: LanguageFeatureRegistry<InlayHintsProvider>,
+		model: ITextModel,
+		ranges: Range[],
+		token: CancellationToken
+	): Promise<InlayHintsFragments> {
 		const data: [InlayHintList, InlayHintsProvider][] = [];
 
-		const promises = registry.ordered(model).reverse().map(provider => ranges.map(async range => {
-			try {
-				const result = await provider.provideInlayHints(model, range, token);
-				if (result?.hints.length || provider.onDidChangeInlayHints) {
-					data.push([result ?? InlayHintsFragments._emptyInlayHintList, provider]);
-				}
-			} catch (err) {
-				onUnexpectedExternalError(err);
-			}
-		}));
+		const promises = registry
+			.ordered(model)
+			.reverse()
+			.map(provider =>
+				ranges.map(async range => {
+					try {
+						const result = await provider.provideInlayHints(model, range, token);
+						if (result?.hints.length || provider.onDidChangeInlayHints) {
+							data.push([result ?? InlayHintsFragments._emptyInlayHintList, provider]);
+						}
+					} catch (err) {
+						onUnexpectedExternalError(err);
+					}
+				})
+			);
 
 		await Promise.all(promises.flat());
 

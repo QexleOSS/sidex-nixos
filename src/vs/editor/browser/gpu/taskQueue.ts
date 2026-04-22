@@ -43,9 +43,7 @@ abstract class TaskQueue extends Disposable implements ITaskQueue {
 	private _idleCallback?: number;
 	private _i = 0;
 
-	constructor(
-		@ILogService private readonly _logService: ILogService
-	) {
+	constructor(@ILogService private readonly _logService: ILogService) {
 		super();
 		this._register(toDisposable(() => this.clear()));
 	}
@@ -105,7 +103,9 @@ abstract class TaskQueue extends Disposable implements ITaskQueue {
 				// Warn when the time exceeding the deadline is over 20ms, if this happens in practice the
 				// task should be split into sub-tasks to ensure the UI remains responsive.
 				if (lastDeadlineRemaining - taskDuration < -20) {
-					this._logService.warn(`task queue exceeded allotted deadline by ${Math.abs(Math.round(lastDeadlineRemaining - taskDuration))}ms`);
+					this._logService.warn(
+						`task queue exceeded allotted deadline by ${Math.abs(Math.round(lastDeadlineRemaining - taskDuration))}ms`
+					);
 				}
 				this._start();
 				return;
@@ -156,7 +156,7 @@ class IdleTaskQueueInternal extends TaskQueue {
  *
  * This reverts to a {@link PriorityTaskQueue} if the environment does not support idle callbacks.
  */
-export const IdleTaskQueue = ('requestIdleCallback' in getActiveWindow()) ? IdleTaskQueueInternal : PriorityTaskQueue;
+export const IdleTaskQueue = 'requestIdleCallback' in getActiveWindow() ? IdleTaskQueueInternal : PriorityTaskQueue;
 
 /**
  * An object that tracks a single debounced task that will run on the next idle frame. When called
@@ -165,9 +165,7 @@ export const IdleTaskQueue = ('requestIdleCallback' in getActiveWindow()) ? Idle
 export class DebouncedIdleTask {
 	private _queue: ITaskQueue;
 
-	constructor(
-		@IInstantiationService instantiationService: IInstantiationService
-	) {
+	constructor(@IInstantiationService instantiationService: IInstantiationService) {
 		this._queue = instantiationService.createInstance(IdleTaskQueue);
 	}
 

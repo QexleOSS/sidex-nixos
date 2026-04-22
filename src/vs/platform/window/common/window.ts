@@ -17,7 +17,11 @@ import { ILoggerResource, LogLevel } from '../../log/common/log.js';
 import { PolicyDefinition, PolicyValue } from '../../policy/common/policy.js';
 import { IPartsSplash } from '../../theme/common/themeService.js';
 import { IUserDataProfile } from '../../userDataProfile/common/userDataProfile.js';
-import { IAnyWorkspaceIdentifier, ISingleFolderWorkspaceIdentifier, IWorkspaceIdentifier } from '../../workspace/common/workspace.js';
+import {
+	IAnyWorkspaceIdentifier,
+	ISingleFolderWorkspaceIdentifier,
+	IWorkspaceIdentifier
+} from '../../workspace/common/workspace.js';
 
 export const WindowMinimumSize = {
 	WIDTH: 400,
@@ -36,7 +40,6 @@ export interface IRectangle extends IPoint {
 }
 
 export interface IBaseOpenWindowsOptions {
-
 	/**
 	 * Whether to reuse the window or open a new one.
 	 */
@@ -91,11 +94,13 @@ export interface IOpenedAuxiliaryWindow extends IOpenedWindow {
 	readonly parentId: number;
 }
 
-export function isOpenedAuxiliaryWindow(candidate: IOpenedMainWindow | IOpenedAuxiliaryWindow): candidate is IOpenedAuxiliaryWindow {
+export function isOpenedAuxiliaryWindow(
+	candidate: IOpenedMainWindow | IOpenedAuxiliaryWindow
+): candidate is IOpenedAuxiliaryWindow {
 	return typeof (candidate as IOpenedAuxiliaryWindow).parentId === 'number';
 }
 
-export interface IOpenEmptyWindowOptions extends IBaseOpenWindowsOptions { }
+export interface IOpenEmptyWindowOptions extends IBaseOpenWindowsOptions {}
 
 export type IWindowOpenable = IWorkspaceToOpen | IFolderToOpen | IFileToOpen;
 
@@ -135,10 +140,13 @@ export const enum MenuSettings {
 export const enum MenuStyleConfiguration {
 	CUSTOM = 'custom',
 	NATIVE = 'native',
-	INHERIT = 'inherit',
+	INHERIT = 'inherit'
 }
 
-export function hasNativeContextMenu(configurationService: IConfigurationService, titleBarStyle?: TitlebarStyle): boolean {
+export function hasNativeContextMenu(
+	configurationService: IConfigurationService,
+	titleBarStyle?: TitlebarStyle
+): boolean {
 	if (isWeb) {
 		return false;
 	}
@@ -180,9 +188,15 @@ export function hasNativeMenu(configurationService: IConfigurationService, title
 export type MenuBarVisibility = 'classic' | 'visible' | 'toggle' | 'hidden' | 'compact';
 
 export function getMenuBarVisibility(configurationService: IConfigurationService): MenuBarVisibility {
-	const menuBarVisibility = configurationService.getValue<MenuBarVisibility | 'default'>(MenuSettings.MenuBarVisibility);
+	const menuBarVisibility = configurationService.getValue<MenuBarVisibility | 'default'>(
+		MenuSettings.MenuBarVisibility
+	);
 
-	if (menuBarVisibility === 'default' || (menuBarVisibility === 'compact' && hasNativeMenu(configurationService)) || (isMacintosh && isNative)) {
+	if (
+		menuBarVisibility === 'default' ||
+		(menuBarVisibility === 'compact' && hasNativeMenu(configurationService)) ||
+		(isMacintosh && isNative)
+	) {
 		return 'classic';
 	} else {
 		return menuBarVisibility;
@@ -223,12 +237,12 @@ export interface IDensitySettings {
 
 export const enum TitleBarSetting {
 	TITLE_BAR_STYLE = 'window.titleBarStyle',
-	CUSTOM_TITLE_BAR_VISIBILITY = 'window.customTitleBarVisibility',
+	CUSTOM_TITLE_BAR_VISIBILITY = 'window.customTitleBarVisibility'
 }
 
 export const enum TitlebarStyle {
 	NATIVE = 'native',
-	CUSTOM = 'custom',
+	CUSTOM = 'custom'
 }
 
 export const enum WindowControlsStyle {
@@ -240,7 +254,7 @@ export const enum WindowControlsStyle {
 export const enum CustomTitleBarVisibility {
 	AUTO = 'auto',
 	WINDOWED = 'windowed',
-	NEVER = 'never',
+	NEVER = 'never'
 }
 
 export function hasCustomTitlebar(configurationService: IConfigurationService, titleBarStyle?: TitlebarStyle): boolean {
@@ -331,9 +345,7 @@ export function useNativeFullScreen(configurationService: IConfigurationService)
 	return windowConfig.nativeFullScreen !== false;
 }
 
-
 export interface IPath<T = IEditorOptions> extends IPathData<T> {
-
 	/**
 	 * The file path to open within the instance
 	 */
@@ -341,7 +353,6 @@ export interface IPath<T = IEditorOptions> extends IPathData<T> {
 }
 
 export interface IPathData<T = IEditorOptions> {
-
 	/**
 	 * The file path to open within the instance
 	 */

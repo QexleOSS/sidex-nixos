@@ -11,11 +11,10 @@ import { ILifecycleService } from '../../../services/lifecycle/common/lifecycle.
 import { Promises } from '../../../../base/common/async.js';
 
 export class LogsDataCleaner extends Disposable {
-
 	constructor(
 		@IWorkbenchEnvironmentService private readonly environmentService: IWorkbenchEnvironmentService,
 		@IFileService private readonly fileService: IFileService,
-		@ILifecycleService private readonly lifecycleService: ILifecycleService,
+		@ILifecycleService private readonly lifecycleService: ILifecycleService
 	) {
 		super();
 		this.cleanUpOldLogsSoon();
@@ -33,11 +32,13 @@ export class LogsDataCleaner extends Disposable {
 				Promises.settled(toDelete.map(stat => this.fileService.del(stat.resource, { recursive: true })));
 			}
 		}, 10 * 1000);
-		this._register(this.lifecycleService.onWillShutdown(() => {
-			if (handle) {
-				clearTimeout(handle);
-				handle = undefined;
-			}
-		}));
+		this._register(
+			this.lifecycleService.onWillShutdown(() => {
+				if (handle) {
+					clearTimeout(handle);
+					handle = undefined;
+				}
+			})
+		);
 	}
 }

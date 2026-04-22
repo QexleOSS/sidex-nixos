@@ -84,7 +84,7 @@ export const enum TerminateResponseCode {
 	Success = 0,
 	Unknown = 1,
 	AccessDenied = 2,
-	ProcessNotFound = 3,
+	ProcessNotFound = 3
 }
 
 export interface ProcessItem {
@@ -110,7 +110,7 @@ export function sanitizeProcessEnvironment(env: IProcessEnvironment, ...preserve
 		/^ELECTRON_.+$/,
 		/^VSCODE_(?!(PORTABLE|SHELL_LOGIN|ENV_REPLACE|ENV_APPEND|ENV_PREPEND)).+$/,
 		/^SNAP(|_.*)$/,
-		/^GDK_PIXBUF_.+$/,
+		/^GDK_PIXBUF_.+$/
 	];
 	const envKeys = Object.keys(env);
 	envKeys

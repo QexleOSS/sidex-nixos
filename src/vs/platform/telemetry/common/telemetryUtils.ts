@@ -13,7 +13,17 @@ import { LoggerGroup } from '../../log/common/log.js';
 import { IProductService } from '../../product/common/productService.js';
 import { getRemoteName } from '../../remote/common/remoteHosts.js';
 import { verifyMicrosoftInternalDomain } from './commonProperties.js';
-import { ICustomEndpointTelemetryService, ITelemetryData, ITelemetryEndpoint, ITelemetryService, TelemetryConfiguration, TelemetryLevel, TELEMETRY_CRASH_REPORTER_SETTING_ID, TELEMETRY_OLD_SETTING_ID, TELEMETRY_SETTING_ID } from './telemetry.js';
+import {
+	ICustomEndpointTelemetryService,
+	ITelemetryData,
+	ITelemetryEndpoint,
+	ITelemetryService,
+	TelemetryConfiguration,
+	TelemetryLevel,
+	TELEMETRY_CRASH_REPORTER_SETTING_ID,
+	TELEMETRY_OLD_SETTING_ID,
+	TELEMETRY_SETTING_ID
+} from './telemetry.js';
 
 /**
  * A special class used to denoting a telemetry value which should not be clean.
@@ -23,7 +33,7 @@ import { ICustomEndpointTelemetryService, ITelemetryData, ITelemetryEndpoint, IT
 export class TelemetryTrustedValue<T> {
 	// This is merely used as an identifier as the instance will be lost during serialization over the exthost
 	public readonly isTrustedTelemetryValue = true;
-	constructor(public readonly value: T) { }
+	constructor(public readonly value: T) {}
 }
 
 export class NullTelemetryServiceShape implements ITelemetryService {
@@ -35,12 +45,12 @@ export class NullTelemetryServiceShape implements ITelemetryService {
 	readonly devDeviceId = 'someValue.devDeviceId';
 	readonly firstSessionDate = 'someValue.firstSessionDate';
 	readonly sendErrorTelemetry = false;
-	publicLog() { }
-	publicLog2() { }
-	publicLogError() { }
-	publicLogError2() { }
-	setExperimentProperty() { }
-	setCommonProperty() { }
+	publicLog() {}
+	publicLog2() {}
+	publicLogError() {}
+	publicLogError2() {}
+	setExperimentProperty() {}
+	setCommonProperty() {}
 }
 
 export const NullTelemetryService = new NullTelemetryServiceShape();
@@ -58,7 +68,7 @@ export class NullEndpointTelemetryService implements ICustomEndpointTelemetrySer
 }
 
 export const telemetryLogId = 'telemetry';
-export const TelemetryLogGroup: LoggerGroup = { id: telemetryLogId, name: localize('telemetryLogName', "Telemetry") };
+export const TelemetryLogGroup: LoggerGroup = { id: telemetryLogId, name: localize('telemetryLogName', 'Telemetry') };
 
 export interface ITelemetryAppender {
 	log(eventName: string, data: ITelemetryData): void;
@@ -66,7 +76,6 @@ export interface ITelemetryAppender {
 }
 
 export const NullAppender: ITelemetryAppender = { log: () => null, flush: () => Promise.resolve(undefined) };
-
 
 /* __GDPR__FRAGMENT__
 	"URIDescriptor" : {
@@ -167,7 +176,6 @@ export interface Measurements {
 }
 
 export function validateTelemetryData(data?: unknown): { properties: Properties; measurements: Measurements } {
-
 	const properties: Properties = {};
 	const measurements: Measurements = {};
 
@@ -181,10 +189,8 @@ export function validateTelemetryData(data?: unknown): { properties: Properties;
 
 		if (typeof value === 'number') {
 			measurements[prop] = value;
-
 		} else if (typeof value === 'boolean') {
 			measurements[prop] = value ? 1 : 0;
-
 		} else if (typeof value === 'string') {
 			if (value.length > 8192) {
 				console.warn(`Telemetry property: ${prop} has been trimmed to 8192, the original length is ${value.length}`);
@@ -192,7 +198,6 @@ export function validateTelemetryData(data?: unknown): { properties: Properties;
 			//enforce property value to be less than 8192 char, take the first 8192 char
 			// https://docs.microsoft.com/en-us/azure/azure-monitor/app/api-custom-events-metrics#limits
 			properties[prop] = value.substring(0, 8191);
-
 		} else if (typeof value !== 'undefined' && value !== null) {
 			properties[prop] = String(value);
 		}
@@ -241,11 +246,9 @@ function flatten(obj: unknown, result: Record<string, unknown>, order: number = 
 
 		if (Array.isArray(value)) {
 			result[index] = safeStringify(value);
-
 		} else if (value instanceof Date) {
 			// TODO unsure why this is here and not in _getData
 			result[index] = value.toISOString();
-
 		} else if (isObject(value)) {
 			if (order < 2) {
 				flatten(value, result, order + 1, index + '.');
@@ -291,7 +294,6 @@ export function getPiiPathsFromEnvironment(paths: IPathEnvironment): string[] {
  * @returns The cleaned stack
  */
 function anonymizeFilePaths(stack: string, cleanupPatterns: RegExp[]): string {
-
 	// Fast check to see if it is a file path to avoid doing unnecessary heavy regex work
 	if (!stack || (!stack.includes('/') && !stack.includes('\\'))) {
 		return stack;
@@ -341,7 +343,8 @@ function anonymizeFilePaths(stack: string, cleanupPatterns: RegExp[]): string {
 				// Check if node_modules appears in the path — preserve node_modules/... suffix
 				const nodeModulesMatch = nodeModulesRegex.exec(result[0]);
 				if (nodeModulesMatch) {
-					updatedStack += stack.substring(lastIndex, result.index) + '<REDACTED: user-file-path>/' + nodeModulesMatch[1];
+					updatedStack +=
+						stack.substring(lastIndex, result.index) + '<REDACTED: user-file-path>/' + nodeModulesMatch[1];
 				} else {
 					updatedStack += stack.substring(lastIndex, result.index) + '<REDACTED: user-file-path>';
 				}
@@ -373,8 +376,15 @@ function removePropertiesWithPossibleUserInfo(property: string): string {
 		{ label: 'JWT', regex: /eyJ[0eXAiOiJKV1Qi|hbGci|a-zA-Z0-9\-_]+\.[a-zA-Z0-9\-_]+\.[a-zA-Z0-9\-_]+/ },
 		{ label: 'Slack Token', regex: /xox[pbar]\-[A-Za-z0-9]/ },
 		{ label: 'GitHub Token', regex: /(gh[psuro]_[a-zA-Z0-9]{36}|github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59})/ },
-		{ label: 'Generic Secret', regex: /(key|token|sig|secret|signature|password|passwd|pwd|android:value)[^a-zA-Z0-9]/i },
-		{ label: 'CLI Credentials', regex: /((login|psexec|(certutil|psexec)\.exe).{1,50}(\s-u(ser(name)?)?\s+.{3,100})?\s-(admin|user|vm|root)?p(ass(word)?)?\s+["']?[^$\-\/\s]|(^|[\s\r\n\\])net(\.exe)?.{1,5}(user\s+|share\s+\/user:| user -? secrets ? set) \s + [^ $\s \/])/ },
+		{
+			label: 'Generic Secret',
+			regex: /(key|token|sig|secret|signature|password|passwd|pwd|android:value)[^a-zA-Z0-9]/i
+		},
+		{
+			label: 'CLI Credentials',
+			regex:
+				/((login|psexec|(certutil|psexec)\.exe).{1,50}(\s-u(ser(name)?)?\s+.{3,100})?\s-(admin|user|vm|root)?p(ass(word)?)?\s+["']?[^$\-\/\s]|(^|[\s\r\n\\])net(\.exe)?.{1,5}(user\s+|share\s+\/user:| user -? secrets ? set) \s + [^ $\s \/])/
+		},
 		{ label: 'Microsoft Entra ID', regex: /eyJ(?:0eXAiOiJKV1Qi|hbGci|[a-zA-Z0-9\-_]+\.[a-zA-Z0-9\-_]+\.)/ },
 		{ label: 'Email', regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/ }
 	];
@@ -389,7 +399,6 @@ function removePropertiesWithPossibleUserInfo(property: string): string {
 	return property;
 }
 
-
 /**
  * Does a best possible effort to clean a data object from any possible PII.
  * @param data The data object to clean
@@ -401,7 +410,6 @@ export function cleanData(data: ITelemetryData | undefined, cleanUpPatterns: Reg
 		return {};
 	}
 	return cloneAndChange(data, value => {
-
 		// If it's a trusted value it means it's okay to skip cleaning so we don't clean it
 		if (value instanceof TelemetryTrustedValue || Object.hasOwnProperty.call(value, 'isTrustedTelemetryValue')) {
 			return value.value;

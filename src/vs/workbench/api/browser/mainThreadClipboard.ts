@@ -10,12 +10,11 @@ import { ILogService } from '../../../platform/log/common/log.js';
 
 @extHostNamedCustomer(MainContext.MainThreadClipboard)
 export class MainThreadClipboard implements MainThreadClipboardShape {
-
 	constructor(
 		_context: IExtHostContext,
 		@IClipboardService private readonly _clipboardService: IClipboardService,
 		@ILogService private readonly _logService: ILogService
-	) { }
+	) {}
 
 	dispose(): void {
 		// nothing

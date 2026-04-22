@@ -20,7 +20,6 @@ import { IEditorService } from '../../../services/editor/common/editorService.js
  * An implementation of editor for diffing binary files like images or videos.
  */
 export class BinaryResourceDiffEditor extends SideBySideEditor {
-
 	static override readonly ID = BINARY_DIFF_EDITOR_ID;
 
 	constructor(
@@ -34,7 +33,17 @@ export class BinaryResourceDiffEditor extends SideBySideEditor {
 		@IEditorService editorService: IEditorService,
 		@IEditorGroupsService editorGroupService: IEditorGroupsService
 	) {
-		super(group, telemetryService, instantiationService, themeService, storageService, configurationService, textResourceConfigurationService, editorService, editorGroupService);
+		super(
+			group,
+			telemetryService,
+			instantiationService,
+			themeService,
+			storageService,
+			configurationService,
+			textResourceConfigurationService,
+			editorService,
+			editorGroupService
+		);
 	}
 
 	getMetadata(): string | undefined {
@@ -42,7 +51,7 @@ export class BinaryResourceDiffEditor extends SideBySideEditor {
 		const secondary = this.getSecondaryEditorPane();
 
 		if (primary instanceof BaseBinaryResourceEditor && secondary instanceof BaseBinaryResourceEditor) {
-			return localize('metadataDiff', "{0} ↔ {1}", secondary.getMetadata(), primary.getMetadata());
+			return localize('metadataDiff', '{0} ↔ {1}', secondary.getMetadata(), primary.getMetadata());
 		}
 
 		return undefined;

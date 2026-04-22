@@ -7,7 +7,7 @@ import { ChannelFactory, IChannelHandler, API, SimpleTypedRpcConnection, MakeSid
 
 export function registerDebugChannel<T extends { channelId: string } & API>(
 	channelId: T['channelId'],
-	createClient: () => T['client'],
+	createClient: () => T['client']
 ): SimpleTypedRpcConnection<MakeSideAsync<T['host']>> {
 	// eslint-disable-next-line local/code-no-any-casts
 	const g = globalThis as any as GlobalObj;
@@ -16,18 +16,18 @@ export function registerDebugChannel<T extends { channelId: string } & API>(
 	let curHost: IHost | undefined = undefined;
 
 	const { channel, handler } = createChannelFactoryFromDebugChannel({
-		sendNotification: (data) => {
+		sendNotification: data => {
 			if (curHost) {
 				curHost.sendNotification(data);
 			} else {
 				queuedNotifications.push(data);
 			}
-		},
+		}
 	});
 
 	let curClient: T['client'] | undefined = undefined;
 
-	(g.$$debugValueEditor_debugChannels ?? (g.$$debugValueEditor_debugChannels = {}))[channelId] = (host) => {
+	(g.$$debugValueEditor_debugChannels ?? (g.$$debugValueEditor_debugChannels = {}))[channelId] = host => {
 		curClient = createClient();
 		curHost = host;
 		for (const n of queuedNotifications) {
@@ -38,7 +38,9 @@ export function registerDebugChannel<T extends { channelId: string } & API>(
 	};
 
 	return SimpleTypedRpcConnection.createClient<T>(channel, () => {
-		if (!curClient) { throw new Error('Not supported'); }
+		if (!curClient) {
+			throw new Error('Not supported');
+		}
 		return curClient;
 	});
 }
@@ -51,9 +53,12 @@ interface IHost {
 	sendNotification: (data: unknown) => void;
 }
 
-function createChannelFactoryFromDebugChannel(host: IHost): { channel: ChannelFactory; handler: { handleRequest: (data: unknown) => unknown } } {
+function createChannelFactoryFromDebugChannel(host: IHost): {
+	channel: ChannelFactory;
+	handler: { handleRequest: (data: unknown) => unknown };
+} {
 	let h: IChannelHandler | undefined;
-	const channel: ChannelFactory = (handler) => {
+	const channel: ChannelFactory = handler => {
 		h = handler;
 		return {
 			sendNotification: data => {
@@ -61,7 +66,7 @@ function createChannelFactoryFromDebugChannel(host: IHost): { channel: ChannelFa
 			},
 			sendRequest: data => {
 				throw new Error('not supported');
-			},
+			}
 		};
 	};
 	return {
@@ -73,7 +78,7 @@ function createChannelFactoryFromDebugChannel(host: IHost): { channel: ChannelFa
 				} else {
 					return h?.handleRequest(data.data);
 				}
-			},
-		},
+			}
+		}
 	};
 }

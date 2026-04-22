@@ -7,9 +7,7 @@ import { createDecorator } from '../../instantiation/common/instantiation.js';
 
 export const IImageResizeService = createDecorator<IImageResizeService>('imageResizeMainService');
 
-
 export interface IImageResizeService {
-
 	readonly _serviceBrand: undefined;
 
 	/**

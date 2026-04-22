@@ -11,9 +11,17 @@ import { localize, localize2 } from '../../../../../nls.js';
 import { CONTEXT_ACCESSIBILITY_MODE_ENABLED } from '../../../../../platform/accessibility/common/accessibility.js';
 import { ContextKeyExpr, type ContextKeyExpression } from '../../../../../platform/contextkey/common/contextkey.js';
 import type { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
-import { KeybindingsRegistry, KeybindingWeight, type IKeybindings } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
+import {
+	KeybindingsRegistry,
+	KeybindingWeight,
+	type IKeybindings
+} from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { IQuickInputService } from '../../../../../platform/quickinput/common/quickInput.js';
-import { GeneralShellType, TerminalSettingId, WindowsShellType } from '../../../../../platform/terminal/common/terminal.js';
+import {
+	GeneralShellType,
+	TerminalSettingId,
+	WindowsShellType
+} from '../../../../../platform/terminal/common/terminal.js';
 import { IWorkspaceContextService } from '../../../../../platform/workspace/common/workspace.js';
 import { IConfigurationResolverService } from '../../../../services/configurationResolver/common/configurationResolver.js';
 import { IHistoryService } from '../../../../services/history/common/history.js';
@@ -22,7 +30,7 @@ import { registerTerminalAction } from '../../../terminal/browser/terminalAction
 import { TerminalContextKeys, TerminalContextKeyStrings } from '../../../terminal/common/terminalContextKey.js';
 
 export const enum TerminalSendSequenceCommandId {
-	SendSequence = 'workbench.action.terminal.sendSequence',
+	SendSequence = 'workbench.action.terminal.sendSequence'
 }
 
 function toOptionalString(obj: unknown): string | undefined {
@@ -48,15 +56,13 @@ export const terminalSendSequenceCommand = async (accessor: ServicesAccessor, ar
 			text = await quickInputService.input({
 				value: '',
 				placeHolder: 'Enter sequence to send (supports \\n, \\r, \\xAB)',
-				prompt: localize('workbench.action.terminal.sendSequence.prompt', "Enter sequence to send to the terminal"),
+				prompt: localize('workbench.action.terminal.sendSequence.prompt', 'Enter sequence to send to the terminal')
 			});
 			if (!text) {
 				return;
 			}
 			// Process escape sequences
-			let processedText = text
-				.replace(/\\n/g, '\n')
-				.replace(/\\r/g, '\r');
+			let processedText = text.replace(/\\n/g, '\n').replace(/\\r/g, '\r');
 
 			// Process hex escape sequences (\xNN)
 			while (true) {
@@ -64,44 +70,56 @@ export const terminalSendSequenceCommand = async (accessor: ServicesAccessor, ar
 				if (match === null || match.index === undefined || match.length < 2) {
 					break;
 				}
-				processedText = processedText.slice(0, match.index) + String.fromCharCode(parseInt(match[1], 16)) + processedText.slice(match.index + 4);
+				processedText =
+					processedText.slice(0, match.index) +
+					String.fromCharCode(parseInt(match[1], 16)) +
+					processedText.slice(match.index + 4);
 			}
 
 			text = processedText;
 		}
 
-		const activeWorkspaceRootUri = historyService.getLastActiveWorkspaceRoot(instance.hasRemoteAuthority ? Schemas.vscodeRemote : Schemas.file);
-		const lastActiveWorkspaceRoot = activeWorkspaceRootUri ? workspaceContextService.getWorkspaceFolder(activeWorkspaceRootUri) ?? undefined : undefined;
+		const activeWorkspaceRootUri = historyService.getLastActiveWorkspaceRoot(
+			instance.hasRemoteAuthority ? Schemas.vscodeRemote : Schemas.file
+		);
+		const lastActiveWorkspaceRoot = activeWorkspaceRootUri
+			? (workspaceContextService.getWorkspaceFolder(activeWorkspaceRootUri) ?? undefined)
+			: undefined;
 		const resolvedText = await configurationResolverService.resolveAsync(lastActiveWorkspaceRoot, text);
 		instance.sendText(resolvedText, false);
 	}
 };
 
-const sendSequenceString = localize2('sendSequence', "Send Sequence");
+const sendSequenceString = localize2('sendSequence', 'Send Sequence');
 registerTerminalAction({
 	id: TerminalSendSequenceCommandId.SendSequence,
 	title: sendSequenceString,
 	f1: true,
 	metadata: {
 		description: sendSequenceString.value,
-		args: [{
-			name: 'args',
-			schema: {
-				type: 'object',
-				required: ['text'],
-				properties: {
-					text: {
-						description: localize('sendSequence.text.desc', "The sequence of text to send to the terminal"),
-						type: 'string'
+		args: [
+			{
+				name: 'args',
+				schema: {
+					type: 'object',
+					required: ['text'],
+					properties: {
+						text: {
+							description: localize('sendSequence.text.desc', 'The sequence of text to send to the terminal'),
+							type: 'string'
+						}
 					}
-				},
+				}
 			}
-		}]
+		]
 	},
 	run: (c, accessor, args) => terminalSendSequenceCommand(accessor, args)
 });
 
-export function registerSendSequenceKeybinding(text: string, rule: { when?: ContextKeyExpression } & IKeybindings): void {
+export function registerSendSequenceKeybinding(
+	text: string,
+	rule: { when?: ContextKeyExpression } & IKeybindings
+): void {
 	KeybindingsRegistry.registerCommandAndKeybindingRule({
 		id: TerminalSendSequenceCommandId.SendSequence,
 		weight: KeybindingWeight.WorkbenchContrib,
@@ -115,8 +133,6 @@ export function registerSendSequenceKeybinding(text: string, rule: { when?: Cont
 	});
 }
 
-
-
 const enum Constants {
 	/** The text representation of `^<letter>` is `'A'.charCodeAt(0) + 1`. */
 	CtrlLetterOffset = 64
@@ -127,8 +143,13 @@ const enum Constants {
 // disabled in accessibility mode as PowerShell does not run PSReadLine when it detects a screen
 // reader. This works even when clipboard.readText is not supported.
 if (isWindows) {
-	registerSendSequenceKeybinding(String.fromCharCode('V'.charCodeAt(0) - Constants.CtrlLetterOffset), { // ctrl+v
-		when: ContextKeyExpr.and(TerminalContextKeys.focus, ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, GeneralShellType.PowerShell), CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()),
+	registerSendSequenceKeybinding(String.fromCharCode('V'.charCodeAt(0) - Constants.CtrlLetterOffset), {
+		// ctrl+v
+		when: ContextKeyExpr.and(
+			TerminalContextKeys.focus,
+			ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, GeneralShellType.PowerShell),
+			CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()
+		),
 		primary: KeyMod.CtrlCmd | KeyCode.KeyV
 	});
 }
@@ -136,27 +157,60 @@ if (isWindows) {
 // Map certain keybindings in pwsh to unused keys which get handled by PSReadLine handlers in the
 // shell integration script. This allows keystrokes that cannot be sent via VT sequences to work.
 // See https://github.com/microsoft/terminal/issues/879#issuecomment-497775007
-registerSendSequenceKeybinding('\x1b[24~a', { // F12,a -> ctrl+space (MenuComplete)
-	when: ContextKeyExpr.and(TerminalContextKeys.focus, ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, GeneralShellType.PowerShell), TerminalContextKeys.terminalShellIntegrationEnabled, ContextKeyExpr.equals(`config.${TerminalSettingId.EnableWin32InputMode}`, true), CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()),
+registerSendSequenceKeybinding('\x1b[24~a', {
+	// F12,a -> ctrl+space (MenuComplete)
+	when: ContextKeyExpr.and(
+		TerminalContextKeys.focus,
+		ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, GeneralShellType.PowerShell),
+		TerminalContextKeys.terminalShellIntegrationEnabled,
+		ContextKeyExpr.equals(`config.${TerminalSettingId.EnableWin32InputMode}`, true),
+		CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()
+	),
 	primary: KeyMod.CtrlCmd | KeyCode.Space,
 	mac: { primary: KeyMod.WinCtrl | KeyCode.Space }
 });
-registerSendSequenceKeybinding('\x1b[24~b', { // F12,b -> alt+space (SetMark)
-	when: ContextKeyExpr.and(TerminalContextKeys.focus, ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, GeneralShellType.PowerShell), TerminalContextKeys.terminalShellIntegrationEnabled, ContextKeyExpr.equals(`config.${TerminalSettingId.EnableWin32InputMode}`, true), CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()),
+registerSendSequenceKeybinding('\x1b[24~b', {
+	// F12,b -> alt+space (SetMark)
+	when: ContextKeyExpr.and(
+		TerminalContextKeys.focus,
+		ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, GeneralShellType.PowerShell),
+		TerminalContextKeys.terminalShellIntegrationEnabled,
+		ContextKeyExpr.equals(`config.${TerminalSettingId.EnableWin32InputMode}`, true),
+		CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()
+	),
 	primary: KeyMod.Alt | KeyCode.Space
 });
-registerSendSequenceKeybinding('\x1b[24~c', { // F12,c -> shift+enter (AddLine)
-	when: ContextKeyExpr.and(TerminalContextKeys.focus, ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, GeneralShellType.PowerShell), TerminalContextKeys.terminalShellIntegrationEnabled, ContextKeyExpr.equals(`config.${TerminalSettingId.EnableWin32InputMode}`, true), CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()),
+registerSendSequenceKeybinding('\x1b[24~c', {
+	// F12,c -> shift+enter (AddLine)
+	when: ContextKeyExpr.and(
+		TerminalContextKeys.focus,
+		ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, GeneralShellType.PowerShell),
+		TerminalContextKeys.terminalShellIntegrationEnabled,
+		ContextKeyExpr.equals(`config.${TerminalSettingId.EnableWin32InputMode}`, true),
+		CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()
+	),
 	primary: KeyMod.Shift | KeyCode.Enter
 });
-registerSendSequenceKeybinding('\x1b[24~d', { // F12,d -> shift+end (SelectLine) - HACK: \x1b[1;2F is supposed to work but it doesn't
-	when: ContextKeyExpr.and(TerminalContextKeys.focus, ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, GeneralShellType.PowerShell), TerminalContextKeys.terminalShellIntegrationEnabled, ContextKeyExpr.equals(`config.${TerminalSettingId.EnableWin32InputMode}`, true), CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()),
+registerSendSequenceKeybinding('\x1b[24~d', {
+	// F12,d -> shift+end (SelectLine) - HACK: \x1b[1;2F is supposed to work but it doesn't
+	when: ContextKeyExpr.and(
+		TerminalContextKeys.focus,
+		ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, GeneralShellType.PowerShell),
+		TerminalContextKeys.terminalShellIntegrationEnabled,
+		ContextKeyExpr.equals(`config.${TerminalSettingId.EnableWin32InputMode}`, true),
+		CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()
+	),
 	mac: { primary: KeyMod.Shift | KeyMod.CtrlCmd | KeyCode.RightArrow }
 });
 
 // Always on pwsh keybindings
-registerSendSequenceKeybinding('\x1b[1;2H', { // Shift+home
-	when: ContextKeyExpr.and(TerminalContextKeys.focus, ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, GeneralShellType.PowerShell), ContextKeyExpr.equals(`config.${TerminalSettingId.EnableWin32InputMode}`, true)),
+registerSendSequenceKeybinding('\x1b[1;2H', {
+	// Shift+home
+	when: ContextKeyExpr.and(
+		TerminalContextKeys.focus,
+		ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, GeneralShellType.PowerShell),
+		ContextKeyExpr.equals(`config.${TerminalSettingId.EnableWin32InputMode}`, true)
+	),
 	mac: { primary: KeyMod.Shift | KeyMod.CtrlCmd | KeyCode.LeftArrow }
 });
 
@@ -197,7 +251,8 @@ registerSendSequenceKeybinding('\x07', {
 
 // send ctrl+c to the iPad when the terminal is focused and ctrl+c is pressed to kill the process (work around for #114009)
 if (isIOS) {
-	registerSendSequenceKeybinding(String.fromCharCode('C'.charCodeAt(0) - Constants.CtrlLetterOffset), { // ctrl+c
+	registerSendSequenceKeybinding(String.fromCharCode('C'.charCodeAt(0) - Constants.CtrlLetterOffset), {
+		// ctrl+c
 		when: ContextKeyExpr.and(TerminalContextKeys.focus),
 		primary: KeyMod.WinCtrl | KeyCode.KeyC
 	});
@@ -212,8 +267,11 @@ if (isWindows) {
 	// Delete word left: ctrl+h
 	// Windows cmd.exe requires ^H to delete full word left
 	registerSendSequenceKeybinding(String.fromCharCode('H'.charCodeAt(0) - Constants.CtrlLetterOffset), {
-		when: ContextKeyExpr.and(TerminalContextKeys.focus, ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, WindowsShellType.CommandPrompt)),
-		primary: KeyMod.CtrlCmd | KeyCode.Backspace,
+		when: ContextKeyExpr.and(
+			TerminalContextKeys.focus,
+			ContextKeyExpr.equals(TerminalContextKeyStrings.ShellType, WindowsShellType.CommandPrompt)
+		),
+		primary: KeyMod.CtrlCmd | KeyCode.Backspace
 	});
 }
 // Delete word right: alt+d [27, 100]

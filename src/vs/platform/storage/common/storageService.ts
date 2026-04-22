@@ -11,12 +11,15 @@ import { IStorage, Storage } from '../../../base/parts/storage/common/storage.js
 import { IEnvironmentService } from '../../environment/common/environment.js';
 import { IRemoteService } from '../../ipc/common/services.js';
 import { AbstractStorageService, isProfileUsingDefaultStorage, StorageScope, WillSaveStateReason } from './storage.js';
-import { ApplicationStorageDatabaseClient, ProfileStorageDatabaseClient, WorkspaceStorageDatabaseClient } from './storageIpc.js';
+import {
+	ApplicationStorageDatabaseClient,
+	ProfileStorageDatabaseClient,
+	WorkspaceStorageDatabaseClient
+} from './storageIpc.js';
 import { isUserDataProfile, IUserDataProfile } from '../../userDataProfile/common/userDataProfile.js';
 import { IAnyWorkspaceIdentifier } from '../../workspace/common/workspace.js';
 
 export class RemoteStorageService extends AbstractStorageService {
-
 	private readonly applicationStorageProfile: IUserDataProfile;
 	private readonly applicationStorage: IStorage;
 
@@ -47,7 +50,9 @@ export class RemoteStorageService extends AbstractStorageService {
 	}
 
 	private createApplicationStorage(): IStorage {
-		const storageDataBaseClient = this._register(new ApplicationStorageDatabaseClient(this.remoteService.getChannel('storage')));
+		const storageDataBaseClient = this._register(
+			new ApplicationStorageDatabaseClient(this.remoteService.getChannel('storage'))
+		);
 		const applicationStorage = this._register(new Storage(storageDataBaseClient));
 
 		this._register(applicationStorage.onDidChangeStorage(e => this.emitDidChangeValue(StorageScope.APPLICATION, e)));
@@ -56,7 +61,6 @@ export class RemoteStorageService extends AbstractStorageService {
 	}
 
 	private createProfileStorage(profile: IUserDataProfile): IStorage {
-
 		// First clear any previously associated disposables
 		this.profileStorageDisposables.clear();
 
@@ -65,7 +69,6 @@ export class RemoteStorageService extends AbstractStorageService {
 
 		let profileStorage: IStorage;
 		if (isProfileUsingDefaultStorage(profile)) {
-
 			// If we are using default profile storage, the profile storage is
 			// actually the same as application storage. As such we
 			// avoid creating the storage library a second time on
@@ -73,11 +76,15 @@ export class RemoteStorageService extends AbstractStorageService {
 
 			profileStorage = this.applicationStorage;
 		} else {
-			const storageDataBaseClient = this.profileStorageDisposables.add(new ProfileStorageDatabaseClient(this.remoteService.getChannel('storage'), profile));
+			const storageDataBaseClient = this.profileStorageDisposables.add(
+				new ProfileStorageDatabaseClient(this.remoteService.getChannel('storage'), profile)
+			);
 			profileStorage = this.profileStorageDisposables.add(new Storage(storageDataBaseClient));
 		}
 
-		this.profileStorageDisposables.add(profileStorage.onDidChangeStorage(e => this.emitDidChangeValue(StorageScope.PROFILE, e)));
+		this.profileStorageDisposables.add(
+			profileStorage.onDidChangeStorage(e => this.emitDidChangeValue(StorageScope.PROFILE, e))
+		);
 
 		return profileStorage;
 	}
@@ -85,7 +92,6 @@ export class RemoteStorageService extends AbstractStorageService {
 	private createWorkspaceStorage(workspace: IAnyWorkspaceIdentifier): IStorage;
 	private createWorkspaceStorage(workspace: IAnyWorkspaceIdentifier | undefined): IStorage | undefined;
 	private createWorkspaceStorage(workspace: IAnyWorkspaceIdentifier | undefined): IStorage | undefined {
-
 		// First clear any previously associated disposables
 		this.workspaceStorageDisposables.clear();
 
@@ -94,17 +100,20 @@ export class RemoteStorageService extends AbstractStorageService {
 
 		let workspaceStorage: IStorage | undefined = undefined;
 		if (workspace) {
-			const storageDataBaseClient = this.workspaceStorageDisposables.add(new WorkspaceStorageDatabaseClient(this.remoteService.getChannel('storage'), workspace));
+			const storageDataBaseClient = this.workspaceStorageDisposables.add(
+				new WorkspaceStorageDatabaseClient(this.remoteService.getChannel('storage'), workspace)
+			);
 			workspaceStorage = this.workspaceStorageDisposables.add(new Storage(storageDataBaseClient));
 
-			this.workspaceStorageDisposables.add(workspaceStorage.onDidChangeStorage(e => this.emitDidChangeValue(StorageScope.WORKSPACE, e)));
+			this.workspaceStorageDisposables.add(
+				workspaceStorage.onDidChangeStorage(e => this.emitDidChangeValue(StorageScope.WORKSPACE, e))
+			);
 		}
 
 		return workspaceStorage;
 	}
 
 	protected async doInitialize(): Promise<void> {
-
 		// Init all storage locations
 		await Promises.settled([
 			this.applicationStorage.init(),
@@ -131,12 +140,13 @@ export class RemoteStorageService extends AbstractStorageService {
 			case StorageScope.PROFILE:
 				return this.profileStorageProfile?.globalStorageHome.with({ scheme: Schemas.file }).fsPath;
 			default:
-				return this.workspaceStorageId ? `${joinPath(this.environmentService.workspaceStorageHome, this.workspaceStorageId, 'state.vscdb').with({ scheme: Schemas.file }).fsPath}` : undefined;
+				return this.workspaceStorageId
+					? `${joinPath(this.environmentService.workspaceStorageHome, this.workspaceStorageId, 'state.vscdb').with({ scheme: Schemas.file }).fsPath}`
+					: undefined;
 		}
 	}
 
 	async close(): Promise<void> {
-
 		// Stop periodic scheduler and idle runner as we now collect state normally
 		this.stopFlushWhenIdle();
 

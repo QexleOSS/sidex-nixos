@@ -7,7 +7,18 @@ import { Emitter, Event } from '../../../../base/common/event.js';
 import * as strings from '../../../../base/common/strings.js';
 import { Position } from '../../core/position.js';
 import { Range } from '../../core/range.js';
-import { ApplyEditsResult, EndOfLinePreference, FindMatch, IInternalModelContentChange, ISingleEditOperationIdentifier, ITextBuffer, ITextSnapshot, ValidAnnotatedEditOperation, IValidEditOperation, SearchData } from '../../model.js';
+import {
+	ApplyEditsResult,
+	EndOfLinePreference,
+	FindMatch,
+	IInternalModelContentChange,
+	ISingleEditOperationIdentifier,
+	ITextBuffer,
+	ITextSnapshot,
+	ValidAnnotatedEditOperation,
+	IValidEditOperation,
+	SearchData
+} from '../../model.js';
 import { PieceTreeBase, StringBuffer } from './pieceTreeBase.js';
 import { countEOL, StringEOL } from '../../core/misc/eolCounter.js';
 import { TextChange } from '../../core/textChange.js';
@@ -39,9 +50,19 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 	private _mightContainNonBasicASCII: boolean;
 
 	private readonly _onDidChangeContent: Emitter<void> = this._register(new Emitter<void>());
-	public get onDidChangeContent(): Event<void> { return this._onDidChangeContent.event; }
+	public get onDidChangeContent(): Event<void> {
+		return this._onDidChangeContent.event;
+	}
 
-	constructor(chunks: StringBuffer[], BOM: string, eol: '\r\n' | '\n', containsRTL: boolean, containsUnusualLineTerminators: boolean, isBasicASCII: boolean, eolNormalized: boolean) {
+	constructor(
+		chunks: StringBuffer[],
+		BOM: string,
+		eol: '\r\n' | '\n',
+		containsRTL: boolean,
+		containsUnusualLineTerminators: boolean,
+		isBasicASCII: boolean,
+		eolNormalized: boolean
+	) {
 		super();
 		this._BOM = BOM;
 		this._mightContainNonBasicASCII = !isBasicASCII;
@@ -116,7 +137,7 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 		}
 
 		if (range.startLineNumber === range.endLineNumber) {
-			return (range.endColumn - range.startColumn);
+			return range.endColumn - range.startColumn;
 		}
 
 		const startOffset = this.getOffsetAt(range.startLineNumber, range.startColumn);
@@ -146,8 +167,8 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 			const toLineNumber = range.endLineNumber;
 			for (let lineNumber = fromLineNumber; lineNumber <= toLineNumber; lineNumber++) {
 				const lineContent = this.getLineContent(lineNumber);
-				const fromOffset = (lineNumber === fromLineNumber ? range.startColumn - 1 : 0);
-				const toOffset = (lineNumber === toLineNumber ? range.endColumn - 1 : lineContent.length);
+				const fromOffset = lineNumber === fromLineNumber ? range.startColumn - 1 : 0;
+				const toOffset = lineNumber === toLineNumber ? range.endColumn - 1 : lineContent.length;
 
 				for (let offset = fromOffset; offset < toOffset; offset++) {
 					if (strings.isHighSurrogate(lineContent.charCodeAt(offset))) {
@@ -240,7 +261,11 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 		this._pieceTree.setEOL(newEOL);
 	}
 
-	public applyEdits(rawOperations: ValidAnnotatedEditOperation[], recordTrimAutoWhitespace: boolean, computeUndoEdits: boolean): ApplyEditsResult {
+	public applyEdits(
+		rawOperations: ValidAnnotatedEditOperation[],
+		recordTrimAutoWhitespace: boolean,
+		computeUndoEdits: boolean
+	): ApplyEditsResult {
 		let mightContainRTL = this._mightContainRTL;
 		let mightContainUnusualLineTerminators = this._mightContainUnusualLineTerminators;
 		let mightContainNonBasicASCII = this._mightContainNonBasicASCII;
@@ -278,7 +303,7 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 				[eolCount, firstLineLength, lastLineLength, strEOL] = countEOL(op.text);
 
 				const bufferEOL = this.getEOL();
-				const expectedStrEOL = (bufferEOL === '\r\n' ? StringEOL.CRLF : StringEOL.LF);
+				const expectedStrEOL = bufferEOL === '\r\n' ? StringEOL.CRLF : StringEOL.LF;
 				if (strEOL === StringEOL.Unknown || strEOL === expectedStrEOL) {
 					validText = op.text;
 				} else {
@@ -323,7 +348,8 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 		}
 
 		// Delta encode operations
-		const reverseRanges = (computeUndoEdits || recordTrimAutoWhitespace ? PieceTreeTextBuffer._getInverseEditRanges(operations) : []);
+		const reverseRanges =
+			computeUndoEdits || recordTrimAutoWhitespace ? PieceTreeTextBuffer._getInverseEditRanges(operations) : [];
 		const newTrimAutoWhitespaceCandidates: { lineNumber: number; oldContent: string }[] = [];
 		if (recordTrimAutoWhitespace) {
 			for (let i = 0; i < operations.length; i++) {
@@ -348,7 +374,6 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 
 		let reverseOperations: IReverseSingleEditOperation[] | null = null;
 		if (computeUndoEdits) {
-
 			let reverseRangeDeltaOffset = 0;
 			reverseOperations = [];
 			for (let i = 0; i < operations.length; i++) {
@@ -356,7 +381,7 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 				const reverseRange = reverseRanges[i];
 				const bufferText = this.getValueInRange(op.range);
 				const reverseRangeOffset = op.rangeOffset + reverseRangeDeltaOffset;
-				reverseRangeDeltaOffset += (op.text.length - bufferText.length);
+				reverseRangeDeltaOffset += op.text.length - bufferText.length;
 
 				reverseOperations[i] = {
 					sortIndex: op.sortIndex,
@@ -372,7 +397,6 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 				reverseOperations.sort((a, b) => a.sortIndex - b.sortIndex);
 			}
 		}
-
 
 		this._mightContainRTL = mightContainRTL;
 		this._mightContainUnusualLineTerminators = mightContainUnusualLineTerminators;
@@ -396,7 +420,11 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 				const prevContent = newTrimAutoWhitespaceCandidates[i].oldContent;
 				const lineContent = this.getLineContent(lineNumber);
 
-				if (lineContent.length === 0 || lineContent === prevContent || strings.firstNonWhitespaceIndex(lineContent) !== -1) {
+				if (
+					lineContent.length === 0 ||
+					lineContent === prevContent ||
+					strings.firstNonWhitespaceIndex(lineContent) !== -1
+				) {
 					continue;
 				}
 
@@ -406,11 +434,7 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 
 		this._onDidChangeContent.fire();
 
-		return new ApplyEditsResult(
-			reverseOperations,
-			contentChanges,
-			trimAutoWhitespaceLineNumbers
-		);
+		return new ApplyEditsResult(reverseOperations, contentChanges, trimAutoWhitespaceLineNumbers);
 	}
 
 	/**
@@ -435,7 +459,12 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 		let forceMoveMarkers = false;
 		const firstEditRange = operations[0].range;
 		const lastEditRange = operations[operations.length - 1].range;
-		const entireEditRange = new Range(firstEditRange.startLineNumber, firstEditRange.startColumn, lastEditRange.endLineNumber, lastEditRange.endColumn);
+		const entireEditRange = new Range(
+			firstEditRange.startLineNumber,
+			firstEditRange.startColumn,
+			lastEditRange.endLineNumber,
+			lastEditRange.endColumn
+		);
 		let lastEndLineNumber = firstEditRange.startLineNumber;
 		let lastEndColumn = firstEditRange.startColumn;
 		const result: string[] = [];
@@ -447,7 +476,9 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 			forceMoveMarkers = forceMoveMarkers || operation.forceMoveMarkers;
 
 			// (1) -- Push old text
-			result.push(this.getValueInRange(new Range(lastEndLineNumber, lastEndColumn, range.startLineNumber, range.startColumn)));
+			result.push(
+				this.getValueInRange(new Range(lastEndLineNumber, lastEndColumn, range.startLineNumber, range.startColumn))
+			);
 
 			// (2) -- Push new text
 			if (operation.text.length > 0) {
@@ -499,7 +530,6 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 				// replacement
 				this._pieceTree.delete(op.rangeOffset, op.rangeLength);
 				this._pieceTree.insert(op.rangeOffset, op.text, true);
-
 			} else {
 				// deletion
 				this._pieceTree.delete(op.rangeOffset, op.rangeLength);
@@ -517,7 +547,12 @@ export class PieceTreeTextBuffer extends Disposable implements ITextBuffer {
 		return contentChanges;
 	}
 
-	findMatchesLineByLine(searchRange: Range, searchData: SearchData, captureMatches: boolean, limitResultCount: number): FindMatch[] {
+	findMatchesLineByLine(
+		searchRange: Range,
+		searchData: SearchData,
+		captureMatches: boolean,
+		limitResultCount: number
+	): FindMatch[] {
 		return this._pieceTree.findMatchesLineByLine(searchRange, searchData, captureMatches, limitResultCount);
 	}
 

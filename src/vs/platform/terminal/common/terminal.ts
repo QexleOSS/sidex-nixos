@@ -7,7 +7,12 @@ import { Event } from '../../../base/common/event.js';
 import { IProcessEnvironment, OperatingSystem } from '../../../base/common/platform.js';
 import { URI, UriComponents } from '../../../base/common/uri.js';
 import { createDecorator } from '../../instantiation/common/instantiation.js';
-import { IPtyHostProcessReplayEvent, ISerializedCommandDetectionCapability, ITerminalCapabilityStore, type ITerminalCommand } from './capabilities/capabilities.js';
+import {
+	IPtyHostProcessReplayEvent,
+	ISerializedCommandDetectionCapability,
+	ITerminalCapabilityStore,
+	type ITerminalCommand
+} from './capabilities/capabilities.js';
 import { IGetTerminalLayoutInfoArgs, IProcessDetails, ISetTerminalLayoutInfoArgs } from './terminalProcess.js';
 import { ThemeIcon } from '../../../base/common/themables.js';
 import { ISerializableEnvironmentVariableCollections } from './environmentVariable.js';
@@ -140,13 +145,12 @@ export const enum PosixShellType {
 	Sh = 'sh',
 	Csh = 'csh',
 	Ksh = 'ksh',
-	Zsh = 'zsh',
-
+	Zsh = 'zsh'
 }
 export const enum WindowsShellType {
 	CommandPrompt = 'cmd',
 	Wsl = 'wsl',
-	GitBash = 'gitbash',
+	GitBash = 'gitbash'
 }
 
 export const enum GeneralShellType {
@@ -155,7 +159,7 @@ export const enum GeneralShellType {
 	Julia = 'julia',
 	NuShell = 'nu',
 	Node = 'node',
-	Xonsh = 'xonsh',
+	Xonsh = 'xonsh'
 }
 export type TerminalShellType = PosixShellType | WindowsShellType | GeneralShellType | undefined;
 
@@ -256,7 +260,7 @@ export const enum ProcessPropertyType {
 	OverrideDimensions = 'overrideDimensions',
 	FailedShellIntegrationActivation = 'failedShellIntegrationActivation',
 	UsedShellIntegrationInjection = 'usedShellIntegrationInjection',
-	ShellIntegrationInjectionFailureReason = 'shellIntegrationInjectionFailureReason',
+	ShellIntegrationInjectionFailureReason = 'shellIntegrationInjectionFailureReason'
 }
 
 export interface IProcessProperty<T extends ProcessPropertyType = ProcessPropertyType> {
@@ -296,7 +300,7 @@ export interface ITerminalLaunchResult {
 
 /**
  * A service that communicates with a pty host.
-*/
+ */
 export interface IPtyService {
 	readonly _serviceBrand: undefined;
 
@@ -371,7 +375,11 @@ export interface IPtyService {
 	 * Revives a workspaces terminal processes, these can then be reconnected to using the normal
 	 * flow for restoring terminals after reloading.
 	 */
-	reviveTerminalProcesses(workspaceId: string, state: ISerializedTerminalState[], dateTimeFormatLocate: string): Promise<void>;
+	reviveTerminalProcesses(
+		workspaceId: string,
+		state: ISerializedTerminalState[],
+		dateTimeFormatLocate: string
+	): Promise<void>;
 	refreshProperty<T extends ProcessPropertyType>(id: number, property: T): Promise<IProcessPropertyMap[T]>;
 	updateProperty<T extends ProcessPropertyType>(id: number, property: T, value: IProcessPropertyMap[T]): Promise<void>;
 
@@ -391,7 +399,13 @@ export interface IPtyServiceContribution {
 	handleProcessReady(persistentProcessId: number, process: ITerminalChildProcess): void;
 	handleProcessDispose(persistentProcessId: number): void;
 	handleProcessInput(persistentProcessId: number, data: string): void;
-	handleProcessResize(persistentProcessId: number, cols: number, rows: number, pixelWidth?: number, pixelHeight?: number): void;
+	handleProcessResize(
+		persistentProcessId: number,
+		cols: number,
+		rows: number,
+		pixelWidth?: number,
+		pixelHeight?: number
+	): void;
 }
 
 export interface IPtyHostController {
@@ -403,15 +417,19 @@ export interface IPtyHostController {
 
 	restartPtyHost(): Promise<void>;
 	acceptPtyHostResolvedVariables(requestId: number, resolved: string[]): Promise<void>;
-	getProfiles(workspaceId: string, profiles: unknown, defaultProfile: unknown, includeDetectedProfiles?: boolean): Promise<ITerminalProfile[]>;
+	getProfiles(
+		workspaceId: string,
+		profiles: unknown,
+		defaultProfile: unknown,
+		includeDetectedProfiles?: boolean
+	): Promise<ITerminalProfile[]>;
 }
 
 /**
  * A service that communicates with a pty host controller (eg. main or server
  * process) and is able to launch and forward requests to the pty host.
-*/
-export interface IPtyHostService extends IPtyService, IPtyHostController {
-}
+ */
+export interface IPtyHostService extends IPtyService, IPtyHostController {}
 
 export interface IPtyHostLatencyMeasurement {
 	label: string;
@@ -482,7 +500,6 @@ export enum HeartbeatConstants {
 export interface IHeartbeatService {
 	readonly onBeat: Event<void>;
 }
-
 
 export interface IShellLaunchConfig {
 	/**
@@ -851,12 +868,12 @@ export interface IReconnectConstants {
 export const enum LocalReconnectConstants {
 	/**
 	 * If there is no reconnection within this time-frame, consider the connection permanently closed...
-	*/
+	 */
 	GraceTime = 60000, // 60 seconds
 	/**
 	 * Maximal grace time between the first and the last reconnection...
-	*/
-	ShortGraceTime = 6000, // 6 seconds
+	 */
+	ShortGraceTime = 6000 // 6 seconds
 }
 
 export const enum FlowControlConstants {
@@ -1015,7 +1032,6 @@ export const enum ShellIntegrationStatus {
 	VSCode
 }
 
-
 export const enum ShellIntegrationInjectionFailureReason {
 	/**
 	 * The setting is disabled.
@@ -1048,7 +1064,6 @@ export const enum ShellIntegrationInjectionFailureReason {
 	 */
 	UnsupportedShell = 'unsupportedShell',
 
-
 	/**
 	 * For zsh, we failed to set the sticky bit on the shell integration script folder.
 	 */
@@ -1057,7 +1072,7 @@ export const enum ShellIntegrationInjectionFailureReason {
 	/**
 	 * For zsh, we failed to create a temp directory for the shell integration script.
 	 */
-	FailedToCreateTmpDir = 'failedToCreateTmpDir',
+	FailedToCreateTmpDir = 'failedToCreateTmpDir'
 }
 
 export const enum ShellIntegrationTimeoutOverride {
@@ -1069,7 +1084,7 @@ export enum TerminalExitReason {
 	Shutdown = 1,
 	Process = 2,
 	User = 3,
-	Extension = 4,
+	Extension = 4
 }
 
 export interface ITerminalOutputMatch {
@@ -1155,7 +1170,11 @@ export interface ITerminalBackend extends ITerminalBackendPtyServiceContribution
 	listProcesses(): Promise<IProcessDetails[]>;
 	getLatency(): Promise<IPtyHostLatencyMeasurement[]>;
 	getDefaultSystemShell(osOverride?: OperatingSystem): Promise<string>;
-	getProfiles(profiles: unknown, defaultProfile: unknown, includeDetectedProfiles?: boolean): Promise<ITerminalProfile[]>;
+	getProfiles(
+		profiles: unknown,
+		defaultProfile: unknown,
+		includeDetectedProfiles?: boolean
+	): Promise<ITerminalProfile[]>;
 	getWslPath(original: string, direction: 'unix-to-win' | 'win-to-unix'): Promise<string>;
 	getEnvironment(): Promise<IProcessEnvironment>;
 	getShellEnvironment(): Promise<IProcessEnvironment | undefined>;
@@ -1213,7 +1232,9 @@ export interface ITerminalBackendRegistry {
 class TerminalBackendRegistry implements ITerminalBackendRegistry {
 	private readonly _backends = new Map<string, ITerminalBackend>();
 
-	get backends(): ReadonlyMap<string, ITerminalBackend> { return this._backends; }
+	get backends(): ReadonlyMap<string, ITerminalBackend> {
+		return this._backends;
+	}
 
 	registerTerminalBackend(backend: ITerminalBackend): void {
 		const key = this._sanitizeRemoteAuthority(backend.remoteAuthority);
@@ -1241,7 +1262,7 @@ export const ILocalPtyService = createDecorator<ILocalPtyService>('localPtyServi
  *
  * **This service should only be used within the terminal component.**
  */
-export interface ILocalPtyService extends IPtyHostService { }
+export interface ILocalPtyService extends IPtyHostService {}
 
 export const ITerminalLogService = createDecorator<ITerminalLogService>('terminalLogService');
 export interface ITerminalLogService extends ILogService {

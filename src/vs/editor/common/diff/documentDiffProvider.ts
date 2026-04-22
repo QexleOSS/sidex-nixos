@@ -17,7 +17,12 @@ export interface IDocumentDiffProvider {
 	/**
 	 * Computes the diff between the text models `original` and `modified`.
 	 */
-	computeDiff(original: ITextModel, modified: ITextModel, options: IDocumentDiffProviderOptions, cancellationToken: CancellationToken): Promise<IDocumentDiff>;
+	computeDiff(
+		original: ITextModel,
+		modified: ITextModel,
+		options: IDocumentDiffProviderOptions,
+		cancellationToken: CancellationToken
+	): Promise<IDocumentDiff>;
 
 	/**
 	 * Is fired when settings of the diff algorithm change that could alter the result of the diffing computation.
@@ -75,7 +80,6 @@ export interface IDocumentDiff {
 	 */
 	readonly moves: readonly MovedText[];
 }
-
 
 export const nullDocumentDiff: IDocumentDiff = Object.freeze({
 	identical: true,

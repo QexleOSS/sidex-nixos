@@ -16,20 +16,16 @@ import { Range } from '../../../../../editor/common/core/range.js';
  */
 
 export class RangeHighlightDecorations implements IDisposable {
-
 	private _decorationId: string | null = null;
 	private _model: ITextModel | null = null;
 	private readonly _modelDisposables = new DisposableStore();
 
-	constructor(
-		@IModelService private readonly _modelService: IModelService
-	) {
-	}
+	constructor(@IModelService private readonly _modelService: IModelService) {}
 
 	removeHighlightRange() {
 		if (this._model && this._decorationId) {
 			const decorationId = this._decorationId;
-			this._model.changeDecorations((accessor) => {
+			this._model.changeDecorations(accessor => {
 				accessor.removeDecoration(decorationId);
 			});
 		}
@@ -51,7 +47,7 @@ export class RangeHighlightDecorations implements IDisposable {
 
 	private doHighlightRange(model: ITextModel, range: Range) {
 		this.removeHighlightRange();
-		model.changeDecorations((accessor) => {
+		model.changeDecorations(accessor => {
 			this._decorationId = accessor.addDecoration(range, RangeHighlightDecorations._RANGE_HIGHLIGHT_DECORATION);
 		});
 		this.setModel(model);
@@ -61,16 +57,20 @@ export class RangeHighlightDecorations implements IDisposable {
 		if (this._model !== model) {
 			this.clearModelListeners();
 			this._model = model;
-			this._modelDisposables.add(this._model.onDidChangeDecorations((e) => {
-				this.clearModelListeners();
-				this.removeHighlightRange();
-				this._model = null;
-			}));
-			this._modelDisposables.add(this._model.onWillDispose(() => {
-				this.clearModelListeners();
-				this.removeHighlightRange();
-				this._model = null;
-			}));
+			this._modelDisposables.add(
+				this._model.onDidChangeDecorations(e => {
+					this.clearModelListeners();
+					this.removeHighlightRange();
+					this._model = null;
+				})
+			);
+			this._modelDisposables.add(
+				this._model.onWillDispose(() => {
+					this.clearModelListeners();
+					this.removeHighlightRange();
+					this._model = null;
+				})
+			);
 		}
 	}
 

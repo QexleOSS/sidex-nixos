@@ -11,8 +11,7 @@ import { ISandboxDependencyStatus, ISandboxHelperService } from './sandboxHelper
 export const SANDBOX_HELPER_CHANNEL_NAME = 'sandboxHelper';
 
 export class SandboxHelperChannel implements IServerChannel {
-
-	constructor(private readonly service: ISandboxHelperService) { }
+	constructor(private readonly service: ISandboxHelperService) {}
 
 	listen<T>(_context: unknown, _event: string): Event<T> {
 		throw new Error('Invalid listen');
@@ -31,7 +30,7 @@ export class SandboxHelperChannel implements IServerChannel {
 export class SandboxHelperChannelClient implements ISandboxHelperService {
 	declare readonly _serviceBrand: undefined;
 
-	constructor(private readonly channel: IChannel) { }
+	constructor(private readonly channel: IChannel) {}
 
 	checkSandboxDependencies(): Promise<ISandboxDependencyStatus | undefined> {
 		return this.channel.call<ISandboxDependencyStatus | undefined>('checkSandboxDependencies');

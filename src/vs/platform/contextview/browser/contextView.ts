@@ -5,7 +5,12 @@
 
 import { IContextMenuDelegate } from '../../../base/browser/contextmenu.js';
 import { StandardMouseEvent } from '../../../base/browser/mouseEvent.js';
-import { AnchorAlignment, AnchorAxisAlignment, IAnchor, IContextViewProvider } from '../../../base/browser/ui/contextview/contextview.js';
+import {
+	AnchorAlignment,
+	AnchorAxisAlignment,
+	IAnchor,
+	IContextViewProvider
+} from '../../../base/browser/ui/contextview/contextview.js';
 import { IAction } from '../../../base/common/actions.js';
 import { Event } from '../../../base/common/event.js';
 import { AnchorPosition } from '../../../base/common/layout.js';
@@ -17,7 +22,6 @@ import { createDecorator } from '../../instantiation/common/instantiation.js';
 export const IContextViewService = createDecorator<IContextViewService>('contextViewService');
 
 export interface IContextViewService extends IContextViewProvider {
-
 	readonly _serviceBrand: undefined;
 
 	showContextView(delegate: IContextViewDelegate, container?: HTMLElement, shadowRoot?: boolean): IOpenContextView;
@@ -28,7 +32,6 @@ export interface IContextViewService extends IContextViewProvider {
 }
 
 export interface IContextViewDelegate {
-
 	canRelayout?: boolean; // Default: true
 
 	/**
@@ -57,7 +60,6 @@ export interface IOpenContextView {
 export const IContextMenuService = createDecorator<IContextMenuService>('contextMenuService');
 
 export interface IContextMenuService {
-
 	readonly _serviceBrand: undefined;
 
 	readonly onDidShowContextMenu: Event<void>;

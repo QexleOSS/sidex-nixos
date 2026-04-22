@@ -26,25 +26,29 @@ export class TrustedDomainService extends Disposable implements ITrustedDomainSe
 
 	constructor(
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
-		@IStorageService private readonly _storageService: IStorageService,
+		@IStorageService private readonly _storageService: IStorageService
 	) {
 		super();
 
 		const initStaticDomainsResult = () => {
 			return new WindowIdleValue(mainWindow, () => {
-				const { defaultTrustedDomains, trustedDomains, } = this._instantiationService.invokeFunction(readStaticTrustedDomains);
-				return [
-					...defaultTrustedDomains,
-					...trustedDomains
-				];
+				const { defaultTrustedDomains, trustedDomains } =
+					this._instantiationService.invokeFunction(readStaticTrustedDomains);
+				return [...defaultTrustedDomains, ...trustedDomains];
 			});
 		};
 		this._staticTrustedDomainsResult = initStaticDomainsResult();
-		this._register(this._storageService.onDidChangeValue(StorageScope.APPLICATION, TRUSTED_DOMAINS_STORAGE_KEY, this._store)(() => {
-			this._staticTrustedDomainsResult?.dispose();
-			this._staticTrustedDomainsResult = initStaticDomainsResult();
-			this._onDidChangeTrustedDomains.fire();
-		}));
+		this._register(
+			this._storageService.onDidChangeValue(
+				StorageScope.APPLICATION,
+				TRUSTED_DOMAINS_STORAGE_KEY,
+				this._store
+			)(() => {
+				this._staticTrustedDomainsResult?.dispose();
+				this._staticTrustedDomainsResult = initStaticDomainsResult();
+				this._onDidChangeTrustedDomains.fire();
+			})
+		);
 	}
 
 	get trustedDomains(): string[] {
@@ -52,7 +56,8 @@ export class TrustedDomainService extends Disposable implements ITrustedDomainSe
 	}
 
 	isValid(resource: URI): boolean {
-		const { defaultTrustedDomains, trustedDomains, } = this._instantiationService.invokeFunction(readStaticTrustedDomains);
+		const { defaultTrustedDomains, trustedDomains } =
+			this._instantiationService.invokeFunction(readStaticTrustedDomains);
 		const allTrustedDomains = [...defaultTrustedDomains, ...trustedDomains];
 
 		return isURLDomainTrusted(resource, allTrustedDomains);

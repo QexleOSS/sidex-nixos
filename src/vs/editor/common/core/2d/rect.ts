@@ -49,14 +49,18 @@ export class Rect {
 		return new Rect(left, top, right, bottom);
 	}
 
-	public get width() { return this.right - this.left; }
-	public get height() { return this.bottom - this.top; }
+	public get width() {
+		return this.right - this.left;
+	}
+	public get height() {
+		return this.bottom - this.top;
+	}
 
 	constructor(
 		public readonly left: number,
 		public readonly top: number,
 		public readonly right: number,
-		public readonly bottom: number,
+		public readonly bottom: number
 	) {
 		if (left > right) {
 			throw new BugIndicatingError('Invalid arguments: Horizontally offset by ' + (left - right));
@@ -89,34 +93,19 @@ export class Rect {
 			marginBottom = bottom!;
 		}
 
-		return new Rect(
-			this.left - marginLeft,
-			this.top - marginTop,
-			this.right + marginRight,
-			this.bottom + marginBottom,
-		);
+		return new Rect(this.left - marginLeft, this.top - marginTop, this.right + marginRight, this.bottom + marginBottom);
 	}
 
 	intersectVertical(range: OffsetRange): Rect {
 		const newTop = Math.max(this.top, range.start);
 		const newBottom = Math.min(this.bottom, range.endExclusive);
-		return new Rect(
-			this.left,
-			newTop,
-			this.right,
-			Math.max(newTop, newBottom),
-		);
+		return new Rect(this.left, newTop, this.right, Math.max(newTop, newBottom));
 	}
 
 	intersectHorizontal(range: OffsetRange): Rect {
 		const newLeft = Math.max(this.left, range.start);
 		const newRight = Math.min(this.right, range.endExclusive);
-		return new Rect(
-			newLeft,
-			this.top,
-			Math.max(newLeft, newRight),
-			this.bottom,
-		);
+		return new Rect(newLeft, this.top, Math.max(newLeft, newRight), this.bottom);
 	}
 
 	toString(): string {
@@ -141,22 +130,16 @@ export class Rect {
 			Math.min(this.left, other.left),
 			Math.min(this.top, other.top),
 			Math.max(this.right, other.right),
-			Math.max(this.bottom, other.bottom),
+			Math.max(this.bottom, other.bottom)
 		);
 	}
 
 	containsRect(other: Rect): boolean {
-		return this.left <= other.left
-			&& this.top <= other.top
-			&& this.right >= other.right
-			&& this.bottom >= other.bottom;
+		return this.left <= other.left && this.top <= other.top && this.right >= other.right && this.bottom >= other.bottom;
 	}
 
 	containsPoint(point: Point): boolean {
-		return this.left <= point.x
-			&& this.top <= point.y
-			&& this.right >= point.x
-			&& this.bottom >= point.y;
+		return this.left <= point.x && this.top <= point.y && this.right >= point.x && this.bottom >= point.y;
 	}
 
 	moveToBeContainedIn(parent: Rect): Rect {
@@ -247,7 +230,7 @@ export class Rect {
 			left: `${this.left}px`,
 			top: `${this.top}px`,
 			width: `${this.width}px`,
-			height: `${this.height}px`,
+			height: `${this.height}px`
 		};
 	}
 

@@ -19,7 +19,7 @@ export interface IAccessibleViewImplementation {
 	when?: ContextKeyExpression | undefined;
 }
 
-export const AccessibleViewRegistry = new class AccessibleViewRegistry {
+export const AccessibleViewRegistry = new (class AccessibleViewRegistry {
 	_implementations: IAccessibleViewImplementation[] = [];
 
 	register(implementation: IAccessibleViewImplementation): IDisposable {
@@ -37,5 +37,4 @@ export const AccessibleViewRegistry = new class AccessibleViewRegistry {
 	getImplementations(): IAccessibleViewImplementation[] {
 		return this._implementations;
 	}
-};
-
+})();

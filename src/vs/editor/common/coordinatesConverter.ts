@@ -19,10 +19,15 @@ export interface ICoordinatesConverter {
 	 * @param allowZeroLineNumber Should it return 0 when there are hidden lines at the top and the position is in the hidden area?
 	 * @param belowHiddenRanges When the model position is in a hidden area, should it return the first view position after or before?
 	 */
-	convertModelPositionToViewPosition(modelPosition: Position, affinity?: PositionAffinity, allowZeroLineNumber?: boolean, belowHiddenRanges?: boolean): Position;
+	convertModelPositionToViewPosition(
+		modelPosition: Position,
+		affinity?: PositionAffinity,
+		allowZeroLineNumber?: boolean,
+		belowHiddenRanges?: boolean
+	): Position;
 	/**
 	 * @param affinity Only has an effect if the range is empty.
-	*/
+	 */
 	convertModelRangeToViewRange(modelRange: Range, affinity?: PositionAffinity): Range;
 	modelPositionIsVisible(modelPosition: Position): boolean;
 	getModelLineViewLineCount(modelLineNumber: number): number;
@@ -30,7 +35,6 @@ export interface ICoordinatesConverter {
 }
 
 export class IdentityCoordinatesConverter implements ICoordinatesConverter {
-
 	private readonly _model: ITextModel;
 
 	constructor(model: ITextModel) {

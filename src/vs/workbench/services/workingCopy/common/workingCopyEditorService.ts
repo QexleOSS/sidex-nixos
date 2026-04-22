@@ -15,7 +15,6 @@ import { IEditorService } from '../../editor/common/editorService.js';
 export const IWorkingCopyEditorService = createDecorator<IWorkingCopyEditorService>('workingCopyEditorService');
 
 export interface IWorkingCopyEditorHandler {
-
 	/**
 	 * Whether the handler is capable of opening the specific backup in
 	 * an editor.
@@ -34,7 +33,6 @@ export interface IWorkingCopyEditorHandler {
 }
 
 export interface IWorkingCopyEditorService {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -54,7 +52,6 @@ export interface IWorkingCopyEditorService {
 }
 
 export class WorkingCopyEditorService extends Disposable implements IWorkingCopyEditorService {
-
 	declare readonly _serviceBrand: undefined;
 
 	private readonly _onDidRegisterHandler = this._register(new Emitter<IWorkingCopyEditorHandler>());
@@ -67,7 +64,6 @@ export class WorkingCopyEditorService extends Disposable implements IWorkingCopy
 	}
 
 	registerHandler(handler: IWorkingCopyEditorHandler): IDisposable {
-
 		// Add to registry and emit as event
 		this.handlers.add(handler);
 		this._onDidRegisterHandler.fire(handler);

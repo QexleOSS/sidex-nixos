@@ -7,7 +7,10 @@ import * as dom from '../../../../base/browser/dom.js';
 import { ActionBar, IActionViewItemProvider } from '../../../../base/browser/ui/actionbar/actionbar.js';
 import { IAction } from '../../../../base/common/actions.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
-import { MenuEntryActionViewItem, TextOnlyMenuEntryActionViewItem } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
+import {
+	MenuEntryActionViewItem,
+	TextOnlyMenuEntryActionViewItem
+} from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
 import { IMenuService, MenuId, MenuItemAction } from '../../../../platform/actions/common/actions.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
@@ -21,7 +24,6 @@ export interface ISuggestWidgetStatusOptions {
 }
 
 export class SuggestWidgetStatus {
-
 	readonly element: HTMLElement;
 
 	private readonly _leftActions: ActionBar;
@@ -34,15 +36,19 @@ export class SuggestWidgetStatus {
 		options: ISuggestWidgetStatusOptions | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IMenuService private _menuService: IMenuService,
-		@IContextKeyService private _contextKeyService: IContextKeyService,
+		@IContextKeyService private _contextKeyService: IContextKeyService
 	) {
 		this.element = dom.append(container, dom.$('.suggest-status-bar'));
 
 		const actionViewItemProvider = <IActionViewItemProvider>(action => {
 			if (options?.showIconsNoKeybindings) {
-				return action instanceof MenuItemAction ? instantiationService.createInstance(MenuEntryActionViewItem, action, undefined) : undefined;
+				return action instanceof MenuItemAction
+					? instantiationService.createInstance(MenuEntryActionViewItem, action, undefined)
+					: undefined;
 			} else {
-				return action instanceof MenuItemAction ? instantiationService.createInstance(TextOnlyMenuEntryActionViewItem, action, { useComma: false }) : undefined;
+				return action instanceof MenuItemAction
+					? instantiationService.createInstance(TextOnlyMenuEntryActionViewItem, action, { useComma: false })
+					: undefined;
 			}
 		});
 		this._leftActions = new ActionBar(this.element, { actionViewItemProvider });

@@ -32,19 +32,11 @@ export function isModelDecorationVisible(model: ITextModel, decoration: IModelDe
 }
 
 export function isModelDecorationInComment(model: ITextModel, decoration: IModelDecoration): boolean {
-	return testTokensInRange(
-		model,
-		decoration.range,
-		(tokenType) => tokenType === StandardTokenType.Comment
-	);
+	return testTokensInRange(model, decoration.range, tokenType => tokenType === StandardTokenType.Comment);
 }
 
 export function isModelDecorationInString(model: ITextModel, decoration: IModelDecoration): boolean {
-	return testTokensInRange(
-		model,
-		decoration.range,
-		(tokenType) => tokenType === StandardTokenType.String
-	);
+	return testTokensInRange(model, decoration.range, tokenType => tokenType === StandardTokenType.String);
 }
 
 /**
@@ -52,7 +44,11 @@ export function isModelDecorationInString(model: ITextModel, decoration: IModelD
  * If the callback returns `false`, iteration stops and `false` is returned.
  * Otherwise, `true` is returned.
  */
-function testTokensInRange(model: ITextModel, range: Range, callback: (tokenType: StandardTokenType) => boolean): boolean {
+function testTokensInRange(
+	model: ITextModel,
+	range: Range,
+	callback: (tokenType: StandardTokenType) => boolean
+): boolean {
 	for (let lineNumber = range.startLineNumber; lineNumber <= range.endLineNumber; lineNumber++) {
 		const lineTokens = model.tokenization.getLineTokens(lineNumber);
 		const isFirstLine = lineNumber === range.startLineNumber;
@@ -76,4 +72,3 @@ function testTokensInRange(model: ITextModel, range: Range, callback: (tokenType
 	}
 	return true;
 }
-

@@ -6,7 +6,10 @@
 import { isHTMLElement } from '../../../../../base/browser/dom.js';
 import { createTrustedTypesPolicy } from '../../../../../base/browser/trustedTypes.js';
 import { IConfigurationService } from '../../../../../platform/configuration/common/configuration.js';
-import { IMarkdownCodeBlockRenderer, IMarkdownRendererExtraOptions } from '../../../../../platform/markdown/browser/markdownRenderer.js';
+import {
+	IMarkdownCodeBlockRenderer,
+	IMarkdownRendererExtraOptions
+} from '../../../../../platform/markdown/browser/markdownRenderer.js';
 import { EditorOption, IEditorOptions } from '../../../../common/config/editorOptions.js';
 import { BareFontInfo } from '../../../../common/config/fontInfo.js';
 import { createBareFontInfoFromRawSettings } from '../../../../common/config/fontInfoFromSettings.js';
@@ -21,7 +24,6 @@ import './renderedMarkdown.css';
  * Renders markdown code blocks using the editor's tokenization and font settings.
  */
 export class EditorMarkdownCodeBlockRenderer implements IMarkdownCodeBlockRenderer {
-
 	private static _ttpTokenizer = createTrustedTypesPolicy('tokenizeToString', {
 		createHTML(html: string) {
 			return html;
@@ -30,10 +32,14 @@ export class EditorMarkdownCodeBlockRenderer implements IMarkdownCodeBlockRender
 
 	constructor(
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
-		@ILanguageService private readonly _languageService: ILanguageService,
-	) { }
+		@ILanguageService private readonly _languageService: ILanguageService
+	) {}
 
-	public async renderCodeBlock(languageAlias: string | undefined, value: string, options: IMarkdownRendererExtraOptions): Promise<HTMLElement> {
+	public async renderCodeBlock(
+		languageAlias: string | undefined,
+		value: string,
+		options: IMarkdownRendererExtraOptions
+	): Promise<HTMLElement> {
 		const editor = isCodeEditor(options.context) ? options.context : undefined;
 
 		// In markdown, it is possible that we stumble upon language aliases (e.g.js instead of javascript).
@@ -49,11 +55,13 @@ export class EditorMarkdownCodeBlockRenderer implements IMarkdownCodeBlockRender
 		}
 		const html = await tokenizeToString(this._languageService, value, languageId);
 
-		const content = EditorMarkdownCodeBlockRenderer._ttpTokenizer ? EditorMarkdownCodeBlockRenderer._ttpTokenizer.createHTML(html) ?? html : html;
+		const content = EditorMarkdownCodeBlockRenderer._ttpTokenizer
+			? (EditorMarkdownCodeBlockRenderer._ttpTokenizer.createHTML(html) ?? html)
+			: html;
 
 		const root = document.createElement('span');
 		root.innerHTML = content as string;
-		// eslint-disable-next-line no-restricted-syntax
+
 		const codeElement = root.querySelector('.monaco-tokenized-source');
 		if (!isHTMLElement(codeElement)) {
 			return document.createElement('span');
@@ -71,9 +79,12 @@ export class EditorMarkdownCodeBlockRenderer implements IMarkdownCodeBlockRender
 		} else {
 			// Otherwise use the global font settings.
 			// Pass in fake pixel ratio of 1 since we only need the font info to apply font family
-			return createBareFontInfoFromRawSettings({
-				fontFamily: this._configurationService.getValue<IEditorOptions>('editor').fontFamily
-			}, 1);
+			return createBareFontInfoFromRawSettings(
+				{
+					fontFamily: this._configurationService.getValue<IEditorOptions>('editor').fontFamily
+				},
+				1
+			);
 		}
 	}
 }

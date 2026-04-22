@@ -26,11 +26,18 @@ const $ = dom.$;
 
 // theming
 
-const debugExceptionWidgetBorder = registerColor('debugExceptionWidget.border', '#a31515', nls.localize('debugExceptionWidgetBorder', 'Exception widget border color.'));
-const debugExceptionWidgetBackground = registerColor('debugExceptionWidget.background', { dark: '#420b0d', light: '#f1dfde', hcDark: '#420b0d', hcLight: '#f1dfde' }, nls.localize('debugExceptionWidgetBackground', 'Exception widget background color.'));
+const debugExceptionWidgetBorder = registerColor(
+	'debugExceptionWidget.border',
+	'#a31515',
+	nls.localize('debugExceptionWidgetBorder', 'Exception widget border color.')
+);
+const debugExceptionWidgetBackground = registerColor(
+	'debugExceptionWidget.background',
+	{ dark: '#420b0d', light: '#f1dfde', hcDark: '#420b0d', hcLight: '#f1dfde' },
+	nls.localize('debugExceptionWidgetBackground', 'Exception widget background color.')
+);
 
 export class ExceptionWidget extends ZoneWidget {
-
 	private backgroundColor: Color | undefined;
 
 	constructor(
@@ -41,7 +48,13 @@ export class ExceptionWidget extends ZoneWidget {
 		@IThemeService themeService: IThemeService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService
 	) {
-		super(editor, { showFrame: true, showArrow: true, isAccessible: true, frameWidth: 1, className: 'exception-widget-container' });
+		super(editor, {
+			showFrame: true,
+			showArrow: true,
+			isAccessible: true,
+			frameWidth: 1,
+			className: 'exception-widget-container'
+		});
 
 		this.applyTheme(themeService.getColorTheme());
 		this._disposables.add(themeService.onDidColorThemeChange(this.applyTheme.bind(this)));
@@ -80,14 +93,25 @@ export class ExceptionWidget extends ZoneWidget {
 		dom.append(title, label);
 		const actions = $('.actions');
 		dom.append(title, actions);
-		label.textContent = this.exceptionInfo.id ? nls.localize('exceptionThrownWithId', 'Exception has occurred: {0}', this.exceptionInfo.id) : nls.localize('exceptionThrown', 'Exception has occurred.');
+		label.textContent = this.exceptionInfo.id
+			? nls.localize('exceptionThrownWithId', 'Exception has occurred: {0}', this.exceptionInfo.id)
+			: nls.localize('exceptionThrown', 'Exception has occurred.');
 		let ariaLabel = label.textContent;
 
 		const actionBar = this._disposables.add(new ActionBar(actions));
-		actionBar.push(new Action('editor.closeExceptionWidget', nls.localize('close', "Close"), ThemeIcon.asClassName(widgetClose), true, async () => {
-			const contribution = this.editor.getContribution<IDebugEditorContribution>(EDITOR_CONTRIBUTION_ID);
-			contribution?.closeExceptionWidget();
-		}), { label: false, icon: true });
+		actionBar.push(
+			new Action(
+				'editor.closeExceptionWidget',
+				nls.localize('close', 'Close'),
+				ThemeIcon.asClassName(widgetClose),
+				true,
+				async () => {
+					const contribution = this.editor.getContribution<IDebugEditorContribution>(EDITOR_CONTRIBUTION_ID);
+					contribution?.closeExceptionWidget();
+				}
+			),
+			{ label: false, icon: true }
+		);
 
 		dom.append(container, title);
 
@@ -103,9 +127,15 @@ export class ExceptionWidget extends ZoneWidget {
 			const linkDetector = this.instantiationService.createInstance(LinkDetector);
 			const hoverBehaviour: DebugLinkHoverBehaviorTypeData = {
 				store: this._disposables,
-				type: DebugLinkHoverBehavior.Rich,
+				type: DebugLinkHoverBehavior.Rich
 			};
-			const linkedStackTrace = linkDetector.linkify(this.exceptionInfo.details.stackTrace, hoverBehaviour, true, this.debugSession ? this.debugSession.root : undefined, undefined);
+			const linkedStackTrace = linkDetector.linkify(
+				this.exceptionInfo.details.stackTrace,
+				hoverBehaviour,
+				true,
+				this.debugSession ? this.debugSession.root : undefined,
+				undefined
+			);
 			stackTrace.appendChild(linkedStackTrace);
 			dom.append(container, stackTrace);
 			ariaLabel += ', ' + this.exceptionInfo.details.stackTrace;

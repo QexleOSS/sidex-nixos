@@ -6,13 +6,18 @@
 import { CancellationToken } from '../../../base/common/cancellation.js';
 import { DisposableMap, IDisposable } from '../../../base/common/lifecycle.js';
 import { URI, UriComponents } from '../../../base/common/uri.js';
-import { ExtHostContext, ExtHostQuickDiffShape, IDocumentFilterDto, MainContext, MainThreadQuickDiffShape } from '../common/extHost.protocol.js';
+import {
+	ExtHostContext,
+	ExtHostQuickDiffShape,
+	IDocumentFilterDto,
+	MainContext,
+	MainThreadQuickDiffShape
+} from '../common/extHost.protocol.js';
 import { IQuickDiffService, QuickDiffProvider } from '../../contrib/scm/common/quickDiff.js';
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
 
 @extHostNamedCustomer(MainContext.MainThreadQuickDiff)
 export class MainThreadQuickDiff implements MainThreadQuickDiffShape {
-
 	private readonly proxy: ExtHostQuickDiffShape;
 	private providerDisposables = new DisposableMap<number, IDisposable>();
 
@@ -23,7 +28,13 @@ export class MainThreadQuickDiff implements MainThreadQuickDiffShape {
 		this.proxy = extHostContext.getProxy(ExtHostContext.ExtHostQuickDiff);
 	}
 
-	async $registerQuickDiffProvider(handle: number, selector: IDocumentFilterDto[], id: string, label: string, rootUri: UriComponents | undefined): Promise<void> {
+	async $registerQuickDiffProvider(
+		handle: number,
+		selector: IDocumentFilterDto[],
+		id: string,
+		label: string,
+		rootUri: UriComponents | undefined
+	): Promise<void> {
 		const provider: QuickDiffProvider = {
 			id,
 			label,

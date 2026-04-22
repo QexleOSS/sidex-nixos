@@ -6,7 +6,12 @@
 import { refineServiceDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { Event } from '../../../../base/common/event.js';
 import { Color } from '../../../../base/common/color.js';
-import { IColorTheme, IThemeService, IFileIconTheme, IProductIconTheme } from '../../../../platform/theme/common/themeService.js';
+import {
+	IColorTheme,
+	IThemeService,
+	IFileIconTheme,
+	IProductIconTheme
+} from '../../../../platform/theme/common/themeService.js';
 import { ConfigurationTarget } from '../../../../platform/configuration/common/configuration.js';
 import { isBoolean, isString } from '../../../../base/common/types.js';
 import { IconContribution, IconDefinition } from '../../../../platform/theme/common/iconRegistry.js';
@@ -30,7 +35,7 @@ export enum ThemeSettings {
 
 	PREFERRED_DARK_THEME = 'workbench.preferredDarkColorTheme',
 	PREFERRED_LIGHT_THEME = 'workbench.preferredLightColorTheme',
-	PREFERRED_HC_DARK_THEME = 'workbench.preferredHighContrastColorTheme', /* id kept for compatibility reasons */
+	PREFERRED_HC_DARK_THEME = 'workbench.preferredHighContrastColorTheme' /* id kept for compatibility reasons */,
 	PREFERRED_HC_LIGHT_THEME = 'workbench.preferredHighContrastLightColorTheme',
 	DETECT_COLOR_SCHEME = 'window.autoDetectColorScheme',
 	DETECT_HC = 'window.autoDetectHighContrast',
@@ -55,12 +60,18 @@ export namespace ThemeSettingDefaults {
  */
 export function migrateThemeSettingsId(settingsId: string): string {
 	switch (settingsId) {
-		case 'SideX Monochrome Dark': return 'Dark Modern';
-		case 'Light 2026': return 'Light Modern';
-		case 'Default Dark Modern': return 'Dark Modern';
-		case 'Default Light Modern': return 'Light Modern';
-		case 'Default Dark+': return 'Dark+';
-		case 'Default Light+': return 'Light+';
+		case 'SideX Monochrome Dark':
+			return 'Dark Modern';
+		case 'Light 2026':
+			return 'Light Modern';
+		case 'Default Dark Modern':
+			return 'Dark Modern';
+		case 'Default Light Modern':
+			return 'Light Modern';
+		case 'Default Dark+':
+			return 'Dark+';
+		case 'Default Light+':
+			return 'Light+';
 		case 'Experimental Dark':
 		case 'VS Code Dark':
 			return ThemeSettingDefaults.COLOR_THEME_DARK;
@@ -92,7 +103,7 @@ export const COLOR_THEME_SIDEX_MONO_INITIAL_COLORS: Record<string, string> = {
 	'checkbox.background': '#1a1a1a',
 	'checkbox.border': '#333333',
 	'debugToolBar.background': '#0e0e0e',
-	'descriptionForeground': '#808080',
+	descriptionForeground: '#808080',
 	'dropdown.background': '#1a1a1a',
 	'dropdown.border': '#2a2a2a',
 	'dropdown.foreground': '#c0c0c0',
@@ -115,9 +126,9 @@ export const COLOR_THEME_SIDEX_MONO_INITIAL_COLORS: Record<string, string> = {
 	'editorLineNumber.foreground': '#404040',
 	'editorOverviewRuler.border': '#0e0e0e',
 	'editorWidget.background': '#141414',
-	'errorForeground': '#b0b0b0',
-	'focusBorder': '#606060',
-	'foreground': '#c0c0c0',
+	errorForeground: '#b0b0b0',
+	focusBorder: '#606060',
+	foreground: '#c0c0c0',
 	'icon.foreground': '#b0b0b0',
 	'input.background': '#1a1a1a',
 	'input.border': '#2a2a2a',
@@ -208,7 +219,7 @@ export const COLOR_THEME_SIDEX_MONO_INITIAL_COLORS: Record<string, string> = {
 	'titleBar.inactiveForeground': '#606060',
 	'welcomePage.progress.foreground': '#e0e0e0',
 	'welcomePage.tileBackground': '#1a1a1a',
-	'widget.border': '#2a2a2a',
+	'widget.border': '#2a2a2a'
 };
 
 export const COLOR_THEME_DARK_INITIAL_COLORS = {
@@ -235,7 +246,7 @@ export const COLOR_THEME_DARK_INITIAL_COLORS = {
 	'checkbox.background': '#313131',
 	'checkbox.border': '#3C3C3C',
 	'debugToolBar.background': '#181818',
-	'descriptionForeground': '#9D9D9D',
+	descriptionForeground: '#9D9D9D',
 	'dropdown.background': '#313131',
 	'dropdown.border': '#3C3C3C',
 	'dropdown.foreground': '#CCCCCC',
@@ -257,9 +268,9 @@ export const COLOR_THEME_DARK_INITIAL_COLORS = {
 	'editorLineNumber.foreground': '#6E7681',
 	'editorOverviewRuler.border': '#010409',
 	'editorWidget.background': '#202020',
-	'errorForeground': '#F85149',
-	'focusBorder': '#0078D4',
-	'foreground': '#CCCCCC',
+	errorForeground: '#F85149',
+	focusBorder: '#0078D4',
+	foreground: '#CCCCCC',
 	'icon.foreground': '#CCCCCC',
 	'input.background': '#313131',
 	'input.border': '#3C3C3C',
@@ -376,7 +387,7 @@ export const COLOR_THEME_LIGHT_INITIAL_COLORS = {
 	'chat.editedFileForeground': '#895503',
 	'checkbox.background': '#F8F8F8',
 	'checkbox.border': '#CECECE',
-	'descriptionForeground': '#3B3B3B',
+	descriptionForeground: '#3B3B3B',
 	'diffEditor.unchangedRegionBackground': '#f8f8f8',
 	'dropdown.background': '#FFFFFF',
 	'dropdown.border': '#CECECE',
@@ -399,9 +410,9 @@ export const COLOR_THEME_LIGHT_INITIAL_COLORS = {
 	'editorOverviewRuler.border': '#E5E5E5',
 	'editorSuggestWidget.background': '#F8F8F8',
 	'editorWidget.background': '#F8F8F8',
-	'errorForeground': '#F85149',
-	'focusBorder': '#005FB8',
-	'foreground': '#3B3B3B',
+	errorForeground: '#F85149',
+	focusBorder: '#005FB8',
+	foreground: '#3B3B3B',
 	'icon.foreground': '#3B3B3B',
 	'input.background': '#FFFFFF',
 	'input.border': '#CECECE',
@@ -522,8 +533,7 @@ export interface IColorMap {
 	[id: string]: Color;
 }
 
-export interface IWorkbenchFileIconTheme extends IWorkbenchTheme, IFileIconTheme {
-}
+export interface IWorkbenchFileIconTheme extends IWorkbenchTheme, IFileIconTheme {}
 
 export interface IWorkbenchProductIconTheme extends IWorkbenchTheme, IProductIconTheme {
 	readonly settingsId: string;
@@ -533,10 +543,12 @@ export interface IWorkbenchProductIconTheme extends IWorkbenchTheme, IProductIco
 
 export type ThemeSettingTarget = ConfigurationTarget | undefined | 'auto' | 'preview';
 
-
 export interface IWorkbenchThemeService extends IThemeService {
 	readonly _serviceBrand: undefined;
-	setColorTheme(themeId: string | undefined | IWorkbenchColorTheme, settingsTarget: ThemeSettingTarget): Promise<IWorkbenchColorTheme | null>;
+	setColorTheme(
+		themeId: string | undefined | IWorkbenchColorTheme,
+		settingsTarget: ThemeSettingTarget
+	): Promise<IWorkbenchColorTheme | null>;
 	getColorTheme(): IWorkbenchColorTheme;
 	getColorThemes(): Promise<IWorkbenchColorTheme[]>;
 	getMarketplaceColorThemes(publisher: string, name: string, version: string): Promise<IWorkbenchColorTheme[]>;
@@ -544,16 +556,26 @@ export interface IWorkbenchThemeService extends IThemeService {
 
 	getPreferredColorScheme(): ColorScheme | undefined;
 
-	setFileIconTheme(iconThemeId: string | undefined | IWorkbenchFileIconTheme, settingsTarget: ThemeSettingTarget): Promise<IWorkbenchFileIconTheme>;
+	setFileIconTheme(
+		iconThemeId: string | undefined | IWorkbenchFileIconTheme,
+		settingsTarget: ThemeSettingTarget
+	): Promise<IWorkbenchFileIconTheme>;
 	getFileIconTheme(): IWorkbenchFileIconTheme;
 	getFileIconThemes(): Promise<IWorkbenchFileIconTheme[]>;
 	getMarketplaceFileIconThemes(publisher: string, name: string, version: string): Promise<IWorkbenchFileIconTheme[]>;
 	readonly onDidFileIconThemeChange: Event<IWorkbenchFileIconTheme>;
 
-	setProductIconTheme(iconThemeId: string | undefined | IWorkbenchProductIconTheme, settingsTarget: ThemeSettingTarget): Promise<IWorkbenchProductIconTheme>;
+	setProductIconTheme(
+		iconThemeId: string | undefined | IWorkbenchProductIconTheme,
+		settingsTarget: ThemeSettingTarget
+	): Promise<IWorkbenchProductIconTheme>;
 	getProductIconTheme(): IWorkbenchProductIconTheme;
 	getProductIconThemes(): Promise<IWorkbenchProductIconTheme[]>;
-	getMarketplaceProductIconThemes(publisher: string, name: string, version: string): Promise<IWorkbenchProductIconTheme[]>;
+	getMarketplaceProductIconThemes(
+		publisher: string,
+		name: string,
+		version: string
+	): Promise<IWorkbenchProductIconTheme[]>;
 	readonly onDidProductIconThemeChange: Event<IWorkbenchProductIconTheme>;
 }
 
@@ -579,7 +601,13 @@ export interface IThemeScopedTokenColorCustomizations {
 }
 
 export interface ITokenColorCustomizations {
-	[groupIdOrThemeScope: string]: IThemeScopedTokenColorCustomizations | ITextMateThemingRule[] | ITokenColorizationSetting | boolean | string | undefined;
+	[groupIdOrThemeScope: string]:
+		| IThemeScopedTokenColorCustomizations
+		| ITextMateThemingRule[]
+		| ITokenColorizationSetting
+		| boolean
+		| string
+		| undefined;
 	comments?: string | ITokenColorizationSetting;
 	strings?: string | ITokenColorizationSetting;
 	numbers?: string | ITokenColorizationSetting;
@@ -598,7 +626,11 @@ export interface IThemeScopedSemanticTokenColorCustomizations {
 }
 
 export interface ISemanticTokenColorCustomizations {
-	[styleRuleOrThemeScope: string]: IThemeScopedSemanticTokenColorCustomizations | ISemanticTokenRules | boolean | undefined;
+	[styleRuleOrThemeScope: string]:
+		| IThemeScopedSemanticTokenColorCustomizations
+		| ISemanticTokenRules
+		| boolean
+		| undefined;
 	enabled?: boolean;
 	rules?: ISemanticTokenRules;
 }
@@ -608,17 +640,20 @@ export interface IThemeScopedExperimentalSemanticTokenColorCustomizations {
 }
 
 export interface IExperimentalSemanticTokenColorCustomizations {
-	[styleRuleOrThemeScope: string]: IThemeScopedExperimentalSemanticTokenColorCustomizations | ISemanticTokenRules | undefined;
+	[styleRuleOrThemeScope: string]:
+		| IThemeScopedExperimentalSemanticTokenColorCustomizations
+		| ISemanticTokenRules
+		| undefined;
 }
 
 export type IThemeScopedCustomizations =
-	IThemeScopedColorCustomizations
+	| IThemeScopedColorCustomizations
 	| IThemeScopedTokenColorCustomizations
 	| IThemeScopedExperimentalSemanticTokenColorCustomizations
 	| IThemeScopedSemanticTokenColorCustomizations;
 
 export type IThemeScopableCustomizations =
-	IColorCustomizations
+	| IColorCustomizations
 	| ITokenColorCustomizations
 	| IExperimentalSemanticTokenColorCustomizations
 	| ISemanticTokenColorCustomizations;
@@ -660,16 +695,39 @@ export interface ExtensionData {
 
 export namespace ExtensionData {
 	export function toJSONObject(d: ExtensionData | undefined): any {
-		return d && { _extensionId: d.extensionId, _extensionIsBuiltin: d.extensionIsBuiltin, _extensionName: d.extensionName, _extensionPublisher: d.extensionPublisher };
+		return (
+			d && {
+				_extensionId: d.extensionId,
+				_extensionIsBuiltin: d.extensionIsBuiltin,
+				_extensionName: d.extensionName,
+				_extensionPublisher: d.extensionPublisher
+			}
+		);
 	}
 	export function fromJSONObject(o: any): ExtensionData | undefined {
-		if (o && isString(o._extensionId) && isBoolean(o._extensionIsBuiltin) && isString(o._extensionName) && isString(o._extensionPublisher)) {
-			return { extensionId: o._extensionId, extensionIsBuiltin: o._extensionIsBuiltin, extensionName: o._extensionName, extensionPublisher: o._extensionPublisher };
+		if (
+			o &&
+			isString(o._extensionId) &&
+			isBoolean(o._extensionIsBuiltin) &&
+			isString(o._extensionName) &&
+			isString(o._extensionPublisher)
+		) {
+			return {
+				extensionId: o._extensionId,
+				extensionIsBuiltin: o._extensionIsBuiltin,
+				extensionName: o._extensionName,
+				extensionPublisher: o._extensionPublisher
+			};
 		}
 		return undefined;
 	}
 	export function fromName(publisher: string, name: string, isBuiltin = false): ExtensionData {
-		return { extensionPublisher: publisher, extensionId: `${publisher}.${name}`, extensionName: name, extensionIsBuiltin: isBuiltin };
+		return {
+			extensionPublisher: publisher,
+			extensionId: `${publisher}.${name}`,
+			extensionName: name,
+			extensionIsBuiltin: isBuiltin
+		};
 	}
 }
 

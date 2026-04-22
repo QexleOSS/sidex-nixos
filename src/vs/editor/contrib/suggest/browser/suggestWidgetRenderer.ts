@@ -25,11 +25,15 @@ import { IThemeService } from '../../../../platform/theme/common/themeService.js
 import { CompletionItem } from './suggest.js';
 import { canExpandCompletionItem } from './suggestWidgetDetails.js';
 
-const suggestMoreInfoIcon = registerIcon('suggest-more-info', Codicon.chevronRight, nls.localize('suggestMoreInfoIcon', 'Icon for more information in the suggest widget.'));
+const suggestMoreInfoIcon = registerIcon(
+	'suggest-more-info',
+	Codicon.chevronRight,
+	nls.localize('suggestMoreInfoIcon', 'Icon for more information in the suggest widget.')
+);
 
-const _completionItemColor = new class ColorExtractor {
-
-	private static _regexRelaxed = /(#([\da-fA-F]{3}){1,2}|(rgb|hsl)a\(\s*(\d{1,3}%?\s*,\s*){3}(1|0?\.\d+)\)|(rgb|hsl)\(\s*\d{1,3}%?(\s*,\s*\d{1,3}%?){2}\s*\))/;
+const _completionItemColor = new (class ColorExtractor {
+	private static _regexRelaxed =
+		/(#([\da-fA-F]{3}){1,2}|(rgb|hsl)a\(\s*(\d{1,3}%?\s*,\s*){3}(1|0?\.\d+)\)|(rgb|hsl)\(\s*\d{1,3}%?(\s*,\s*\d{1,3}%?){2}\s*\))/;
 	private static _regexStrict = new RegExp(`^${ColorExtractor._regexRelaxed.source}$`, 'i');
 
 	extract(item: CompletionItem, out: string[]): boolean {
@@ -43,9 +47,10 @@ const _completionItemColor = new class ColorExtractor {
 		}
 
 		if (item.completion.documentation) {
-			const value = typeof item.completion.documentation === 'string'
-				? item.completion.documentation
-				: item.completion.documentation.value;
+			const value =
+				typeof item.completion.documentation === 'string'
+					? item.completion.documentation
+					: item.completion.documentation.value;
 
 			const match = ColorExtractor._regexRelaxed.exec(value);
 			if (match && (match.index === 0 || match.index + match[0].length === value.length)) {
@@ -55,8 +60,7 @@ const _completionItemColor = new class ColorExtractor {
 		}
 		return false;
 	}
-};
-
+})();
 
 export interface ISuggestionTemplateData {
 	readonly root: HTMLElement;
@@ -86,7 +90,6 @@ export interface ISuggestionTemplateData {
 }
 
 export class ItemRenderer implements IListRenderer<CompletionItem, ISuggestionTemplateData> {
-
 	private readonly _onDidToggleDetails = new Emitter<void>();
 	readonly onDidToggleDetails: Event<void> = this._onDidToggleDetails.event;
 
@@ -97,7 +100,7 @@ export class ItemRenderer implements IListRenderer<CompletionItem, ISuggestionTe
 		@IModelService private readonly _modelService: IModelService,
 		@ILanguageService private readonly _languageService: ILanguageService,
 		@IThemeService private readonly _themeService: IThemeService
-	) { }
+	) {}
 
 	dispose(): void {
 		this._onDidToggleDetails.dispose();
@@ -127,7 +130,7 @@ export class ItemRenderer implements IListRenderer<CompletionItem, ISuggestionTe
 		const detailsLabel = append(right, $('span.details-label'));
 
 		const readMore = append(right, $('span.readMore' + ThemeIcon.asCSSSelector(suggestMoreInfoIcon)));
-		readMore.title = nls.localize('readMore', "Read More");
+		readMore.title = nls.localize('readMore', 'Read More');
 
 		const configureFont = () => {
 			const options = this._editor.getOptions();
@@ -156,12 +159,24 @@ export class ItemRenderer implements IListRenderer<CompletionItem, ISuggestionTe
 			readMore.style.width = lineHeightPx;
 		};
 
-		return { root, left, right, icon, colorspan, iconLabel, iconContainer, parametersLabel, qualifierLabel, detailsLabel, readMore, disposables, configureFont };
+		return {
+			root,
+			left,
+			right,
+			icon,
+			colorspan,
+			iconLabel,
+			iconContainer,
+			parametersLabel,
+			qualifierLabel,
+			detailsLabel,
+			readMore,
+			disposables,
+			configureFont
+		};
 	}
 
 	renderElement(element: CompletionItem, index: number, data: ISuggestionTemplateData): void {
-
-
 		data.configureFont();
 
 		const { completion } = element;
@@ -178,28 +193,49 @@ export class ItemRenderer implements IListRenderer<CompletionItem, ISuggestionTe
 			data.icon.className = 'icon customcolor';
 			data.iconContainer.className = 'icon hide';
 			data.colorspan.style.backgroundColor = color[0];
-
 		} else if (completion.kind === CompletionItemKind.File && this._themeService.getFileIconTheme().hasFileIcons) {
 			// special logic for 'file' completion items
 			data.icon.className = 'icon hide';
 			data.iconContainer.className = 'icon hide';
-			const labelClasses = getIconClasses(this._modelService, this._languageService, URI.from({ scheme: 'fake', path: element.textLabel }), FileKind.FILE);
-			const detailClasses = getIconClasses(this._modelService, this._languageService, URI.from({ scheme: 'fake', path: completion.detail }), FileKind.FILE);
+			const labelClasses = getIconClasses(
+				this._modelService,
+				this._languageService,
+				URI.from({ scheme: 'fake', path: element.textLabel }),
+				FileKind.FILE
+			);
+			const detailClasses = getIconClasses(
+				this._modelService,
+				this._languageService,
+				URI.from({ scheme: 'fake', path: completion.detail }),
+				FileKind.FILE
+			);
 			labelOptions.extraClasses = labelClasses.length > detailClasses.length ? labelClasses : detailClasses;
-
 		} else if (completion.kind === CompletionItemKind.Folder && this._themeService.getFileIconTheme().hasFolderIcons) {
 			// special logic for 'folder' completion items
 			data.icon.className = 'icon hide';
 			data.iconContainer.className = 'icon hide';
 			labelOptions.extraClasses = [
-				getIconClasses(this._modelService, this._languageService, URI.from({ scheme: 'fake', path: element.textLabel }), FileKind.FOLDER),
-				getIconClasses(this._modelService, this._languageService, URI.from({ scheme: 'fake', path: completion.detail }), FileKind.FOLDER)
+				getIconClasses(
+					this._modelService,
+					this._languageService,
+					URI.from({ scheme: 'fake', path: element.textLabel }),
+					FileKind.FOLDER
+				),
+				getIconClasses(
+					this._modelService,
+					this._languageService,
+					URI.from({ scheme: 'fake', path: completion.detail }),
+					FileKind.FOLDER
+				)
 			].flat();
 		} else {
 			// normal icon
 			data.icon.className = 'icon hide';
 			data.iconContainer.className = '';
-			data.iconContainer.classList.add('suggest-icon', ...ThemeIcon.asClassNameArray(CompletionItemKinds.toIcon(completion.kind)));
+			data.iconContainer.classList.add(
+				'suggest-icon',
+				...ThemeIcon.asClassNameArray(CompletionItemKinds.toIcon(completion.kind))
+			);
 		}
 
 		if (completion.tags && completion.tags.indexOf(CompletionItemTag.Deprecated) >= 0) {

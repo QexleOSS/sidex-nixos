@@ -11,10 +11,8 @@ import { ICommand, ICursorStateComputerData, IEditOperationBuilder } from '../..
 import { ITextModel } from '../../../common/model.js';
 
 export class InsertFinalNewLineCommand implements ICommand {
-
 	private readonly _selection: Selection;
 	private _selectionId: string | null;
-
 
 	constructor(selection: Selection) {
 		this._selection = selection;
@@ -47,8 +45,5 @@ export function insertFinalNewLine(model: ITextModel): ISingleEditOperation | un
 		return;
 	}
 
-	return EditOperation.insert(
-		new Position(lineCount, model.getLineMaxColumn(lineCount)),
-		model.getEOL()
-	);
+	return EditOperation.insert(new Position(lineCount, model.getLineMaxColumn(lineCount)), model.getEOL());
 }

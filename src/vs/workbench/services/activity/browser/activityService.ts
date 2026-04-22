@@ -12,18 +12,25 @@ import { Emitter, Event } from '../../../../base/common/event.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 
 class ViewContainerActivityByView extends Disposable {
-
 	private activity: IActivity | undefined = undefined;
 	private activityDisposable: IDisposable = Disposable.None;
 
 	constructor(
 		private readonly viewId: string,
 		@IViewDescriptorService private readonly viewDescriptorService: IViewDescriptorService,
-		@IActivityService private readonly activityService: IActivityService,
+		@IActivityService private readonly activityService: IActivityService
 	) {
 		super();
-		this._register(Event.filter(this.viewDescriptorService.onDidChangeContainer, e => e.views.some(view => view.id === viewId))(() => this.update()));
-		this._register(Event.filter(this.viewDescriptorService.onDidChangeLocation, e => e.views.some(view => view.id === viewId))(() => this.update()));
+		this._register(
+			Event.filter(this.viewDescriptorService.onDidChangeContainer, e => e.views.some(view => view.id === viewId))(() =>
+				this.update()
+			)
+		);
+		this._register(
+			Event.filter(this.viewDescriptorService.onDidChangeLocation, e => e.views.some(view => view.id === viewId))(() =>
+				this.update()
+			)
+		);
 	}
 
 	setActivity(activity: IActivity): void {
@@ -56,7 +63,6 @@ interface IViewActivity {
 }
 
 export class ActivityService extends Disposable implements IActivityService {
-
 	public _serviceBrand: undefined;
 
 	private readonly viewActivities = new Map<string, IViewActivity>();

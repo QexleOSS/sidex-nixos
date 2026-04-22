@@ -10,9 +10,14 @@ import { TextLength } from '../../../core/text/textLength.js';
 
 /**
  * The end must be greater than or equal to the start.
-*/
-export function lengthDiff(startLineCount: number, startColumnCount: number, endLineCount: number, endColumnCount: number): Length {
-	return (startLineCount !== endLineCount)
+ */
+export function lengthDiff(
+	startLineCount: number,
+	startColumnCount: number,
+	endLineCount: number,
+	endColumnCount: number
+): Length {
+	return startLineCount !== endLineCount
 		? toLength(endLineCount - startLineCount, endColumnCount)
 		: toLength(0, endColumnCount - startColumnCount);
 }
@@ -20,15 +25,15 @@ export function lengthDiff(startLineCount: number, startColumnCount: number, end
 /**
  * Represents a non-negative length in terms of line and column count.
  * Does not allocate.
-*/
+ */
 export type Length = { _brand: 'Length' };
 
-// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+// eslint-disable-next-line local/code-no-any-casts
 export const lengthZero = 0 as any as Length;
 
 export function lengthIsZero(length: Length): boolean {
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
-	return length as any as number === 0;
+	// eslint-disable-next-line local/code-no-any-casts
+	return (length as any as number) === 0;
 }
 
 /*
@@ -48,12 +53,12 @@ export function toLength(lineCount: number, columnCount: number): Length {
 	// If there is no overflow (all values/sums below 2^26 = 67108864),
 	// we have `toLength(lns1, cols1) + toLength(lns2, cols2) = toLength(lns1 + lns2, cols1 + cols2)`.
 
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	return (lineCount * factor + columnCount) as any as Length;
 }
 
 export function lengthToObj(length: Length): TextLength {
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	const l = length as any as number;
 	const lineCount = Math.floor(l / factor);
 	const columnCount = l - lineCount * factor;
@@ -61,26 +66,27 @@ export function lengthToObj(length: Length): TextLength {
 }
 
 export function lengthGetLineCount(length: Length): number {
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
-	return Math.floor(length as any as number / factor);
+	// eslint-disable-next-line local/code-no-any-casts
+	return Math.floor((length as any as number) / factor);
 }
 
 /**
  * Returns the amount of columns of the given length, assuming that it does not span any line.
-*/
+ */
 export function lengthGetColumnCountIfZeroLineCount(length: Length): number {
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	return length as any as number;
 }
-
 
 // [10 lines, 5 cols] + [ 0 lines, 3 cols] = [10 lines, 8 cols]
 // [10 lines, 5 cols] + [20 lines, 3 cols] = [30 lines, 3 cols]
 export function lengthAdd(length1: Length, length2: Length): Length;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export function lengthAdd(l1: any, l2: any): Length {
 	let r = l1 + l2;
-	if (l2 >= factor) { r = r - (l1 % factor); }
+	if (l2 >= factor) {
+		r = r - (l1 % factor);
+	}
 	return r;
 }
 
@@ -96,9 +102,9 @@ export function lengthEquals(length1: Length, length2: Length): boolean {
  * Returns a non negative length `result` such that `lengthAdd(length1, result) = length2`, or zero if such length does not exist.
  */
 export function lengthDiffNonNegative(length1: Length, length2: Length): Length {
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	const l1 = length1 as any as number;
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	const l2 = length2 as any as number;
 
 	const diff = l2 - l1;
@@ -123,22 +129,22 @@ export function lengthDiffNonNegative(length1: Length, length2: Length): Length 
 
 export function lengthLessThan(length1: Length, length2: Length): boolean {
 	// First, compare line counts, then column counts.
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	return (length1 as any as number) < (length2 as any as number);
 }
 
 export function lengthLessThanEqual(length1: Length, length2: Length): boolean {
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	return (length1 as any as number) <= (length2 as any as number);
 }
 
 export function lengthGreaterThanEqual(length1: Length, length2: Length): boolean {
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	return (length1 as any as number) >= (length2 as any as number);
 }
 
 export function lengthToPosition(length: Length): Position {
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	const l = length as any as number;
 	const lineCount = Math.floor(l / factor);
 	const colCount = l - lineCount * factor;
@@ -150,12 +156,12 @@ export function positionToLength(position: Position): Length {
 }
 
 export function lengthsToRange(lengthStart: Length, lengthEnd: Length): Range {
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	const l = lengthStart as any as number;
 	const lineCount = Math.floor(l / factor);
 	const colCount = l - lineCount * factor;
 
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	const l2 = lengthEnd as any as number;
 	const lineCount2 = Math.floor(l2 / factor);
 	const colCount2 = l2 - lineCount2 * factor;
@@ -172,9 +178,9 @@ export function lengthOfRange(range: Range): TextLength {
 }
 
 export function lengthCompare(length1: Length, length2: Length): number {
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	const l1 = length1 as any as number;
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	const l2 = length2 as any as number;
 	return l1 - l2;
 }
@@ -191,9 +197,9 @@ export function lengthOfStringObj(str: string): TextLength {
 
 /**
  * Computes a numeric hash of the given length.
-*/
+ */
 export function lengthHash(length: Length): number {
-	// eslint-disable-next-line local/code-no-any-casts, @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line local/code-no-any-casts
 	return length as any;
 }
 

@@ -16,7 +16,7 @@ export const METERED_CONNECTION_CHANNEL = 'meteredConnection';
 export enum MeteredConnectionCommand {
 	OnDidChangeIsConnectionMetered = 'OnDidChangeIsConnectionMetered',
 	IsConnectionMetered = 'IsConnectionMetered',
-	SetIsBrowserConnectionMetered = 'SetIsBrowserConnectionMetered',
+	SetIsBrowserConnectionMetered = 'SetIsBrowserConnectionMetered'
 }
 
 /**
@@ -43,11 +43,13 @@ export class MeteredConnectionChannelClient extends Disposable implements IMeter
 			}
 		});
 
-		this._register(channel.listen<boolean>(MeteredConnectionCommand.OnDidChangeIsConnectionMetered)(value => {
-			if (this._isConnectionMetered !== value) {
-				this._isConnectionMetered = value;
-				this._onDidChangeIsConnectionMetered.fire(value);
-			}
-		}));
+		this._register(
+			channel.listen<boolean>(MeteredConnectionCommand.OnDidChangeIsConnectionMetered)(value => {
+				if (this._isConnectionMetered !== value) {
+					this._isConnectionMetered = value;
+					this._onDidChangeIsConnectionMetered.fire(value);
+				}
+			})
+		);
 	}
 }

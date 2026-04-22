@@ -6,10 +6,13 @@
 import { IDisposable } from '../../../../base/common/lifecycle.js';
 import { IObservableWithChange, IObserver } from '../../../../base/common/observable.js';
 
-export function onObservableChange<T>(observable: IObservableWithChange<unknown, T>, callback: (value: T) => void): IDisposable {
+export function onObservableChange<T>(
+	observable: IObservableWithChange<unknown, T>,
+	callback: (value: T) => void
+): IDisposable {
 	const o: IObserver = {
-		beginUpdate() { },
-		endUpdate() { },
+		beginUpdate() {},
+		endUpdate() {},
 		handlePossibleChange(observable) {
 			observable.reportChanges();
 		},

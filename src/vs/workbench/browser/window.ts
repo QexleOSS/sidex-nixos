@@ -4,9 +4,28 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { isSafari, setFullscreen } from '../../base/browser/browser.js';
-import { addDisposableListener, EventHelper, EventType, getWindow, getWindowById, getWindows, getWindowsCount, hasAppFocus, windowOpenNoOpener, windowOpenPopup, windowOpenWithSuccess } from '../../base/browser/dom.js';
+import {
+	addDisposableListener,
+	EventHelper,
+	EventType,
+	getWindow,
+	getWindowById,
+	getWindows,
+	getWindowsCount,
+	hasAppFocus,
+	windowOpenNoOpener,
+	windowOpenPopup,
+	windowOpenWithSuccess
+} from '../../base/browser/dom.js';
 import { DomEmitter } from '../../base/browser/event.js';
-import { HidDeviceData, requestHidDevice, requestSerialPort, requestUsbDevice, SerialPortData, UsbDeviceData } from '../../base/browser/deviceAccess.js';
+import {
+	HidDeviceData,
+	requestHidDevice,
+	requestSerialPort,
+	requestUsbDevice,
+	SerialPortData,
+	UsbDeviceData
+} from '../../base/browser/deviceAccess.js';
 import { timeout } from '../../base/common/async.js';
 import { Event } from '../../base/common/event.js';
 import { Disposable, IDisposable, dispose, toDisposable } from '../../base/common/lifecycle.js';
@@ -35,17 +54,16 @@ import { MarkdownString } from '../../base/common/htmlContent.js';
 import { IContextMenuService } from '../../platform/contextview/browser/contextView.js';
 
 export abstract class BaseWindow extends Disposable {
-
 	private static TIMEOUT_HANDLES = Number.MIN_SAFE_INTEGER; // try to not compete with the IDs of native `setTimeout`
 	private static readonly TIMEOUT_DISPOSABLES = new Map<number, Set<IDisposable>>();
 
 	constructor(
 		targetWindow: CodeWindow,
-		dom = { getWindowsCount, getWindows }, /* for testing */
+		dom = { getWindowsCount, getWindows } /* for testing */,
 		@IHostService protected readonly hostService: IHostService,
 		@IWorkbenchEnvironmentService protected readonly environmentService: IWorkbenchEnvironmentService,
 		@IContextMenuService protected readonly contextMenuService: IContextMenuService,
-		@IWorkbenchLayoutService protected readonly layoutService: IWorkbenchLayoutService,
+		@IWorkbenchLayoutService protected readonly layoutService: IWorkbenchLayoutService
 	) {
 		super();
 
@@ -63,7 +81,6 @@ export abstract class BaseWindow extends Disposable {
 
 		const that = this;
 		targetWindow.HTMLElement.prototype.focus = function (this: HTMLElement, options?: FocusOptions | undefined): void {
-
 			// Ensure the window the element belongs to is focused
 			// in scenarios where auxiliary windows are present
 			that.onElementFocus(getWindow(this));
@@ -74,10 +91,8 @@ export abstract class BaseWindow extends Disposable {
 	}
 
 	private onElementFocus(targetWindow: CodeWindow): void {
-
 		// Check if focus should transfer: the application currently has focus somewhere, but not in the target window.
 		if (!targetWindow.document.hasFocus() && hasAppFocus()) {
-
 			// Call original focus()
 			targetWindow.focus();
 
@@ -94,10 +109,7 @@ export abstract class BaseWindow extends Disposable {
 			// are opened in the same process group while the target window
 			// is not focused.
 
-			if (
-				!this.environmentService.extensionTestsLocationURI &&
-				!targetWindow.document.hasFocus()
-			) {
+			if (!this.environmentService.extensionTestsLocationURI && !targetWindow.document.hasFocus()) {
 				this.hostService.focus(targetWindow);
 			}
 		}
@@ -108,7 +120,6 @@ export abstract class BaseWindow extends Disposable {
 	//#region timeout handling in multi-window applications
 
 	protected enableMultiWindowAwareTimeout(targetWindow: Window, dom = { getWindowsCount, getWindows }): void {
-
 		// Override `setTimeout` and `clearTimeout` on the provided window to make
 		// sure timeouts are dispatched to all opened windows. Some browsers may decide
 		// to throttle timeouts in minimized windows, so with this we can ensure the
@@ -121,7 +132,11 @@ export abstract class BaseWindow extends Disposable {
 		Object.defineProperty(targetWindow, 'vscodeOriginalClearTimeout', { get: () => originalClearTimeout });
 
 		targetWindow.setTimeout = function (this: unknown, handler: TimerHandler, timeout = 0, ...args: unknown[]): number {
-			if (dom.getWindowsCount() === 1 || typeof handler === 'string' || timeout === 0 /* immediates are never throttled */) {
+			if (
+				dom.getWindowsCount() === 1 ||
+				typeof handler === 'string' ||
+				timeout === 0 /* immediates are never throttled */
+			) {
 				return originalSetTimeout.apply(this, [handler, timeout, ...args]);
 			}
 
@@ -143,16 +158,25 @@ export abstract class BaseWindow extends Disposable {
 				// this can happen for timeouts on unfocused windows
 				let didClear = false;
 
-				const handle = (window as { vscodeOriginalSetTimeout?: typeof window.setTimeout }).vscodeOriginalSetTimeout?.apply(this, [(...args: unknown[]) => {
-					if (didClear) {
-						return;
-					}
-					handlerFn(...args);
-				}, timeout, ...args]);
+				const handle = (
+					window as { vscodeOriginalSetTimeout?: typeof window.setTimeout }
+				).vscodeOriginalSetTimeout?.apply(this, [
+					(...args: unknown[]) => {
+						if (didClear) {
+							return;
+						}
+						handlerFn(...args);
+					},
+					timeout,
+					...args
+				]);
 
 				const timeoutDisposable = toDisposable(() => {
 					didClear = true;
-					(window as { vscodeOriginalClearTimeout?: typeof window.clearTimeout }).vscodeOriginalClearTimeout?.apply(this, [handle]);
+					(window as { vscodeOriginalClearTimeout?: typeof window.clearTimeout }).vscodeOriginalClearTimeout?.apply(
+						this,
+						[handle]
+					);
 					timeoutDisposables.delete(timeoutDisposable);
 				});
 
@@ -164,7 +188,8 @@ export abstract class BaseWindow extends Disposable {
 		};
 
 		targetWindow.clearTimeout = function (this: unknown, timeoutHandle: number | undefined): void {
-			const timeoutDisposables = typeof timeoutHandle === 'number' ? BaseWindow.TIMEOUT_DISPOSABLES.get(timeoutHandle) : undefined;
+			const timeoutDisposables =
+				typeof timeoutHandle === 'number' ? BaseWindow.TIMEOUT_DISPOSABLES.get(timeoutHandle) : undefined;
 			if (timeoutDisposables) {
 				dispose(timeoutDisposables);
 				BaseWindow.TIMEOUT_DISPOSABLES.delete(timeoutHandle!);
@@ -182,18 +207,24 @@ export abstract class BaseWindow extends Disposable {
 		const dialogService = accessor.get(IDialogService);
 		const configurationService = accessor.get(IConfigurationService);
 
-		const message = reason === ShutdownReason.QUIT ?
-			(isMacintosh ? localize('quitMessageMac', "Are you sure you want to quit?") : localize('quitMessage', "Are you sure you want to exit?")) :
-			localize('closeWindowMessage', "Are you sure you want to close the window?");
-		const primaryButton = reason === ShutdownReason.QUIT ?
-			(isMacintosh ? localize({ key: 'quitButtonLabel', comment: ['&& denotes a mnemonic'] }, "&&Quit") : localize({ key: 'exitButtonLabel', comment: ['&& denotes a mnemonic'] }, "&&Exit")) :
-			localize({ key: 'closeWindowButtonLabel', comment: ['&& denotes a mnemonic'] }, "&&Close Window");
+		const message =
+			reason === ShutdownReason.QUIT
+				? isMacintosh
+					? localize('quitMessageMac', 'Are you sure you want to quit?')
+					: localize('quitMessage', 'Are you sure you want to exit?')
+				: localize('closeWindowMessage', 'Are you sure you want to close the window?');
+		const primaryButton =
+			reason === ShutdownReason.QUIT
+				? isMacintosh
+					? localize({ key: 'quitButtonLabel', comment: ['&& denotes a mnemonic'] }, '&&Quit')
+					: localize({ key: 'exitButtonLabel', comment: ['&& denotes a mnemonic'] }, '&&Exit')
+				: localize({ key: 'closeWindowButtonLabel', comment: ['&& denotes a mnemonic'] }, '&&Close Window');
 
 		const res = await dialogService.confirm({
 			message,
 			primaryButton,
 			checkbox: {
-				label: localize('doNotAskAgain', "Do not ask me again")
+				label: localize('doNotAskAgain', 'Do not ask me again')
 			}
 		});
 
@@ -208,14 +239,16 @@ export abstract class BaseWindow extends Disposable {
 	//#endregion
 
 	private registerFullScreenListeners(targetWindowId: number): void {
-		this._register(this.hostService.onDidChangeFullScreen(({ windowId, fullscreen }) => {
-			if (windowId === targetWindowId) {
-				const targetWindow = getWindowById(targetWindowId);
-				if (targetWindow) {
-					setFullscreen(fullscreen, targetWindow.window);
+		this._register(
+			this.hostService.onDidChangeFullScreen(({ windowId, fullscreen }) => {
+				if (windowId === targetWindowId) {
+					const targetWindow = getWindowById(targetWindowId);
+					if (targetWindow) {
+						setFullscreen(fullscreen, targetWindow.window);
+					}
 				}
-			}
-		}));
+			})
+		);
 	}
 
 	private registerContextMenuListeners(targetWindow: Window): void {
@@ -225,25 +258,26 @@ export abstract class BaseWindow extends Disposable {
 			return;
 		}
 
-		const update = (visible: boolean) => this.layoutService.activeContainer.classList.toggle('context-menu-visible', visible);
+		const update = (visible: boolean) =>
+			this.layoutService.activeContainer.classList.toggle('context-menu-visible', visible);
 		this._register(this.contextMenuService.onDidShowContextMenu(() => update(true)));
 		this._register(this.contextMenuService.onDidHideContextMenu(() => update(false)));
 	}
 }
 
 export class BrowserWindow extends BaseWindow {
-
 	constructor(
 		@IOpenerService private readonly openerService: IOpenerService,
 		@ILifecycleService private readonly lifecycleService: BrowserLifecycleService,
 		@IDialogService private readonly dialogService: IDialogService,
 		@ILabelService private readonly labelService: ILabelService,
 		@IProductService private readonly productService: IProductService,
-		@IBrowserWorkbenchEnvironmentService private readonly browserEnvironmentService: IBrowserWorkbenchEnvironmentService,
+		@IBrowserWorkbenchEnvironmentService
+		private readonly browserEnvironmentService: IBrowserWorkbenchEnvironmentService,
 		@IWorkbenchLayoutService layoutService: IWorkbenchLayoutService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IHostService hostService: IHostService,
-		@IContextMenuService contextMenuService: IContextMenuService,
+		@IContextMenuService contextMenuService: IContextMenuService
 	) {
 		super(mainWindow, undefined, hostService, browserEnvironmentService, contextMenuService, layoutService);
 
@@ -252,41 +286,53 @@ export class BrowserWindow extends BaseWindow {
 	}
 
 	private registerListeners(): void {
-
 		// Lifecycle
 		this._register(this.lifecycleService.onWillShutdown(() => this.onWillShutdown()));
 
 		// Layout
-		const viewport = isIOS && mainWindow.visualViewport ? mainWindow.visualViewport /** Visual viewport */ : mainWindow /** Layout viewport */;
-		this._register(addDisposableListener(viewport, EventType.RESIZE, () => {
-			this.layoutService.layout();
+		const viewport =
+			isIOS && mainWindow.visualViewport
+				? mainWindow.visualViewport /** Visual viewport */
+				: mainWindow; /** Layout viewport */
+		this._register(
+			addDisposableListener(viewport, EventType.RESIZE, () => {
+				this.layoutService.layout();
 
-			// Sometimes the keyboard appearing scrolls the whole workbench out of view, as a workaround scroll back into view #121206
-			if (isIOS) {
-				mainWindow.scrollTo(0, 0);
-			}
-		}));
+				// Sometimes the keyboard appearing scrolls the whole workbench out of view, as a workaround scroll back into view #121206
+				if (isIOS) {
+					mainWindow.scrollTo(0, 0);
+				}
+			})
+		);
 
 		// Prevent the back/forward gestures in macOS
-		this._register(addDisposableListener(this.layoutService.mainContainer, EventType.WHEEL, e => e.preventDefault(), { passive: false }));
+		this._register(
+			addDisposableListener(this.layoutService.mainContainer, EventType.WHEEL, e => e.preventDefault(), {
+				passive: false
+			})
+		);
 
 		// Prevent native context menus in web
-		this._register(addDisposableListener(this.layoutService.mainContainer, EventType.CONTEXT_MENU, e => EventHelper.stop(e, true)));
+		this._register(
+			addDisposableListener(this.layoutService.mainContainer, EventType.CONTEXT_MENU, e => EventHelper.stop(e, true))
+		);
 
 		// Prevent default navigation on drop
-		this._register(addDisposableListener(this.layoutService.mainContainer, EventType.DROP, e => EventHelper.stop(e, true)));
+		this._register(
+			addDisposableListener(this.layoutService.mainContainer, EventType.DROP, e => EventHelper.stop(e, true))
+		);
 	}
 
 	private onWillShutdown(): void {
-
 		// Try to detect some user interaction with the workbench
 		// when shutdown has happened to not show the dialog e.g.
 		// when navigation takes a longer time.
-		Event.toPromise(Event.any(
-			Event.once(new DomEmitter(mainWindow.document.body, EventType.KEY_DOWN, true).event),
-			Event.once(new DomEmitter(mainWindow.document.body, EventType.MOUSE_DOWN, true).event)
-		)).then(async () => {
-
+		Event.toPromise(
+			Event.any(
+				Event.once(new DomEmitter(mainWindow.document.body, EventType.KEY_DOWN, true).event),
+				Event.once(new DomEmitter(mainWindow.document.body, EventType.MOUSE_DOWN, true).event)
+			)
+		).then(async () => {
 			// Delay the dialog in case the user interacted
 			// with the page before it transitioned away
 			await timeout(3000);
@@ -297,11 +343,11 @@ export class BrowserWindow extends BaseWindow {
 			// state.
 			await this.dialogService.prompt({
 				type: Severity.Error,
-				message: localize('shutdownError', "An unexpected error occurred that requires a reload of this page."),
-				detail: localize('shutdownErrorDetail', "The workbench was unexpectedly disposed while running."),
+				message: localize('shutdownError', 'An unexpected error occurred that requires a reload of this page.'),
+				detail: localize('shutdownErrorDetail', 'The workbench was unexpectedly disposed while running.'),
 				buttons: [
 					{
-						label: localize({ key: 'reload', comment: ['&& denotes a mnemonic'] }, "&&Reload"),
+						label: localize({ key: 'reload', comment: ['&& denotes a mnemonic'] }, '&&Reload'),
 						run: () => mainWindow.location.reload() // do not use any services at this point since they are likely not functional at this point
 					}
 				]
@@ -310,7 +356,6 @@ export class BrowserWindow extends BaseWindow {
 	}
 
 	private create(): void {
-
 		// Handle open calls
 		this.setupOpenHandlers();
 
@@ -331,7 +376,6 @@ export class BrowserWindow extends BaseWindow {
 	}
 
 	private setupOpenHandlers(): void {
-
 		// We need to ignore the `beforeunload` event while
 		// we handle external links to open specifically for
 		// the case of application protocols that e.g. invoke
@@ -358,14 +402,28 @@ export class BrowserWindow extends BaseWindow {
 						if (!opened) {
 							await this.dialogService.prompt({
 								type: Severity.Warning,
-								message: localize('unableToOpenExternal', "The browser blocked opening a new tab or window. Press 'Retry' to try again."),
+								message: localize(
+									'unableToOpenExternal',
+									"The browser blocked opening a new tab or window. Press 'Retry' to try again."
+								),
 								custom: {
-									markdownDetails: [{ markdown: new MarkdownString(localize('unableToOpenWindowDetail', "Please allow pop-ups for this website in your [browser settings]({0}).", 'https://aka.ms/allow-vscode-popup'), true) }]
+									markdownDetails: [
+										{
+											markdown: new MarkdownString(
+												localize(
+													'unableToOpenWindowDetail',
+													'Please allow pop-ups for this website in your [browser settings]({0}).',
+													'https://aka.ms/allow-vscode-popup'
+												),
+												true
+											)
+										}
+									]
 								},
 								buttons: [
 									{
-										label: localize({ key: 'retry', comment: ['&& denotes a mnemonic'] }, "&&Retry"),
-										run: () => isAllowedOpener ? windowOpenPopup(href) : windowOpenNoOpener(href)
+										label: localize({ key: 'retry', comment: ['&& denotes a mnemonic'] }, '&&Retry'),
+										run: () => (isAllowedOpener ? windowOpenPopup(href) : windowOpenNoOpener(href))
 									}
 								],
 								cancelButton: true
@@ -385,7 +443,10 @@ export class BrowserWindow extends BaseWindow {
 				// handling explicitly to prevent the workbench from going down.
 				else {
 					const invokeProtocolHandler = () => {
-						this.lifecycleService.withExpectedShutdown({ disableShutdownHandling: true }, () => mainWindow.location.href = href);
+						this.lifecycleService.withExpectedShutdown(
+							{ disableShutdownHandling: true },
+							() => (mainWindow.location.href = href)
+						);
 					};
 
 					invokeProtocolHandler();
@@ -396,7 +457,10 @@ export class BrowserWindow extends BaseWindow {
 
 						const buttons: IPromptButton<void>[] = [
 							{
-								label: localize({ key: 'openExternalDialogButtonRetry.v2', comment: ['&& denotes a mnemonic'] }, "&&Try Again"),
+								label: localize(
+									{ key: 'openExternalDialogButtonRetry.v2', comment: ['&& denotes a mnemonic'] },
+									'&&Try Again'
+								),
 								run: () => invokeProtocolHandler()
 							}
 						];
@@ -404,13 +468,16 @@ export class BrowserWindow extends BaseWindow {
 						if (downloadUrl !== undefined) {
 							detail = localize(
 								'openExternalDialogDetail.v2',
-								"We launched {0} on your computer.\n\nIf {1} did not launch, try again or install it below.",
+								'We launched {0} on your computer.\n\nIf {1} did not launch, try again or install it below.',
 								this.productService.nameLong,
 								this.productService.nameLong
 							);
 
 							buttons.push({
-								label: localize({ key: 'openExternalDialogButtonInstall.v3', comment: ['&& denotes a mnemonic'] }, "&&Install"),
+								label: localize(
+									{ key: 'openExternalDialogButtonInstall.v3', comment: ['&& denotes a mnemonic'] },
+									'&&Install'
+								),
 								run: async () => {
 									await this.openerService.open(URI.parse(downloadUrl));
 
@@ -421,7 +488,7 @@ export class BrowserWindow extends BaseWindow {
 						} else {
 							detail = localize(
 								'openExternalDialogDetailNoInstall',
-								"We launched {0} on your computer.\n\nIf {1} did not launch, try again below.",
+								'We launched {0} on your computer.\n\nIf {1} did not launch, try again below.',
 								this.productService.nameLong,
 								this.productService.nameLong
 							);
@@ -429,13 +496,15 @@ export class BrowserWindow extends BaseWindow {
 
 						// While this dialog shows, closing the tab will not display a confirmation dialog
 						// to avoid showing the user two dialogs at once
-						await this.hostService.withExpectedShutdown(() => this.dialogService.prompt({
-							type: Severity.Info,
-							message: localize('openExternalDialogTitle', "All done. You can close this tab now."),
-							detail,
-							buttons,
-							cancelButton: true
-						}));
+						await this.hostService.withExpectedShutdown(() =>
+							this.dialogService.prompt({
+								type: Severity.Info,
+								message: localize('openExternalDialogTitle', 'All done. You can close this tab now.'),
+								detail,
+								buttons,
+								cancelButton: true
+							})
+						);
 					};
 
 					// We cannot know whether the protocol handler succeeded.
@@ -451,31 +520,41 @@ export class BrowserWindow extends BaseWindow {
 	}
 
 	private registerLabelFormatters(): void {
-		this._register(this.labelService.registerFormatter({
-			scheme: Schemas.vscodeUserData,
-			priority: true,
-			formatting: {
-				label: '(Settings) ${path}',
-				separator: '/',
-			}
-		}));
+		this._register(
+			this.labelService.registerFormatter({
+				scheme: Schemas.vscodeUserData,
+				priority: true,
+				formatting: {
+					label: '(Settings) ${path}',
+					separator: '/'
+				}
+			})
+		);
 	}
 
 	private registerCommands(): void {
-
 		// Allow extensions to request USB devices in Web
-		CommandsRegistry.registerCommand('workbench.experimental.requestUsbDevice', async (_accessor: ServicesAccessor, options?: { filters?: unknown[] }): Promise<UsbDeviceData | undefined> => {
-			return requestUsbDevice(options);
-		});
+		CommandsRegistry.registerCommand(
+			'workbench.experimental.requestUsbDevice',
+			async (_accessor: ServicesAccessor, options?: { filters?: unknown[] }): Promise<UsbDeviceData | undefined> => {
+				return requestUsbDevice(options);
+			}
+		);
 
 		// Allow extensions to request Serial devices in Web
-		CommandsRegistry.registerCommand('workbench.experimental.requestSerialPort', async (_accessor: ServicesAccessor, options?: { filters?: unknown[] }): Promise<SerialPortData | undefined> => {
-			return requestSerialPort(options);
-		});
+		CommandsRegistry.registerCommand(
+			'workbench.experimental.requestSerialPort',
+			async (_accessor: ServicesAccessor, options?: { filters?: unknown[] }): Promise<SerialPortData | undefined> => {
+				return requestSerialPort(options);
+			}
+		);
 
 		// Allow extensions to request HID devices in Web
-		CommandsRegistry.registerCommand('workbench.experimental.requestHidDevice', async (_accessor: ServicesAccessor, options?: { filters?: unknown[] }): Promise<HidDeviceData | undefined> => {
-			return requestHidDevice(options);
-		});
+		CommandsRegistry.registerCommand(
+			'workbench.experimental.requestHidDevice',
+			async (_accessor: ServicesAccessor, options?: { filters?: unknown[] }): Promise<HidDeviceData | undefined> => {
+				return requestHidDevice(options);
+			}
+		);
 	}
 }

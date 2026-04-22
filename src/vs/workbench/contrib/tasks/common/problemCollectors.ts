@@ -10,7 +10,15 @@ import { IDisposable, DisposableStore, Disposable } from '../../../../base/commo
 
 import { IModelService } from '../../../../editor/common/services/model.js';
 
-import { ILineMatcher, createLineMatcher, ProblemMatcher, IProblemMatch, ApplyToKind, IWatchingPattern, getResource } from './problemMatcher.js';
+import {
+	ILineMatcher,
+	createLineMatcher,
+	ProblemMatcher,
+	IProblemMatch,
+	ApplyToKind,
+	IWatchingPattern,
+	getResource
+} from './problemMatcher.js';
 import { IMarkerService, IMarkerData, MarkerSeverity, IMarker } from '../../../../platform/markers/common/markers.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
@@ -38,7 +46,6 @@ export interface IProblemMatcher {
 }
 
 export abstract class AbstractProblemCollector extends Disposable implements IDisposable {
-
 	private matchers: INumberDictionary<ILineMatcher[]>;
 	private activeMatcher: ILineMatcher | null;
 	protected _numberOfMatches: number;
@@ -69,22 +76,30 @@ export abstract class AbstractProblemCollector extends Disposable implements IDi
 	protected readonly _onDidRequestInvalidateLastMarker = this._register(new Emitter<void>());
 	readonly onDidRequestInvalidateLastMarker = this._onDidRequestInvalidateLastMarker.event;
 
-	constructor(public readonly problemMatchers: ProblemMatcher[], protected markerService: IMarkerService, protected modelService: IModelService, fileService?: IFileService, protected readonly logService?: ILogService) {
+	constructor(
+		public readonly problemMatchers: ProblemMatcher[],
+		protected markerService: IMarkerService,
+		protected modelService: IModelService,
+		fileService?: IFileService,
+		protected readonly logService?: ILogService
+	) {
 		super();
 		this.matchers = Object.create(null);
 		this.bufferLength = 1;
-		problemMatchers.map(elem => createLineMatcher(elem, fileService, logService)).forEach((matcher) => {
-			const length = matcher.matchLength;
-			if (length > this.bufferLength) {
-				this.bufferLength = length;
-			}
-			let value = this.matchers[length];
-			if (!value) {
-				value = [];
-				this.matchers[length] = value;
-			}
-			value.push(matcher);
-		});
+		problemMatchers
+			.map(elem => createLineMatcher(elem, fileService, logService))
+			.forEach(matcher => {
+				const length = matcher.matchLength;
+				if (length > this.bufferLength) {
+					this.bufferLength = length;
+				}
+				let value = this.matchers[length];
+				if (!value) {
+					value = [];
+					this.matchers[length] = value;
+				}
+				value.push(matcher);
+			});
 		this.buffer = [];
 		this.activeMatcher = null;
 		this._numberOfMatches = 0;
@@ -102,13 +117,25 @@ export abstract class AbstractProblemCollector extends Disposable implements IDi
 		this.resourcesToClean = new Map<string, Map<string, URI>>();
 		this.markers = new Map<string, Map<string, Map<string, IMarkerData>>>();
 		this.deliveredMarkers = new Map<string, Map<string, number>>();
-		this._register(this.modelService.onModelAdded((model) => {
-			this.openModels[model.uri.toString()] = true;
-		}, this, this.modelListeners));
-		this._register(this.modelService.onModelRemoved((model) => {
-			delete this.openModels[model.uri.toString()];
-		}, this, this.modelListeners));
-		this.modelService.getModels().forEach(model => this.openModels[model.uri.toString()] = true);
+		this._register(
+			this.modelService.onModelAdded(
+				model => {
+					this.openModels[model.uri.toString()] = true;
+				},
+				this,
+				this.modelListeners
+			)
+		);
+		this._register(
+			this.modelService.onModelRemoved(
+				model => {
+					delete this.openModels[model.uri.toString()];
+				},
+				this,
+				this.modelListeners
+			)
+		);
+		this.modelService.getModels().forEach(model => (this.openModels[model.uri.toString()] = true));
 
 		this._onDidStateChange = this._register(new Emitter());
 	}
@@ -228,7 +255,9 @@ export abstract class AbstractProblemCollector extends Disposable implements IDi
 
 	protected recordResourcesToClean(owner: string): void {
 		const resourceSetToClean = this.getResourceSetToClean(owner);
-		this.markerService.read({ owner: owner }).forEach(marker => resourceSetToClean.set(marker.resource.toString(), marker.resource));
+		this.markerService
+			.read({ owner: owner })
+			.forEach(marker => resourceSetToClean.set(marker.resource.toString(), marker.resource));
 	}
 
 	protected recordResourceToClean(owner: string, resource: URI): void {
@@ -294,7 +323,11 @@ export abstract class AbstractProblemCollector extends Disposable implements IDi
 		let existingMarker;
 		if (!markersPerResource.has(key)) {
 			markersPerResource.set(key, marker);
-		} else if (((existingMarker = markersPerResource.get(key)) !== undefined) && (existingMarker.message.length < marker.message.length) && isWindows) {
+		} else if (
+			(existingMarker = markersPerResource.get(key)) !== undefined &&
+			existingMarker.message.length < marker.message.length &&
+			isWindows
+		) {
 			// Most likely https://github.com/microsoft/vscode/issues/77475
 			// Heuristic dictates that when the key is the same and message is smaller, we have hit this limitation.
 			markersPerResource.set(key, marker);
@@ -323,7 +356,12 @@ export abstract class AbstractProblemCollector extends Disposable implements IDi
 		this.deliverMarkersPerOwnerAndResourceResolved(owner, resource, markersPerResource, deliveredMarkersPerOwner);
 	}
 
-	private deliverMarkersPerOwnerAndResourceResolved(owner: string, resource: string, markers: Map<string, IMarkerData>, reported: Map<string, number>): void {
+	private deliverMarkersPerOwnerAndResourceResolved(
+		owner: string,
+		resource: string,
+		markers: Map<string, IMarkerData>,
+		reported: Map<string, number>
+	): void {
 		if (markers.size !== reported.get(resource)) {
 			const toSet: IMarkerData[] = [];
 			markers.forEach(value => toSet.push(value));
@@ -366,12 +404,19 @@ export class StartStopProblemCollector extends AbstractProblemCollector implemen
 
 	private _hasStarted: boolean = false;
 
-	constructor(problemMatchers: ProblemMatcher[], markerService: IMarkerService, modelService: IModelService, _strategy: ProblemHandlingStrategy = ProblemHandlingStrategy.Clean, fileService?: IFileService, logService?: ILogService) {
+	constructor(
+		problemMatchers: ProblemMatcher[],
+		markerService: IMarkerService,
+		modelService: IModelService,
+		_strategy: ProblemHandlingStrategy = ProblemHandlingStrategy.Clean,
+		fileService?: IFileService,
+		logService?: ILogService
+	) {
 		super(problemMatchers, markerService, modelService, fileService, logService);
 		const ownerSet: { [key: string]: boolean } = Object.create(null);
-		problemMatchers.forEach(description => ownerSet[description.owner] = true);
+		problemMatchers.forEach(description => (ownerSet[description.owner] = true));
 		this.owners = Object.keys(ownerSet);
-		this.owners.forEach((owner) => {
+		this.owners.forEach(owner => {
 			this.recordResourcesToClean(owner);
 		});
 	}
@@ -412,7 +457,6 @@ interface IBackgroundPatterns {
 }
 
 export class WatchingProblemCollector extends AbstractProblemCollector implements IProblemMatcher {
-
 	private backgroundPatterns: IBackgroundPatterns[];
 
 	// workaround for https://github.com/microsoft/vscode/issues/44018
@@ -424,7 +468,13 @@ export class WatchingProblemCollector extends AbstractProblemCollector implement
 
 	private lines: string[] = [];
 	public beginPatterns: RegExp[] = [];
-	constructor(problemMatchers: ProblemMatcher[], markerService: IMarkerService, modelService: IModelService, fileService?: IFileService, logService?: ILogService) {
+	constructor(
+		problemMatchers: ProblemMatcher[],
+		markerService: IMarkerService,
+		modelService: IModelService,
+		fileService?: IFileService,
+		logService?: ILogService
+	) {
 		super(problemMatchers, markerService, modelService, fileService, logService);
 		this.resetCurrentResource();
 		this.backgroundPatterns = [];
@@ -442,51 +492,58 @@ export class WatchingProblemCollector extends AbstractProblemCollector implement
 			}
 		});
 
-		this.modelListeners.add(this.modelService.onModelRemoved(modelEvent => {
-			let markerChanged: IDisposable | undefined = Event.debounce(
-				this.markerService.onMarkerChanged,
-				(last: readonly URI[] | undefined, e: readonly URI[]) => (last ?? []).concat(e),
-				500,
-				false,
-				true
-			)(async (markerEvent: readonly URI[]) => {
-				if (markerEvent.length === 0) {
-					return;
-				}
-				const modelEventUriStr = modelEvent.uri.toString();
-				if ((!markerEvent.some(uri => uri.toString() === modelEventUriStr)) || (this.markerService.read({ resource: modelEvent.uri }).length !== 0)) {
-					return;
-				}
-				const oldLines = Array.from(this.lines);
-				for (const line of oldLines) {
-					await this.processLineInternal(line);
-				}
-			});
+		this.modelListeners.add(
+			this.modelService.onModelRemoved(modelEvent => {
+				let markerChanged: IDisposable | undefined = Event.debounce(
+					this.markerService.onMarkerChanged,
+					(last: readonly URI[] | undefined, e: readonly URI[]) => (last ?? []).concat(e),
+					500,
+					false,
+					true
+				)(async (markerEvent: readonly URI[]) => {
+					if (markerEvent.length === 0) {
+						return;
+					}
+					const modelEventUriStr = modelEvent.uri.toString();
+					if (
+						!markerEvent.some(uri => uri.toString() === modelEventUriStr) ||
+						this.markerService.read({ resource: modelEvent.uri }).length !== 0
+					) {
+						return;
+					}
+					const oldLines = Array.from(this.lines);
+					for (const line of oldLines) {
+						await this.processLineInternal(line);
+					}
+				});
 
-			// Dispose the debounced listener after timeout - no need to register it since
-			// it's only used temporarily and will be disposed below
-			setTimeout(() => {
-				if (markerChanged) {
-					const _markerChanged = markerChanged;
-					markerChanged = undefined;
-					_markerChanged.dispose();
-				}
-			}, 600);
-		}));
+				// Dispose the debounced listener after timeout - no need to register it since
+				// it's only used temporarily and will be disposed below
+				setTimeout(() => {
+					if (markerChanged) {
+						const _markerChanged = markerChanged;
+						markerChanged = undefined;
+						_markerChanged.dispose();
+					}
+				}, 600);
+			})
+		);
 	}
 
 	public aboutToStart(): void {
 		for (const background of this.backgroundPatterns) {
 			if (background.matcher.watching && background.matcher.watching.activeOnStart) {
 				this._activeBackgroundMatchers.add(background.key);
-				this._onDidStateChange.fire(IProblemCollectorEvent.create(ProblemCollectorEventKind.BackgroundProcessingBegins));
+				this._onDidStateChange.fire(
+					IProblemCollectorEvent.create(ProblemCollectorEventKind.BackgroundProcessingBegins)
+				);
 				this.recordResourcesToClean(background.matcher.owner);
 			}
 		}
 	}
 
 	protected async processLineInternal(line: string): Promise<void> {
-		if (await this.tryBegin(line) || this.tryFinish(line)) {
+		if ((await this.tryBegin(line)) || this.tryFinish(line)) {
 			return;
 		}
 		this.lines.push(line);
@@ -520,7 +577,10 @@ export class WatchingProblemCollector extends AbstractProblemCollector implement
 			const matches = background.begin.regexp.exec(line);
 			const elapsed = Date.now() - start;
 			if (elapsed > 5) {
-				this.logService?.trace(`ProblemMatcher: slow begin regexp took ${elapsed}ms to execute`, background.begin.regexp.source);
+				this.logService?.trace(
+					`ProblemMatcher: slow begin regexp took ${elapsed}ms to execute`,
+					background.begin.regexp.source
+				);
 			}
 			if (matches) {
 				if (this._activeBackgroundMatchers.has(background.key)) {
@@ -531,7 +591,9 @@ export class WatchingProblemCollector extends AbstractProblemCollector implement
 				this._onDidFindFirstMatch.fire();
 				this.lines = [];
 				this.lines.push(line);
-				this._onDidStateChange.fire(IProblemCollectorEvent.create(ProblemCollectorEventKind.BackgroundProcessingBegins));
+				this._onDidStateChange.fire(
+					IProblemCollectorEvent.create(ProblemCollectorEventKind.BackgroundProcessingBegins)
+				);
 				this.cleanMarkerCaches();
 				this.resetCurrentResource();
 				const owner = background.matcher.owner;
@@ -554,7 +616,10 @@ export class WatchingProblemCollector extends AbstractProblemCollector implement
 			const matches = background.end.regexp.exec(line);
 			const elapsed = Date.now() - start;
 			if (elapsed > 5) {
-				this.logService?.trace(`ProblemMatcher: slow end regexp took ${elapsed}ms to execute`, background.end.regexp.source);
+				this.logService?.trace(
+					`ProblemMatcher: slow end regexp took ${elapsed}ms to execute`,
+					background.end.regexp.source
+				);
 			}
 			if (matches) {
 				if (this._numberOfMatches > 0) {
@@ -565,7 +630,9 @@ export class WatchingProblemCollector extends AbstractProblemCollector implement
 				if (this._activeBackgroundMatchers.delete(background.key)) {
 					this.resetCurrentResource();
 					const capturedVariables = matches.groups ? new Map(Object.entries(matches.groups)) : undefined;
-					this._onDidStateChange.fire(IProblemCollectorEvent.create(ProblemCollectorEventKind.BackgroundProcessingEnds, capturedVariables));
+					this._onDidStateChange.fire(
+						IProblemCollectorEvent.create(ProblemCollectorEventKind.BackgroundProcessingEnds, capturedVariables)
+					);
 					result = true;
 					this.lines.push(line);
 					const owner = background.matcher.owner;

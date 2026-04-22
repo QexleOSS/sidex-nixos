@@ -11,20 +11,20 @@ import { getLogger } from '../logging/logging.js';
 import { BaseObservable } from './baseObservable.js';
 import { DebugLocation } from '../debugLocation.js';
 
-
 export function observableFromEvent<T, TArgs = unknown>(
 	owner: DebugOwner,
 	event: Event<TArgs>,
 	getValue: (args: TArgs | undefined) => T,
-	debugLocation?: DebugLocation,
+	debugLocation?: DebugLocation
 ): IObservable<T>;
 export function observableFromEvent<T, TArgs = unknown>(
 	event: Event<TArgs>,
-	getValue: (args: TArgs | undefined) => T,
+	getValue: (args: TArgs | undefined) => T
 ): IObservable<T>;
-export function observableFromEvent(...args:
-	[owner: DebugOwner, event: Event<any>, getValue: (args: any | undefined) => any, debugLocation?: DebugLocation] |
-	[event: Event<any>, getValue: (args: any | undefined) => any]
+export function observableFromEvent(
+	...args:
+		| [owner: DebugOwner, event: Event<any>, getValue: (args: any | undefined) => any, debugLocation?: DebugLocation]
+		| [event: Event<any>, getValue: (args: any | undefined) => any]
 ): IObservable<any> {
 	let owner;
 	let event;
@@ -99,7 +99,7 @@ export class FromEventObservable<TArgs, T> extends BaseObservable<T> {
 		const newValue = this._getValue(args);
 		const oldValue = this._value;
 
-		const didChange = !this._hasValue || !(this._equalityComparator(oldValue!, newValue));
+		const didChange = !this._hasValue || !this._equalityComparator(oldValue!, newValue);
 		let didRunTransaction = false;
 
 		if (didChange) {
@@ -109,8 +109,14 @@ export class FromEventObservable<TArgs, T> extends BaseObservable<T> {
 				didRunTransaction = true;
 				subtransaction(
 					this._getTransaction(),
-					(tx) => {
-						getLogger()?.handleObservableUpdated(this, { oldValue, newValue, change: undefined, didChange, hadValue: this._hasValue });
+					tx => {
+						getLogger()?.handleObservableUpdated(this, {
+							oldValue,
+							newValue,
+							change: undefined,
+							didChange,
+							hadValue: this._hasValue
+						});
 
 						for (const o of this._observers) {
 							tx.updateObserver(o, this);
@@ -127,7 +133,13 @@ export class FromEventObservable<TArgs, T> extends BaseObservable<T> {
 		}
 
 		if (!didRunTransaction) {
-			getLogger()?.handleObservableUpdated(this, { oldValue, newValue, change: undefined, didChange, hadValue: this._hasValue });
+			getLogger()?.handleObservableUpdated(this, {
+				oldValue,
+				newValue,
+				change: undefined,
+				didChange,
+				hadValue: this._hasValue
+			});
 		}
 	};
 

@@ -21,7 +21,6 @@ export class DBClosedError extends Error {
 }
 
 export class IndexedDB {
-
 	static async create(name: string, version: number | undefined, stores: string[]): Promise<IndexedDB> {
 		const database = await IndexedDB.openDatabase(name, version, stores);
 		return new IndexedDB(database, name);
@@ -85,7 +84,7 @@ export class IndexedDB {
 
 			// Delete the db
 			const deleteRequest = indexedDB.deleteDatabase(database.name);
-			deleteRequest.onerror = (err) => e(deleteRequest.error);
+			deleteRequest.onerror = err => e(deleteRequest.error);
 			deleteRequest.onsuccess = () => c();
 		});
 	}
@@ -93,7 +92,10 @@ export class IndexedDB {
 	private database: IDBDatabase | null = null;
 	private readonly pendingTransactions: IDBTransaction[] = [];
 
-	constructor(database: IDBDatabase, private readonly name: string) {
+	constructor(
+		database: IDBDatabase,
+		private readonly name: string
+	) {
 		this.database = database;
 	}
 
@@ -104,16 +106,30 @@ export class IndexedDB {
 	close(): void {
 		if (this.pendingTransactions.length) {
 			this.pendingTransactions.splice(0, this.pendingTransactions.length).forEach(transaction => {
-				try { transaction.abort(); } catch {}
+				try {
+					transaction.abort();
+				} catch {}
 			});
 		}
 		this.database?.close();
 		this.database = null;
 	}
 
-	runInTransaction<T>(store: string, transactionMode: IDBTransactionMode, dbRequestFn: (store: IDBObjectStore) => IDBRequest<T>[]): Promise<T[]>;
-	runInTransaction<T>(store: string, transactionMode: IDBTransactionMode, dbRequestFn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T>;
-	async runInTransaction<T>(store: string, transactionMode: IDBTransactionMode, dbRequestFn: (store: IDBObjectStore) => IDBRequest<T> | IDBRequest<T>[]): Promise<T | T[]> {
+	runInTransaction<T>(
+		store: string,
+		transactionMode: IDBTransactionMode,
+		dbRequestFn: (store: IDBObjectStore) => IDBRequest<T>[]
+	): Promise<T[]>;
+	runInTransaction<T>(
+		store: string,
+		transactionMode: IDBTransactionMode,
+		dbRequestFn: (store: IDBObjectStore) => IDBRequest<T>
+	): Promise<T>;
+	async runInTransaction<T>(
+		store: string,
+		transactionMode: IDBTransactionMode,
+		dbRequestFn: (store: IDBObjectStore) => IDBRequest<T> | IDBRequest<T>[]
+	): Promise<T | T[]> {
 		if (!this.database) {
 			throw new DBClosedError(this.name);
 		}
@@ -127,8 +143,10 @@ export class IndexedDB {
 					c(request.result);
 				}
 			};
-			transaction.onerror = () => e(transaction.error ? ErrorNoTelemetry.fromError(transaction.error) : new ErrorNoTelemetry('unknown error'));
-			transaction.onabort = () => e(transaction.error ? ErrorNoTelemetry.fromError(transaction.error) : new ErrorNoTelemetry('unknown error'));
+			transaction.onerror = () =>
+				e(transaction.error ? ErrorNoTelemetry.fromError(transaction.error) : new ErrorNoTelemetry('unknown error'));
+			transaction.onabort = () =>
+				e(transaction.error ? ErrorNoTelemetry.fromError(transaction.error) : new ErrorNoTelemetry('unknown error'));
 			const request = dbRequestFn(transaction.objectStore(store));
 		}).finally(() => this.pendingTransactions.splice(this.pendingTransactions.indexOf(transaction), 1));
 	}
@@ -153,7 +171,6 @@ export class IndexedDB {
 			// Iterate over rows of `ItemTable` until the end
 			cursor.onsuccess = () => {
 				if (cursor.result) {
-
 					// Keep cursor key/value in our map
 					if (isValid(cursor.result.value)) {
 						items.set(cursor.result.key.toString(), cursor.result.value);

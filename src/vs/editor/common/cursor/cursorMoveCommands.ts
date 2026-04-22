@@ -4,7 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as types from '../../../base/common/types.js';
-import { CursorState, ICursorSimpleModel, PartialCursorState, SelectionStartKind, SingleCursorState } from '../cursorCommon.js';
+import {
+	CursorState,
+	ICursorSimpleModel,
+	PartialCursorState,
+	SelectionStartKind,
+	SingleCursorState
+} from '../cursorCommon.js';
 import { MoveOperations } from './cursorMoveOperations.js';
 import { WordOperations } from './cursorWordOperations.js';
 import { IPosition, Position } from '../core/position.js';
@@ -14,38 +20,57 @@ import { IViewModel } from '../viewModel.js';
 import { TextDirection } from '../model.js';
 
 export class CursorMoveCommands {
-
-	public static addCursorDown(viewModel: IViewModel, cursors: CursorState[], useLogicalLine: boolean): PartialCursorState[] {
+	public static addCursorDown(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		useLogicalLine: boolean
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		let resultLen = 0;
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
 			result[resultLen++] = new CursorState(cursor.modelState, cursor.viewState);
 			if (useLogicalLine) {
-				result[resultLen++] = CursorState.fromModelState(MoveOperations.translateDown(viewModel.cursorConfig, viewModel.model, cursor.modelState));
+				result[resultLen++] = CursorState.fromModelState(
+					MoveOperations.translateDown(viewModel.cursorConfig, viewModel.model, cursor.modelState)
+				);
 			} else {
-				result[resultLen++] = CursorState.fromViewState(MoveOperations.translateDown(viewModel.cursorConfig, viewModel, cursor.viewState));
+				result[resultLen++] = CursorState.fromViewState(
+					MoveOperations.translateDown(viewModel.cursorConfig, viewModel, cursor.viewState)
+				);
 			}
 		}
 		return result;
 	}
 
-	public static addCursorUp(viewModel: IViewModel, cursors: CursorState[], useLogicalLine: boolean): PartialCursorState[] {
+	public static addCursorUp(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		useLogicalLine: boolean
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		let resultLen = 0;
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
 			result[resultLen++] = new CursorState(cursor.modelState, cursor.viewState);
 			if (useLogicalLine) {
-				result[resultLen++] = CursorState.fromModelState(MoveOperations.translateUp(viewModel.cursorConfig, viewModel.model, cursor.modelState));
+				result[resultLen++] = CursorState.fromModelState(
+					MoveOperations.translateUp(viewModel.cursorConfig, viewModel.model, cursor.modelState)
+				);
 			} else {
-				result[resultLen++] = CursorState.fromViewState(MoveOperations.translateUp(viewModel.cursorConfig, viewModel, cursor.viewState));
+				result[resultLen++] = CursorState.fromViewState(
+					MoveOperations.translateUp(viewModel.cursorConfig, viewModel, cursor.viewState)
+				);
 			}
 		}
 		return result;
 	}
 
-	public static moveToBeginningOfLine(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean): PartialCursorState[] {
+	public static moveToBeginningOfLine(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
@@ -55,7 +80,11 @@ export class CursorMoveCommands {
 		return result;
 	}
 
-	private static _moveToLineStart(viewModel: IViewModel, cursor: CursorState, inSelectionMode: boolean): PartialCursorState {
+	private static _moveToLineStart(
+		viewModel: IViewModel,
+		cursor: CursorState,
+		inSelectionMode: boolean
+	): PartialCursorState {
 		const currentViewStateColumn = cursor.viewState.position.column;
 		const currentModelStateColumn = cursor.modelState.position.column;
 		const isFirstLineOfWrappedLine = currentViewStateColumn === currentModelStateColumn;
@@ -71,19 +100,32 @@ export class CursorMoveCommands {
 		}
 	}
 
-	private static _moveToLineStartByView(viewModel: IViewModel, cursor: CursorState, inSelectionMode: boolean): PartialCursorState {
+	private static _moveToLineStartByView(
+		viewModel: IViewModel,
+		cursor: CursorState,
+		inSelectionMode: boolean
+	): PartialCursorState {
 		return CursorState.fromViewState(
 			MoveOperations.moveToBeginningOfLine(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode)
 		);
 	}
 
-	private static _moveToLineStartByModel(viewModel: IViewModel, cursor: CursorState, inSelectionMode: boolean): PartialCursorState {
+	private static _moveToLineStartByModel(
+		viewModel: IViewModel,
+		cursor: CursorState,
+		inSelectionMode: boolean
+	): PartialCursorState {
 		return CursorState.fromModelState(
 			MoveOperations.moveToBeginningOfLine(viewModel.cursorConfig, viewModel.model, cursor.modelState, inSelectionMode)
 		);
 	}
 
-	public static moveToEndOfLine(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean, sticky: boolean): PartialCursorState[] {
+	public static moveToEndOfLine(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean,
+		sticky: boolean
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
@@ -93,14 +135,20 @@ export class CursorMoveCommands {
 		return result;
 	}
 
-	private static _moveToLineEnd(viewModel: IViewModel, cursor: CursorState, inSelectionMode: boolean, sticky: boolean): PartialCursorState {
+	private static _moveToLineEnd(
+		viewModel: IViewModel,
+		cursor: CursorState,
+		inSelectionMode: boolean,
+		sticky: boolean
+	): PartialCursorState {
 		const viewStatePosition = cursor.viewState.position;
 		const viewModelMaxColumn = viewModel.getLineMaxColumn(viewStatePosition.lineNumber);
 		const isEndOfViewLine = viewStatePosition.column === viewModelMaxColumn;
 
 		const modelStatePosition = cursor.modelState.position;
 		const modelMaxColumn = viewModel.model.getLineMaxColumn(modelStatePosition.lineNumber);
-		const isEndLineOfWrappedLine = viewModelMaxColumn - viewStatePosition.column === modelMaxColumn - modelStatePosition.column;
+		const isEndLineOfWrappedLine =
+			viewModelMaxColumn - viewStatePosition.column === modelMaxColumn - modelStatePosition.column;
 
 		if (isEndOfViewLine || isEndLineOfWrappedLine) {
 			return this._moveToLineEndByModel(viewModel, cursor, inSelectionMode, sticky);
@@ -109,15 +157,31 @@ export class CursorMoveCommands {
 		}
 	}
 
-	private static _moveToLineEndByView(viewModel: IViewModel, cursor: CursorState, inSelectionMode: boolean, sticky: boolean): PartialCursorState {
+	private static _moveToLineEndByView(
+		viewModel: IViewModel,
+		cursor: CursorState,
+		inSelectionMode: boolean,
+		sticky: boolean
+	): PartialCursorState {
 		return CursorState.fromViewState(
 			MoveOperations.moveToEndOfLine(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode, sticky)
 		);
 	}
 
-	private static _moveToLineEndByModel(viewModel: IViewModel, cursor: CursorState, inSelectionMode: boolean, sticky: boolean): PartialCursorState {
+	private static _moveToLineEndByModel(
+		viewModel: IViewModel,
+		cursor: CursorState,
+		inSelectionMode: boolean,
+		sticky: boolean
+	): PartialCursorState {
 		return CursorState.fromModelState(
-			MoveOperations.moveToEndOfLine(viewModel.cursorConfig, viewModel.model, cursor.modelState, inSelectionMode, sticky)
+			MoveOperations.moveToEndOfLine(
+				viewModel.cursorConfig,
+				viewModel.model,
+				cursor.modelState,
+				inSelectionMode,
+				sticky
+			)
 		);
 	}
 
@@ -138,28 +202,50 @@ export class CursorMoveCommands {
 				endColumn = 1;
 			}
 
-			result[i] = CursorState.fromModelState(new SingleCursorState(
-				new Range(startLineNumber, 1, startLineNumber, 1), SelectionStartKind.Simple, 0,
-				new Position(endLineNumber, endColumn), 0
-			));
+			result[i] = CursorState.fromModelState(
+				new SingleCursorState(
+					new Range(startLineNumber, 1, startLineNumber, 1),
+					SelectionStartKind.Simple,
+					0,
+					new Position(endLineNumber, endColumn),
+					0
+				)
+			);
 		}
 		return result;
 	}
 
-	public static moveToBeginningOfBuffer(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean): PartialCursorState[] {
+	public static moveToBeginningOfBuffer(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
-			result[i] = CursorState.fromModelState(MoveOperations.moveToBeginningOfBuffer(viewModel.cursorConfig, viewModel.model, cursor.modelState, inSelectionMode));
+			result[i] = CursorState.fromModelState(
+				MoveOperations.moveToBeginningOfBuffer(
+					viewModel.cursorConfig,
+					viewModel.model,
+					cursor.modelState,
+					inSelectionMode
+				)
+			);
 		}
 		return result;
 	}
 
-	public static moveToEndOfBuffer(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean): PartialCursorState[] {
+	public static moveToEndOfBuffer(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
-			result[i] = CursorState.fromModelState(MoveOperations.moveToEndOfBuffer(viewModel.cursorConfig, viewModel.model, cursor.modelState, inSelectionMode));
+			result[i] = CursorState.fromModelState(
+				MoveOperations.moveToEndOfBuffer(viewModel.cursorConfig, viewModel.model, cursor.modelState, inSelectionMode)
+			);
 		}
 		return result;
 	}
@@ -168,19 +254,25 @@ export class CursorMoveCommands {
 		const lineCount = viewModel.model.getLineCount();
 		const maxColumn = viewModel.model.getLineMaxColumn(lineCount);
 
-		return CursorState.fromModelState(new SingleCursorState(
-			new Range(1, 1, 1, 1), SelectionStartKind.Simple, 0,
-			new Position(lineCount, maxColumn), 0
-		));
+		return CursorState.fromModelState(
+			new SingleCursorState(new Range(1, 1, 1, 1), SelectionStartKind.Simple, 0, new Position(lineCount, maxColumn), 0)
+		);
 	}
 
-	public static line(viewModel: IViewModel, cursor: CursorState, inSelectionMode: boolean, _position: IPosition, _viewPosition: IPosition | undefined): PartialCursorState {
+	public static line(
+		viewModel: IViewModel,
+		cursor: CursorState,
+		inSelectionMode: boolean,
+		_position: IPosition,
+		_viewPosition: IPosition | undefined
+	): PartialCursorState {
 		const position = viewModel.model.validatePosition(_position);
-		const viewPosition = (
-			_viewPosition
-				? viewModel.coordinatesConverter.validateViewPosition(new Position(_viewPosition.lineNumber, _viewPosition.column), position)
-				: viewModel.coordinatesConverter.convertModelPositionToViewPosition(position)
-		);
+		const viewPosition = _viewPosition
+			? viewModel.coordinatesConverter.validateViewPosition(
+					new Position(_viewPosition.lineNumber, _viewPosition.column),
+					position
+				)
+			: viewModel.coordinatesConverter.convertModelPositionToViewPosition(position);
 
 		if (!inSelectionMode) {
 			// Entering line selection for the first time
@@ -193,23 +285,23 @@ export class CursorMoveCommands {
 				selectToColumn = viewModel.model.getLineMaxColumn(selectToLineNumber);
 			}
 
-			return CursorState.fromModelState(new SingleCursorState(
-				new Range(position.lineNumber, 1, selectToLineNumber, selectToColumn), SelectionStartKind.Line, 0,
-				new Position(selectToLineNumber, selectToColumn), 0
-			));
+			return CursorState.fromModelState(
+				new SingleCursorState(
+					new Range(position.lineNumber, 1, selectToLineNumber, selectToColumn),
+					SelectionStartKind.Line,
+					0,
+					new Position(selectToLineNumber, selectToColumn),
+					0
+				)
+			);
 		}
 
 		// Continuing line selection
 		const enteringLineNumber = cursor.modelState.selectionStart.getStartPosition().lineNumber;
 
 		if (position.lineNumber < enteringLineNumber) {
-
-			return CursorState.fromViewState(cursor.viewState.move(
-				true, viewPosition.lineNumber, 1, 0
-			));
-
+			return CursorState.fromViewState(cursor.viewState.move(true, viewPosition.lineNumber, 1, 0));
 		} else if (position.lineNumber > enteringLineNumber) {
-
 			const lineCount = viewModel.getLineCount();
 
 			let selectToViewLineNumber = viewPosition.lineNumber + 1;
@@ -219,23 +311,25 @@ export class CursorMoveCommands {
 				selectToViewColumn = viewModel.getLineMaxColumn(selectToViewLineNumber);
 			}
 
-			return CursorState.fromViewState(cursor.viewState.move(
-				true, selectToViewLineNumber, selectToViewColumn, 0
-			));
-
+			return CursorState.fromViewState(cursor.viewState.move(true, selectToViewLineNumber, selectToViewColumn, 0));
 		} else {
-
 			const endPositionOfSelectionStart = cursor.modelState.selectionStart.getEndPosition();
-			return CursorState.fromModelState(cursor.modelState.move(
-				true, endPositionOfSelectionStart.lineNumber, endPositionOfSelectionStart.column, 0
-			));
-
+			return CursorState.fromModelState(
+				cursor.modelState.move(true, endPositionOfSelectionStart.lineNumber, endPositionOfSelectionStart.column, 0)
+			);
 		}
 	}
 
-	public static word(viewModel: IViewModel, cursor: CursorState, inSelectionMode: boolean, _position: IPosition): PartialCursorState {
+	public static word(
+		viewModel: IViewModel,
+		cursor: CursorState,
+		inSelectionMode: boolean,
+		_position: IPosition
+	): PartialCursorState {
 		const position = viewModel.model.validatePosition(_position);
-		return CursorState.fromModelState(WordOperations.word(viewModel.cursorConfig, viewModel.model, cursor.modelState, inSelectionMode, position));
+		return CursorState.fromModelState(
+			WordOperations.word(viewModel.cursorConfig, viewModel.model, cursor.modelState, inSelectionMode, position)
+		);
 	}
 
 	public static cancelSelection(viewModel: IViewModel, cursor: CursorState): PartialCursorState {
@@ -246,13 +340,24 @@ export class CursorMoveCommands {
 		const lineNumber = cursor.viewState.position.lineNumber;
 		const column = cursor.viewState.position.column;
 
-		return CursorState.fromViewState(new SingleCursorState(
-			new Range(lineNumber, column, lineNumber, column), SelectionStartKind.Simple, 0,
-			new Position(lineNumber, column), 0
-		));
+		return CursorState.fromViewState(
+			new SingleCursorState(
+				new Range(lineNumber, column, lineNumber, column),
+				SelectionStartKind.Simple,
+				0,
+				new Position(lineNumber, column),
+				0
+			)
+		);
 	}
 
-	public static moveTo(viewModel: IViewModel, cursor: CursorState, inSelectionMode: boolean, _position: IPosition, _viewPosition: IPosition | undefined): PartialCursorState {
+	public static moveTo(
+		viewModel: IViewModel,
+		cursor: CursorState,
+		inSelectionMode: boolean,
+		_position: IPosition,
+		_viewPosition: IPosition | undefined
+	): PartialCursorState {
 		if (inSelectionMode) {
 			if (cursor.modelState.selectionStartKind === SelectionStartKind.Word) {
 				return this.word(viewModel, cursor, inSelectionMode, _position);
@@ -262,15 +367,25 @@ export class CursorMoveCommands {
 			}
 		}
 		const position = viewModel.model.validatePosition(_position);
-		const viewPosition = (
-			_viewPosition
-				? viewModel.coordinatesConverter.validateViewPosition(new Position(_viewPosition.lineNumber, _viewPosition.column), position)
-				: viewModel.coordinatesConverter.convertModelPositionToViewPosition(position)
+		const viewPosition = _viewPosition
+			? viewModel.coordinatesConverter.validateViewPosition(
+					new Position(_viewPosition.lineNumber, _viewPosition.column),
+					position
+				)
+			: viewModel.coordinatesConverter.convertModelPositionToViewPosition(position);
+		return CursorState.fromViewState(
+			cursor.viewState.move(inSelectionMode, viewPosition.lineNumber, viewPosition.column, 0)
 		);
-		return CursorState.fromViewState(cursor.viewState.move(inSelectionMode, viewPosition.lineNumber, viewPosition.column, 0));
 	}
 
-	public static simpleMove(viewModel: IViewModel, cursors: CursorState[], direction: CursorMove.SimpleMoveDirection, inSelectionMode: boolean, value: number, unit: CursorMove.Unit): PartialCursorState[] | null {
+	public static simpleMove(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		direction: CursorMove.SimpleMoveDirection,
+		inSelectionMode: boolean,
+		value: number,
+		unit: CursorMove.Unit
+	): PartialCursorState[] | null {
 		switch (direction) {
 			case CursorMove.Direction.Left: {
 				if (unit === CursorMove.Unit.HalfLine) {
@@ -316,16 +431,42 @@ export class CursorMoveCommands {
 			}
 			case CursorMove.Direction.PrevBlankLine: {
 				if (unit === CursorMove.Unit.WrappedLine) {
-					return cursors.map(cursor => CursorState.fromViewState(MoveOperations.moveToPrevBlankLine(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode)));
+					return cursors.map(cursor =>
+						CursorState.fromViewState(
+							MoveOperations.moveToPrevBlankLine(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode)
+						)
+					);
 				} else {
-					return cursors.map(cursor => CursorState.fromModelState(MoveOperations.moveToPrevBlankLine(viewModel.cursorConfig, viewModel.model, cursor.modelState, inSelectionMode)));
+					return cursors.map(cursor =>
+						CursorState.fromModelState(
+							MoveOperations.moveToPrevBlankLine(
+								viewModel.cursorConfig,
+								viewModel.model,
+								cursor.modelState,
+								inSelectionMode
+							)
+						)
+					);
 				}
 			}
 			case CursorMove.Direction.NextBlankLine: {
 				if (unit === CursorMove.Unit.WrappedLine) {
-					return cursors.map(cursor => CursorState.fromViewState(MoveOperations.moveToNextBlankLine(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode)));
+					return cursors.map(cursor =>
+						CursorState.fromViewState(
+							MoveOperations.moveToNextBlankLine(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode)
+						)
+					);
 				} else {
-					return cursors.map(cursor => CursorState.fromModelState(MoveOperations.moveToNextBlankLine(viewModel.cursorConfig, viewModel.model, cursor.modelState, inSelectionMode)));
+					return cursors.map(cursor =>
+						CursorState.fromModelState(
+							MoveOperations.moveToNextBlankLine(
+								viewModel.cursorConfig,
+								viewModel.model,
+								cursor.modelState,
+								inSelectionMode
+							)
+						)
+					);
 				}
 			}
 			case CursorMove.Direction.WrappedLineStart: {
@@ -351,10 +492,15 @@ export class CursorMoveCommands {
 			default:
 				return null;
 		}
-
 	}
 
-	public static viewportMove(viewModel: IViewModel, cursors: CursorState[], direction: CursorMove.ViewportDirection, inSelectionMode: boolean, value: number): PartialCursorState[] | null {
+	public static viewportMove(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		direction: CursorMove.ViewportDirection,
+		inSelectionMode: boolean,
+		value: number
+	): PartialCursorState[] | null {
 		const visibleViewRange = viewModel.getCompletelyVisibleViewRange();
 		const visibleModelRange = viewModel.coordinatesConverter.convertViewRangeToModelRange(visibleViewRange);
 		switch (direction) {
@@ -390,13 +536,17 @@ export class CursorMoveCommands {
 		}
 	}
 
-	public static findPositionInViewportIfOutside(viewModel: IViewModel, cursor: CursorState, visibleViewRange: Range, inSelectionMode: boolean): PartialCursorState {
+	public static findPositionInViewportIfOutside(
+		viewModel: IViewModel,
+		cursor: CursorState,
+		visibleViewRange: Range,
+		inSelectionMode: boolean
+	): PartialCursorState {
 		const viewLineNumber = cursor.viewState.position.lineNumber;
 
 		if (visibleViewRange.startLineNumber <= viewLineNumber && viewLineNumber <= visibleViewRange.endLineNumber - 1) {
 			// Nothing to do, cursor is in viewport
 			return new CursorState(cursor.modelState, cursor.viewState);
-
 		} else {
 			let newViewLineNumber: number;
 			if (viewLineNumber > visibleViewRange.endLineNumber - 1) {
@@ -406,8 +556,18 @@ export class CursorMoveCommands {
 			} else {
 				newViewLineNumber = viewLineNumber;
 			}
-			const position = MoveOperations.vertical(viewModel.cursorConfig, viewModel, viewLineNumber, cursor.viewState.position.column, cursor.viewState.leftoverVisibleColumns, newViewLineNumber, false);
-			return CursorState.fromViewState(cursor.viewState.move(inSelectionMode, position.lineNumber, position.column, position.leftoverVisibleColumns));
+			const position = MoveOperations.vertical(
+				viewModel.cursorConfig,
+				viewModel,
+				viewLineNumber,
+				cursor.viewState.position.column,
+				cursor.viewState.leftoverVisibleColumns,
+				newViewLineNumber,
+				false
+			);
+			return CursorState.fromViewState(
+				cursor.viewState.move(inSelectionMode, position.lineNumber, position.column, position.leftoverVisibleColumns)
+			);
 		}
 	}
 
@@ -437,7 +597,12 @@ export class CursorMoveCommands {
 		return Math.max(startLineNumber, range.endLineNumber - count + 1);
 	}
 
-	private static _moveLeft(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean, noOfColumns: number): PartialCursorState[] {
+	private static _moveLeft(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean,
+		noOfColumns: number
+	): PartialCursorState[] {
 		return cursors.map(cursor => {
 			const direction = viewModel.getTextDirection(cursor.viewState.position.lineNumber);
 			const isRtl = direction === TextDirection.RTL;
@@ -450,18 +615,29 @@ export class CursorMoveCommands {
 		});
 	}
 
-	private static _moveHalfLineLeft(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean): PartialCursorState[] {
+	private static _moveHalfLineLeft(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
 			const viewLineNumber = cursor.viewState.position.lineNumber;
 			const halfLine = Math.round(viewModel.getLineLength(viewLineNumber) / 2);
-			result[i] = CursorState.fromViewState(MoveOperations.moveLeft(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode, halfLine));
+			result[i] = CursorState.fromViewState(
+				MoveOperations.moveLeft(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode, halfLine)
+			);
 		}
 		return result;
 	}
 
-	private static _moveRight(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean, noOfColumns: number): PartialCursorState[] {
+	private static _moveRight(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean,
+		noOfColumns: number
+	): PartialCursorState[] {
 		return cursors.map(cursor => {
 			const direction = viewModel.getTextDirection(cursor.viewState.position.lineNumber);
 			const isRtl = direction === TextDirection.RTL;
@@ -474,87 +650,137 @@ export class CursorMoveCommands {
 		});
 	}
 
-	private static _moveHalfLineRight(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean): PartialCursorState[] {
+	private static _moveHalfLineRight(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
 			const viewLineNumber = cursor.viewState.position.lineNumber;
 			const halfLine = Math.round(viewModel.getLineLength(viewLineNumber) / 2);
-			result[i] = CursorState.fromViewState(MoveOperations.moveRight(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode, halfLine));
+			result[i] = CursorState.fromViewState(
+				MoveOperations.moveRight(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode, halfLine)
+			);
 		}
 		return result;
 	}
 
-	private static _moveDownByViewLines(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean, linesCount: number): PartialCursorState[] {
+	private static _moveDownByViewLines(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean,
+		linesCount: number
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
-			result[i] = CursorState.fromViewState(MoveOperations.moveDown(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode, linesCount));
+			result[i] = CursorState.fromViewState(
+				MoveOperations.moveDown(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode, linesCount)
+			);
 		}
 		return result;
 	}
 
-	private static _moveDownByModelLines(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean, linesCount: number): PartialCursorState[] {
+	private static _moveDownByModelLines(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean,
+		linesCount: number
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
-			result[i] = CursorState.fromModelState(MoveOperations.moveDown(viewModel.cursorConfig, viewModel.model, cursor.modelState, inSelectionMode, linesCount));
+			result[i] = CursorState.fromModelState(
+				MoveOperations.moveDown(viewModel.cursorConfig, viewModel.model, cursor.modelState, inSelectionMode, linesCount)
+			);
 		}
 		return result;
 	}
 
-	private static _moveUpByViewLines(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean, linesCount: number): PartialCursorState[] {
+	private static _moveUpByViewLines(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean,
+		linesCount: number
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
-			result[i] = CursorState.fromViewState(MoveOperations.moveUp(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode, linesCount));
+			result[i] = CursorState.fromViewState(
+				MoveOperations.moveUp(viewModel.cursorConfig, viewModel, cursor.viewState, inSelectionMode, linesCount)
+			);
 		}
 		return result;
 	}
 
-	private static _moveUpByModelLines(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean, linesCount: number): PartialCursorState[] {
+	private static _moveUpByModelLines(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean,
+		linesCount: number
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
-			result[i] = CursorState.fromModelState(MoveOperations.moveUp(viewModel.cursorConfig, viewModel.model, cursor.modelState, inSelectionMode, linesCount));
+			result[i] = CursorState.fromModelState(
+				MoveOperations.moveUp(viewModel.cursorConfig, viewModel.model, cursor.modelState, inSelectionMode, linesCount)
+			);
 		}
 		return result;
 	}
 
-	private static _moveDownByFoldedLines(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean, count: number): PartialCursorState[] {
+	private static _moveDownByFoldedLines(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean,
+		count: number
+	): PartialCursorState[] {
 		const model = viewModel.model;
 		const lineCount = model.getLineCount();
 		const hiddenAreas = viewModel.getHiddenAreas();
 
 		return cursors.map(cursor => {
-			const startLine = cursor.modelState.hasSelection() && !inSelectionMode
-				? cursor.modelState.selection.endLineNumber
-				: cursor.modelState.position.lineNumber;
+			const startLine =
+				cursor.modelState.hasSelection() && !inSelectionMode
+					? cursor.modelState.selection.endLineNumber
+					: cursor.modelState.position.lineNumber;
 
 			const targetLine = CursorMoveCommands._targetFoldedDown(startLine, count, hiddenAreas, lineCount);
 			const delta = targetLine - startLine;
 			if (delta === 0) {
 				return CursorState.fromModelState(cursor.modelState);
 			}
-			return CursorState.fromModelState(MoveOperations.moveDown(viewModel.cursorConfig, model, cursor.modelState, inSelectionMode, delta));
+			return CursorState.fromModelState(
+				MoveOperations.moveDown(viewModel.cursorConfig, model, cursor.modelState, inSelectionMode, delta)
+			);
 		});
 	}
 
-	private static _moveUpByFoldedLines(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean, count: number): PartialCursorState[] {
+	private static _moveUpByFoldedLines(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean,
+		count: number
+	): PartialCursorState[] {
 		const model = viewModel.model;
 		const hiddenAreas = viewModel.getHiddenAreas();
 
 		return cursors.map(cursor => {
-			const startLine = cursor.modelState.hasSelection() && !inSelectionMode
-				? cursor.modelState.selection.startLineNumber
-				: cursor.modelState.position.lineNumber;
+			const startLine =
+				cursor.modelState.hasSelection() && !inSelectionMode
+					? cursor.modelState.selection.startLineNumber
+					: cursor.modelState.position.lineNumber;
 
 			const targetLine = CursorMoveCommands._targetFoldedUp(startLine, count, hiddenAreas);
 			const delta = startLine - targetLine;
 			if (delta === 0) {
 				return CursorState.fromModelState(cursor.modelState);
 			}
-			return CursorState.fromModelState(MoveOperations.moveUp(viewModel.cursorConfig, model, cursor.modelState, inSelectionMode, delta));
+			return CursorState.fromModelState(
+				MoveOperations.moveUp(viewModel.cursorConfig, model, cursor.modelState, inSelectionMode, delta)
+			);
 		});
 	}
 
@@ -628,15 +854,31 @@ export class CursorMoveCommands {
 		return line;
 	}
 
-	private static _moveToViewPosition(viewModel: IViewModel, cursor: CursorState, inSelectionMode: boolean, toViewLineNumber: number, toViewColumn: number): PartialCursorState {
+	private static _moveToViewPosition(
+		viewModel: IViewModel,
+		cursor: CursorState,
+		inSelectionMode: boolean,
+		toViewLineNumber: number,
+		toViewColumn: number
+	): PartialCursorState {
 		return CursorState.fromViewState(cursor.viewState.move(inSelectionMode, toViewLineNumber, toViewColumn, 0));
 	}
 
-	private static _moveToModelPosition(viewModel: IViewModel, cursor: CursorState, inSelectionMode: boolean, toModelLineNumber: number, toModelColumn: number): PartialCursorState {
+	private static _moveToModelPosition(
+		viewModel: IViewModel,
+		cursor: CursorState,
+		inSelectionMode: boolean,
+		toModelLineNumber: number,
+		toModelColumn: number
+	): PartialCursorState {
 		return CursorState.fromModelState(cursor.modelState.move(inSelectionMode, toModelLineNumber, toModelColumn, 0));
 	}
 
-	private static _moveToViewMinColumn(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean): PartialCursorState[] {
+	private static _moveToViewMinColumn(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
@@ -647,7 +889,11 @@ export class CursorMoveCommands {
 		return result;
 	}
 
-	private static _moveToViewFirstNonWhitespaceColumn(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean): PartialCursorState[] {
+	private static _moveToViewFirstNonWhitespaceColumn(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
@@ -658,18 +904,28 @@ export class CursorMoveCommands {
 		return result;
 	}
 
-	private static _moveToViewCenterColumn(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean): PartialCursorState[] {
+	private static _moveToViewCenterColumn(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
 			const viewLineNumber = cursor.viewState.position.lineNumber;
-			const viewColumn = Math.round((viewModel.getLineMaxColumn(viewLineNumber) + viewModel.getLineMinColumn(viewLineNumber)) / 2);
+			const viewColumn = Math.round(
+				(viewModel.getLineMaxColumn(viewLineNumber) + viewModel.getLineMinColumn(viewLineNumber)) / 2
+			);
 			result[i] = this._moveToViewPosition(viewModel, cursor, inSelectionMode, viewLineNumber, viewColumn);
 		}
 		return result;
 	}
 
-	private static _moveToViewMaxColumn(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean): PartialCursorState[] {
+	private static _moveToViewMaxColumn(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
@@ -680,7 +936,11 @@ export class CursorMoveCommands {
 		return result;
 	}
 
-	private static _moveToViewLastNonWhitespaceColumn(viewModel: IViewModel, cursors: CursorState[], inSelectionMode: boolean): PartialCursorState[] {
+	private static _moveToViewLastNonWhitespaceColumn(
+		viewModel: IViewModel,
+		cursors: CursorState[],
+		inSelectionMode: boolean
+	): PartialCursorState[] {
 		const result: PartialCursorState[] = [];
 		for (let i = 0, len = cursors.length; i < len; i++) {
 			const cursor = cursors[i];
@@ -693,7 +953,6 @@ export class CursorMoveCommands {
 }
 
 export namespace CursorMove {
-
 	const isCursorMoveArgs = function (arg: unknown): boolean {
 		if (!types.isObject(arg)) {
 			return false;
@@ -749,28 +1008,44 @@ export namespace CursorMove {
 				`,
 				constraint: isCursorMoveArgs,
 				schema: {
-					'type': 'object',
-					'required': ['to'],
-					'properties': {
-						'to': {
-							'type': 'string',
-							'enum': ['left', 'right', 'up', 'down', 'prevBlankLine', 'nextBlankLine', 'wrappedLineStart', 'wrappedLineEnd', 'wrappedLineColumnCenter', 'wrappedLineFirstNonWhitespaceCharacter', 'wrappedLineLastNonWhitespaceCharacter', 'viewPortTop', 'viewPortCenter', 'viewPortBottom', 'viewPortIfOutside']
+					type: 'object',
+					required: ['to'],
+					properties: {
+						to: {
+							type: 'string',
+							enum: [
+								'left',
+								'right',
+								'up',
+								'down',
+								'prevBlankLine',
+								'nextBlankLine',
+								'wrappedLineStart',
+								'wrappedLineEnd',
+								'wrappedLineColumnCenter',
+								'wrappedLineFirstNonWhitespaceCharacter',
+								'wrappedLineLastNonWhitespaceCharacter',
+								'viewPortTop',
+								'viewPortCenter',
+								'viewPortBottom',
+								'viewPortIfOutside'
+							]
 						},
-						'by': {
-							'type': 'string',
-							'enum': ['line', 'wrappedLine', 'character', 'halfLine', 'foldedLine']
+						by: {
+							type: 'string',
+							enum: ['line', 'wrappedLine', 'character', 'halfLine', 'foldedLine']
 						},
-						'value': {
-							'type': 'number',
-							'default': 1
+						value: {
+							type: 'number',
+							default: 1
 						},
-						'select': {
-							'type': 'boolean',
-							'default': false
+						select: {
+							type: 'boolean',
+							default: false
 						},
-						'noHistory': {
-							'type': 'boolean',
-							'default': false
+						noHistory: {
+							type: 'boolean',
+							default: false
 						}
 					}
 				}
@@ -905,9 +1180,9 @@ export namespace CursorMove {
 		return {
 			direction: direction,
 			unit: unit,
-			select: (!!args.select),
-			value: (args.value || 1),
-			noHistory: (!!args.noHistory)
+			select: !!args.select,
+			value: args.value || 1,
+			noHistory: !!args.noHistory
 		};
 	}
 
@@ -944,11 +1219,11 @@ export namespace CursorMove {
 		ViewPortCenter,
 		ViewPortBottom,
 
-		ViewPortIfOutside,
+		ViewPortIfOutside
 	}
 
-	export type SimpleMoveDirection = (
-		Direction.Left
+	export type SimpleMoveDirection =
+		| Direction.Left
 		| Direction.Right
 		| Direction.Up
 		| Direction.Down
@@ -958,15 +1233,13 @@ export namespace CursorMove {
 		| Direction.WrappedLineFirstNonWhitespaceCharacter
 		| Direction.WrappedLineColumnCenter
 		| Direction.WrappedLineEnd
-		| Direction.WrappedLineLastNonWhitespaceCharacter
-	);
+		| Direction.WrappedLineLastNonWhitespaceCharacter;
 
-	export type ViewportDirection = (
-		Direction.ViewPortTop
+	export type ViewportDirection =
+		| Direction.ViewPortTop
 		| Direction.ViewPortCenter
 		| Direction.ViewPortBottom
-		| Direction.ViewPortIfOutside
-	);
+		| Direction.ViewPortIfOutside;
 
 	export const enum Unit {
 		None,
@@ -974,7 +1247,6 @@ export namespace CursorMove {
 		WrappedLine,
 		Character,
 		HalfLine,
-		FoldedLine,
+		FoldedLine
 	}
-
 }

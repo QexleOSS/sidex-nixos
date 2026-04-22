@@ -191,6 +191,7 @@ html, body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  contain: strict;
 }
 
 /* Search panel */
@@ -304,6 +305,7 @@ html, body {
   color: var(--vscode-icon-foreground);
   font-size: 10px;
   transition: transform 0.1s;
+  will-change: transform;
 }
 
 .tree-chevron.expanded {
@@ -486,6 +488,7 @@ html, body {
   overflow: hidden;
   background: var(--vscode-editor-background);
   display: none;
+  contain: strict;
 }
 
 #editor-container.active {
@@ -765,6 +768,7 @@ html, body {
   z-index: 10000;
   max-width: 400px;
   animation: slideIn 0.2s ease-out;
+  will-change: transform, opacity;
 }
 
 @keyframes slideIn {

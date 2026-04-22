@@ -10,33 +10,38 @@ import { IQuickInputService, type QuickPickItem } from '../../../../../platform/
 import { registerTerminalAction } from '../../../terminal/browser/terminalActions.js';
 
 export const enum TerminalSendSignalCommandId {
-	SendSignal = 'workbench.action.terminal.sendSignal',
+	SendSignal = 'workbench.action.terminal.sendSignal'
 }
 
 function toOptionalString(obj: unknown): string | undefined {
 	return isString(obj) ? obj : undefined;
 }
 
-const sendSignalString = localize2('sendSignal', "Send Signal");
+const sendSignalString = localize2('sendSignal', 'Send Signal');
 registerTerminalAction({
 	id: TerminalSendSignalCommandId.SendSignal,
 	title: sendSignalString,
 	f1: !isWindows,
 	metadata: {
 		description: sendSignalString.value,
-		args: [{
-			name: 'args',
-			schema: {
-				type: 'object',
-				required: ['signal'],
-				properties: {
-					signal: {
-						description: localize('sendSignal.signal.desc', "The signal to send to the terminal process (e.g., 'SIGTERM', 'SIGINT', 'SIGKILL')"),
-						type: 'string'
+		args: [
+			{
+				name: 'args',
+				schema: {
+					type: 'object',
+					required: ['signal'],
+					properties: {
+						signal: {
+							description: localize(
+								'sendSignal.signal.desc',
+								"The signal to send to the terminal process (e.g., 'SIGTERM', 'SIGINT', 'SIGKILL')"
+							),
+							type: 'string'
+						}
 					}
-				},
+				}
 			}
-		}]
+		]
 	},
 	run: async (c, accessor, args) => {
 		const quickInputService = accessor.get(IQuickInputService);
@@ -75,7 +80,7 @@ registerTerminalAction({
 
 			if (selected.label === localize('manualSignal', 'Manually enter signal')) {
 				const inputSignal = await quickInputService.input({
-					prompt: localize('enterSignal', 'Enter signal name (e.g., SIGTERM, SIGKILL)'),
+					prompt: localize('enterSignal', 'Enter signal name (e.g., SIGTERM, SIGKILL)')
 				});
 
 				if (!inputSignal) {

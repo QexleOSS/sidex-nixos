@@ -13,7 +13,11 @@ import { generateUuid } from '../../../../base/common/uuid.js';
 import { VSDataTransfer } from '../../../../base/common/dataTransfer.js';
 import { toExternalVSDataTransfer } from '../../dataTransfer.js';
 
-export function generateDataToCopyAndStoreInMemory(viewModel: IViewModel, id: string | undefined, isFirefox: boolean): { dataToCopy: ClipboardDataToCopy; metadata: ClipboardStoredMetadata } {
+export function generateDataToCopyAndStoreInMemory(
+	viewModel: IViewModel,
+	id: string | undefined,
+	isFirefox: boolean
+): { dataToCopy: ClipboardDataToCopy; metadata: ClipboardStoredMetadata } {
 	const { dataToCopy, metadata } = generateDataToCopy(viewModel);
 	storeMetadataInMemory(dataToCopy.text, metadata, isFirefox);
 	return { dataToCopy, metadata };
@@ -23,12 +27,15 @@ function storeMetadataInMemory(textToCopy: string, metadata: ClipboardStoredMeta
 	InMemoryClipboardMetadataManager.INSTANCE.set(
 		// When writing "LINE\r\n" to the clipboard and then pasting,
 		// Firefox pastes "LINE\n", so let's work around this quirk
-		(isFirefox ? textToCopy.replace(/\r\n/g, '\n') : textToCopy),
+		isFirefox ? textToCopy.replace(/\r\n/g, '\n') : textToCopy,
 		metadata
 	);
 }
 
-function generateDataToCopy(viewModel: IViewModel): { dataToCopy: ClipboardDataToCopy; metadata: ClipboardStoredMetadata } {
+function generateDataToCopy(viewModel: IViewModel): {
+	dataToCopy: ClipboardDataToCopy;
+	metadata: ClipboardStoredMetadata;
+} {
 	const emptySelectionClipboard = viewModel.getEditorOption(EditorOption.emptySelectionClipboard);
 	const copyWithSyntaxHighlighting = viewModel.getEditorOption(EditorOption.copyWithSyntaxHighlighting);
 	const selections = viewModel.getCursorStates().map(cursorState => cursorState.modelState.selection);
@@ -43,13 +50,22 @@ function generateDataToCopy(viewModel: IViewModel): { dataToCopy: ClipboardDataT
 	return { dataToCopy, metadata };
 }
 
-function getDataToCopy(viewModel: IViewModel, modelSelections: Range[], emptySelectionClipboard: boolean, copyWithSyntaxHighlighting: boolean): ClipboardDataToCopy {
-	const { sourceRanges, sourceText } = viewModel.getPlainTextToCopy(modelSelections, emptySelectionClipboard, isWindows);
+function getDataToCopy(
+	viewModel: IViewModel,
+	modelSelections: Range[],
+	emptySelectionClipboard: boolean,
+	copyWithSyntaxHighlighting: boolean
+): ClipboardDataToCopy {
+	const { sourceRanges, sourceText } = viewModel.getPlainTextToCopy(
+		modelSelections,
+		emptySelectionClipboard,
+		isWindows
+	);
 	const newLineCharacter = viewModel.model.getEOL();
 
-	const isFromEmptySelection = (emptySelectionClipboard && modelSelections.length === 1 && modelSelections[0].isEmpty());
-	const multicursorText = (Array.isArray(sourceText) ? sourceText : null);
-	const text = (Array.isArray(sourceText) ? sourceText.join(newLineCharacter) : sourceText);
+	const isFromEmptySelection = emptySelectionClipboard && modelSelections.length === 1 && modelSelections[0].isEmpty();
+	const multicursorText = Array.isArray(sourceText) ? sourceText : null;
+	const text = Array.isArray(sourceText) ? sourceText.join(newLineCharacter) : sourceText;
 
 	let html: string | null | undefined = undefined;
 	let mode: string | null = null;
@@ -127,7 +143,6 @@ interface InMemoryClipboardMetadata {
 }
 
 const ClipboardEventUtils = {
-
 	getTextData(clipboardData: IReadableClipboardData | DataTransfer): [string, ClipboardStoredMetadata | null] {
 		const text = clipboardData.getData(Mimes.text);
 		let metadata: ClipboardStoredMetadata | null = null;
@@ -150,7 +165,12 @@ const ClipboardEventUtils = {
 		return [text, metadata];
 	},
 
-	setTextData(clipboardData: IWritableClipboardData, text: string, html: string | null | undefined, metadata: ClipboardStoredMetadata): void {
+	setTextData(
+		clipboardData: IWritableClipboardData,
+		text: string,
+		html: string | null | undefined,
+		metadata: ClipboardStoredMetadata
+	): void {
 		clipboardData.setData(Mimes.text, text);
 		if (typeof html === 'string') {
 			clipboardData.setData('text/html', html);
@@ -265,7 +285,13 @@ export interface IClipboardPasteEvent {
 /**
  * Creates an IClipboardCopyEvent from a DOM ClipboardEvent.
  */
-export function createClipboardCopyEvent(e: ClipboardEvent, isCut: boolean, context: ViewContext, logService: ILogService, isFirefox: boolean): IClipboardCopyEvent {
+export function createClipboardCopyEvent(
+	e: ClipboardEvent,
+	isCut: boolean,
+	context: ViewContext,
+	logService: ILogService,
+	isFirefox: boolean
+): IClipboardCopyEvent {
 	const { dataToCopy, metadata } = generateDataToCopy(context.viewModel);
 	let handled = false;
 	return {
@@ -273,7 +299,7 @@ export function createClipboardCopyEvent(e: ClipboardEvent, isCut: boolean, cont
 		clipboardData: {
 			setData: (type: string, value: string) => {
 				e.clipboardData?.setData(type, value);
-			},
+			}
 		},
 		dataToCopy,
 		ensureClipboardGetsEditorData: (): void => {
@@ -282,14 +308,21 @@ export function createClipboardCopyEvent(e: ClipboardEvent, isCut: boolean, cont
 				ClipboardEventUtils.setTextData(e.clipboardData, dataToCopy.text, dataToCopy.html, metadata);
 			}
 			storeMetadataInMemory(dataToCopy.text, metadata, isFirefox);
-			logService.trace('ensureClipboardGetsEditorSelection with id : ', metadata.id, ' with text.length: ', dataToCopy.text.length);
+			logService.trace(
+				'ensureClipboardGetsEditorSelection with id : ',
+				metadata.id,
+				' with text.length: ',
+				dataToCopy.text.length
+			);
 		},
 		setHandled: () => {
 			handled = true;
 			e.preventDefault();
 			e.stopImmediatePropagation();
 		},
-		get isHandled() { return handled; },
+		get isHandled() {
+			return handled;
+		}
 	};
 }
 
@@ -304,14 +337,16 @@ export function createClipboardPasteEvent(e: ClipboardEvent): IClipboardPasteEve
 		clipboardData: createReadableClipboardData(e.clipboardData),
 		metadata,
 		text,
-		toExternalVSDataTransfer: () => e.clipboardData ? toExternalVSDataTransfer(e.clipboardData) : undefined,
+		toExternalVSDataTransfer: () => (e.clipboardData ? toExternalVSDataTransfer(e.clipboardData) : undefined),
 		browserEvent: e,
 		setHandled: () => {
 			handled = true;
 			e.preventDefault();
 			e.stopImmediatePropagation();
 		},
-		get isHandled() { return handled; },
+		get isHandled() {
+			return handled;
+		}
 	};
 }
 
@@ -319,12 +354,12 @@ export function createReadableClipboardData(dataTransfer: DataTransfer | undefin
 	return {
 		types: Array.from(dataTransfer?.types ?? []),
 		files: Array.prototype.slice.call(dataTransfer?.files ?? [], 0),
-		getData: (type: string) => dataTransfer?.getData(type) ?? '',
+		getData: (type: string) => dataTransfer?.getData(type) ?? ''
 	};
 }
 
 export function createWritableClipboardData(dataTransfer: DataTransfer | undefined | null): IWritableClipboardData {
 	return {
-		setData: (type: string, value: string) => dataTransfer?.setData(type, value),
+		setData: (type: string, value: string) => dataTransfer?.setData(type, value)
 	};
 }

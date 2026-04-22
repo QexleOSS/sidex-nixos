@@ -10,7 +10,10 @@ import { Schemas } from '../../../base/common/network.js';
 import { equals } from '../../../base/common/objects.js';
 import * as platform from '../../../base/common/platform.js';
 import { URI } from '../../../base/common/uri.js';
-import { IConfigurationChangeEvent, IConfigurationService } from '../../../platform/configuration/common/configuration.js';
+import {
+	IConfigurationChangeEvent,
+	IConfigurationService
+} from '../../../platform/configuration/common/configuration.js';
 import { IInstantiationService } from '../../../platform/instantiation/common/instantiation.js';
 import { IUndoRedoService, ResourceEditStackSnapshot } from '../../../platform/undoRedo/common/undoRedo.js';
 import { clampedInt } from '../config/editorOptions.js';
@@ -19,7 +22,15 @@ import { EDITOR_MODEL_DEFAULTS } from '../core/misc/textModelDefaults.js';
 import { Range } from '../core/range.js';
 import { ILanguageSelection } from '../languages/language.js';
 import { PLAINTEXT_LANGUAGE_ID } from '../languages/modesRegistry.js';
-import { DefaultEndOfLine, EndOfLinePreference, EndOfLineSequence, ITextBuffer, ITextBufferFactory, ITextModel, ITextModelCreationOptions } from '../model.js';
+import {
+	DefaultEndOfLine,
+	EndOfLinePreference,
+	EndOfLineSequence,
+	ITextBuffer,
+	ITextBufferFactory,
+	ITextModel,
+	ITextModelCreationOptions
+} from '../model.js';
 import { isEditStackElement } from '../model/editStack.js';
 import { TextModel, createTextBuffer } from '../model/textModel.js';
 import { EditSources, TextModelEditSource } from '../textModelEditSource.js';
@@ -32,7 +43,6 @@ function MODEL_ID(resource: URI): string {
 }
 
 class ModelData implements IDisposable {
-
 	private readonly _modelEventListeners = new DisposableStore();
 
 	constructor(
@@ -42,7 +52,7 @@ class ModelData implements IDisposable {
 	) {
 		this.model = model;
 		this._modelEventListeners.add(model.onWillDispose(() => onWillDispose(model)));
-		this._modelEventListeners.add(model.onDidChangeLanguage((e) => onDidChangeLanguage(model, e)));
+		this._modelEventListeners.add(model.onDidChangeLanguage(e => onDidChangeLanguage(model, e)));
 	}
 
 	public dispose(): void {
@@ -66,7 +76,7 @@ interface IRawConfig {
 	editor?: IRawEditorConfig;
 }
 
-const DEFAULT_EOL = (platform.isLinux || platform.isMacintosh) ? DefaultEndOfLine.LF : DefaultEndOfLine.CRLF;
+const DEFAULT_EOL = platform.isLinux || platform.isMacintosh ? DefaultEndOfLine.LF : DefaultEndOfLine.CRLF;
 
 class DisposedModelInfo {
 	constructor(
@@ -77,12 +87,11 @@ class DisposedModelInfo {
 		public readonly heapSize: number,
 		public readonly sha1: string,
 		public readonly versionId: number,
-		public readonly alternativeVersionId: number,
-	) { }
+		public readonly alternativeVersionId: number
+	) {}
 }
 
 export class ModelService extends Disposable implements IModelService {
-
 	public static MAX_MEMORY_FOR_CLOSED_FILES_UNDO_STACK = 20 * 1024 * 1024;
 
 	public _serviceBrand: undefined;
@@ -134,7 +143,7 @@ export class ModelService extends Disposable implements IModelService {
 
 		let insertSpaces = EDITOR_MODEL_DEFAULTS.insertSpaces;
 		if (config.editor && typeof config.editor.insertSpaces !== 'undefined') {
-			insertSpaces = (config.editor.insertSpaces === 'false' ? false : Boolean(config.editor.insertSpaces));
+			insertSpaces = config.editor.insertSpaces === 'false' ? false : Boolean(config.editor.insertSpaces);
 		}
 
 		let newDefaultEOL = DEFAULT_EOL;
@@ -147,21 +156,27 @@ export class ModelService extends Disposable implements IModelService {
 
 		let trimAutoWhitespace = EDITOR_MODEL_DEFAULTS.trimAutoWhitespace;
 		if (config.editor && typeof config.editor.trimAutoWhitespace !== 'undefined') {
-			trimAutoWhitespace = (config.editor.trimAutoWhitespace === 'false' ? false : Boolean(config.editor.trimAutoWhitespace));
+			trimAutoWhitespace =
+				config.editor.trimAutoWhitespace === 'false' ? false : Boolean(config.editor.trimAutoWhitespace);
 		}
 
 		let detectIndentation = EDITOR_MODEL_DEFAULTS.detectIndentation;
 		if (config.editor && typeof config.editor.detectIndentation !== 'undefined') {
-			detectIndentation = (config.editor.detectIndentation === 'false' ? false : Boolean(config.editor.detectIndentation));
+			detectIndentation =
+				config.editor.detectIndentation === 'false' ? false : Boolean(config.editor.detectIndentation);
 		}
 
 		let largeFileOptimizations = EDITOR_MODEL_DEFAULTS.largeFileOptimizations;
 		if (config.editor && typeof config.editor.largeFileOptimizations !== 'undefined') {
-			largeFileOptimizations = (config.editor.largeFileOptimizations === 'false' ? false : Boolean(config.editor.largeFileOptimizations));
+			largeFileOptimizations =
+				config.editor.largeFileOptimizations === 'false' ? false : Boolean(config.editor.largeFileOptimizations);
 		}
 		let bracketPairColorizationOptions = EDITOR_MODEL_DEFAULTS.bracketPairColorizationOptions;
 		if (config.editor?.bracketPairColorization && typeof config.editor.bracketPairColorization === 'object') {
-			const bpConfig = config.editor.bracketPairColorization as { enabled?: unknown; independentColorPoolPerBracketType?: unknown };
+			const bpConfig = config.editor.bracketPairColorization as {
+				enabled?: unknown;
+				independentColorPoolPerBracketType?: unknown;
+			};
 			bracketPairColorizationOptions = {
 				enabled: !!bpConfig.enabled,
 				independentColorPoolPerBracketType: !!bpConfig.independentColorPoolPerBracketType
@@ -189,7 +204,9 @@ export class ModelService extends Disposable implements IModelService {
 		if (eol && typeof eol === 'string' && eol !== 'auto') {
 			return eol;
 		}
-		return platform.OS === platform.OperatingSystem.Linux || platform.OS === platform.OperatingSystem.Macintosh ? '\n' : '\r\n';
+		return platform.OS === platform.OperatingSystem.Linux || platform.OS === platform.OperatingSystem.Macintosh
+			? '\n'
+			: '\r\n';
 	}
 
 	private _shouldRestoreUndoStack(): boolean {
@@ -200,11 +217,19 @@ export class ModelService extends Disposable implements IModelService {
 		return true;
 	}
 
-	public getCreationOptions(languageIdOrSelection: string | ILanguageSelection, resource: URI | undefined, isForSimpleWidget: boolean): ITextModelCreationOptions {
-		const language = (typeof languageIdOrSelection === 'string' ? languageIdOrSelection : languageIdOrSelection.languageId);
+	public getCreationOptions(
+		languageIdOrSelection: string | ILanguageSelection,
+		resource: URI | undefined,
+		isForSimpleWidget: boolean
+	): ITextModelCreationOptions {
+		const language =
+			typeof languageIdOrSelection === 'string' ? languageIdOrSelection : languageIdOrSelection.languageId;
 		let creationOptions = this._modelCreationOptionsByLanguageAndResource[language + resource];
 		if (!creationOptions) {
-			const editor = this._configurationService.getValue<IRawEditorConfig>('editor', { overrideIdentifier: language, resource });
+			const editor = this._configurationService.getValue<IRawEditorConfig>('editor', {
+				overrideIdentifier: language,
+				resource
+			});
 			const eol = this._getEOL(resource, language);
 			creationOptions = ModelService._readModelOptions({ editor, eol }, isForSimpleWidget);
 			this._modelCreationOptionsByLanguageAndResource[language + resource] = creationOptions;
@@ -224,7 +249,11 @@ export class ModelService extends Disposable implements IModelService {
 			const language = modelData.model.getLanguageId();
 			const uri = modelData.model.uri;
 
-			if (e && !e.affectsConfiguration('editor', { overrideIdentifier: language, resource: uri }) && !e.affectsConfiguration('files.eol', { overrideIdentifier: language, resource: uri })) {
+			if (
+				e &&
+				!e.affectsConfiguration('editor', { overrideIdentifier: language, resource: uri }) &&
+				!e.affectsConfiguration('files.eol', { overrideIdentifier: language, resource: uri })
+			) {
 				continue; // perf: skip if this model is not affected by configuration change
 			}
 
@@ -234,18 +263,23 @@ export class ModelService extends Disposable implements IModelService {
 		}
 	}
 
-	private static _setModelOptionsForModel(model: ITextModel, newOptions: ITextModelCreationOptions, currentOptions: ITextModelCreationOptions): void {
+	private static _setModelOptionsForModel(
+		model: ITextModel,
+		newOptions: ITextModelCreationOptions,
+		currentOptions: ITextModelCreationOptions
+	): void {
 		if (currentOptions && currentOptions.defaultEOL !== newOptions.defaultEOL && model.getLineCount() === 1) {
 			model.setEOL(newOptions.defaultEOL === DefaultEndOfLine.LF ? EndOfLineSequence.LF : EndOfLineSequence.CRLF);
 		}
 
-		if (currentOptions
-			&& (currentOptions.detectIndentation === newOptions.detectIndentation)
-			&& (currentOptions.insertSpaces === newOptions.insertSpaces)
-			&& (currentOptions.tabSize === newOptions.tabSize)
-			&& (currentOptions.indentSize === newOptions.indentSize)
-			&& (currentOptions.trimAutoWhitespace === newOptions.trimAutoWhitespace)
-			&& equals(currentOptions.bracketPairColorizationOptions, newOptions.bracketPairColorizationOptions)
+		if (
+			currentOptions &&
+			currentOptions.detectIndentation === newOptions.detectIndentation &&
+			currentOptions.insertSpaces === newOptions.insertSpaces &&
+			currentOptions.tabSize === newOptions.tabSize &&
+			currentOptions.indentSize === newOptions.indentSize &&
+			currentOptions.trimAutoWhitespace === newOptions.trimAutoWhitespace &&
+			equals(currentOptions.bracketPairColorizationOptions, newOptions.bracketPairColorizationOptions)
 		) {
 			// Same indent opts, no need to touch the model
 			return;
@@ -304,10 +338,16 @@ export class ModelService extends Disposable implements IModelService {
 		}
 	}
 
-	private _createModelData(value: string | ITextBufferFactory, languageIdOrSelection: string | ILanguageSelection, resource: URI | undefined, isForSimpleWidget: boolean): ModelData {
+	private _createModelData(
+		value: string | ITextBufferFactory,
+		languageIdOrSelection: string | ILanguageSelection,
+		resource: URI | undefined,
+		isForSimpleWidget: boolean
+	): ModelData {
 		// create & save the model
 		const options = this.getCreationOptions(languageIdOrSelection, resource, isForSimpleWidget);
-		const model: TextModel = this._instantiationService.createInstance(TextModel,
+		const model: TextModel = this._instantiationService.createInstance(
+			TextModel,
 			value,
 			languageIdOrSelection,
 			options,
@@ -317,11 +357,9 @@ export class ModelService extends Disposable implements IModelService {
 			const disposedModelData = this._removeDisposedModel(resource)!;
 			const elements = this._undoRedoService.getElements(resource);
 			const sha1Computer = this._getSHA1Computer();
-			const sha1IsEqual = (
-				sha1Computer.canComputeSHA1(model)
-					? sha1Computer.computeSHA1(model) === disposedModelData.sha1
-					: false
-			);
+			const sha1IsEqual = sha1Computer.canComputeSHA1(model)
+				? sha1Computer.computeSHA1(model) === disposedModelData.sha1
+				: false;
 			if (sha1IsEqual || disposedModelData.sharesUndoRedoStack) {
 				for (const element of elements.past) {
 					if (isEditStackElement(element) && element.matchesResource(resource)) {
@@ -333,7 +371,11 @@ export class ModelService extends Disposable implements IModelService {
 						element.setModel(model);
 					}
 				}
-				this._undoRedoService.setElementsValidFlag(resource, true, (element) => (isEditStackElement(element) && element.matchesResource(resource)));
+				this._undoRedoService.setElementsValidFlag(
+					resource,
+					true,
+					element => isEditStackElement(element) && element.matchesResource(resource)
+				);
 				if (sha1IsEqual) {
 					model._overwriteVersionId(disposedModelData.versionId);
 					model._overwriteAlternativeVersionId(disposedModelData.alternativeVersionId);
@@ -354,7 +396,7 @@ export class ModelService extends Disposable implements IModelService {
 
 		const modelData = new ModelData(
 			model,
-			(model) => this._onWillDispose(model),
+			model => this._onWillDispose(model),
 			(model, e) => this._onDidChangeLanguage(model, e)
 		);
 		this._models[modelId] = modelData;
@@ -362,7 +404,11 @@ export class ModelService extends Disposable implements IModelService {
 		return modelData;
 	}
 
-	public updateModel(model: ITextModel, value: string | ITextBufferFactory, reason: TextModelEditSource = EditSources.unknown({ name: 'updateModel' })): void {
+	public updateModel(
+		model: ITextModel,
+		value: string | ITextBufferFactory,
+		reason: TextModelEditSource = EditSources.unknown({ name: 'updateModel' })
+	): void {
 		const options = this.getCreationOptions(model.getLanguageId(), model.uri, model.isForSimpleWidget);
 		const { textBuffer, disposable } = createTextBuffer(value, options.defaultEOL);
 
@@ -375,18 +421,19 @@ export class ModelService extends Disposable implements IModelService {
 		// Otherwise find a diff between the values and update model
 		model.pushStackElement();
 		model.pushEOL(textBuffer.getEOL() === '\r\n' ? EndOfLineSequence.CRLF : EndOfLineSequence.LF);
-		model.pushEditOperations(
-			[],
-			ModelService._computeEdits(model, textBuffer),
-			() => [],
-			undefined,
-			reason
-		);
+		model.pushEditOperations([], ModelService._computeEdits(model, textBuffer), () => [], undefined, reason);
 		model.pushStackElement();
 		disposable.dispose();
 	}
 
-	private static _commonPrefix(a: ITextModel, aLen: number, aDelta: number, b: ITextBuffer, bLen: number, bDelta: number): number {
+	private static _commonPrefix(
+		a: ITextModel,
+		aLen: number,
+		aDelta: number,
+		b: ITextBuffer,
+		bLen: number,
+		bDelta: number
+	): number {
 		const maxResult = Math.min(aLen, bLen);
 
 		let result = 0;
@@ -396,7 +443,14 @@ export class ModelService extends Disposable implements IModelService {
 		return result;
 	}
 
-	private static _commonSuffix(a: ITextModel, aLen: number, aDelta: number, b: ITextBuffer, bLen: number, bDelta: number): number {
+	private static _commonSuffix(
+		a: ITextModel,
+		aLen: number,
+		aDelta: number,
+		b: ITextBuffer,
+		bLen: number,
+		bDelta: number
+	): number {
 		const maxResult = Math.min(aLen, bLen);
 
 		let result = 0;
@@ -419,7 +473,14 @@ export class ModelService extends Disposable implements IModelService {
 			return [];
 		}
 
-		const commonSuffix = this._commonSuffix(model, modelLineCount - commonPrefix, commonPrefix, textBuffer, textBufferLineCount - commonPrefix, commonPrefix);
+		const commonSuffix = this._commonSuffix(
+			model,
+			modelLineCount - commonPrefix,
+			commonPrefix,
+			textBuffer,
+			textBufferLineCount - commonPrefix,
+			commonPrefix
+		);
 
 		let oldRange: Range;
 		let newRange: Range;
@@ -427,8 +488,18 @@ export class ModelService extends Disposable implements IModelService {
 			oldRange = new Range(commonPrefix + 1, 1, modelLineCount - commonSuffix + 1, 1);
 			newRange = new Range(commonPrefix + 1, 1, textBufferLineCount - commonSuffix + 1, 1);
 		} else if (commonPrefix > 0) {
-			oldRange = new Range(commonPrefix, model.getLineMaxColumn(commonPrefix), modelLineCount, model.getLineMaxColumn(modelLineCount));
-			newRange = new Range(commonPrefix, 1 + textBuffer.getLineLength(commonPrefix), textBufferLineCount, 1 + textBuffer.getLineLength(textBufferLineCount));
+			oldRange = new Range(
+				commonPrefix,
+				model.getLineMaxColumn(commonPrefix),
+				modelLineCount,
+				model.getLineMaxColumn(modelLineCount)
+			);
+			newRange = new Range(
+				commonPrefix,
+				1 + textBuffer.getLineLength(commonPrefix),
+				textBufferLineCount,
+				1 + textBuffer.getLineLength(textBufferLineCount)
+			);
 		} else {
 			oldRange = new Range(1, 1, modelLineCount, model.getLineMaxColumn(modelLineCount));
 			newRange = new Range(1, 1, textBufferLineCount, 1 + textBuffer.getLineLength(textBufferLineCount));
@@ -437,7 +508,12 @@ export class ModelService extends Disposable implements IModelService {
 		return [EditOperation.replaceMove(oldRange, textBuffer.getValueInRange(newRange, EndOfLinePreference.TextDefined))];
 	}
 
-	public createModel(value: string | ITextBufferFactory, languageSelection: ILanguageSelection | null, resource?: URI, isForSimpleWidget: boolean = false): ITextModel {
+	public createModel(
+		value: string | ITextBufferFactory,
+		languageSelection: ILanguageSelection | null,
+		resource?: URI,
+		isForSimpleWidget: boolean = false
+	): ITextModel {
 		let modelData: ModelData;
 
 		if (languageSelection) {
@@ -485,11 +561,11 @@ export class ModelService extends Disposable implements IModelService {
 
 	protected _schemaShouldMaintainUndoRedoElements(resource: URI) {
 		return (
-			resource.scheme === Schemas.file
-			|| resource.scheme === Schemas.vscodeRemote
-			|| resource.scheme === Schemas.vscodeUserData
-			|| resource.scheme === Schemas.vscodeNotebookCell
-			|| resource.scheme === 'fake-fs' // for tests
+			resource.scheme === Schemas.file ||
+			resource.scheme === Schemas.vscodeRemote ||
+			resource.scheme === Schemas.vscodeUserData ||
+			resource.scheme === Schemas.vscodeNotebookCell ||
+			resource.scheme === 'fake-fs' // for tests
 		);
 	}
 
@@ -497,10 +573,13 @@ export class ModelService extends Disposable implements IModelService {
 		const modelId = MODEL_ID(model.uri);
 		const modelData = this._models[modelId];
 
-		const sharesUndoRedoStack = (this._undoRedoService.getUriComparisonKey(model.uri) !== model.uri.toString());
+		const sharesUndoRedoStack = this._undoRedoService.getUriComparisonKey(model.uri) !== model.uri.toString();
 		let maintainUndoRedoStack = false;
 		let heapSize = 0;
-		if (sharesUndoRedoStack || (this._shouldRestoreUndoStack() && this._schemaShouldMaintainUndoRedoElements(model.uri))) {
+		if (
+			sharesUndoRedoStack ||
+			(this._shouldRestoreUndoStack() && this._schemaShouldMaintainUndoRedoElements(model.uri))
+		) {
 			const elements = this._undoRedoService.getElements(model.uri);
 			if (elements.past.length > 0 || elements.future.length > 0) {
 				for (const element of elements.past) {
@@ -538,8 +617,23 @@ export class ModelService extends Disposable implements IModelService {
 		} else {
 			this._ensureDisposedModelsHeapSize(maxMemory - heapSize);
 			// We only invalidate the elements, but they remain in the undo-redo service.
-			this._undoRedoService.setElementsValidFlag(model.uri, false, (element) => (isEditStackElement(element) && element.matchesResource(model.uri)));
-			this._insertDisposedModel(new DisposedModelInfo(model.uri, modelData.model.getInitialUndoRedoSnapshot(), Date.now(), sharesUndoRedoStack, heapSize, sha1Computer.computeSHA1(model), model.getVersionId(), model.getAlternativeVersionId()));
+			this._undoRedoService.setElementsValidFlag(
+				model.uri,
+				false,
+				element => isEditStackElement(element) && element.matchesResource(model.uri)
+			);
+			this._insertDisposedModel(
+				new DisposedModelInfo(
+					model.uri,
+					modelData.model.getInitialUndoRedoSnapshot(),
+					Date.now(),
+					sharesUndoRedoStack,
+					heapSize,
+					sha1Computer.computeSHA1(model),
+					model.getVersionId(),
+					model.getAlternativeVersionId()
+				)
+			);
 		}
 
 		delete this._models[modelId];
@@ -571,11 +665,10 @@ export interface ITextModelSHA1Computer {
 }
 
 export class DefaultModelSHA1Computer implements ITextModelSHA1Computer {
-
 	public static MAX_MODEL_SIZE = 10 * 1024 * 1024; // takes 200ms to compute a sha1 on a 10MB model on a new machine
 
 	canComputeSHA1(model: ITextModel): boolean {
-		return (model.getValueLength() <= DefaultModelSHA1Computer.MAX_MODEL_SIZE);
+		return model.getValueLength() <= DefaultModelSHA1Computer.MAX_MODEL_SIZE;
 	}
 
 	computeSHA1(model: ITextModel): string {

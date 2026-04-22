@@ -19,6 +19,18 @@ export abstract class TextMateWorkerHost {
 	}
 
 	abstract $readFile(_resource: UriComponents): Promise<string>;
-	abstract $setTokensAndStates(controllerId: number, versionId: number, tokens: Uint8Array, fontTokens: ISerializedAnnotation<IFontTokenOption>[], lineEndStateDeltas: StateDeltas[]): Promise<void>;
-	abstract $reportTokenizationTime(timeMs: number, languageId: string, sourceExtensionId: string | undefined, lineLength: number, isRandomSample: boolean): void;
+	abstract $setTokensAndStates(
+		controllerId: number,
+		versionId: number,
+		tokens: Uint8Array,
+		fontTokens: ISerializedAnnotation<IFontTokenOption>[],
+		lineEndStateDeltas: StateDeltas[]
+	): Promise<void>;
+	abstract $reportTokenizationTime(
+		timeMs: number,
+		languageId: string,
+		sourceExtensionId: string | undefined,
+		lineLength: number,
+		isRandomSample: boolean
+	): void;
 }

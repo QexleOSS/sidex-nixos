@@ -12,7 +12,9 @@ export interface IQuickTreeFilterData {
 	readonly descriptionHighlights?: IMatch[];
 }
 
-export function getParentNodeState(parentChildren: ITreeNode<IQuickTreeItem | null, IQuickTreeFilterData>[] | IObjectTreeElement<IQuickTreeItem>[]): boolean | 'mixed' {
+export function getParentNodeState(
+	parentChildren: ITreeNode<IQuickTreeItem | null, IQuickTreeFilterData>[] | IObjectTreeElement<IQuickTreeItem>[]
+): boolean | 'mixed' {
 	let containsChecks = false;
 	let containsUnchecks = false;
 	let containsMixed = false;

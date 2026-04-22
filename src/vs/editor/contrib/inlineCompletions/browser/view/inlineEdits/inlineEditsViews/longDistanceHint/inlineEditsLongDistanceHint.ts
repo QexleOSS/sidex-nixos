@@ -5,7 +5,16 @@
 import { ChildNode, n, ObserverNode, ObserverNodeWithElement } from '../../../../../../../../base/browser/dom.js';
 import { Event } from '../../../../../../../../base/common/event.js';
 import { Disposable } from '../../../../../../../../base/common/lifecycle.js';
-import { IObservable, IReader, autorun, constObservable, debouncedObservable2, derived, derivedDisposable, observableFromEvent } from '../../../../../../../../base/common/observable.js';
+import {
+	IObservable,
+	IReader,
+	autorun,
+	constObservable,
+	debouncedObservable2,
+	derived,
+	derivedDisposable,
+	observableFromEvent
+} from '../../../../../../../../base/common/observable.js';
 import { IInstantiationService } from '../../../../../../../../platform/instantiation/common/instantiation.js';
 import { ICodeEditor } from '../../../../../../../browser/editorBrowser.js';
 import { observableCodeEditor } from '../../../../../../../browser/observableCodeEditor.js';
@@ -28,13 +37,29 @@ import { Point } from '../../../../../../../common/core/2d/point.js';
 import { Size2D } from '../../../../../../../common/core/2d/size.js';
 import { IThemeService } from '../../../../../../../../platform/theme/common/themeService.js';
 import { IKeybindingService } from '../../../../../../../../platform/keybinding/common/keybinding.js';
-import { getEditorBackgroundColor, getEditorBlendedColor, inlineEditIndicatorPrimaryBackground, inlineEditIndicatorSecondaryBackground, inlineEditIndicatorSuccessfulBackground, observeColor } from '../../theme.js';
-import { asCssVariable, descriptionForeground, editorWidgetBackground } from '../../../../../../../../platform/theme/common/colorRegistry.js';
+import {
+	getEditorBackgroundColor,
+	getEditorBlendedColor,
+	inlineEditIndicatorPrimaryBackground,
+	inlineEditIndicatorSecondaryBackground,
+	inlineEditIndicatorSuccessfulBackground,
+	observeColor
+} from '../../theme.js';
+import {
+	asCssVariable,
+	descriptionForeground,
+	editorWidgetBackground
+} from '../../../../../../../../platform/theme/common/colorRegistry.js';
 import { editorWidgetBorder } from '../../../../../../../../platform/theme/common/colors/editorColors.js';
 import { ILongDistancePreviewProps, LongDistancePreviewEditor } from './longDistancePreviewEditor.js';
 import { InlineSuggestionGutterMenuData, SimpleInlineSuggestModel } from '../../components/gutterIndicatorView.js';
 import { jumpToNextInlineEditId } from '../../../../controller/commandIds.js';
-import { splitIntoContinuousLineRanges, WidgetLayoutConstants, WidgetOutline, WidgetPlacementContext } from './longDistnaceWidgetPlacement.js';
+import {
+	splitIntoContinuousLineRanges,
+	WidgetLayoutConstants,
+	WidgetOutline,
+	WidgetPlacementContext
+} from './longDistnaceWidgetPlacement.js';
 import { InlineCompletionEditorType } from '../../../../model/provideInlineCompletions.js';
 import { basename } from '../../../../../../../../base/common/resources.js';
 import { IModelService } from '../../../../../../../common/services/model.js';
@@ -52,11 +77,10 @@ const DEFAULT_WIDGET_LAYOUT_CONSTANTS: WidgetLayoutConstants = {
 	widgetPadding: 2,
 	widgetBorder: 1,
 	lowerBarHeight: 20,
-	minWidgetWidth: MIN_WIDGET_WIDTH,
+	minWidgetWidth: MIN_WIDGET_WIDTH
 };
 
 export class InlineEditsLongDistanceHint extends Disposable implements IInlineEditsView {
-
 	private readonly _editorObs;
 	readonly onDidClick = Event.None;
 	private _viewWithElement: ObserverNodeWithElement<HTMLDivElement> | undefined = undefined;
@@ -72,7 +96,7 @@ export class InlineEditsLongDistanceHint extends Disposable implements IInlineEd
 		@IThemeService private readonly _themeService: IThemeService,
 		@IKeybindingService private readonly _keybindingService: IKeybindingService,
 		@IModelService private readonly _modelService: IModelService,
-		@ILanguageService private readonly _languageService: ILanguageService,
+		@ILanguageService private readonly _languageService: ILanguageService
 	) {
 		super();
 
@@ -93,16 +117,24 @@ export class InlineEditsLongDistanceHint extends Disposable implements IInlineEd
 			} else {
 				let border;
 				switch (v) {
-					case InlineEditTabAction.Inactive: border = inlineEditIndicatorSecondaryBackground; break;
-					case InlineEditTabAction.Jump: border = inlineEditIndicatorPrimaryBackground; break;
-					case InlineEditTabAction.Accept: border = inlineEditIndicatorSuccessfulBackground; break;
+					case InlineEditTabAction.Inactive:
+						border = inlineEditIndicatorSecondaryBackground;
+						break;
+					case InlineEditTabAction.Jump:
+						border = inlineEditIndicatorPrimaryBackground;
+						break;
+					case InlineEditTabAction.Accept:
+						border = inlineEditIndicatorSuccessfulBackground;
+						break;
 				}
 				borderColor = getEditorBlendedColor(border, this._themeService).read(reader);
 			}
 
 			return {
 				border: borderColor.toString(),
-				background: getEditorBackgroundColor(this._viewState.map(s => s?.editorType ?? InlineCompletionEditorType.TextEditor).read(reader)),
+				background: getEditorBackgroundColor(
+					this._viewState.map(s => s?.editorType ?? InlineCompletionEditorType.TextEditor).read(reader)
+				)
 			};
 		});
 
@@ -122,45 +154,51 @@ export class InlineEditsLongDistanceHint extends Disposable implements IInlineEd
 						model: viewState.model,
 						inlineSuggestInfo: viewState.inlineSuggestInfo,
 						nextCursorPosition: viewState.nextCursorPosition,
-						target: viewState.target,
+						target: viewState.target
 					} satisfies ILongDistancePreviewProps;
 				}),
 				this._editor,
-				this._tabAction,
+				this._tabAction
 			)
 		);
 
 		this._viewWithElement = this._view.keepUpdated(this._store);
-		this._register(this._editorObs.createOverlayWidget({
-			domNode: this._viewWithElement.element,
-			position: constObservable(null),
-			allowEditorOverflow: false,
-			minContentWidthInPx: constObservable(0),
-		}));
+		this._register(
+			this._editorObs.createOverlayWidget({
+				domNode: this._viewWithElement.element,
+				position: constObservable(null),
+				allowEditorOverflow: false,
+				minContentWidthInPx: constObservable(0)
+			})
+		);
 
 		this._widgetContent.get().keepUpdated(this._store);
 
-		this._register(autorun(reader => {
-			const layoutInfo = this._previewEditorLayoutInfo.read(reader);
-			if (!layoutInfo) {
-				return;
-			}
-			this._previewEditor.layout(layoutInfo.codeEditorSize.toDimension(), layoutInfo.desiredPreviewEditorScrollLeft);
-		}));
+		this._register(
+			autorun(reader => {
+				const layoutInfo = this._previewEditorLayoutInfo.read(reader);
+				if (!layoutInfo) {
+					return;
+				}
+				this._previewEditor.layout(layoutInfo.codeEditorSize.toDimension(), layoutInfo.desiredPreviewEditorScrollLeft);
+			})
+		);
 
 		this._isVisibleDelayed.recomputeInitiallyAndOnChange(this._store);
 	}
 
 	private readonly _styles;
 
-	public get isHovered() { return this._widgetContent.get().didMouseMoveDuringHover; }
+	public get isHovered() {
+		return this._widgetContent.get().didMouseMoveDuringHover;
+	}
 
-	private readonly _hintTextPosition = derived(this, (reader) => {
+	private readonly _hintTextPosition = derived(this, reader => {
 		const viewState = this._viewState.read(reader);
 		return viewState ? new Position(viewState.hint.lineNumber, Number.MAX_SAFE_INTEGER) : null;
 	});
 
-	private readonly _lineSizesAroundHintPosition = derived(this, (reader) => {
+	private readonly _lineSizesAroundHintPosition = derived(this, reader => {
 		const viewState = this._viewState.read(reader);
 		const p = this._hintTextPosition.read(reader);
 		if (!viewState || !p) {
@@ -171,7 +209,9 @@ export class InlineEditsLongDistanceHint extends Disposable implements IInlineEd
 		if (!model) {
 			return [];
 		}
-		const range = LineRange.ofLength(p.lineNumber, 1).addMargin(5, 5).intersect(LineRange.ofLength(1, model.getLineCount()));
+		const range = LineRange.ofLength(p.lineNumber, 1)
+			.addMargin(5, 5)
+			.intersect(LineRange.ofLength(1, model.getLineCount()));
 
 		if (!range) {
 			return [];
@@ -185,10 +225,10 @@ export class InlineEditsLongDistanceHint extends Disposable implements IInlineEd
 
 	private readonly _isVisibleDelayed = debouncedObservable2(
 		derived(this, reader => this._viewState.read(reader)?.hint.isVisible),
-		(lastValue, newValue) => lastValue === true && newValue === false ? 200 : 0,
+		(lastValue, newValue) => (lastValue === true && newValue === false ? 200 : 0)
 	);
 
-	private readonly _previewEditorLayoutInfo = derived(this, (reader) => {
+	private readonly _previewEditorLayoutInfo = derived(this, reader => {
 		const viewState = this._viewState.read(reader);
 
 		if (!viewState || !this._isVisibleDelayed.read(reader)) {
@@ -231,14 +271,10 @@ export class InlineEditsLongDistanceHint extends Disposable implements IInlineEd
 		let possibleWidgetOutline: WidgetOutline | undefined;
 		let lastPlacementContext: WidgetPlacementContext | undefined;
 
-		const endOfLinePadding = (lineNumber: number) => lineNumber === viewState.hint.lineNumber ? 40 : 20;
+		const endOfLinePadding = (lineNumber: number) => (lineNumber === viewState.hint.lineNumber ? 40 : 20);
 
 		for (const continousLineRange of continousLineRanges) {
-			const placementContext = new WidgetPlacementContext(
-				continousLineRange,
-				editorTrueContentWidth,
-				endOfLinePadding
-			);
+			const placementContext = new WidgetPlacementContext(continousLineRange, editorTrueContentWidth, endOfLinePadding);
 			lastPlacementContext = placementContext;
 
 			const showRects = false;
@@ -270,19 +306,18 @@ export class InlineEditsLongDistanceHint extends Disposable implements IInlineEd
 			const maxAvailableWidth = Math.min(editorLayout.width - editorLayout.contentLeft, MAX_WIDGET_WIDTH.OVERLAY);
 
 			// Create a fallback placement context for computing overlay vertical position
-			const fallbackPlacementContext = lastPlacementContext ?? new WidgetPlacementContext(
-				continousLineRanges[0],
-				editorTrueContentWidth,
-				endOfLinePadding,
-			);
+			const fallbackPlacementContext =
+				lastPlacementContext ??
+				new WidgetPlacementContext(continousLineRanges[0], editorTrueContentWidth, endOfLinePadding);
 
 			possibleWidgetOutline = {
-				horizontalWidgetRange: OffsetRange.ofStartAndLength(editorTrueContentRight - maxAvailableWidth, maxAvailableWidth),
-				verticalWidgetRange: fallbackPlacementContext.getWidgetVerticalOutline(
-					viewState.hint.lineNumber + 2,
-					previewEditorHeight,
-					layoutConstants
-				).delta(10),
+				horizontalWidgetRange: OffsetRange.ofStartAndLength(
+					editorTrueContentRight - maxAvailableWidth,
+					maxAvailableWidth
+				),
+				verticalWidgetRange: fallbackPlacementContext
+					.getWidgetVerticalOutline(viewState.hint.lineNumber + 2, previewEditorHeight, layoutConstants)
+					.delta(10)
 			};
 		}
 
@@ -293,7 +328,9 @@ export class InlineEditsLongDistanceHint extends Disposable implements IInlineEd
 		const rectAvailableSpace = Rect.fromRanges(
 			possibleWidgetOutline.horizontalWidgetRange,
 			possibleWidgetOutline.verticalWidgetRange
-		).translateX(-editorScrollLeft).translateY(-editorScrollTop);
+		)
+			.translateX(-editorScrollLeft)
+			.translateY(-editorScrollTop);
 
 		const showAvailableSpace = false;
 		if (showAvailableSpace) {
@@ -301,19 +338,31 @@ export class InlineEditsLongDistanceHint extends Disposable implements IInlineEd
 		}
 
 		const { previewEditorMargin, widgetPadding, widgetBorder, lowerBarHeight } = layoutConstants;
-		const maxWidgetWidth = Math.min(position === 'overlay' ? MAX_WIDGET_WIDTH.OVERLAY : MAX_WIDGET_WIDTH.EMPTY_SPACE, previewEditorContentLayout.maxEditorWidth + previewEditorMargin + widgetPadding);
+		const maxWidgetWidth = Math.min(
+			position === 'overlay' ? MAX_WIDGET_WIDTH.OVERLAY : MAX_WIDGET_WIDTH.EMPTY_SPACE,
+			previewEditorContentLayout.maxEditorWidth + previewEditorMargin + widgetPadding
+		);
 
 		const layout = distributeFlexBoxLayout(rectAvailableSpace.width, {
 			spaceBefore: { min: 0, max: 10, priority: 1 },
-			content: { min: 50, rules: [{ max: 150, priority: 2 }, { max: maxWidgetWidth, priority: 1 }] },
-			spaceAfter: { min: 10 },
+			content: {
+				min: 50,
+				rules: [
+					{ max: 150, priority: 2 },
+					{ max: maxWidgetWidth, priority: 1 }
+				]
+			},
+			spaceAfter: { min: 10 }
 		});
 
 		if (!layout) {
 			return null;
 		}
 
-		const ranges = lengthsToOffsetRanges([layout.spaceBefore, layout.content, layout.spaceAfter], rectAvailableSpace.left);
+		const ranges = lengthsToOffsetRanges(
+			[layout.spaceBefore, layout.content, layout.spaceAfter],
+			rectAvailableSpace.left
+		);
 		const spaceBeforeRect = rectAvailableSpace.withHorizontalRange(ranges[0]);
 		const widgetRect = rectAvailableSpace.withHorizontalRange(ranges[1]);
 		const spaceAfterRect = rectAvailableSpace.withHorizontalRange(ranges[2]);
@@ -323,7 +372,9 @@ export class InlineEditsLongDistanceHint extends Disposable implements IInlineEd
 			debugView(debugLogRects({ spaceBeforeRect, widgetRect, spaceAfterRect }, this._editor.getDomNode()!), reader);
 		}
 
-		const previewEditorRect = widgetRect.withMargin(-widgetPadding - widgetBorder - previewEditorMargin).withMargin(0, 0, -lowerBarHeight, 0);
+		const previewEditorRect = widgetRect
+			.withMargin(-widgetPadding - widgetBorder - previewEditorMargin)
+			.withMargin(0, 0, -lowerBarHeight, 0);
 
 		const showEditorRect = false;
 		if (showEditorRect) {
@@ -332,11 +383,15 @@ export class InlineEditsLongDistanceHint extends Disposable implements IInlineEd
 
 		const previewEditorContentWidth = previewEditorRect.width - previewEditorContentLayout.nonContentWidth;
 		const maxPrefferedRangeLength = previewEditorContentWidth * 0.8;
-		const preferredRangeToReveal = previewEditorContentLayout.preferredRangeToReveal.intersect(OffsetRange.ofStartAndLength(
-			previewEditorContentLayout.preferredRangeToReveal.start,
-			maxPrefferedRangeLength
-		)) ?? previewEditorContentLayout.preferredRangeToReveal;
-		const desiredPreviewEditorScrollLeft = scrollToReveal(previewEditorContentLayout.indentationEnd, previewEditorContentWidth, preferredRangeToReveal);
+		const preferredRangeToReveal =
+			previewEditorContentLayout.preferredRangeToReveal.intersect(
+				OffsetRange.ofStartAndLength(previewEditorContentLayout.preferredRangeToReveal.start, maxPrefferedRangeLength)
+			) ?? previewEditorContentLayout.preferredRangeToReveal;
+		const desiredPreviewEditorScrollLeft = scrollToReveal(
+			previewEditorContentLayout.indentationEnd,
+			previewEditorContentWidth,
+			preferredRangeToReveal
+		);
 
 		return {
 			codeEditorSize: previewEditorRect.getSize(),
@@ -351,135 +406,204 @@ export class InlineEditsLongDistanceHint extends Disposable implements IInlineEd
 
 			lowerBarHeight,
 
-			desiredPreviewEditorScrollLeft: desiredPreviewEditorScrollLeft.newScrollPosition,
+			desiredPreviewEditorScrollLeft: desiredPreviewEditorScrollLeft.newScrollPosition
 		};
 	});
 
-	private readonly _view = n.div({
-		class: 'inline-edits-view',
-		style: {
-			position: 'absolute',
-			overflow: 'visible',
-			top: '0px',
-			left: '0px',
-			display: derived(this, reader => !!this._previewEditorLayoutInfo.read(reader) ? 'block' : 'none'),
-		},
-	}, [
-		derived(this, _reader => [this._widgetContent]),
-	]);
-
-	private readonly _widgetContent = derived(this, reader => // TODO@hediet: remove when n.div lazily creates previewEditor.element node
-		n.div({
-			class: ['inline-edits-long-distance-hint-widget', 'show-file-icons'],
+	private readonly _view = n.div(
+		{
+			class: 'inline-edits-view',
 			style: {
 				position: 'absolute',
-				overflow: 'hidden',
-				cursor: 'pointer',
-				background: asCssVariable(editorWidgetBackground),
-				padding: this._previewEditorLayoutInfo.map(i => i?.widgetPadding),
-				boxSizing: 'border-box',
-				borderRadius: BORDER_RADIUS,
-				border: derived(reader => `${this._previewEditorLayoutInfo.read(reader)?.widgetBorder}px solid ${this._styles.read(reader).border}`),
-				display: 'flex',
-				flexDirection: 'column',
-				opacity: derived(reader => this._viewState.read(reader)?.hint.isVisible ? '1' : '0'),
-				transition: 'opacity 200ms ease-in-out',
-				...rectToProps(reader => this._previewEditorLayoutInfo.read(reader)?.widgetRect)
-			},
-			onmousedown: e => {
-				e.preventDefault(); // This prevents that the editor loses focus
-			},
-			onclick: () => {
-				this._viewState.read(undefined)?.model.jump();
+				overflow: 'visible',
+				top: '0px',
+				left: '0px',
+				display: derived(this, reader => (!!this._previewEditorLayoutInfo.read(reader) ? 'block' : 'none'))
 			}
-		}, [
-			n.div({
-				class: ['editorContainer'],
-				style: {
-					overflow: 'hidden',
-					padding: this._previewEditorLayoutInfo.map(i => i?.previewEditorMargin),
-					background: this._styles.map(s => s.background),
-					pointerEvents: 'none',
+		},
+		[derived(this, _reader => [this._widgetContent])]
+	);
+
+	private readonly _widgetContent = derived(
+		this,
+		(
+			reader // TODO@hediet: remove when n.div lazily creates previewEditor.element node
+		) =>
+			n.div(
+				{
+					class: ['inline-edits-long-distance-hint-widget', 'show-file-icons'],
+					style: {
+						position: 'absolute',
+						overflow: 'hidden',
+						cursor: 'pointer',
+						background: asCssVariable(editorWidgetBackground),
+						padding: this._previewEditorLayoutInfo.map(i => i?.widgetPadding),
+						boxSizing: 'border-box',
+						borderRadius: BORDER_RADIUS,
+						border: derived(
+							reader =>
+								`${this._previewEditorLayoutInfo.read(reader)?.widgetBorder}px solid ${this._styles.read(reader).border}`
+						),
+						display: 'flex',
+						flexDirection: 'column',
+						opacity: derived(reader => (this._viewState.read(reader)?.hint.isVisible ? '1' : '0')),
+						transition: 'opacity 200ms ease-in-out',
+						...rectToProps(reader => this._previewEditorLayoutInfo.read(reader)?.widgetRect)
+					},
+					onmousedown: e => {
+						e.preventDefault(); // This prevents that the editor loses focus
+					},
+					onclick: () => {
+						this._viewState.read(undefined)?.model.jump();
+					}
 				},
-			}, [
-				derived(this, r => this._previewEditor.element), // --
-			]),
-			n.div({ class: 'bar', style: { color: asCssVariable(descriptionForeground), pointerEvents: 'none', margin: '0 4px', height: this._previewEditorLayoutInfo.map(i => i?.lowerBarHeight), display: 'flex', justifyContent: 'space-between', alignItems: 'center' } }, [
-				derived(this, reader => {
-					const children: (HTMLElement | ObserverNode<HTMLDivElement>)[] = [];
-					const viewState = this._viewState.read(reader);
-					if (!viewState) {
-						return children;
-					}
-
-					// Check if this is a cross-file edit
-					const currentUri = this._editorObs.model.read(reader)?.uri;
-					const targetUri = viewState.target.uri;
-					const isCrossFileEdit = targetUri && (!currentUri || targetUri.toString() !== currentUri.toString());
-
-					if (isCrossFileEdit) {
-						// For cross-file edits, show target filename instead of outline
-						const fileName = basename(targetUri);
-						const iconClasses = getIconClasses(this._modelService, this._languageService, targetUri, FileKind.FILE);
-						children.push(n.div({
-							class: 'target-file',
-							style: { display: 'flex', alignItems: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-						}, [
-							n.elem('span', { class: iconClasses, style: { flexShrink: '0', marginRight: '4px' } }),
-							fileName,
-						]));
-					} else {
-						// Outline Element
-						const source = this._originalOutlineSource.read(reader);
-						const originalTargetLineNumber = this._originalTargetLineNumber.read(reader);
-						const outlineItems = source?.getAt(originalTargetLineNumber, reader).slice(0, 1) ?? [];
-						const outlineElements: ChildNode[] = [];
-						if (outlineItems.length > 0) {
-							for (let i = 0; i < outlineItems.length; i++) {
-								const item = outlineItems[i];
-								const icon = SymbolKinds.toIcon(item.kind);
-								outlineElements.push(n.div({
-									class: 'breadcrumb-item',
-									style: { display: 'flex', alignItems: 'center', flex: '1 1 auto', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-								}, [
-									renderIcon(icon),
-									'\u00a0',
-									item.name,
-									...(i === outlineItems.length - 1
-										? []
-										: [renderIcon(Codicon.chevronRight)]
-									)
-								]));
+				[
+					n.div(
+						{
+							class: ['editorContainer'],
+							style: {
+								overflow: 'hidden',
+								padding: this._previewEditorLayoutInfo.map(i => i?.previewEditorMargin),
+								background: this._styles.map(s => s.background),
+								pointerEvents: 'none'
 							}
-						}
-						children.push(n.div({ class: 'outline-elements', style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, outlineElements));
-					}
+						},
+						[
+							derived(this, r => this._previewEditor.element) // --
+						]
+					),
+					n.div(
+						{
+							class: 'bar',
+							style: {
+								color: asCssVariable(descriptionForeground),
+								pointerEvents: 'none',
+								margin: '0 4px',
+								height: this._previewEditorLayoutInfo.map(i => i?.lowerBarHeight),
+								display: 'flex',
+								justifyContent: 'space-between',
+								alignItems: 'center'
+							}
+						},
+						[
+							derived(this, reader => {
+								const children: (HTMLElement | ObserverNode<HTMLDivElement>)[] = [];
+								const viewState = this._viewState.read(reader);
+								if (!viewState) {
+									return children;
+								}
 
-					// Show Edit Direction
-					const originalTargetLineNumber = this._originalTargetLineNumber.read(reader);
-					const arrowIcon = isCrossFileEdit ? Codicon.arrowRight : (viewState.hint.lineNumber < originalTargetLineNumber ? Codicon.arrowDown : Codicon.arrowUp);
-					const keybinding = this._keybindingService.lookupKeybinding(jumpToNextInlineEditId);
-					let label = isCrossFileEdit ? 'Go to file' : 'Go to suggestion';
-					if (keybinding && keybinding.getLabel() === 'Tab') {
-						label = isCrossFileEdit ? 'Tab to open' : 'Tab to jump';
-					}
-					children.push(n.div({
-						class: 'go-to-label',
-						style: { position: 'relative', display: 'flex', alignItems: 'center', flex: '0 0 auto', paddingLeft: '6px' },
-					}, [
-						label,
-						'\u00a0',
-						renderIcon(arrowIcon),
-					]));
+								// Check if this is a cross-file edit
+								const currentUri = this._editorObs.model.read(reader)?.uri;
+								const targetUri = viewState.target.uri;
+								const isCrossFileEdit = targetUri && (!currentUri || targetUri.toString() !== currentUri.toString());
 
-					return children;
-				})
-			]),
-		])
+								if (isCrossFileEdit) {
+									// For cross-file edits, show target filename instead of outline
+									const fileName = basename(targetUri);
+									const iconClasses = getIconClasses(
+										this._modelService,
+										this._languageService,
+										targetUri,
+										FileKind.FILE
+									);
+									children.push(
+										n.div(
+											{
+												class: 'target-file',
+												style: {
+													display: 'flex',
+													alignItems: 'center',
+													overflow: 'hidden',
+													textOverflow: 'ellipsis',
+													whiteSpace: 'nowrap'
+												}
+											},
+											[n.elem('span', { class: iconClasses, style: { flexShrink: '0', marginRight: '4px' } }), fileName]
+										)
+									);
+								} else {
+									// Outline Element
+									const source = this._originalOutlineSource.read(reader);
+									const originalTargetLineNumber = this._originalTargetLineNumber.read(reader);
+									const outlineItems = source?.getAt(originalTargetLineNumber, reader).slice(0, 1) ?? [];
+									const outlineElements: ChildNode[] = [];
+									if (outlineItems.length > 0) {
+										for (let i = 0; i < outlineItems.length; i++) {
+											const item = outlineItems[i];
+											const icon = SymbolKinds.toIcon(item.kind);
+											outlineElements.push(
+												n.div(
+													{
+														class: 'breadcrumb-item',
+														style: {
+															display: 'flex',
+															alignItems: 'center',
+															flex: '1 1 auto',
+															whiteSpace: 'nowrap',
+															overflow: 'hidden',
+															textOverflow: 'ellipsis'
+														}
+													},
+													[
+														renderIcon(icon),
+														'\u00a0',
+														item.name,
+														...(i === outlineItems.length - 1 ? [] : [renderIcon(Codicon.chevronRight)])
+													]
+												)
+											);
+										}
+									}
+									children.push(
+										n.div(
+											{
+												class: 'outline-elements',
+												style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+											},
+											outlineElements
+										)
+									);
+								}
+
+								// Show Edit Direction
+								const originalTargetLineNumber = this._originalTargetLineNumber.read(reader);
+								const arrowIcon = isCrossFileEdit
+									? Codicon.arrowRight
+									: viewState.hint.lineNumber < originalTargetLineNumber
+										? Codicon.arrowDown
+										: Codicon.arrowUp;
+								const keybinding = this._keybindingService.lookupKeybinding(jumpToNextInlineEditId);
+								let label = isCrossFileEdit ? 'Go to file' : 'Go to suggestion';
+								if (keybinding && keybinding.getLabel() === 'Tab') {
+									label = isCrossFileEdit ? 'Tab to open' : 'Tab to jump';
+								}
+								children.push(
+									n.div(
+										{
+											class: 'go-to-label',
+											style: {
+												position: 'relative',
+												display: 'flex',
+												alignItems: 'center',
+												flex: '0 0 auto',
+												paddingLeft: '6px'
+											}
+										},
+										[label, '\u00a0', renderIcon(arrowIcon)]
+									)
+								);
+
+								return children;
+							})
+						]
+					)
+				]
+			)
 	);
 
 	// Drives breadcrumbs and symbol icon
-	private readonly _originalTargetLineNumber = derived(this, (reader) => {
+	private readonly _originalTargetLineNumber = derived(this, reader => {
 		const viewState = this._viewState.read(reader);
 		if (!viewState) {
 			return -1;
@@ -492,10 +616,10 @@ export class InlineEditsLongDistanceHint extends Disposable implements IInlineEd
 		return viewState.diff[0]?.original.startLineNumber ?? -1;
 	});
 
-	private readonly _originalOutlineSource = derivedDisposable(this, (reader) => {
+	private readonly _originalOutlineSource = derivedDisposable(this, reader => {
 		const m = this._editorObs.model.read(reader);
 		const factory = HideUnchangedRegionsFeature._breadcrumbsSourceFactory.read(reader);
-		return (!m || !factory) ? undefined : factory(m, this._instantiationService);
+		return !m || !factory ? undefined : factory(m, this._instantiationService);
 	});
 }
 
@@ -532,41 +656,46 @@ function stackSizesDown(at: Point, sizes: Size2D[], alignment: 'left' | 'right' 
 	let offset = 0;
 	for (const s of sizes) {
 		rects.push(
-			Rect.fromLeftTopWidthHeight(
-				at.x + (alignment === 'left' ? 0 : -s.width),
-				at.y + offset,
-				s.width,
-				s.height
-			)
+			Rect.fromLeftTopWidthHeight(at.x + (alignment === 'left' ? 0 : -s.width), at.y + offset, s.width, s.height)
 		);
 		offset += s.height;
 	}
 	return rects;
 }
 
-
-
 export function drawEditorWidths(e: ICodeEditor, reader: IReader) {
 	const layoutInfo = e.getLayoutInfo();
 	const contentLeft = new OffsetRange(0, layoutInfo.contentLeft);
-	const trueContent = OffsetRange.ofStartAndLength(layoutInfo.contentLeft, layoutInfo.contentWidth - layoutInfo.verticalScrollbarWidth);
+	const trueContent = OffsetRange.ofStartAndLength(
+		layoutInfo.contentLeft,
+		layoutInfo.contentWidth - layoutInfo.verticalScrollbarWidth
+	);
 	const minimap = OffsetRange.ofStartAndLength(trueContent.endExclusive, layoutInfo.minimap.minimapWidth);
 	const verticalScrollbar = OffsetRange.ofStartAndLength(minimap.endExclusive, layoutInfo.verticalScrollbarWidth);
 
 	const r = new OffsetRange(0, 200);
-	debugView(debugLogHorizontalOffsetRanges({
-		contentLeft: Rect.fromRanges(contentLeft, r),
-		trueContent: Rect.fromRanges(trueContent, r),
-		minimap: Rect.fromRanges(minimap, r),
-		verticalScrollbar: Rect.fromRanges(verticalScrollbar, r),
-	}, e.getDomNode()!), reader);
+	debugView(
+		debugLogHorizontalOffsetRanges(
+			{
+				contentLeft: Rect.fromRanges(contentLeft, r),
+				trueContent: Rect.fromRanges(trueContent, r),
+				minimap: Rect.fromRanges(minimap, r),
+				verticalScrollbar: Rect.fromRanges(verticalScrollbar, r)
+			},
+			e.getDomNode()!
+		),
+		reader
+	);
 }
-
 
 /**
  * Changes the scroll position as little as possible just to reveal the given range in the window.
-*/
-export function scrollToReveal(currentScrollPosition: number, windowWidth: number, contentRangeToReveal: OffsetRange): { newScrollPosition: number } {
+ */
+export function scrollToReveal(
+	currentScrollPosition: number,
+	windowWidth: number,
+	contentRangeToReveal: OffsetRange
+): { newScrollPosition: number } {
 	const visibleRange = new OffsetRange(currentScrollPosition, currentScrollPosition + windowWidth);
 	if (visibleRange.containsRange(contentRangeToReveal)) {
 		return { newScrollPosition: currentScrollPosition };

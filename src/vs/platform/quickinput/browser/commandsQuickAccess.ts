@@ -22,7 +22,14 @@ import { IDialogService } from '../../dialogs/common/dialogs.js';
 import { IInstantiationService } from '../../instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../keybinding/common/keybinding.js';
 import { ILogService } from '../../log/common/log.js';
-import { FastAndSlowPicks, IPickerQuickAccessItem, IPickerQuickAccessProviderOptions, PickerQuickAccessProvider, Picks, TriggerAction } from './pickerQuickAccess.js';
+import {
+	FastAndSlowPicks,
+	IPickerQuickAccessItem,
+	IPickerQuickAccessProviderOptions,
+	PickerQuickAccessProvider,
+	Picks,
+	TriggerAction
+} from './pickerQuickAccess.js';
 import { IQuickAccessProviderRunOptions } from '../common/quickAccess.js';
 import { IKeyMods, IQuickPickSeparator } from '../common/quickInput.js';
 import { IStorageService, StorageScope, StorageTarget, WillSaveStateReason } from '../../storage/common/storage.js';
@@ -46,8 +53,10 @@ export interface ICommandsQuickAccessOptions extends IPickerQuickAccessProviderO
 	suggestedCommandIds?: Set<string>;
 }
 
-export abstract class AbstractCommandsQuickAccessProvider extends PickerQuickAccessProvider<ICommandQuickPick> implements IDisposable {
-
+export abstract class AbstractCommandsQuickAccessProvider
+	extends PickerQuickAccessProvider<ICommandQuickPick>
+	implements IDisposable
+{
 	static PREFIX = '>';
 
 	private static readonly TFIDF_THRESHOLD = 0.5;
@@ -74,8 +83,12 @@ export abstract class AbstractCommandsQuickAccessProvider extends PickerQuickAcc
 		this.options = options;
 	}
 
-	protected async _getPicks(filter: string, _disposables: DisposableStore, token: CancellationToken, runOptions?: IQuickAccessProviderRunOptions): Promise<Picks<ICommandQuickPick> | FastAndSlowPicks<ICommandQuickPick>> {
-
+	protected async _getPicks(
+		filter: string,
+		_disposables: DisposableStore,
+		token: CancellationToken,
+		runOptions?: IQuickAccessProviderRunOptions
+	): Promise<Picks<ICommandQuickPick> | FastAndSlowPicks<ICommandQuickPick>> {
 		// Ask subclass for all command picks
 		const allCommandPicks = await this.getCommandPicks(token);
 
@@ -85,10 +98,12 @@ export abstract class AbstractCommandsQuickAccessProvider extends PickerQuickAcc
 
 		const runTfidf = createSingleCallFunction(() => {
 			const tfidf = new TfIdfCalculator();
-			tfidf.updateDocuments(allCommandPicks.map(commandPick => ({
-				key: commandPick.commandId,
-				textChunks: [this.getTfIdfChunk(commandPick)]
-			})));
+			tfidf.updateDocuments(
+				allCommandPicks.map(commandPick => ({
+					key: commandPick.commandId,
+					textChunks: [this.getTfIdfChunk(commandPick)]
+				}))
+			);
 			const result = tfidf.calculateScores(filter, token);
 
 			return normalizeTfIdfScores(result)
@@ -103,7 +118,8 @@ export abstract class AbstractCommandsQuickAccessProvider extends PickerQuickAcc
 
 			let aliasHighlights: IMatch[] | undefined;
 			if (commandPick.commandAlias) {
-				aliasHighlights = AbstractCommandsQuickAccessProvider.WORD_FILTER(filter, commandPick.commandAlias) ?? undefined;
+				aliasHighlights =
+					AbstractCommandsQuickAccessProvider.WORD_FILTER(filter, commandPick.commandAlias) ?? undefined;
 			}
 
 			// Add if matching in label or alias
@@ -151,7 +167,6 @@ export abstract class AbstractCommandsQuickAccessProvider extends PickerQuickAcc
 
 		// Sort by MRU order and fallback to name otherwise
 		filteredCommandPicks.sort((commandPickA, commandPickB) => {
-
 			// If a result came from tf-idf, we want to put that towards the bottom
 			if (commandPickA.tfIdfScore && commandPickB.tfIdfScore) {
 				if (commandPickA.tfIdfScore === commandPickB.tfIdfScore) {
@@ -221,25 +236,35 @@ export abstract class AbstractCommandsQuickAccessProvider extends PickerQuickAcc
 
 			// Separator: recently used
 			if (i === 0 && isInHistory) {
-				commandPicks.push({ type: 'separator', label: localize('recentlyUsed', "recently used") });
+				commandPicks.push({ type: 'separator', label: localize('recentlyUsed', 'recently used') });
 				addOtherSeparator = true;
 			}
 
 			if (addSuggestedSeparator && commandPick.tfIdfScore !== undefined) {
-				commandPicks.push({ type: 'separator', label: localize('suggested', "similar commands") });
+				commandPicks.push({ type: 'separator', label: localize('suggested', 'similar commands') });
 				addSuggestedSeparator = false;
 			}
 
 			// Separator: commonly used
-			if (addCommonlyUsedSeparator && commandPick.tfIdfScore === undefined && !isInHistory && this.options.suggestedCommandIds?.has(commandPick.commandId)) {
-				commandPicks.push({ type: 'separator', label: localize('commonlyUsed', "commonly used") });
+			if (
+				addCommonlyUsedSeparator &&
+				commandPick.tfIdfScore === undefined &&
+				!isInHistory &&
+				this.options.suggestedCommandIds?.has(commandPick.commandId)
+			) {
+				commandPicks.push({ type: 'separator', label: localize('commonlyUsed', 'commonly used') });
 				addOtherSeparator = true;
 				addCommonlyUsedSeparator = false;
 			}
 
 			// Separator: other commands
-			if (addOtherSeparator && commandPick.tfIdfScore === undefined && !isInHistory && !this.options.suggestedCommandIds?.has(commandPick.commandId)) {
-				commandPicks.push({ type: 'separator', label: localize('morecCommands', "other commands") });
+			if (
+				addOtherSeparator &&
+				commandPick.tfIdfScore === undefined &&
+				!isInHistory &&
+				!this.options.suggestedCommandIds?.has(commandPick.commandId)
+			) {
+				commandPicks.push({ type: 'separator', label: localize('morecCommands', 'other commands') });
 				addOtherSeparator = false;
 			}
 
@@ -254,61 +279,76 @@ export abstract class AbstractCommandsQuickAccessProvider extends PickerQuickAcc
 		return {
 			picks: commandPicks,
 			additionalPicks: (async (): Promise<Picks<ICommandQuickPick>> => {
-				const additionalCommandPicks = await this.getAdditionalCommandPicks(allCommandPicks, filteredCommandPicks, filter, token);
+				const additionalCommandPicks = await this.getAdditionalCommandPicks(
+					allCommandPicks,
+					filteredCommandPicks,
+					filter,
+					token
+				);
 				if (token.isCancellationRequested) {
 					return [];
 				}
 
-				const commandPicks: Array<ICommandQuickPick | IQuickPickSeparator> = additionalCommandPicks.map(commandPick => this.toCommandPick(commandPick, runOptions));
+				const commandPicks: Array<ICommandQuickPick | IQuickPickSeparator> = additionalCommandPicks.map(commandPick =>
+					this.toCommandPick(commandPick, runOptions)
+				);
 				// Basically, if we haven't already added a separator, we add one before the additional picks so long
 				// as one hasn't been added to the start of the array.
 				if (addSuggestedSeparator && commandPicks[0]?.type !== 'separator') {
-					commandPicks.unshift({ type: 'separator', label: localize('suggested', "similar commands") });
+					commandPicks.unshift({ type: 'separator', label: localize('suggested', 'similar commands') });
 				}
 				return commandPicks;
 			})()
 		};
 	}
 
-	private toCommandPick(commandPick: ICommandQuickPick | IQuickPickSeparator, runOptions?: IQuickAccessProviderRunOptions, isRecentlyUsed: boolean = false): ICommandQuickPick | IQuickPickSeparator {
+	private toCommandPick(
+		commandPick: ICommandQuickPick | IQuickPickSeparator,
+		runOptions?: IQuickAccessProviderRunOptions,
+		isRecentlyUsed: boolean = false
+	): ICommandQuickPick | IQuickPickSeparator {
 		if (commandPick.type === 'separator') {
 			return commandPick;
 		}
-		const tooltip = commandPick.tooltip
-			?? commandPick.commandDescription?.value;
+		const tooltip = commandPick.tooltip ?? commandPick.commandDescription?.value;
 
 		const keybinding = this.keybindingService.lookupKeybinding(commandPick.commandId);
-		const ariaLabel = keybinding ?
-			localize('commandPickAriaLabelWithKeybinding', "{0}, {1}", commandPick.label, keybinding.getAriaLabel()) :
-			commandPick.label;
+		const ariaLabel = keybinding
+			? localize('commandPickAriaLabelWithKeybinding', '{0}, {1}', commandPick.label, keybinding.getAriaLabel())
+			: commandPick.label;
 
 		// Add remove button for recently used items (as the last button, to the right)
 		const existingButtons = commandPick.buttons || [];
-		const buttons = isRecentlyUsed ? [
-			...existingButtons,
-			{
-				iconClass: ThemeIcon.asClassName(Codicon.close),
-				tooltip: localize('removeFromRecentlyUsed', "Remove from Recently Used")
-			}
-		] : commandPick.buttons;
+		const buttons = isRecentlyUsed
+			? [
+					...existingButtons,
+					{
+						iconClass: ThemeIcon.asClassName(Codicon.close),
+						tooltip: localize('removeFromRecentlyUsed', 'Remove from Recently Used')
+					}
+				]
+			: commandPick.buttons;
 
 		return {
 			...commandPick,
 			tooltip,
 			ariaLabel,
-			detail: this.options.showAlias && commandPick.commandAlias !== commandPick.label ? commandPick.commandAlias : undefined,
+			detail:
+				this.options.showAlias && commandPick.commandAlias !== commandPick.label ? commandPick.commandAlias : undefined,
 			keybinding,
 			buttons,
 			accept: async () => {
-
 				// Add to history
 				this.commandsHistory.push(commandPick.commandId);
 
 				// Telementry
-				this.telemetryService.publicLog2<WorkbenchActionExecutedEvent, WorkbenchActionExecutedClassification>('workbenchActionExecuted', {
-					id: commandPick.commandId,
-					from: runOptions?.from ?? 'quick open'
-				});
+				this.telemetryService.publicLog2<WorkbenchActionExecutedEvent, WorkbenchActionExecutedClassification>(
+					'workbenchActionExecuted',
+					{
+						id: commandPick.commandId,
+						from: runOptions?.from ?? 'quick open'
+					}
+				);
 
 				// Run
 				try {
@@ -317,23 +357,28 @@ export abstract class AbstractCommandsQuickAccessProvider extends PickerQuickAcc
 						: await this.commandService.executeCommand(commandPick.commandId);
 				} catch (error) {
 					if (!isCancellationError(error)) {
-						this.dialogService.error(localize('canNotRun', "Command '{0}' resulted in an error", commandPick.label), toErrorMessage(error));
+						this.dialogService.error(
+							localize('canNotRun', "Command '{0}' resulted in an error", commandPick.label),
+							toErrorMessage(error)
+						);
 					}
 				}
 			},
-			trigger: isRecentlyUsed ? (buttonIndex: number, keyMods: IKeyMods): TriggerAction | Promise<TriggerAction> => {
-				// The remove button is now the last button
-				const removeButtonIndex = existingButtons.length;
-				if (buttonIndex === removeButtonIndex) {
-					this.commandsHistory.remove(commandPick.commandId);
-					return TriggerAction.REMOVE_ITEM;
-				}
-				// Handle other buttons (e.g., configure keybinding button)
-				if (commandPick.trigger) {
-					return commandPick.trigger(buttonIndex, keyMods);
-				}
-				return TriggerAction.NO_ACTION;
-			} : commandPick.trigger
+			trigger: isRecentlyUsed
+				? (buttonIndex: number, keyMods: IKeyMods): TriggerAction | Promise<TriggerAction> => {
+						// The remove button is now the last button
+						const removeButtonIndex = existingButtons.length;
+						if (buttonIndex === removeButtonIndex) {
+							this.commandsHistory.remove(commandPick.commandId);
+							return TriggerAction.REMOVE_ITEM;
+						}
+						// Handle other buttons (e.g., configure keybinding button)
+						if (commandPick.trigger) {
+							return commandPick.trigger(buttonIndex, keyMods);
+						}
+						return TriggerAction.NO_ACTION;
+					}
+				: commandPick.trigger
 		};
 	}
 
@@ -353,7 +398,12 @@ export abstract class AbstractCommandsQuickAccessProvider extends PickerQuickAcc
 	protected abstract getCommandPicks(token: CancellationToken): Promise<Array<ICommandQuickPick>>;
 
 	protected abstract hasAdditionalCommandPicks(filter: string, token: CancellationToken): boolean;
-	protected abstract getAdditionalCommandPicks(allPicks: ICommandQuickPick[], picksSoFar: ICommandQuickPick[], filter: string, token: CancellationToken): Promise<Array<ICommandQuickPick | IQuickPickSeparator>>;
+	protected abstract getAdditionalCommandPicks(
+		allPicks: ICommandQuickPick[],
+		picksSoFar: ICommandQuickPick[],
+		filter: string,
+		token: CancellationToken
+	): Promise<Array<ICommandQuickPick | IQuickPickSeparator>>;
 }
 
 interface ISerializedCommandHistory {
@@ -371,7 +421,6 @@ interface ICommandsQuickAccessConfiguration {
 }
 
 export class CommandsHistory extends Disposable {
-
 	static readonly DEFAULT_COMMANDS_HISTORY_LENGTH = 50;
 
 	private static readonly PREF_KEY_CACHE = 'commandPalette.mru.cache';
@@ -398,14 +447,16 @@ export class CommandsHistory extends Disposable {
 
 	private registerListeners(): void {
 		this._register(this.configurationService.onDidChangeConfiguration(e => this.updateConfiguration(e)));
-		this._register(this.storageService.onWillSaveState(e => {
-			if (e.reason === WillSaveStateReason.SHUTDOWN) {
-				// Commands history is very dynamic and so we limit impact
-				// on storage to only save on shutdown. This helps reduce
-				// the overhead of syncing this data across machines.
-				this.saveState();
-			}
-		}));
+		this._register(
+			this.storageService.onWillSaveState(e => {
+				if (e.reason === WillSaveStateReason.SHUTDOWN) {
+					// Commands history is very dynamic and so we limit impact
+					// on storage to only save on shutdown. This helps reduce
+					// the overhead of syncing this data across machines.
+					this.saveState();
+				}
+			})
+		);
 	}
 
 	private updateConfiguration(e?: IConfigurationChangeEvent): void {
@@ -432,7 +483,7 @@ export class CommandsHistory extends Disposable {
 			}
 		}
 
-		const cache = CommandsHistory.cache = new LRUCache<string, number>(this.configuredCommandsHistoryLength, 1);
+		const cache = (CommandsHistory.cache = new LRUCache<string, number>(this.configuredCommandsHistoryLength, 1));
 		if (serializedCache) {
 			let entries: { key: string; value: number }[];
 			if (serializedCache.usesLRU) {
@@ -443,7 +494,11 @@ export class CommandsHistory extends Disposable {
 			entries.forEach(entry => cache.set(entry.key, entry.value));
 		}
 
-		CommandsHistory.counter = this.storageService.getNumber(CommandsHistory.PREF_KEY_COUNTER, StorageScope.PROFILE, CommandsHistory.counter);
+		CommandsHistory.counter = this.storageService.getNumber(
+			CommandsHistory.PREF_KEY_COUNTER,
+			StorageScope.PROFILE,
+			CommandsHistory.counter
+		);
 	}
 
 	push(commandId: string): void {
@@ -480,8 +535,18 @@ export class CommandsHistory extends Disposable {
 		const serializedCache: ISerializedCommandHistory = { usesLRU: true, entries: [] };
 		CommandsHistory.cache.forEach((value, key) => serializedCache.entries.push({ key, value }));
 
-		this.storageService.store(CommandsHistory.PREF_KEY_CACHE, JSON.stringify(serializedCache), StorageScope.PROFILE, StorageTarget.USER);
-		this.storageService.store(CommandsHistory.PREF_KEY_COUNTER, CommandsHistory.counter, StorageScope.PROFILE, StorageTarget.USER);
+		this.storageService.store(
+			CommandsHistory.PREF_KEY_CACHE,
+			JSON.stringify(serializedCache),
+			StorageScope.PROFILE,
+			StorageTarget.USER
+		);
+		this.storageService.store(
+			CommandsHistory.PREF_KEY_COUNTER,
+			CommandsHistory.counter,
+			StorageScope.PROFILE,
+			StorageTarget.USER
+		);
 		CommandsHistory.hasChanges = false;
 	}
 

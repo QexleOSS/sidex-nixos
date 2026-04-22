@@ -7,7 +7,11 @@ import type * as vscode from 'vscode';
 import { coalesceInPlace } from '../../../../base/common/arrays.js';
 import { ResourceMap } from '../../../../base/common/map.js';
 import { URI } from '../../../../base/common/uri.js';
-import { CellEditType, ICellMetadataEdit, IDocumentMetadataEdit } from '../../../contrib/notebook/common/notebookCommon.js';
+import {
+	CellEditType,
+	ICellMetadataEdit,
+	IDocumentMetadataEdit
+} from '../../../contrib/notebook/common/notebookCommon.js';
 import { NotebookEdit } from './notebooks.js';
 import { SnippetTextEdit } from './snippetTextEdit.js';
 import { es5ClassCompat } from './es5ClassCompat.js';
@@ -28,7 +32,7 @@ export const enum FileEditType {
 	Text = 2,
 	Cell = 3,
 	CellReplace = 5,
-	Snippet = 6,
+	Snippet = 6
 }
 
 export interface IFileOperation {
@@ -75,43 +79,89 @@ export type WorkspaceEditEntry = IFileOperation | IFileTextEdit | IFileSnippetTe
 
 @es5ClassCompat
 export class WorkspaceEdit implements vscode.WorkspaceEdit {
-
 	private readonly _edits: WorkspaceEditEntry[] = [];
-
 
 	_allEntries(): ReadonlyArray<WorkspaceEditEntry> {
 		return this._edits;
 	}
 
 	// --- file
-	renameFile(from: vscode.Uri, to: vscode.Uri, options?: { readonly overwrite?: boolean; readonly ignoreIfExists?: boolean }, metadata?: vscode.WorkspaceEditEntryMetadata): void {
+	renameFile(
+		from: vscode.Uri,
+		to: vscode.Uri,
+		options?: { readonly overwrite?: boolean; readonly ignoreIfExists?: boolean },
+		metadata?: vscode.WorkspaceEditEntryMetadata
+	): void {
 		this._edits.push({ _type: FileEditType.File, from, to, options, metadata });
 	}
 
-	createFile(uri: vscode.Uri, options?: { readonly overwrite?: boolean; readonly ignoreIfExists?: boolean; readonly contents?: Uint8Array | vscode.DataTransferFile }, metadata?: vscode.WorkspaceEditEntryMetadata): void {
+	createFile(
+		uri: vscode.Uri,
+		options?: {
+			readonly overwrite?: boolean;
+			readonly ignoreIfExists?: boolean;
+			readonly contents?: Uint8Array | vscode.DataTransferFile;
+		},
+		metadata?: vscode.WorkspaceEditEntryMetadata
+	): void {
 		this._edits.push({ _type: FileEditType.File, from: undefined, to: uri, options, metadata });
 	}
 
-	deleteFile(uri: vscode.Uri, options?: { readonly recursive?: boolean; readonly ignoreIfNotExists?: boolean }, metadata?: vscode.WorkspaceEditEntryMetadata): void {
+	deleteFile(
+		uri: vscode.Uri,
+		options?: { readonly recursive?: boolean; readonly ignoreIfNotExists?: boolean },
+		metadata?: vscode.WorkspaceEditEntryMetadata
+	): void {
 		this._edits.push({ _type: FileEditType.File, from: uri, to: undefined, options, metadata });
 	}
 
 	// --- notebook
-	private replaceNotebookMetadata(uri: URI, value: Record<string, unknown>, metadata?: vscode.WorkspaceEditEntryMetadata): void {
-		this._edits.push({ _type: FileEditType.Cell, metadata, uri, edit: { editType: CellEditType.DocumentMetadata, metadata: value } });
+	private replaceNotebookMetadata(
+		uri: URI,
+		value: Record<string, unknown>,
+		metadata?: vscode.WorkspaceEditEntryMetadata
+	): void {
+		this._edits.push({
+			_type: FileEditType.Cell,
+			metadata,
+			uri,
+			edit: { editType: CellEditType.DocumentMetadata, metadata: value }
+		});
 	}
 
-	private replaceNotebookCells(uri: URI, startOrRange: vscode.NotebookRange, cellData: vscode.NotebookCellData[], metadata?: vscode.WorkspaceEditEntryMetadata): void {
+	private replaceNotebookCells(
+		uri: URI,
+		startOrRange: vscode.NotebookRange,
+		cellData: vscode.NotebookCellData[],
+		metadata?: vscode.WorkspaceEditEntryMetadata
+	): void {
 		const start = startOrRange.start;
 		const end = startOrRange.end;
 
 		if (start !== end || cellData.length > 0) {
-			this._edits.push({ _type: FileEditType.CellReplace, uri, index: start, count: end - start, cells: cellData, metadata });
+			this._edits.push({
+				_type: FileEditType.CellReplace,
+				uri,
+				index: start,
+				count: end - start,
+				cells: cellData,
+				metadata
+			});
 		}
 	}
 
-	private replaceNotebookCellMetadata(uri: URI, index: number, cellMetadata: Record<string, unknown>, metadata?: vscode.WorkspaceEditEntryMetadata): void {
-		this._edits.push({ _type: FileEditType.Cell, metadata, uri, edit: { editType: CellEditType.Metadata, index, metadata: cellMetadata } });
+	private replaceNotebookCellMetadata(
+		uri: URI,
+		index: number,
+		cellMetadata: Record<string, unknown>,
+		metadata?: vscode.WorkspaceEditEntryMetadata
+	): void {
+		this._edits.push({
+			_type: FileEditType.Cell,
+			metadata,
+			uri,
+			edit: { editType: CellEditType.Metadata, index, metadata: cellMetadata }
+		});
 	}
 
 	// --- text
@@ -133,11 +183,26 @@ export class WorkspaceEdit implements vscode.WorkspaceEdit {
 	}
 
 	set(uri: URI, edits: ReadonlyArray<TextEdit | SnippetTextEdit>): void;
-	set(uri: URI, edits: ReadonlyArray<[TextEdit | SnippetTextEdit, vscode.WorkspaceEditEntryMetadata | undefined]>): void;
+	set(
+		uri: URI,
+		edits: ReadonlyArray<[TextEdit | SnippetTextEdit, vscode.WorkspaceEditEntryMetadata | undefined]>
+	): void;
 	set(uri: URI, edits: readonly NotebookEdit[]): void;
 	set(uri: URI, edits: ReadonlyArray<[NotebookEdit, vscode.WorkspaceEditEntryMetadata | undefined]>): void;
 
-	set(uri: URI, edits: null | undefined | ReadonlyArray<TextEdit | SnippetTextEdit | NotebookEdit | [NotebookEdit, vscode.WorkspaceEditEntryMetadata | undefined] | [TextEdit | SnippetTextEdit, vscode.WorkspaceEditEntryMetadata | undefined]>): void {
+	set(
+		uri: URI,
+		edits:
+			| null
+			| undefined
+			| ReadonlyArray<
+					| TextEdit
+					| SnippetTextEdit
+					| NotebookEdit
+					| [NotebookEdit, vscode.WorkspaceEditEntryMetadata | undefined]
+					| [TextEdit | SnippetTextEdit, vscode.WorkspaceEditEntryMetadata | undefined]
+			  >
+	): void {
 		if (!edits) {
 			// remove all text, snippet, or notebook edits for `uri`
 			for (let i = 0; i < this._edits.length; i++) {
@@ -177,8 +242,14 @@ export class WorkspaceEdit implements vscode.WorkspaceEdit {
 						this.replaceNotebookCells(uri, edit.range, edit.newCells, metadata);
 					}
 				} else if (SnippetTextEdit.isSnippetTextEdit(edit)) {
-					this._edits.push({ _type: FileEditType.Snippet, uri, range: edit.range, edit: edit.snippet, metadata, keepWhitespace: edit.keepWhitespace });
-
+					this._edits.push({
+						_type: FileEditType.Snippet,
+						uri,
+						range: edit.range,
+						edit: edit.snippet,
+						metadata,
+						keepWhitespace: edit.keepWhitespace
+					});
 				} else {
 					this._edits.push({ _type: FileEditType.Text, uri, edit, metadata });
 				}

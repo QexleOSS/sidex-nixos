@@ -43,7 +43,13 @@ export interface ICodeEditorService {
 	 */
 	getFocusedCodeEditor(): ICodeEditor | null;
 
-	registerDecorationType(description: string, key: string, options: IDecorationRenderOptions, parentTypeKey?: string, editor?: ICodeEditor): IDisposable;
+	registerDecorationType(
+		description: string,
+		key: string,
+		options: IDecorationRenderOptions,
+		parentTypeKey?: string,
+		editor?: ICodeEditor
+	): IDisposable;
 	listDecorationTypes(): string[];
 	removeDecorationType(key: string): void;
 	resolveDecorationOptions(typeKey: string, writable: boolean): IModelDecorationOptions;
@@ -57,7 +63,11 @@ export interface ICodeEditorService {
 	getTransientModelProperties(model: ITextModel): [string, unknown][] | undefined;
 
 	getActiveCodeEditor(): ICodeEditor | null;
-	openCodeEditor(input: ITextResourceEditorInput, source: ICodeEditor | null, sideBySide?: boolean): Promise<ICodeEditor | null>;
+	openCodeEditor(
+		input: ITextResourceEditorInput,
+		source: ICodeEditor | null,
+		sideBySide?: boolean
+	): Promise<ICodeEditor | null>;
 	registerCodeEditorOpenHandler(handler: ICodeEditorOpenHandler): IDisposable;
 }
 

@@ -17,11 +17,14 @@ import { LineRange } from '../core/ranges/lineRange.js';
 export class ContiguousMultilineTokens {
 	public static deserialize(buff: Uint8Array, offset: number, result: ContiguousMultilineTokens[]): number {
 		const view32 = new Uint32Array(buff.buffer);
-		const startLineNumber = readUInt32BE(buff, offset); offset += 4;
-		const count = readUInt32BE(buff, offset); offset += 4;
+		const startLineNumber = readUInt32BE(buff, offset);
+		offset += 4;
+		const count = readUInt32BE(buff, offset);
+		offset += 4;
 		const tokens: Uint32Array[] = [];
 		for (let i = 0; i < count; i++) {
-			const byteCount = readUInt32BE(buff, offset); offset += 4;
+			const byteCount = readUInt32BE(buff, offset);
+			offset += 4;
 			tokens.push(view32.subarray(offset / 4, offset / 4 + byteCount / 4));
 			offset += byteCount;
 		}
@@ -95,15 +98,19 @@ export class ContiguousMultilineTokens {
 	}
 
 	public serialize(destination: Uint8Array, offset: number): number {
-		writeUInt32BE(destination, this._startLineNumber, offset); offset += 4;
-		writeUInt32BE(destination, this._tokens.length, offset); offset += 4;
+		writeUInt32BE(destination, this._startLineNumber, offset);
+		offset += 4;
+		writeUInt32BE(destination, this._tokens.length, offset);
+		offset += 4;
 		for (let i = 0; i < this._tokens.length; i++) {
 			const lineTokens = this._tokens[i];
 			if (!(lineTokens instanceof Uint32Array)) {
 				throw new Error(`Not supported!`);
 			}
-			writeUInt32BE(destination, lineTokens.byteLength, offset); offset += 4;
-			destination.set(new Uint8Array(lineTokens.buffer), offset); offset += lineTokens.byteLength;
+			writeUInt32BE(destination, lineTokens.byteLength, offset);
+			offset += 4;
+			destination.set(new Uint8Array(lineTokens.buffer), offset);
+			offset += lineTokens.byteLength;
 		}
 		return offset;
 	}
@@ -144,17 +151,27 @@ export class ContiguousMultilineTokens {
 
 		if (firstLineIndex === lastLineIndex) {
 			// a delete on a single line
-			this._tokens[firstLineIndex] = ContiguousTokensEditing.delete(this._tokens[firstLineIndex], range.startColumn - 1, range.endColumn - 1);
+			this._tokens[firstLineIndex] = ContiguousTokensEditing.delete(
+				this._tokens[firstLineIndex],
+				range.startColumn - 1,
+				range.endColumn - 1
+			);
 			return;
 		}
 
 		if (firstLineIndex >= 0) {
 			// The first line survives
-			this._tokens[firstLineIndex] = ContiguousTokensEditing.deleteEnding(this._tokens[firstLineIndex], range.startColumn - 1);
+			this._tokens[firstLineIndex] = ContiguousTokensEditing.deleteEnding(
+				this._tokens[firstLineIndex],
+				range.startColumn - 1
+			);
 
 			if (lastLineIndex < this._tokens.length) {
 				// The last line survives
-				const lastLineTokens = ContiguousTokensEditing.deleteBeginning(this._tokens[lastLineIndex], range.endColumn - 1);
+				const lastLineTokens = ContiguousTokensEditing.deleteBeginning(
+					this._tokens[lastLineIndex],
+					range.endColumn - 1
+				);
 
 				// Take remaining text on last line and append it to remaining text on first line
 				this._tokens[firstLineIndex] = ContiguousTokensEditing.append(this._tokens[firstLineIndex], lastLineTokens);
@@ -177,7 +194,10 @@ export class ContiguousMultilineTokens {
 			this._startLineNumber -= deletedBefore;
 
 			// Remove beginning from last line
-			this._tokens[lastLineIndex] = ContiguousTokensEditing.deleteBeginning(this._tokens[lastLineIndex], range.endColumn - 1);
+			this._tokens[lastLineIndex] = ContiguousTokensEditing.deleteBeginning(
+				this._tokens[lastLineIndex],
+				range.endColumn - 1
+			);
 
 			// Delete lines
 			this._tokens = this._tokens.slice(lastLineIndex);
@@ -185,7 +205,6 @@ export class ContiguousMultilineTokens {
 	}
 
 	private _acceptInsertText(position: Position, eolCount: number, firstLineLength: number): void {
-
 		if (eolCount === 0 && firstLineLength === 0) {
 			// Nothing to insert
 			return;
@@ -206,12 +225,20 @@ export class ContiguousMultilineTokens {
 
 		if (eolCount === 0) {
 			// Inserting text on one line
-			this._tokens[lineIndex] = ContiguousTokensEditing.insert(this._tokens[lineIndex], position.column - 1, firstLineLength);
+			this._tokens[lineIndex] = ContiguousTokensEditing.insert(
+				this._tokens[lineIndex],
+				position.column - 1,
+				firstLineLength
+			);
 			return;
 		}
 
 		this._tokens[lineIndex] = ContiguousTokensEditing.deleteEnding(this._tokens[lineIndex], position.column - 1);
-		this._tokens[lineIndex] = ContiguousTokensEditing.insert(this._tokens[lineIndex], position.column - 1, firstLineLength);
+		this._tokens[lineIndex] = ContiguousTokensEditing.insert(
+			this._tokens[lineIndex],
+			position.column - 1,
+			firstLineLength
+		);
 
 		this._insertLines(position.lineNumber, eolCount);
 	}

@@ -24,17 +24,17 @@ export const diffEditorDefaultOptions = {
 	experimental: {
 		showMoves: false,
 		showEmptyDecorations: true,
-		useTrueInlineView: false,
+		useTrueInlineView: false
 	},
 	hideUnchangedRegions: {
 		enabled: false,
 		contextLineCount: 3,
 		minimumLineCount: 3,
-		revealLineCount: 20,
+		revealLineCount: 20
 	},
 	isInEmbeddedEditor: false,
 	onlyShowAccessibleDiffViewer: false,
 	renderSideBySideInlineBreakpoint: 900,
 	useInlineViewWhenSpaceIsLimited: true,
-	compactMode: false,
+	compactMode: false
 } satisfies ValidDiffEditorBaseOptions;

@@ -4,9 +4,18 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { KeyMod, KeyCode } from '../../../base/common/keyCodes.js';
-import { ContextKeyExpr, IContextKey, IContextKeyService, RawContextKey } from '../../../platform/contextkey/common/contextkey.js';
+import {
+	ContextKeyExpr,
+	IContextKey,
+	IContextKeyService,
+	RawContextKey
+} from '../../../platform/contextkey/common/contextkey.js';
 import { KeybindingWeight, KeybindingsRegistry } from '../../../platform/keybinding/common/keybindingsRegistry.js';
-import { WorkbenchListFocusContextKey, WorkbenchListScrollAtBottomContextKey, WorkbenchListScrollAtTopContextKey } from '../../../platform/list/browser/listService.js';
+import {
+	WorkbenchListFocusContextKey,
+	WorkbenchListScrollAtBottomContextKey,
+	WorkbenchListScrollAtTopContextKey
+} from '../../../platform/list/browser/listService.js';
 import { Event } from '../../../base/common/event.js';
 import { combinedDisposable, toDisposable, IDisposable, Disposable } from '../../../base/common/lifecycle.js';
 import { WorkbenchPhase, registerWorkbenchContribution2 } from '../../common/contributions.js';
@@ -37,30 +46,37 @@ interface IFocusNotifier {
 	readonly onDidBlur: Event<void>;
 }
 
-function handleFocusEventsGroup(group: readonly IFocusNotifier[], handler: (isFocus: boolean) => void, onPartFocusChange?: (index: number, state: string) => void): IDisposable {
+function handleFocusEventsGroup(
+	group: readonly IFocusNotifier[],
+	handler: (isFocus: boolean) => void,
+	onPartFocusChange?: (index: number, state: string) => void
+): IDisposable {
 	const focusedIndices = new Set<number>();
-	return combinedDisposable(...group.map((events, index) => combinedDisposable(
-		events.onDidFocus(() => {
-			onPartFocusChange?.(index, 'focus');
-			if (!focusedIndices.size) {
-				handler(true);
-			}
-			focusedIndices.add(index);
-		}),
-		events.onDidBlur(() => {
-			onPartFocusChange?.(index, 'blur');
-			focusedIndices.delete(index);
-			if (!focusedIndices.size) {
-				handler(false);
-			}
-		}),
-	)));
+	return combinedDisposable(
+		...group.map((events, index) =>
+			combinedDisposable(
+				events.onDidFocus(() => {
+					onPartFocusChange?.(index, 'focus');
+					if (!focusedIndices.size) {
+						handler(true);
+					}
+					focusedIndices.add(index);
+				}),
+				events.onDidBlur(() => {
+					onPartFocusChange?.(index, 'blur');
+					focusedIndices.delete(index);
+					if (!focusedIndices.size) {
+						handler(false);
+					}
+				})
+			)
+		)
+	);
 }
 
 const NavigableContainerFocusedContextKey = new RawContextKey<boolean>('navigableContainerFocused', false);
 
 class NavigableContainerManager implements IDisposable {
-
 	static readonly ID = 'workbench.contrib.navigableContainerManager';
 
 	private static INSTANCE: NavigableContainerManager | undefined;
@@ -69,11 +85,11 @@ class NavigableContainerManager implements IDisposable {
 	private lastContainer: INavigableContainer | undefined;
 	private focused: IContextKey<boolean>;
 
-
 	constructor(
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@ILogService private logService: ILogService,
-		@IConfigurationService private configurationService: IConfigurationService) {
+		@IConfigurationService private configurationService: IConfigurationService
+	) {
 		this.focused = NavigableContainerFocusedContextKey.bindTo(contextKeyService);
 		NavigableContainerManager.INSTANCE = this;
 	}
@@ -103,21 +119,25 @@ class NavigableContainerManager implements IDisposable {
 		instance.log('NavigableContainerManager.register', container.name);
 
 		return combinedDisposable(
-			handleFocusEventsGroup(container.focusNotifiers, (isFocus) => {
-				if (isFocus) {
-					instance.log('NavigableContainerManager.focus', container.name);
-					instance.focused.set(true);
-					instance.lastContainer = container;
-				} else {
-					instance.log('NavigableContainerManager.blur', container.name, instance.lastContainer?.name);
-					if (instance.lastContainer === container) {
-						instance.focused.set(false);
-						instance.lastContainer = undefined;
+			handleFocusEventsGroup(
+				container.focusNotifiers,
+				isFocus => {
+					if (isFocus) {
+						instance.log('NavigableContainerManager.focus', container.name);
+						instance.focused.set(true);
+						instance.lastContainer = container;
+					} else {
+						instance.log('NavigableContainerManager.blur', container.name, instance.lastContainer?.name);
+						if (instance.lastContainer === container) {
+							instance.focused.set(false);
+							instance.lastContainer = undefined;
+						}
 					}
+				},
+				(index: number, event: string) => {
+					instance.log('NavigableContainerManager.partFocusChange', container.name, index, event);
 				}
-			}, (index: number, event: string) => {
-				instance.log('NavigableContainerManager.partFocusChange', container.name, index, event);
-			}),
+			),
 			toDisposable(() => {
 				instance.containers.delete(container);
 				instance.log('NavigableContainerManager.unregister', container.name, instance.lastContainer?.name);
@@ -145,10 +165,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: ContextKeyExpr.and(
 		NavigableContainerFocusedContextKey,
-		ContextKeyExpr.or(
-			WorkbenchListFocusContextKey?.negate(),
-			WorkbenchListScrollAtTopContextKey,
-		)
+		ContextKeyExpr.or(WorkbenchListFocusContextKey?.negate(), WorkbenchListScrollAtTopContextKey)
 	),
 	primary: KeyMod.CtrlCmd | KeyCode.UpArrow,
 	handler: () => {
@@ -162,10 +179,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: ContextKeyExpr.and(
 		NavigableContainerFocusedContextKey,
-		ContextKeyExpr.or(
-			WorkbenchListFocusContextKey?.negate(),
-			WorkbenchListScrollAtBottomContextKey,
-		)
+		ContextKeyExpr.or(WorkbenchListFocusContextKey?.negate(), WorkbenchListScrollAtBottomContextKey)
 	),
 	primary: KeyMod.CtrlCmd | KeyCode.DownArrow,
 	handler: () => {

@@ -3,23 +3,26 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ContextView, ContextViewDOMPosition, IContextViewProvider } from '../../../base/browser/ui/contextview/contextview.js';
+import {
+	ContextView,
+	ContextViewDOMPosition,
+	IContextViewProvider
+} from '../../../base/browser/ui/contextview/contextview.js';
 import { Disposable } from '../../../base/common/lifecycle.js';
 import { ILayoutService } from '../../layout/browser/layoutService.js';
 import { IContextViewDelegate, IContextViewService, IOpenContextView } from './contextView.js';
 import { getWindow } from '../../../base/browser/dom.js';
 
 export class ContextViewHandler extends Disposable implements IContextViewProvider {
-
 	private openContextView: IOpenContextView | undefined;
 	protected readonly contextView: ContextView;
 
-	constructor(
-		@ILayoutService private readonly layoutService: ILayoutService
-	) {
+	constructor(@ILayoutService private readonly layoutService: ILayoutService) {
 		super();
 
-		this.contextView = this._register(new ContextView(this.layoutService.mainContainer, ContextViewDOMPosition.ABSOLUTE));
+		this.contextView = this._register(
+			new ContextView(this.layoutService.mainContainer, ContextViewDOMPosition.ABSOLUTE)
+		);
 
 		this.layout();
 		this._register(layoutService.onDidLayoutContainer(() => this.layout()));
@@ -68,7 +71,6 @@ export class ContextViewHandler extends Disposable implements IContextViewProvid
 }
 
 export class ContextViewService extends ContextViewHandler implements IContextViewService {
-
 	declare readonly _serviceBrand: undefined;
 
 	getContextViewElement(): HTMLElement {

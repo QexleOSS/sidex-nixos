@@ -13,7 +13,12 @@ import { IKeybindingService } from '../../../../platform/keybinding/common/keybi
 import { ResultKind } from '../../../../platform/keybinding/common/keybindingResolver.js';
 import { ILayoutService } from '../../../../platform/layout/browser/layoutService.js';
 import { IProductService } from '../../../../platform/product/common/productService.js';
-import { defaultButtonStyles, defaultCheckboxStyles, defaultInputBoxStyles, defaultDialogStyles } from '../../../../platform/theme/browser/defaultStyles.js';
+import {
+	defaultButtonStyles,
+	defaultCheckboxStyles,
+	defaultInputBoxStyles,
+	defaultDialogStyles
+} from '../../../../platform/theme/browser/defaultStyles.js';
 
 const defaultDialogAllowableCommands = new Set([
 	'workbench.action.quit',
@@ -26,7 +31,13 @@ const defaultDialogAllowableCommands = new Set([
 	'editor.action.clipboardPasteAction'
 ]);
 
-export function createWorkbenchDialogOptions(options: Partial<IDialogOptions>, keybindingService: IKeybindingService, layoutService: ILayoutService, hostService: IHostService, allowableCommands = defaultDialogAllowableCommands): IDialogOptions {
+export function createWorkbenchDialogOptions(
+	options: Partial<IDialogOptions>,
+	keybindingService: IKeybindingService,
+	layoutService: ILayoutService,
+	hostService: IHostService,
+	allowableCommands = defaultDialogAllowableCommands
+): IDialogOptions {
 	return {
 		keyEventProcessor: (event: StandardKeyboardEvent) => {
 			const resolved = keybindingService.softDispatch(event, layoutService.activeContainer);
@@ -45,13 +56,20 @@ export function createWorkbenchDialogOptions(options: Partial<IDialogOptions>, k
 	};
 }
 
-export function createBrowserAboutDialogDetails(productService: IProductService): { title: string; details: string; detailsToCopy: string } {
+export function createBrowserAboutDialogDetails(productService: IProductService): {
+	title: string;
+	details: string;
+	detailsToCopy: string;
+} {
 	const detailString = (useAgo: boolean): string => {
-		return localize('aboutDetail',
-			"Version: {0}\nCommit: {1}\nDate: {2}\nBrowser: {3}",
+		return localize(
+			'aboutDetail',
+			'Version: {0}\nCommit: {1}\nDate: {2}\nBrowser: {3}',
 			productService.version || 'Unknown',
 			productService.commit || 'Unknown',
-			productService.date ? `${productService.date}${useAgo ? ' (' + fromNow(new Date(productService.date), true) + ')' : ''}` : 'Unknown',
+			productService.date
+				? `${productService.date}${useAgo ? ' (' + fromNow(new Date(productService.date), true) + ')' : ''}`
+				: 'Unknown',
 			navigator.userAgent
 		);
 	};
@@ -65,4 +83,3 @@ export function createBrowserAboutDialogDetails(productService: IProductService)
 		detailsToCopy: detailsToCopy
 	};
 }
-

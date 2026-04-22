@@ -20,7 +20,6 @@ import { Position } from '../../core/position.js';
  * It then calls into the {@link IndentRulesSupport} to validate the indentation conditions.
  */
 export class ProcessedIndentRulesSupport {
-
 	private readonly _indentRulesSupport: IndentRulesSupport;
 	private readonly _indentationLineProcessor: IndentationLineProcessor;
 
@@ -64,7 +63,6 @@ export class ProcessedIndentRulesSupport {
 		const processedLine = this._indentationLineProcessor.getProcessedLine(lineNumber, newIndentation);
 		return this._indentRulesSupport.shouldIndentNextLine(processedLine);
 	}
-
 }
 
 /**
@@ -75,14 +73,10 @@ export class ProcessedIndentRulesSupport {
  * - The processed text on the previous line
  */
 export class IndentationContextProcessor {
-
 	private readonly model: ITextModel;
 	private readonly indentationLineProcessor: IndentationLineProcessor;
 
-	constructor(
-		model: ITextModel,
-		languageConfigurationService: ILanguageConfigurationService
-	) {
+	constructor(model: ITextModel, languageConfigurationService: ILanguageConfigurationService) {
 		this.model = model;
 		this.indentationLineProcessor = new IndentationLineProcessor(model, languageConfigurationService);
 	}
@@ -107,7 +101,7 @@ export class IndentationContextProcessor {
 		const scopedLineTokens = createScopedLineTokens(lineTokens, range.startColumn - 1);
 		let slicedTokens: IViewLineTokens;
 		if (isLanguageDifferentFromLineStart(this.model, range.getStartPosition())) {
-			const columnIndexWithinScope = (range.startColumn - 1) - scopedLineTokens.firstCharOffset;
+			const columnIndexWithinScope = range.startColumn - 1 - scopedLineTokens.firstCharOffset;
 			const firstCharacterOffset = scopedLineTokens.firstCharOffset;
 			const lastCharacterOffset = firstCharacterOffset + columnIndexWithinScope;
 			slicedTokens = lineTokens.sliceAndInflate(firstCharacterOffset, lastCharacterOffset, 0);
@@ -155,7 +149,8 @@ export class IndentationContextProcessor {
 			return emptyTokens;
 		}
 		const scopedLineTokensAtEndColumnOfPreviousLine = getScopedLineTokensAtEndColumnOfLine(previousLineNumber);
-		const doesLanguageContinueOnPreviousLine = scopedLineTokens.languageId === scopedLineTokensAtEndColumnOfPreviousLine.languageId;
+		const doesLanguageContinueOnPreviousLine =
+			scopedLineTokens.languageId === scopedLineTokensAtEndColumnOfPreviousLine.languageId;
 		if (!doesLanguageContinueOnPreviousLine) {
 			return emptyTokens;
 		}
@@ -170,11 +165,10 @@ export class IndentationContextProcessor {
  * The brackets of the language configuration are removed from the regex, string and comment tokens.
  */
 class IndentationLineProcessor {
-
 	constructor(
 		private readonly model: IVirtualModel,
 		private readonly languageConfigurationService: ILanguageConfigurationService
-	) { }
+	) {}
 
 	/**
 	 * Get the processed line for the given line number and potentially adjust the indentation level.
@@ -200,11 +194,12 @@ class IndentationLineProcessor {
 	 * Process the line with the given tokens, remove the language configuration brackets from the regex, string and comment tokens.
 	 */
 	getProcessedTokens(tokens: IViewLineTokens): IViewLineTokens {
-
 		const shouldRemoveBracketsFromTokenType = (tokenType: StandardTokenType): boolean => {
-			return tokenType === StandardTokenType.String
-				|| tokenType === StandardTokenType.RegEx
-				|| tokenType === StandardTokenType.Comment;
+			return (
+				tokenType === StandardTokenType.String ||
+				tokenType === StandardTokenType.RegEx ||
+				tokenType === StandardTokenType.Comment
+			);
 		};
 
 		const languageId = tokens.getLanguageId(0);

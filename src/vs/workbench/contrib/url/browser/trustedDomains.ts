@@ -81,7 +81,7 @@ export async function configureOpenerTrustedDomainsHandler(
 	quickInputService: IQuickInputService,
 	storageService: IStorageService,
 	editorService: IEditorService,
-	telemetryService: ITelemetryService,
+	telemetryService: ITelemetryService
 ) {
 	const parsedDomainToConfigure = URI.parse(domainToConfigure);
 	const toplevelDomainSegements = parsedDomainToConfigure.authority.split('.');
@@ -99,8 +99,7 @@ export async function configureOpenerTrustedDomainsHandler(
 
 	const isIP =
 		toplevelDomainSegements.length === 4 &&
-		toplevelDomainSegements.every(segment =>
-			Number.isInteger(+segment) || Number.isInteger(+segment.split(':')[0]));
+		toplevelDomainSegements.every(segment => Number.isInteger(+segment) || Number.isInteger(+segment.split(':')[0]));
 
 	if (isIP) {
 		if (parsedDomainToConfigure.authority.includes(':')) {
@@ -133,9 +132,9 @@ export async function configureOpenerTrustedDomainsHandler(
 		id: 'manage'
 	});
 
-	const pickedResult = await quickInputService.pick<ConfigureTrustedDomainsQuickPickItem>(
-		options, { activeItem: options[0] }
-	);
+	const pickedResult = await quickInputService.pick<ConfigureTrustedDomainsQuickPickItem>(options, {
+		activeItem: options[0]
+	});
 
 	if (pickedResult && pickedResult.id) {
 		switch (pickedResult.id) {
@@ -173,7 +172,7 @@ export async function readTrustedDomains(accessor: ServicesAccessor): Promise<IS
 	const { defaultTrustedDomains, trustedDomains } = readStaticTrustedDomains(accessor);
 	return {
 		defaultTrustedDomains,
-		trustedDomains,
+		trustedDomains
 	};
 }
 
@@ -183,8 +182,8 @@ export function readStaticTrustedDomains(accessor: ServicesAccessor): IStaticTru
 	const environmentService = accessor.get(IBrowserWorkbenchEnvironmentService);
 
 	const defaultTrustedDomains = [
-		...productService.linkProtectionTrustedDomains ?? [],
-		...environmentService.options?.additionalTrustedDomains ?? []
+		...(productService.linkProtectionTrustedDomains ?? []),
+		...(environmentService.options?.additionalTrustedDomains ?? [])
 	];
 
 	let trustedDomains: string[] = [];
@@ -193,10 +192,10 @@ export function readStaticTrustedDomains(accessor: ServicesAccessor): IStaticTru
 		if (trustedDomainsSrc) {
 			trustedDomains = JSON.parse(trustedDomainsSrc);
 		}
-	} catch (err) { }
+	} catch (err) {}
 
 	return {
 		defaultTrustedDomains,
-		trustedDomains,
+		trustedDomains
 	};
 }

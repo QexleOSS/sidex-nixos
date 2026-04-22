@@ -28,7 +28,9 @@ export function logOnceWebWorkerWarning(err: unknown): void {
 	}
 	if (!webWorkerWarningLogged) {
 		webWorkerWarningLogged = true;
-		console.warn('Could not create web worker(s). Falling back to loading web worker code in main thread, which might cause UI freezes. Please see https://github.com/microsoft/monaco-editor#faq');
+		console.warn(
+			'Could not create web worker(s). Falling back to loading web worker code in main thread, which might cause UI freezes. Please see https://github.com/microsoft/monaco-editor#faq'
+		);
 	}
 	console.warn((err as Error).message);
 }
@@ -48,7 +50,7 @@ class RequestMessage {
 		public readonly channel: string,
 		public readonly method: string,
 		public readonly args: unknown[]
-	) { }
+	) {}
 }
 class ReplyMessage {
 	public readonly type = MessageType.Reply;
@@ -57,7 +59,7 @@ class ReplyMessage {
 		public readonly seq: string,
 		public readonly res: unknown,
 		public readonly err: unknown | SerializedError
-	) { }
+	) {}
 }
 class SubscribeEventMessage {
 	public readonly type = MessageType.SubscribeEvent;
@@ -67,7 +69,7 @@ class SubscribeEventMessage {
 		public readonly channel: string,
 		public readonly eventName: string,
 		public readonly arg: unknown
-	) { }
+	) {}
 }
 class EventMessage {
 	public readonly type = MessageType.Event;
@@ -75,14 +77,14 @@ class EventMessage {
 		public readonly vsWorker: number,
 		public readonly req: string,
 		public readonly event: unknown
-	) { }
+	) {}
 }
 class UnsubscribeEventMessage {
 	public readonly type = MessageType.UnsubscribeEvent;
 	constructor(
 		public readonly vsWorker: number,
 		public readonly req: string
-	) { }
+	) {}
 }
 export type Message = RequestMessage | ReplyMessage | SubscribeEventMessage | EventMessage | UnsubscribeEventMessage;
 
@@ -98,7 +100,6 @@ interface IMessageHandler {
 }
 
 class WebWorkerProtocol {
-
 	private _workerId: number;
 	private _lastSentReq: number;
 	private _pendingReplies: { [req: string]: IMessageReply };
@@ -161,13 +162,16 @@ class WebWorkerProtocol {
 		const handler = {
 			get: (target: Record<PropertyKey, unknown>, name: PropertyKey) => {
 				if (typeof name === 'string' && !target[name]) {
-					if (propertyIsDynamicEvent(name)) { // onDynamic...
+					if (propertyIsDynamicEvent(name)) {
+						// onDynamic...
 						target[name] = (arg: unknown): Event<unknown> => {
 							return this.listen(channel, name, arg);
 						};
-					} else if (propertyIsEvent(name)) { // on...
+					} else if (propertyIsEvent(name)) {
+						// on...
 						target[name] = this.listen(channel, name, undefined);
-					} else if (name.charCodeAt(0) === CharCode.DollarSign) { // $...
+					} else if (name.charCodeAt(0) === CharCode.DollarSign) {
+						// $...
 						target[name] = async (...myArgs: unknown[]) => {
 							await sendMessageBarrier?.();
 							return this.sendMessage(channel, name, myArgs);
@@ -223,20 +227,27 @@ class WebWorkerProtocol {
 	private _handleRequestMessage(requestMessage: RequestMessage): void {
 		const req = requestMessage.req;
 		const result = this._handler.handleMessage(requestMessage.channel, requestMessage.method, requestMessage.args);
-		result.then((r) => {
-			this._send(new ReplyMessage(this._workerId, req, r, undefined));
-		}, (e) => {
-			if (e.detail instanceof Error) {
-				// Loading errors have a detail property that points to the actual error
-				e.detail = transformErrorForSerialization(e.detail);
+		result.then(
+			r => {
+				this._send(new ReplyMessage(this._workerId, req, r, undefined));
+			},
+			e => {
+				if (e.detail instanceof Error) {
+					// Loading errors have a detail property that points to the actual error
+					e.detail = transformErrorForSerialization(e.detail);
+				}
+				this._send(new ReplyMessage(this._workerId, req, undefined, transformErrorForSerialization(e)));
 			}
-			this._send(new ReplyMessage(this._workerId, req, undefined, transformErrorForSerialization(e)));
-		});
+		);
 	}
 
 	private _handleSubscribeEventMessage(msg: SubscribeEventMessage): void {
 		const req = msg.req;
-		const disposable = this._handler.handleEvent(msg.channel, msg.eventName, msg.arg)((event) => {
+		const disposable = this._handler.handleEvent(
+			msg.channel,
+			msg.eventName,
+			msg.arg
+		)(event => {
 			this._send(new EventMessage(this._workerId, req, event));
 		});
 		this._pendingEvents.set(req, disposable);
@@ -279,15 +290,14 @@ class WebWorkerProtocol {
 	}
 }
 
-type ProxiedMethodName = (`$${string}` | `on${string}`);
+type ProxiedMethodName = `$${string}` | `on${string}`;
 
-export type Proxied<T> = { [K in keyof T]: T[K] extends (...args: infer A) => infer R
-	? (
-		K extends ProxiedMethodName
-		? (...args: A) => Promise<Awaited<R>>
-		: never
-	)
-	: never
+export type Proxied<T> = {
+	[K in keyof T]: T[K] extends (...args: infer A) => infer R
+		? K extends ProxiedMethodName
+			? (...args: A) => Promise<Awaited<R>>
+			: never
+		: never;
 };
 
 export interface IWebWorkerClient<TProxy> {
@@ -306,7 +316,6 @@ export interface IWebWorkerServer {
  * Main thread side
  */
 export class WebWorkerClient<W extends object> extends Disposable implements IWebWorkerClient<W> {
-
 	private readonly _worker: IWebWorker;
 	private readonly _onModuleLoaded: Promise<void>;
 	private readonly _protocol: WebWorkerProtocol;
@@ -314,19 +323,21 @@ export class WebWorkerClient<W extends object> extends Disposable implements IWe
 	private readonly _localChannels: Map<string, object> = new Map();
 	private readonly _remoteChannels: Map<string, object> = new Map();
 
-	constructor(
-		worker: IWebWorker
-	) {
+	constructor(worker: IWebWorker) {
 		super();
 
 		this._worker = this._register(worker);
-		this._register(this._worker.onMessage((msg) => {
-			this._protocol.handleMessage(msg);
-		}));
-		this._register(this._worker.onError((err) => {
-			logOnceWebWorkerWarning(err);
-			onUnexpectedError(err);
-		}));
+		this._register(
+			this._worker.onMessage(msg => {
+				this._protocol.handleMessage(msg);
+			})
+		);
+		this._register(
+			this._worker.onError(err => {
+				logOnceWebWorkerWarning(err);
+				onUnexpectedError(err);
+			})
+		);
 
 		this._protocol = new WebWorkerProtocol({
 			sendMessage: (msg: Message, transfer: ArrayBuffer[]): void => {
@@ -342,12 +353,14 @@ export class WebWorkerClient<W extends object> extends Disposable implements IWe
 		this._protocol.setWorkerId(this._worker.getId());
 
 		// Send initialize message
-		this._onModuleLoaded = this._protocol.sendMessage(DEFAULT_CHANNEL, INITIALIZE, [
-			this._worker.getId(),
-		]).then(() => { });
+		this._onModuleLoaded = this._protocol
+			.sendMessage(DEFAULT_CHANNEL, INITIALIZE, [this._worker.getId()])
+			.then(() => {});
 
-		this.proxy = this._protocol.createProxyToRemoteChannel(DEFAULT_CHANNEL, async () => { await this._onModuleLoaded; });
-		this._onModuleLoaded.catch((e) => {
+		this.proxy = this._protocol.createProxyToRemoteChannel(DEFAULT_CHANNEL, async () => {
+			await this._onModuleLoaded;
+		});
+		this._onModuleLoaded.catch(e => {
 			this._onError('Worker failed to load ', e);
 		});
 	}
@@ -403,7 +416,9 @@ export class WebWorkerClient<W extends object> extends Disposable implements IWe
 	public getChannel<T extends object>(channel: string): Proxied<T> {
 		let inst = this._remoteChannels.get(channel);
 		if (inst === undefined) {
-			inst = this._protocol.createProxyToRemoteChannel(channel, async () => { await this._onModuleLoaded; });
+			inst = this._protocol.createProxyToRemoteChannel(channel, async () => {
+				await this._onModuleLoaded;
+			});
 			this._remoteChannels.set(channel, inst);
 		}
 		return inst as Proxied<T>;
@@ -427,7 +442,7 @@ function propertyIsDynamicEvent(name: string): boolean {
 
 export interface IWebWorkerServerRequestHandler {
 	_requestHandlerBrand: void;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 	[prop: string]: any;
 }
 
@@ -439,19 +454,23 @@ export interface IWebWorkerServerRequestHandlerFactory<T extends IWebWorkerServe
  * Worker side
  */
 export class WebWorkerServer<T extends IWebWorkerServerRequestHandler> implements IWebWorkerServer {
-
 	public readonly requestHandler: T;
 	private _protocol: WebWorkerProtocol;
 	private readonly _localChannels: Map<string, object> = new Map();
 	private readonly _remoteChannels: Map<string, object> = new Map();
 
-	constructor(postMessage: (msg: Message, transfer?: ArrayBuffer[]) => void, requestHandlerFactory: IWebWorkerServerRequestHandlerFactory<T>) {
+	constructor(
+		postMessage: (msg: Message, transfer?: ArrayBuffer[]) => void,
+		requestHandlerFactory: IWebWorkerServerRequestHandlerFactory<T>
+	) {
 		this._protocol = new WebWorkerProtocol({
 			sendMessage: (msg: Message, transfer: ArrayBuffer[]): void => {
 				postMessage(msg, transfer);
 			},
-			handleMessage: (channel: string, method: string, args: unknown[]): Promise<unknown> => this._handleMessage(channel, method, args),
-			handleEvent: (channel: string, eventName: string, arg: unknown): Event<unknown> => this._handleEvent(channel, eventName, arg)
+			handleMessage: (channel: string, method: string, args: unknown[]): Promise<unknown> =>
+				this._handleMessage(channel, method, args),
+			handleEvent: (channel: string, eventName: string, arg: unknown): Event<unknown> =>
+				this._handleEvent(channel, eventName, arg)
 		});
 		this.requestHandler = requestHandlerFactory(this);
 	}
@@ -465,7 +484,8 @@ export class WebWorkerServer<T extends IWebWorkerServerRequestHandler> implement
 			return this.initialize(<number>args[0]);
 		}
 
-		const requestHandler: object | null | undefined = (channel === DEFAULT_CHANNEL ? this.requestHandler : this._localChannels.get(channel));
+		const requestHandler: object | null | undefined =
+			channel === DEFAULT_CHANNEL ? this.requestHandler : this._localChannels.get(channel);
 		if (!requestHandler) {
 			return Promise.reject(new Error(`Missing channel ${channel} on worker thread`));
 		}
@@ -483,7 +503,8 @@ export class WebWorkerServer<T extends IWebWorkerServerRequestHandler> implement
 	}
 
 	private _handleEvent(channel: string, eventName: string, arg: unknown): Event<unknown> {
-		const requestHandler: object | null | undefined = (channel === DEFAULT_CHANNEL ? this.requestHandler : this._localChannels.get(channel));
+		const requestHandler: object | null | undefined =
+			channel === DEFAULT_CHANNEL ? this.requestHandler : this._localChannels.get(channel);
 		if (!requestHandler) {
 			throw new Error(`Missing channel ${channel} on worker thread`);
 		}

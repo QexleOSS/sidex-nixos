@@ -9,23 +9,37 @@ import { URI } from '../../../base/common/uri.js';
 import { IPosition, Position } from '../core/position.js';
 import { ILanguageService } from '../languages/language.js';
 import { IModelService } from './model.js';
-import { ITextResourceConfigurationService, ITextResourceConfigurationChangeEvent } from './textResourceConfiguration.js';
-import { IConfigurationService, ConfigurationTarget, IConfigurationValue, IConfigurationChangeEvent } from '../../../platform/configuration/common/configuration.js';
+import {
+	ITextResourceConfigurationService,
+	ITextResourceConfigurationChangeEvent
+} from './textResourceConfiguration.js';
+import {
+	IConfigurationService,
+	ConfigurationTarget,
+	IConfigurationValue,
+	IConfigurationChangeEvent
+} from '../../../platform/configuration/common/configuration.js';
 
 export class TextResourceConfigurationService extends Disposable implements ITextResourceConfigurationService {
-
 	public _serviceBrand: undefined;
 
-	private readonly _onDidChangeConfiguration: Emitter<ITextResourceConfigurationChangeEvent> = this._register(new Emitter<ITextResourceConfigurationChangeEvent>());
-	public readonly onDidChangeConfiguration: Event<ITextResourceConfigurationChangeEvent> = this._onDidChangeConfiguration.event;
+	private readonly _onDidChangeConfiguration: Emitter<ITextResourceConfigurationChangeEvent> = this._register(
+		new Emitter<ITextResourceConfigurationChangeEvent>()
+	);
+	public readonly onDidChangeConfiguration: Event<ITextResourceConfigurationChangeEvent> =
+		this._onDidChangeConfiguration.event;
 
 	constructor(
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IModelService private readonly modelService: IModelService,
-		@ILanguageService private readonly languageService: ILanguageService,
+		@ILanguageService private readonly languageService: ILanguageService
 	) {
 		super();
-		this._register(this.configurationService.onDidChangeConfiguration(e => this._onDidChangeConfiguration.fire(this.toResourceConfigurationChangeEvent(e))));
+		this._register(
+			this.configurationService.onDidChangeConfiguration(e =>
+				this._onDidChangeConfiguration.fire(this.toResourceConfigurationChangeEvent(e))
+			)
+		);
 	}
 
 	getValue<T>(resource: URI | undefined, section?: string): T;
@@ -37,17 +51,26 @@ export class TextResourceConfigurationService extends Disposable implements ITex
 		return this._getValue(resource, null, typeof arg2 === 'string' ? arg2 : undefined);
 	}
 
-	updateValue(resource: URI | undefined, key: string, value: unknown, configurationTarget?: ConfigurationTarget): Promise<void> {
+	updateValue(
+		resource: URI | undefined,
+		key: string,
+		value: unknown,
+		configurationTarget?: ConfigurationTarget
+	): Promise<void> {
 		const language = resource ? this.getLanguage(resource, null) : null;
 		const configurationValue = this.configurationService.inspect(key, { resource, overrideIdentifier: language });
 		if (configurationTarget === undefined) {
 			configurationTarget = this.deriveConfigurationTarget(configurationValue, language);
 		}
-		const overrideIdentifier = language && configurationValue.overrideIdentifiers?.includes(language) ? language : undefined;
+		const overrideIdentifier =
+			language && configurationValue.overrideIdentifiers?.includes(language) ? language : undefined;
 		return this.configurationService.updateValue(key, value, { resource, overrideIdentifier }, configurationTarget);
 	}
 
-	private deriveConfigurationTarget(configurationValue: IConfigurationValue<unknown>, language: string | null): ConfigurationTarget {
+	private deriveConfigurationTarget(
+		configurationValue: IConfigurationValue<unknown>,
+		language: string | null
+	): ConfigurationTarget {
 		if (language) {
 			if (configurationValue.memory?.override !== undefined) {
 				return ConfigurationTarget.MEMORY;
@@ -101,7 +124,9 @@ export class TextResourceConfigurationService extends Disposable implements ITex
 		return this.languageService.guessLanguageIdByFilepathOrFirstLine(resource);
 	}
 
-	private toResourceConfigurationChangeEvent(configurationChangeEvent: IConfigurationChangeEvent): ITextResourceConfigurationChangeEvent {
+	private toResourceConfigurationChangeEvent(
+		configurationChangeEvent: IConfigurationChangeEvent
+	): ITextResourceConfigurationChangeEvent {
 		return {
 			affectedKeys: configurationChangeEvent.affectedKeys,
 			affectsConfiguration: (resource: URI | undefined, configuration: string) => {

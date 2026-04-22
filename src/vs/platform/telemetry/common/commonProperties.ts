@@ -27,7 +27,7 @@ export function resolveCommonProperties(
 	devDeviceId: string | undefined,
 	isInternalTelemetry: boolean,
 	releaseDate: string | undefined,
-	product?: string,
+	product?: string
 ): ICommonProperties {
 	const result: ICommonProperties = Object.create(null);
 
@@ -66,7 +66,7 @@ export function resolveCommonProperties(
 	const startTime = Date.now();
 	Object.defineProperties(result, {
 		// __GDPR__COMMON__ "timestamp" : { "classification": "SystemMetaData", "purpose": "FeatureInsight" }
-		'timestamp': {
+		timestamp: {
 			get: () => new Date(),
 			enumerable: true
 		},

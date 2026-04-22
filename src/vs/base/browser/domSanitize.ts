@@ -5,7 +5,7 @@
 
 import { Schemas } from '../common/network.js';
 import { reset } from './dom.js';
-// eslint-disable-next-line no-restricted-imports
+
 import dompurify, * as DomPurifyTypes from './dompurify/dompurify.js';
 
 /**
@@ -78,7 +78,7 @@ export const basicMarkupHtmlTags = Object.freeze([
 	'ul',
 	'var',
 	'video',
-	'wbr',
+	'wbr'
 ]);
 
 export const defaultAllowedAttrs = Object.freeze([
@@ -99,9 +99,8 @@ export const defaultAllowedAttrs = Object.freeze([
 	'start',
 	'width',
 	'height',
-	'align',
+	'align'
 ]);
-
 
 const fakeRelativeUrlProtocol = 'vscode-relative-path';
 
@@ -121,9 +120,10 @@ function validateLink(value: string, allowedProtocols: AllowedLinksConfig): bool
 			return true;
 		}
 
-		if (allowedProtocols.allowRelativePaths
-			&& url.protocol === fakeRelativeUrlProtocol + ':'
-			&& !value.trim().toLowerCase().startsWith(fakeRelativeUrlProtocol)
+		if (
+			allowedProtocols.allowRelativePaths &&
+			url.protocol === fakeRelativeUrlProtocol + ':' &&
+			!value.trim().toLowerCase().startsWith(fakeRelativeUrlProtocol)
 		) {
 			return true;
 		}
@@ -138,8 +138,11 @@ function validateLink(value: string, allowedProtocols: AllowedLinksConfig): bool
  * Hooks dompurify using `afterSanitizeAttributes` to check that all `href` and `src`
  * attributes are valid.
  */
-function hookDomPurifyHrefAndSrcSanitizer(allowedLinkProtocols: AllowedLinksConfig, allowedMediaProtocols: AllowedLinksConfig) {
-	dompurify.addHook('afterSanitizeAttributes', (node) => {
+function hookDomPurifyHrefAndSrcSanitizer(
+	allowedLinkProtocols: AllowedLinksConfig,
+	allowedMediaProtocols: AllowedLinksConfig
+) {
+	dompurify.addHook('afterSanitizeAttributes', node => {
 		// check all href/src attributes for validity
 		for (const attr of ['href', 'src']) {
 			if (node.hasAttribute(attr)) {
@@ -148,7 +151,8 @@ function hookDomPurifyHrefAndSrcSanitizer(allowedLinkProtocols: AllowedLinksConf
 					if (!attrValue.startsWith('#') && !validateLink(attrValue, allowedLinkProtocols)) {
 						node.removeAttribute(attr);
 					}
-				} else { // 'src'
+				} else {
+					// 'src'
 					if (!validateLink(attrValue, allowedMediaProtocols)) {
 						node.removeAttribute(attr);
 					}
@@ -163,13 +167,15 @@ function hookDomPurifyHrefAndSrcSanitizer(allowedLinkProtocols: AllowedLinksConf
  *
  * @returns A boolean indicating whether the attribute should be kept or a string with the sanitized value (which implicitly keeps the attribute)
  */
-export type SanitizeAttributePredicate = (node: Element, data: { readonly attrName: string; readonly attrValue: string }) => boolean | string;
+export type SanitizeAttributePredicate = (
+	node: Element,
+	data: { readonly attrName: string; readonly attrValue: string }
+) => boolean | string;
 
 export interface SanitizeAttributeRule {
 	readonly attributeName: string;
 	shouldKeep: SanitizeAttributePredicate;
 }
-
 
 export interface DomSanitizerConfig {
 	/**
@@ -224,7 +230,7 @@ const defaultDomPurifyConfig = Object.freeze({
 	ALLOWED_TAGS: [...basicMarkupHtmlTags],
 	ALLOWED_ATTR: [...defaultAllowedAttrs],
 	// We sanitize the src/href attributes later if needed
-	ALLOW_UNKNOWN_PROTOCOLS: true,
+	ALLOW_UNKNOWN_PROTOCOLS: true
 } satisfies DomPurifyTypes.Config);
 
 /**
@@ -241,7 +247,11 @@ export function sanitizeHtml(untrusted: string, config?: DomSanitizerConfig): Tr
 
 function doSanitizeHtml(untrusted: string, config: DomSanitizerConfig | undefined, outputType: 'dom'): DocumentFragment;
 function doSanitizeHtml(untrusted: string, config: DomSanitizerConfig | undefined, outputType: 'trusted'): TrustedHTML;
-function doSanitizeHtml(untrusted: string, config: DomSanitizerConfig | undefined, outputType: 'dom' | 'trusted'): TrustedHTML | DocumentFragment {
+function doSanitizeHtml(
+	untrusted: string,
+	config: DomSanitizerConfig | undefined,
+	outputType: 'dom' | 'trusted'
+): TrustedHTML | DocumentFragment {
 	try {
 		const resolvedConfig: DomPurifyTypes.Config = { ...defaultDomPurifyConfig };
 
@@ -273,11 +283,13 @@ function doSanitizeHtml(untrusted: string, config: DomSanitizerConfig | undefine
 			}
 			return {
 				attributeName: attr.attributeName.toLowerCase(),
-				shouldKeep: attr.shouldKeep,
+				shouldKeep: attr.shouldKeep
 			};
 		});
 
-		const allowedAttrNames = new Set(resolvedAttributes.map(attr => typeof attr === 'string' ? attr : attr.attributeName));
+		const allowedAttrNames = new Set(
+			resolvedAttributes.map(attr => (typeof attr === 'string' ? attr : attr.attributeName))
+		);
 		const allowedAttrPredicates = new Map<string, SanitizeAttributeRule>();
 		for (const attr of resolvedAttributes) {
 			if (typeof attr === 'string') {
@@ -298,7 +310,8 @@ function doSanitizeHtml(untrusted: string, config: DomSanitizerConfig | undefine
 			{
 				override: config?.allowedMediaProtocols?.override ?? [Schemas.http, Schemas.https],
 				allowRelativePaths: config?.allowRelativeMediaPaths ?? false
-			});
+			}
+		);
 
 		if (config?.replaceWithPlaintext) {
 			dompurify.addHook('uponSanitizeElement', replaceWithPlainTextHook);
@@ -337,7 +350,24 @@ function doSanitizeHtml(untrusted: string, config: DomSanitizerConfig | undefine
 	}
 }
 
-const selfClosingTags = ['area', 'base', 'br', 'col', 'command', 'embed', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
+const selfClosingTags = [
+	'area',
+	'base',
+	'br',
+	'col',
+	'command',
+	'embed',
+	'hr',
+	'img',
+	'input',
+	'keygen',
+	'link',
+	'meta',
+	'param',
+	'source',
+	'track',
+	'wbr'
+];
 
 const replaceWithPlainTextHook: DomPurifyTypes.UponSanitizeElementHook = (node, data, _config) => {
 	if (!data.allowedTags[data.tagName] && data.tagName !== 'body') {
@@ -367,10 +397,11 @@ export function convertTagToPlaintext(node: Node): DocumentFragment | undefined 
 	} else if (node instanceof Element) {
 		const tagName = node.tagName.toLowerCase();
 		const isSelfClosing = selfClosingTags.includes(tagName);
-		const attrString = node.attributes.length ?
-			' ' + Array.from(node.attributes)
-				.map(attr => `${attr.name}="${attr.value}"`)
-				.join(' ')
+		const attrString = node.attributes.length
+			? ' ' +
+				Array.from(node.attributes)
+					.map(attr => `${attr.name}="${attr.value}"`)
+					.join(' ')
 			: '';
 		startTagText = `<${tagName}${attrString}>`;
 		if (!isSelfClosing) {

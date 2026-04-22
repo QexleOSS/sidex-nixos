@@ -11,18 +11,17 @@ import { IUserDataProfile } from '../../../../platform/userDataProfile/common/us
 import { DidChangeUserDataProfileEvent, IUserDataProfileService } from './userDataProfile.js';
 
 export class UserDataProfileService extends Disposable implements IUserDataProfileService {
-
 	readonly _serviceBrand: undefined;
 
 	private readonly _onDidChangeCurrentProfile = this._register(new Emitter<DidChangeUserDataProfileEvent>());
 	readonly onDidChangeCurrentProfile = this._onDidChangeCurrentProfile.event;
 
 	private _currentProfile: IUserDataProfile;
-	get currentProfile(): IUserDataProfile { return this._currentProfile; }
+	get currentProfile(): IUserDataProfile {
+		return this._currentProfile;
+	}
 
-	constructor(
-		currentProfile: IUserDataProfile
-	) {
+	constructor(currentProfile: IUserDataProfile) {
 		super();
 		this._currentProfile = currentProfile;
 	}

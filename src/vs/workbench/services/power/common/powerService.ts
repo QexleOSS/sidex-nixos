@@ -28,7 +28,6 @@ export const IPowerService = createDecorator<IPowerService>('powerService');
  * Only fully functional in desktop environments. Web/remote returns stub values.
  */
 export interface IPowerService {
-
 	readonly _serviceBrand: undefined;
 
 	// Events

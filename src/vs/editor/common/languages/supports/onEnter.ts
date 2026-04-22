@@ -21,7 +21,6 @@ interface IProcessedBracketPair {
 }
 
 export class OnEnterSupport {
-
 	private readonly _brackets: IProcessedBracketPair[];
 	private readonly _regExpRules: OnEnterRule[];
 
@@ -34,7 +33,7 @@ export class OnEnterSupport {
 		];
 
 		this._brackets = [];
-		opts.brackets.forEach((bracket) => {
+		opts.brackets.forEach(bracket => {
 			const openRegExp = OnEnterSupport._createOpenBracketRegExp(bracket[0]);
 			const closeRegExp = OnEnterSupport._createCloseBracketRegExp(bracket[1]);
 			if (openRegExp && closeRegExp) {
@@ -42,28 +41,37 @@ export class OnEnterSupport {
 					open: bracket[0],
 					openRegExp: openRegExp,
 					close: bracket[1],
-					closeRegExp: closeRegExp,
+					closeRegExp: closeRegExp
 				});
 			}
 		});
 		this._regExpRules = opts.onEnterRules || [];
 	}
 
-	public onEnter(autoIndent: EditorAutoIndentStrategy, previousLineText: string, beforeEnterText: string, afterEnterText: string): EnterAction | null {
+	public onEnter(
+		autoIndent: EditorAutoIndentStrategy,
+		previousLineText: string,
+		beforeEnterText: string,
+		afterEnterText: string
+	): EnterAction | null {
 		// (1): `regExpRules`
 		if (autoIndent >= EditorAutoIndentStrategy.Advanced) {
 			for (let i = 0, len = this._regExpRules.length; i < len; i++) {
 				const rule = this._regExpRules[i];
-				const regResult = [{
-					reg: rule.beforeText,
-					text: beforeEnterText
-				}, {
-					reg: rule.afterText,
-					text: afterEnterText
-				}, {
-					reg: rule.previousLineText,
-					text: previousLineText
-				}].every((obj): boolean => {
+				const regResult = [
+					{
+						reg: rule.beforeText,
+						text: beforeEnterText
+					},
+					{
+						reg: rule.afterText,
+						text: afterEnterText
+					},
+					{
+						reg: rule.previousLineText,
+						text: previousLineText
+					}
+				].every((obj): boolean => {
 					if (!obj.reg) {
 						return true;
 					}
@@ -89,7 +97,6 @@ export class OnEnterSupport {
 				}
 			}
 		}
-
 
 		// (4): Open bracket based logic
 		if (autoIndent >= EditorAutoIndentStrategy.Brackets) {

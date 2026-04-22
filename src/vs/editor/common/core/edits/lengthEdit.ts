@@ -8,7 +8,7 @@ import { AnyEdit, BaseEdit, BaseReplacement } from './edit.js';
 
 /**
  * Like a normal edit, but only captures the length information.
-*/
+ */
 export class LengthEdit extends BaseEdit<LengthReplacement, LengthEdit> {
 	public static readonly empty = new LengthEdit([]);
 
@@ -51,10 +51,12 @@ export class LengthEdit extends BaseEdit<LengthReplacement, LengthEdit> {
 		const edits: LengthReplacement[] = [];
 		let offset = 0;
 		for (const e of this.replacements) {
-			edits.push(new LengthReplacement(
-				OffsetRange.ofStartAndLength(e.replaceRange.start + offset, e.newLength),
-				e.replaceRange.length,
-			));
+			edits.push(
+				new LengthReplacement(
+					OffsetRange.ofStartAndLength(e.replaceRange.start + offset, e.newLength),
+					e.replaceRange.length
+				)
+			);
 			offset += e.newLength - e.replaceRange.length;
 		}
 		return new LengthEdit(edits);
@@ -95,17 +97,13 @@ export class LengthEdit extends BaseEdit<LengthReplacement, LengthEdit> {
 }
 
 export class LengthReplacement extends BaseReplacement<LengthReplacement> {
-	public static create(
-		startOffset: number,
-		endOffsetExclusive: number,
-		newLength: number,
-	): LengthReplacement {
+	public static create(startOffset: number, endOffsetExclusive: number, newLength: number): LengthReplacement {
 		return new LengthReplacement(new OffsetRange(startOffset, endOffsetExclusive), newLength);
 	}
 
 	constructor(
 		range: OffsetRange,
-		public readonly newLength: number,
+		public readonly newLength: number
 	) {
 		super(range);
 	}
@@ -114,10 +112,15 @@ export class LengthReplacement extends BaseReplacement<LengthReplacement> {
 		return this.replaceRange.equals(other.replaceRange) && this.newLength === other.newLength;
 	}
 
-	getNewLength(): number { return this.newLength; }
+	getNewLength(): number {
+		return this.newLength;
+	}
 
 	tryJoinTouching(other: LengthReplacement): LengthReplacement | undefined {
-		return new LengthReplacement(this.replaceRange.joinRightTouching(other.replaceRange), this.newLength + other.newLength);
+		return new LengthReplacement(
+			this.replaceRange.joinRightTouching(other.replaceRange),
+			this.newLength + other.newLength
+		);
 	}
 
 	slice(range: OffsetRange, rangeInReplacement: OffsetRange): LengthReplacement {

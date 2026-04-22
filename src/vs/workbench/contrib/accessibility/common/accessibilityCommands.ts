@@ -4,16 +4,17 @@
  *--------------------------------------------------------------------------------------------*/
 
 export const enum AccessibilityCommandId {
-	OpenAccessibleView = 'editor.action.accessibleView',
 	OpenAccessibilityHelp = 'editor.action.accessibilityHelp',
-	DisableVerbosityHint = 'editor.action.accessibleViewDisableHint',
+	OpenAccessibleView = 'editor.action.accessibleView',
+	ShowNextAccessibleView = 'editor.action.showNextAccessibleView',
+	ShowPreviousAccessibleView = 'editor.action.showPreviousAccessibleView',
 	GoToSymbol = 'editor.action.accessibleViewGoToSymbol',
-	ShowNext = 'editor.action.accessibleViewNext',
-	ShowPrevious = 'editor.action.accessibleViewPrevious',
-	AccessibleViewAcceptInlineCompletion = 'editor.action.accessibleViewAcceptInlineCompletion',
-	NextCodeBlock = 'editor.action.accessibleViewNextCodeBlock',
-	PreviousCodeBlock = 'editor.action.accessibleViewPreviousCodeBlock',
+	ShowAccessibleViewHelp = 'editor.action.accessibleViewShowHelp',
 	AccessibilityHelpConfigureKeybindings = 'editor.action.accessibilityHelpConfigureKeybindings',
 	AccessibilityHelpConfigureAssignedKeybindings = 'editor.action.accessibilityHelpConfigureAssignedKeybindings',
 	AccessibilityHelpOpenHelpLink = 'editor.action.accessibilityHelpOpenHelpLink',
+	AccessibleViewAcceptInlineCompletion = 'editor.action.accessibleViewAcceptInlineCompletion',
+	AccessibleViewNextCodeBlock = 'editor.action.accessibleViewNextCodeBlock',
+	AccessibleViewPreviousCodeBlock = 'editor.action.accessibleViewPreviousCodeBlock',
+	AccessibleViewDisableHint = 'editor.action.accessibleViewDisableHint'
 }

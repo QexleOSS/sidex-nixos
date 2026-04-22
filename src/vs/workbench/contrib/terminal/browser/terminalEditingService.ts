@@ -15,10 +15,7 @@ export class TerminalEditingService implements ITerminalEditingService {
 	private _editable: { instance: ITerminalInstance; data: IEditableData } | undefined;
 	private _editingTerminal: ITerminalInstance | undefined;
 
-	constructor(
-		@IViewsService private readonly _viewsService: IViewsService
-	) {
-	}
+	constructor(@IViewsService private readonly _viewsService: IViewsService) {}
 
 	getEditableData(instance: ITerminalInstance): IEditableData | undefined {
 		return this._editable && this._editable.instance === instance ? this._editable.data : undefined;

@@ -43,7 +43,11 @@ type IntegratedBrowserOpenEvent = {
 };
 
 type IntegratedBrowserOpenClassification = {
-	source: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'How the Integrated Browser was opened' };
+	source: {
+		classification: 'SystemMetaData';
+		purpose: 'FeatureInsight';
+		comment: 'How the Integrated Browser was opened';
+	};
 	owner: 'jruales';
 	comment: 'Tracks how users open the Integrated Browser';
 };

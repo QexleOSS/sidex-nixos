@@ -14,7 +14,6 @@ import { IWorkingCopyEditorService } from '../common/workingCopyEditorService.js
 import { IEditorService } from '../../editor/common/editorService.js';
 
 export class BrowserWorkingCopyBackupTracker extends WorkingCopyBackupTracker implements IWorkbenchContribution {
-
 	static readonly ID = 'workbench.contrib.browserWorkingCopyBackupTracker';
 
 	constructor(
@@ -24,13 +23,20 @@ export class BrowserWorkingCopyBackupTracker extends WorkingCopyBackupTracker im
 		@ILifecycleService lifecycleService: ILifecycleService,
 		@ILogService logService: ILogService,
 		@IWorkingCopyEditorService workingCopyEditorService: IWorkingCopyEditorService,
-		@IEditorService editorService: IEditorService,
+		@IEditorService editorService: IEditorService
 	) {
-		super(workingCopyBackupService, workingCopyService, logService, lifecycleService, filesConfigurationService, workingCopyEditorService, editorService);
+		super(
+			workingCopyBackupService,
+			workingCopyService,
+			logService,
+			lifecycleService,
+			filesConfigurationService,
+			workingCopyEditorService,
+			editorService
+		);
 	}
 
 	protected onFinalBeforeShutdown(reason: ShutdownReason): boolean {
-
 		// Web: we cannot perform long running in the shutdown phase
 		// As such we need to check sync if there are any modified working
 		// copies that have not been backed up yet and then prevent the
@@ -46,7 +52,9 @@ export class BrowserWorkingCopyBackupTracker extends WorkingCopyBackupTracker im
 		}
 
 		for (const modifiedWorkingCopy of modifiedWorkingCopies) {
-			if (!this.workingCopyBackupService.hasBackupSync(modifiedWorkingCopy, this.getContentVersion(modifiedWorkingCopy))) {
+			if (
+				!this.workingCopyBackupService.hasBackupSync(modifiedWorkingCopy, this.getContentVersion(modifiedWorkingCopy))
+			) {
 				this.logService.warn('Unload veto: pending backups');
 
 				return true; // modified without backup: veto

@@ -5,7 +5,7 @@
 
 export const enum TestIdPathParts {
 	/** Delimiter for path parts in test IDs */
-	Delimiter = '\0',
+	Delimiter = '\0'
 }
 
 /**
@@ -20,7 +20,7 @@ export const enum TestPosition {
 	/** b is a child of a */
 	IsChild,
 	/** b is a parent of a */
-	IsParent,
+	IsParent
 }
 
 type TestItemLike = { id: string; parent?: TestItemLike; _isRoot?: boolean };
@@ -158,7 +158,7 @@ export class TestId {
 
 	constructor(
 		public readonly path: readonly string[],
-		private readonly viewEnd = path.length,
+		private readonly viewEnd = path.length
 	) {
 		if (path.length === 0 || viewEnd < 1) {
 			throw new Error('cannot create test with empty path');

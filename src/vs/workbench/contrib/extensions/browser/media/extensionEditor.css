@@ -318,11 +318,12 @@
 
 .extension-editor > .body > .content > .details > .additional-details-container .more-info-container > .more-info > .more-info-entry > .link {
 	cursor: pointer;
+	color: var(--vscode-textLink-foreground);
+	text-decoration: none;
 }
 
 .extension-editor > .body > .content > .details > .additional-details-container .more-info-container > .more-info > .more-info-entry > .more-info-entry-name {
-	overflow: hidden;
-	text-overflow: ellipsis;
+	/* Styles now in the main .more-info-entry block above */
 }
 
 .extension-editor > .body > .content > .details > .additional-details-container .more-info-container > .more-info > .more-info-entry > .link,
@@ -334,7 +335,7 @@
 .extension-editor > .body > .content > .details > .additional-details-container .more-info-container > .more-info > .more-info-entry .link:hover,
 .extension-editor > .header > .details > .pre-release-text a:hover,
 .extension-editor > .header > .details > .actions-status-container > .status a:hover {
-	text-decoration: underline;
+	text-decoration: none;
 	color: var(--vscode-textLink-activeForeground)
 }
 
@@ -478,8 +479,10 @@
 }
 
 .extension-editor > .body > .content > .details > .additional-details-container .additional-details-element > .additional-details-title {
-	font-size: 120%;
-	padding-bottom: 12px;
+	font-size: 14px;
+	font-weight: 600;
+	padding-bottom: 8px;
+	opacity: 0.9;
 }
 
 .extension-editor > .body > .content > .details > .additional-details-container .categories-container > .categories > .category {
@@ -495,36 +498,52 @@
 	display: flex;
 	align-items: center;
 	cursor: pointer;
-	padding: 2px 4px;
+	padding: 2px 0;
 }
 
 .extension-editor > .body > .content > .details > .additional-details-container .resources-container > .resources > .resource a {
-	padding-left: 4px;
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
-	text-decoration: var(--text-link-decoration);
+	text-decoration: none;
+	font-size: 13px;
+	opacity: 0.9;
 }
 
 .extension-editor > .body > .content > .details > .additional-details-container .resources-container > .resources > .resource:hover a {
-	text-decoration: underline;
+	text-decoration: none;
+	opacity: 1;
 }
 
+/* ── Stacked info entries (Cursor-style: label then value on separate lines) ── */
 .extension-editor > .body > .content > .details > .additional-details-container .more-info-container > .more-info > .more-info-entry {
-	font-size: 90%;
-	display: grid;
-	grid-template-columns: 40% 60%;
-	gap: 6px;
-	padding: 2px 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	padding: 6px 0 2px 0;
 }
 
+/* Remove alternating row tint — stacked layout doesn't need it */
 .extension-editor > .body > .content > .details > .additional-details-container .more-info-container > .more-info > .more-info-entry:nth-child(odd) {
-	background-color: rgba(130, 130, 130, 0.04);
+	background-color: transparent;
 }
 
+/* Label row: smaller, muted */
+.extension-editor > .body > .content > .details > .additional-details-container .more-info-container > .more-info > .more-info-entry > .more-info-entry-name {
+	font-size: 11px;
+	opacity: 0.6;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Value row: normal size, monospace for identifiers/versions */
 .extension-editor > .body > .content > .details > .additional-details-container .more-info-container > .more-info > .more-info-entry code {
+	font-family: var(--vscode-font-family);
+	font-size: 13px;
 	background-color: transparent;
-	padding: 0px;
+	padding: 0;
+	word-break: break-all;
 }
 
 .extension-editor > .body > .content > .details > .content-container > .extension-pack-readme {

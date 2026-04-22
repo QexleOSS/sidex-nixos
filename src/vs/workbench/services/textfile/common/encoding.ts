@@ -20,14 +20,14 @@ export function isUTFEncoding(encoding: string): encoding is UTF_ENCODING {
 	return [UTF8, UTF8_with_bom, UTF16be, UTF16le].some(utfEncoding => utfEncoding === encoding);
 }
 
-export const UTF16be_BOM = [0xFE, 0xFF];
-export const UTF16le_BOM = [0xFF, 0xFE];
-export const UTF8_BOM = [0xEF, 0xBB, 0xBF];
+export const UTF16be_BOM = [0xfe, 0xff];
+export const UTF16le_BOM = [0xff, 0xfe];
+export const UTF8_BOM = [0xef, 0xbb, 0xbf];
 
-const ZERO_BYTE_DETECTION_BUFFER_MAX_LEN = 512; 	// number of bytes to look at to decide about a file being binary or not
-const NO_ENCODING_GUESS_MIN_BYTES = 512; 			// when not auto guessing the encoding, small number of bytes are enough
-const AUTO_ENCODING_GUESS_MIN_BYTES = 512 * 8; 		// with auto guessing we want a lot more content to be read for guessing
-const AUTO_ENCODING_GUESS_MAX_BYTES = 512 * 128; 	// set an upper limit for the number of bytes we pass on to jschardet
+const ZERO_BYTE_DETECTION_BUFFER_MAX_LEN = 512; // number of bytes to look at to decide about a file being binary or not
+const NO_ENCODING_GUESS_MIN_BYTES = 512; // when not auto guessing the encoding, small number of bytes are enough
+const AUTO_ENCODING_GUESS_MIN_BYTES = 512 * 8; // with auto guessing we want a lot more content to be read for guessing
+const AUTO_ENCODING_GUESS_MAX_BYTES = 512 * 128; // set an upper limit for the number of bytes we pass on to jschardet
 
 export interface IDecodeStreamOptions {
 	acceptTextOnly: boolean;
@@ -44,7 +44,6 @@ export interface IDecodeStreamResult {
 }
 
 export const enum DecodeStreamErrorKind {
-
 	/**
 	 * Error indicating that the stream is binary even
 	 * though `acceptTextOnly` was specified.
@@ -53,7 +52,6 @@ export const enum DecodeStreamErrorKind {
 }
 
 export class DecodeStreamError extends Error {
-
 	constructor(
 		message: string,
 		readonly decodeStreamErrorKind: DecodeStreamErrorKind
@@ -68,7 +66,6 @@ export interface IDecoderStream {
 }
 
 class DecoderStream implements IDecoderStream {
-
 	/**
 	 * This stream will only load iconv-lite lazily if the encoding
 	 * is not UTF-8. This ensures that for most common cases we do
@@ -82,7 +79,10 @@ class DecoderStream implements IDecoderStream {
 	static async create(encoding: string): Promise<DecoderStream> {
 		let decoder: IDecoderStream | undefined = undefined;
 		if (encoding !== UTF8) {
-			const iconv = await importAMDNodeModule<typeof import('@vscode/iconv-lite-umd')>('@vscode/iconv-lite-umd', 'lib/iconv-lite-umd.js');
+			const iconv = await importAMDNodeModule<typeof import('@vscode/iconv-lite-umd')>(
+				'@vscode/iconv-lite-umd',
+				'lib/iconv-lite-umd.js'
+			);
 			decoder = iconv.getDecoder(toNodeEncoding(encoding));
 		} else {
 			const utf8TextDecoder = new TextDecoder();
@@ -105,7 +105,7 @@ class DecoderStream implements IDecoderStream {
 		return new DecoderStream(decoder);
 	}
 
-	private constructor(private iconvLiteDecoder: IDecoderStream) { }
+	private constructor(private iconvLiteDecoder: IDecoderStream) {}
 
 	write(buffer: Uint8Array): string {
 		return this.iconvLiteDecoder.write(buffer);
@@ -116,8 +116,13 @@ class DecoderStream implements IDecoderStream {
 	}
 }
 
-export function toDecodeStream(source: VSBufferReadableStream, options: IDecodeStreamOptions): Promise<IDecodeStreamResult> {
-	const minBytesRequiredForDetection = options.minBytesRequiredForDetection ?? (options.guessEncoding ? AUTO_ENCODING_GUESS_MIN_BYTES : NO_ENCODING_GUESS_MIN_BYTES);
+export function toDecodeStream(
+	source: VSBufferReadableStream,
+	options: IDecodeStreamOptions
+): Promise<IDecodeStreamResult> {
+	const minBytesRequiredForDetection =
+		options.minBytesRequiredForDetection ??
+		(options.guessEncoding ? AUTO_ENCODING_GUESS_MIN_BYTES : NO_ENCODING_GUESS_MIN_BYTES);
 
 	return new Promise<IDecodeStreamResult>((resolve, reject) => {
 		const target = newWriteableStream<string>(strings => strings.join(''));
@@ -131,17 +136,23 @@ export function toDecodeStream(source: VSBufferReadableStream, options: IDecodeS
 
 		const createDecoder = async () => {
 			try {
-
 				// detect encoding from buffer
-				const detected = await detectEncodingFromBuffer({
-					buffer: VSBuffer.concat(bufferedChunks),
-					bytesRead: bytesBuffered
-				}, options.guessEncoding, options.candidateGuessEncodings);
+				const detected = await detectEncodingFromBuffer(
+					{
+						buffer: VSBuffer.concat(bufferedChunks),
+						bytesRead: bytesBuffered
+					},
+					options.guessEncoding,
+					options.candidateGuessEncodings
+				);
 
 				// throw early if the source seems binary and
 				// we are instructed to only accept text
 				if (detected.seemsBinary && options.acceptTextOnly) {
-					throw new DecodeStreamError('Stream is binary but only text is accepted for decoding', DecodeStreamErrorKind.STREAM_IS_BINARY);
+					throw new DecodeStreamError(
+						'Stream is binary but only text is accepted for decoding',
+						DecodeStreamErrorKind.STREAM_IS_BINARY
+					);
 				}
 
 				// ensure to respect overwrite of encoding
@@ -161,7 +172,6 @@ export function toDecodeStream(source: VSBufferReadableStream, options: IDecodeS
 					detected
 				});
 			} catch (error) {
-
 				// Stop handling anything from the source and target
 				cts.cancel();
 				target.destroy();
@@ -170,52 +180,60 @@ export function toDecodeStream(source: VSBufferReadableStream, options: IDecodeS
 			}
 		};
 
-		listenStream(source, {
-			onData: async chunk => {
-
-				// if the decoder is ready, we just write directly
-				if (decoder) {
-					target.write(decoder.write(chunk.buffer));
-				}
-
-				// otherwise we need to buffer the data until the stream is ready
-				else {
-					bufferedChunks.push(chunk);
-					bytesBuffered += chunk.byteLength;
-
-					// buffered enough data for encoding detection, create stream
-					if (bytesBuffered >= minBytesRequiredForDetection) {
-
-						// pause stream here until the decoder is ready
-						source.pause();
-
-						await createDecoder();
-
-						// resume stream now that decoder is ready but
-						// outside of this stack to reduce recursion
-						setTimeout(() => source.resume());
+		listenStream(
+			source,
+			{
+				onData: async chunk => {
+					// if the decoder is ready, we just write directly
+					if (decoder) {
+						target.write(decoder.write(chunk.buffer));
 					}
+
+					// otherwise we need to buffer the data until the stream is ready
+					else {
+						bufferedChunks.push(chunk);
+						bytesBuffered += chunk.byteLength;
+
+						// buffered enough data for encoding detection, create stream
+						if (bytesBuffered >= minBytesRequiredForDetection) {
+							// pause stream here until the decoder is ready
+							source.pause();
+
+							await createDecoder();
+
+							// resume stream now that decoder is ready but
+							// outside of this stack to reduce recursion
+							setTimeout(() => source.resume());
+						}
+					}
+				},
+				onError: error => target.error(error), // simply forward to target
+				onEnd: async () => {
+					// we were still waiting for data to do the encoding
+					// detection. thus, wrap up starting the stream even
+					// without all the data to get things going
+					if (!decoder) {
+						await createDecoder();
+					}
+
+					// end the target with the remainders of the decoder
+					target.end(decoder?.end());
 				}
 			},
-			onError: error => target.error(error), // simply forward to target
-			onEnd: async () => {
-
-				// we were still waiting for data to do the encoding
-				// detection. thus, wrap up starting the stream even
-				// without all the data to get things going
-				if (!decoder) {
-					await createDecoder();
-				}
-
-				// end the target with the remainders of the decoder
-				target.end(decoder?.end());
-			}
-		}, cts.token);
+			cts.token
+		);
 	});
 }
 
-export async function toEncodeReadable(readable: Readable<string>, encoding: string, options?: { addBOM?: boolean }): Promise<VSBufferReadable> {
-	const iconv = await importAMDNodeModule<typeof import('@vscode/iconv-lite-umd')>('@vscode/iconv-lite-umd', 'lib/iconv-lite-umd.js');
+export async function toEncodeReadable(
+	readable: Readable<string>,
+	encoding: string,
+	options?: { addBOM?: boolean }
+): Promise<VSBufferReadable> {
+	const iconv = await importAMDNodeModule<typeof import('@vscode/iconv-lite-umd')>(
+		'@vscode/iconv-lite-umd',
+		'lib/iconv-lite-umd.js'
+	);
 	const encoder = iconv.getEncoder(toNodeEncoding(encoding), options);
 
 	let bytesWritten = false;
@@ -264,7 +282,10 @@ export async function toEncodeReadable(readable: Readable<string>, encoding: str
 }
 
 export async function encodingExists(encoding: string): Promise<boolean> {
-	const iconv = await importAMDNodeModule<typeof import('@vscode/iconv-lite-umd')>('@vscode/iconv-lite-umd', 'lib/iconv-lite-umd.js');
+	const iconv = await importAMDNodeModule<typeof import('@vscode/iconv-lite-umd')>(
+		'@vscode/iconv-lite-umd',
+		'lib/iconv-lite-umd.js'
+	);
 
 	return iconv.encodingExists(toNodeEncoding(encoding));
 }
@@ -277,7 +298,10 @@ export function toNodeEncoding(enc: string | null): string {
 	return enc;
 }
 
-export function detectEncodingByBOMFromBuffer(buffer: VSBuffer | null, bytesRead: number): typeof UTF8_with_bom | typeof UTF16le | typeof UTF16be | null {
+export function detectEncodingByBOMFromBuffer(
+	buffer: VSBuffer | null,
+	bytesRead: number
+): typeof UTF8_with_bom | typeof UTF16le | typeof UTF16be | null {
 	if (!buffer || bytesRead < UTF16be_BOM.length) {
 		return null;
 	}
@@ -340,7 +364,10 @@ async function guessEncodingByBuffer(buffer: VSBuffer, candidateGuessEncodings?:
 
 	let guessed: { encoding: string | undefined } | undefined;
 	try {
-		guessed = jschardet.detect(binaryString, candidateGuessEncodings ? { detectEncodings: candidateGuessEncodings } : undefined);
+		guessed = jschardet.detect(
+			binaryString,
+			candidateGuessEncodings ? { detectEncodings: candidateGuessEncodings } : undefined
+		);
 	} catch (error) {
 		return null; // jschardet throws for unknown encodings (https://github.com/microsoft/vscode/issues/239928)
 	}
@@ -358,8 +385,8 @@ async function guessEncodingByBuffer(buffer: VSBuffer, candidateGuessEncodings?:
 }
 
 const JSCHARDET_TO_ICONV_ENCODINGS: { [name: string]: string } = {
-	'ibm866': 'cp866',
-	'big5': 'cp950'
+	ibm866: 'cp866',
+	big5: 'cp950'
 };
 
 function normalizeEncoding(encodingName: string): string {
@@ -437,10 +464,21 @@ export interface IReadResult {
 	bytesRead: number;
 }
 
-export function detectEncodingFromBuffer(readResult: IReadResult, autoGuessEncoding?: false, candidateGuessEncodings?: string[]): IDetectedEncodingResult;
-export function detectEncodingFromBuffer(readResult: IReadResult, autoGuessEncoding?: boolean, candidateGuessEncodings?: string[]): Promise<IDetectedEncodingResult>;
-export function detectEncodingFromBuffer({ buffer, bytesRead }: IReadResult, autoGuessEncoding?: boolean, candidateGuessEncodings?: string[]): Promise<IDetectedEncodingResult> | IDetectedEncodingResult {
-
+export function detectEncodingFromBuffer(
+	readResult: IReadResult,
+	autoGuessEncoding?: false,
+	candidateGuessEncodings?: string[]
+): IDetectedEncodingResult;
+export function detectEncodingFromBuffer(
+	readResult: IReadResult,
+	autoGuessEncoding?: boolean,
+	candidateGuessEncodings?: string[]
+): Promise<IDetectedEncodingResult>;
+export function detectEncodingFromBuffer(
+	{ buffer, bytesRead }: IReadResult,
+	autoGuessEncoding?: boolean,
+	candidateGuessEncodings?: string[]
+): Promise<IDetectedEncodingResult> | IDetectedEncodingResult {
 	// Always first check for BOM to find out about encoding
 	let encoding = detectEncodingByBOMFromBuffer(buffer, bytesRead);
 
@@ -459,20 +497,20 @@ export function detectEncodingFromBuffer({ buffer, bytesRead }: IReadResult, aut
 		// encoding of the same format as UTF-16) and false negatives (a UTF-16 file
 		// that is using 4 bytes to encode a character).
 		for (let i = 0; i < bytesRead && i < ZERO_BYTE_DETECTION_BUFFER_MAX_LEN; i++) {
-			const isEndian = (i % 2 === 1); // assume 2-byte sequences typical for UTF-16
-			const isZeroByte = (buffer.readUInt8(i) === 0);
+			const isEndian = i % 2 === 1; // assume 2-byte sequences typical for UTF-16
+			const isZeroByte = buffer.readUInt8(i) === 0;
 
 			if (isZeroByte) {
 				containsZeroByte = true;
 			}
 
 			// UTF-16 LE: expect e.g. 0xAA 0x00
-			if (couldBeUTF16LE && (isEndian && !isZeroByte || !isEndian && isZeroByte)) {
+			if (couldBeUTF16LE && ((isEndian && !isZeroByte) || (!isEndian && isZeroByte))) {
 				couldBeUTF16LE = false;
 			}
 
 			// UTF-16 BE: expect e.g. 0x00 0xAA
-			if (couldBeUTF16BE && (isEndian && isZeroByte || !isEndian && !isZeroByte)) {
+			if (couldBeUTF16BE && ((isEndian && isZeroByte) || (!isEndian && !isZeroByte))) {
 				couldBeUTF16BE = false;
 			}
 
@@ -507,7 +545,16 @@ export function detectEncodingFromBuffer({ buffer, bytesRead }: IReadResult, aut
 	return { seemsBinary, encoding };
 }
 
-type EncodingsMap = { [encoding: string]: { labelLong: string; labelShort: string; order: number; encodeOnly?: boolean; alias?: string; guessableName?: string } };
+type EncodingsMap = {
+	[encoding: string]: {
+		labelLong: string;
+		labelShort: string;
+		order: number;
+		encodeOnly?: boolean;
+		alias?: string;
+		guessableName?: string;
+	};
+};
 
 export const SUPPORTED_ENCODINGS: EncodingsMap = {
 	utf8: {

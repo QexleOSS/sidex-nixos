@@ -16,7 +16,8 @@ export function getAllUnboundCommands(boundCommands: Map<string, boolean>): stri
 			return;
 		}
 		seenMap.set(id, true);
-		if (id[0] === '_' || id.indexOf('vscode.') === 0) { // private command
+		if (id[0] === '_' || id.indexOf('vscode.') === 0) {
+			// private command
 			return;
 		}
 		if (boundCommands.get(id) === true) {
@@ -24,8 +25,12 @@ export function getAllUnboundCommands(boundCommands: Map<string, boolean>): stri
 		}
 		if (!includeCommandWithArgs) {
 			const command = CommandsRegistry.getCommand(id);
-			if (command && typeof command.metadata === 'object'
-				&& isNonEmptyArray((<ICommandMetadata>command.metadata).args)) { // command with args
+			if (
+				command &&
+				typeof command.metadata === 'object' &&
+				isNonEmptyArray((<ICommandMetadata>command.metadata).args)
+			) {
+				// command with args
 				return;
 			}
 		}

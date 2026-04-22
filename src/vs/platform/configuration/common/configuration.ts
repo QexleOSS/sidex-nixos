@@ -15,10 +15,12 @@ export const IConfigurationService = createDecorator<IConfigurationService>('con
 
 export function isConfigurationOverrides(obj: unknown): obj is IConfigurationOverrides {
 	const thing = obj as IConfigurationOverrides;
-	return thing
-		&& typeof thing === 'object'
-		&& (!thing.overrideIdentifier || typeof thing.overrideIdentifier === 'string')
-		&& (!thing.resource || thing.resource instanceof URI);
+	return (
+		thing &&
+		typeof thing === 'object' &&
+		(!thing.overrideIdentifier || typeof thing.overrideIdentifier === 'string') &&
+		(!thing.resource || thing.resource instanceof URI)
+	);
 }
 
 export interface IConfigurationOverrides {
@@ -28,14 +30,19 @@ export interface IConfigurationOverrides {
 
 export function isConfigurationUpdateOverrides(obj: unknown): obj is IConfigurationUpdateOverrides {
 	const thing = obj as IConfigurationUpdateOverrides | IConfigurationOverrides;
-	return thing
-		&& typeof thing === 'object'
-		&& (!(thing as IConfigurationUpdateOverrides).overrideIdentifiers || Array.isArray((thing as IConfigurationUpdateOverrides).overrideIdentifiers))
-		&& !(thing as IConfigurationOverrides).overrideIdentifier
-		&& (!thing.resource || thing.resource instanceof URI);
+	return (
+		thing &&
+		typeof thing === 'object' &&
+		(!(thing as IConfigurationUpdateOverrides).overrideIdentifiers ||
+			Array.isArray((thing as IConfigurationUpdateOverrides).overrideIdentifiers)) &&
+		!(thing as IConfigurationOverrides).overrideIdentifier &&
+		(!thing.resource || thing.resource instanceof URI)
+	);
 }
 
-export type IConfigurationUpdateOverrides = Omit<IConfigurationOverrides, 'overrideIdentifier'> & { overrideIdentifiers?: string[] | null };
+export type IConfigurationUpdateOverrides = Omit<IConfigurationOverrides, 'overrideIdentifier'> & {
+	overrideIdentifiers?: string[] | null;
+};
 
 export const enum ConfigurationTarget {
 	APPLICATION = 1,
@@ -49,14 +56,22 @@ export const enum ConfigurationTarget {
 }
 export function ConfigurationTargetToString(configurationTarget: ConfigurationTarget) {
 	switch (configurationTarget) {
-		case ConfigurationTarget.APPLICATION: return 'APPLICATION';
-		case ConfigurationTarget.USER: return 'USER';
-		case ConfigurationTarget.USER_LOCAL: return 'USER_LOCAL';
-		case ConfigurationTarget.USER_REMOTE: return 'USER_REMOTE';
-		case ConfigurationTarget.WORKSPACE: return 'WORKSPACE';
-		case ConfigurationTarget.WORKSPACE_FOLDER: return 'WORKSPACE_FOLDER';
-		case ConfigurationTarget.DEFAULT: return 'DEFAULT';
-		case ConfigurationTarget.MEMORY: return 'MEMORY';
+		case ConfigurationTarget.APPLICATION:
+			return 'APPLICATION';
+		case ConfigurationTarget.USER:
+			return 'USER';
+		case ConfigurationTarget.USER_LOCAL:
+			return 'USER_LOCAL';
+		case ConfigurationTarget.USER_REMOTE:
+			return 'USER_REMOTE';
+		case ConfigurationTarget.WORKSPACE:
+			return 'WORKSPACE';
+		case ConfigurationTarget.WORKSPACE_FOLDER:
+			return 'WORKSPACE_FOLDER';
+		case ConfigurationTarget.DEFAULT:
+			return 'DEFAULT';
+		case ConfigurationTarget.MEMORY:
+			return 'MEMORY';
 	}
 }
 
@@ -66,7 +81,6 @@ export interface IConfigurationChange {
 }
 
 export interface IConfigurationChangeEvent {
-
 	readonly source: ConfigurationTarget;
 	readonly affectedKeys: ReadonlySet<string>;
 	readonly change: IConfigurationChange;
@@ -81,7 +95,6 @@ export interface IInspectValue<T> {
 }
 
 export interface IConfigurationValue<T> {
-
 	readonly defaultValue?: T;
 	readonly applicationValue?: T;
 	readonly userValue?: T;
@@ -106,7 +119,10 @@ export interface IConfigurationValue<T> {
 	readonly overrideIdentifiers?: string[];
 }
 
-export function getConfigValueInTarget<T>(configValue: IConfigurationValue<T>, scope: ConfigurationTarget): T | undefined {
+export function getConfigValueInTarget<T>(
+	configValue: IConfigurationValue<T>,
+	scope: ConfigurationTarget
+): T | undefined {
 	switch (scope) {
 		case ConfigurationTarget.APPLICATION:
 			return configValue.applicationValue;
@@ -129,13 +145,17 @@ export function getConfigValueInTarget<T>(configValue: IConfigurationValue<T>, s
 	}
 }
 
-export function isConfigured<T>(configValue: IConfigurationValue<T>): configValue is IConfigurationValue<T> & { value: T } {
-	return configValue.applicationValue !== undefined ||
+export function isConfigured<T>(
+	configValue: IConfigurationValue<T>
+): configValue is IConfigurationValue<T> & { value: T } {
+	return (
+		configValue.applicationValue !== undefined ||
 		configValue.userValue !== undefined ||
 		configValue.userLocalValue !== undefined ||
 		configValue.userRemoteValue !== undefined ||
 		configValue.workspaceValue !== undefined ||
-		configValue.workspaceFolderValue !== undefined;
+		configValue.workspaceFolderValue !== undefined
+	);
 }
 
 export interface IConfigurationUpdateOptions {
@@ -189,8 +209,18 @@ export interface IConfigurationService {
 	 */
 	updateValue(key: string, value: unknown): Promise<void>;
 	updateValue(key: string, value: unknown, target: ConfigurationTarget): Promise<void>;
-	updateValue(key: string, value: unknown, overrides: IConfigurationOverrides | IConfigurationUpdateOverrides): Promise<void>;
-	updateValue(key: string, value: unknown, overrides: IConfigurationOverrides | IConfigurationUpdateOverrides, target: ConfigurationTarget, options?: IConfigurationUpdateOptions): Promise<void>;
+	updateValue(
+		key: string,
+		value: unknown,
+		overrides: IConfigurationOverrides | IConfigurationUpdateOverrides
+	): Promise<void>;
+	updateValue(
+		key: string,
+		value: unknown,
+		overrides: IConfigurationOverrides | IConfigurationUpdateOverrides,
+		target: ConfigurationTarget,
+		options?: IConfigurationUpdateOptions
+	): Promise<void>;
 
 	inspect<T>(key: string, overrides?: IConfigurationOverrides): IConfigurationValue<Readonly<T>>;
 
@@ -236,7 +266,10 @@ export interface IConfigurationCompareResult {
 	overrides: [string, string[]][];
 }
 
-export function toValuesTree(properties: IStringDictionary<unknown>, conflictReporter: (message: string) => void): IStringDictionary<unknown> {
+export function toValuesTree(
+	properties: IStringDictionary<unknown>,
+	conflictReporter: (message: string) => void
+): IStringDictionary<unknown> {
 	const root = Object.create(null);
 
 	for (const key in properties) {
@@ -246,7 +279,12 @@ export function toValuesTree(properties: IStringDictionary<unknown>, conflictRep
 	return root;
 }
 
-export function addToValueTree(settingsTreeRoot: IStringDictionary<unknown>, key: string, value: unknown, conflictReporter: (message: string) => void): void {
+export function addToValueTree(
+	settingsTreeRoot: IStringDictionary<unknown>,
+	key: string,
+	value: unknown,
+	conflictReporter: (message: string) => void
+): void {
 	const segments = key.split('.');
 	const last = segments.pop()!;
 
@@ -316,7 +354,11 @@ function doRemoveFromValueTree(valueTree: IStringDictionary<unknown> | unknown, 
  */
 export function getConfigurationValue<T>(config: IStringDictionary<unknown>, settingPath: string): T | undefined;
 export function getConfigurationValue<T>(config: IStringDictionary<unknown>, settingPath: string, defaultValue: T): T;
-export function getConfigurationValue<T>(config: IStringDictionary<unknown>, settingPath: string, defaultValue?: T): T | undefined {
+export function getConfigurationValue<T>(
+	config: IStringDictionary<unknown>,
+	settingPath: string,
+	defaultValue?: T
+): T | undefined {
 	function accessSetting(config: IStringDictionary<unknown>, path: string[]): unknown {
 		let current: unknown = config;
 		for (const component of path) {
@@ -331,7 +373,7 @@ export function getConfigurationValue<T>(config: IStringDictionary<unknown>, set
 	const path = settingPath.split('.');
 	const result = accessSetting(config, path);
 
-	return typeof result === 'undefined' ? defaultValue : result as T;
+	return typeof result === 'undefined' ? defaultValue : (result as T);
 }
 
 export function merge(base: IStringDictionary<unknown>, add: IStringDictionary<unknown>, overwrite: boolean): void {
@@ -351,8 +393,5 @@ export function merge(base: IStringDictionary<unknown>, add: IStringDictionary<u
 }
 
 export function getLanguageTagSettingPlainKey(settingKey: string) {
-	return settingKey
-		.replace(/^\[/, '')
-		.replace(/]$/g, '')
-		.replace(/\]\[/g, ', ');
+	return settingKey.replace(/^\[/, '').replace(/]$/g, '').replace(/\]\[/g, ', ');
 }

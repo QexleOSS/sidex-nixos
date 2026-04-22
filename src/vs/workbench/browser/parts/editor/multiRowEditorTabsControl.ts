@@ -16,7 +16,6 @@ import { IEditorTitleControlDimensions } from './editorTitleControl.js';
 import { IReadonlyEditorGroupModel } from '../../../common/editor/editorGroupModel.js';
 
 export class MultiRowEditorControl extends Disposable implements IEditorTabsControl {
-
 	private readonly stickyEditorTabsControl: IEditorTabsControl;
 	private readonly unstickyEditorTabsControl: IEditorTabsControl;
 
@@ -36,9 +35,27 @@ export class MultiRowEditorControl extends Disposable implements IEditorTabsCont
 		const stickyModel = this._register(new StickyEditorGroupModel(this.model));
 		const unstickyModel = this._register(new UnstickyEditorGroupModel(this.model));
 
-		this.stickyEditorTabsControl = this._register(this.instantiationService.createInstance(MultiEditorTabsControl, this.parent, editorPartsView, this.groupsView, this.groupView, stickyModel));
-		this.unstickyEditorTabsControl = this._register(this.instantiationService.createInstance(MultiEditorTabsControl, this.parent, editorPartsView, this.groupsView, this.groupView, unstickyModel));
-}
+		this.stickyEditorTabsControl = this._register(
+			this.instantiationService.createInstance(
+				MultiEditorTabsControl,
+				this.parent,
+				editorPartsView,
+				this.groupsView,
+				this.groupView,
+				stickyModel
+			)
+		);
+		this.unstickyEditorTabsControl = this._register(
+			this.instantiationService.createInstance(
+				MultiEditorTabsControl,
+				this.parent,
+				editorPartsView,
+				this.groupsView,
+				this.groupView,
+				unstickyModel
+			)
+		);
+	}
 
 	init(): void {
 		if (this.initialized) {
@@ -74,7 +91,10 @@ export class MultiRowEditorControl extends Disposable implements IEditorTabsCont
 	}
 
 	private didActiveControlChange() {
-		return this.activeControl !== (this.model.activeEditor ? this.getEditorTabsController(this.model.activeEditor) : undefined);
+		return (
+			this.activeControl !==
+			(this.model.activeEditor ? this.getEditorTabsController(this.model.activeEditor) : undefined)
+		);
 	}
 
 	private getEditorTabsController(editor: EditorInput): IEditorTabsControl {
@@ -150,12 +170,16 @@ export class MultiRowEditorControl extends Disposable implements IEditorTabsCont
 			}
 
 			this.handleTabBarsStateChange();
-
 		} else {
 			if (this.model.isSticky(editor)) {
 				this.stickyEditorTabsControl.moveEditor(editor, fromIndex, targetIndex, stickyStateChange);
 			} else {
-				this.unstickyEditorTabsControl.moveEditor(editor, fromIndex - this.model.stickyCount, targetIndex - this.model.stickyCount, stickyStateChange);
+				this.unstickyEditorTabsControl.moveEditor(
+					editor,
+					fromIndex - this.model.stickyCount,
+					targetIndex - this.model.stickyCount,
+					stickyStateChange
+				);
 			}
 		}
 	}
@@ -209,10 +233,7 @@ export class MultiRowEditorControl extends Disposable implements IEditorTabsCont
 		};
 		const unstickyDimensions = this.unstickyEditorTabsControl.layout(unstickyAvailableDimensions);
 
-		return new Dimension(
-			dimensions.container.width,
-			stickyDimensions.height + unstickyDimensions.height
-		);
+		return new Dimension(dimensions.container.width, stickyDimensions.height + unstickyDimensions.height);
 	}
 
 	getHeight(): number {

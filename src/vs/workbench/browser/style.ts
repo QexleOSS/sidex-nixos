@@ -32,7 +32,6 @@ try {
 }
 
 registerThemingParticipant((theme, collector) => {
-
 	// Background (helps for subpixel-antialiasing on Windows)
 	const workbenchBackground = WORKBENCH_BACKGROUND(theme);
 	collector.addRule(`.monaco-workbench { background-color: ${workbenchBackground}; }`);
@@ -48,7 +47,7 @@ registerThemingParticipant((theme, collector) => {
 		const titleBackground = theme.getColor(TITLE_BAR_ACTIVE_BACKGROUND);
 		if (titleBackground) {
 			const metaElementId = 'monaco-workbench-meta-theme-color';
-			// eslint-disable-next-line no-restricted-syntax
+
 			let metaElement = mainWindow.document.getElementById(metaElementId) as HTMLMetaElement | null;
 			if (!metaElement) {
 				metaElement = createMetaElement();

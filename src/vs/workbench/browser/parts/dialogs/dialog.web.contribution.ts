@@ -5,7 +5,11 @@
 
 import { IDialogHandler, IDialogResult, IDialogService } from '../../../../platform/dialogs/common/dialogs.js';
 import { IProductService } from '../../../../platform/product/common/productService.js';
-import { IWorkbenchContribution, WorkbenchPhase, registerWorkbenchContribution2 } from '../../../common/contributions.js';
+import {
+	IWorkbenchContribution,
+	WorkbenchPhase,
+	registerWorkbenchContribution2
+} from '../../../common/contributions.js';
 import { IDialogsModel, IDialogViewItem } from '../../../common/dialogs.js';
 import { BrowserDialogHandler } from './dialogHandler.js';
 import { DialogService } from '../../../services/dialogs/common/dialogService.js';
@@ -15,7 +19,6 @@ import { Lazy } from '../../../../base/common/lazy.js';
 import { createBrowserAboutDialogDetails } from './dialog.js';
 
 export class DialogHandlerContribution extends Disposable implements IWorkbenchContribution {
-
 	static readonly ID = 'workbench.contrib.dialogHandler';
 
 	private readonly model: IDialogsModel;
@@ -26,18 +29,20 @@ export class DialogHandlerContribution extends Disposable implements IWorkbenchC
 	constructor(
 		@IDialogService private dialogService: IDialogService,
 		@IInstantiationService instantiationService: IInstantiationService,
-		@IProductService private productService: IProductService,
+		@IProductService private productService: IProductService
 	) {
 		super();
 
 		this.impl = new Lazy(() => instantiationService.createInstance(BrowserDialogHandler));
 		this.model = (this.dialogService as DialogService).model;
 
-		this._register(this.model.onWillShowDialog(() => {
-			if (!this.currentDialog) {
-				this.processDialogs();
-			}
-		}));
+		this._register(
+			this.model.onWillShowDialog(() => {
+				if (!this.currentDialog) {
+					this.processDialogs();
+				}
+			})
+		);
 
 		this.processDialogs();
 	}
@@ -59,7 +64,11 @@ export class DialogHandlerContribution extends Disposable implements IWorkbenchC
 					result = await this.impl.value.prompt(args.prompt);
 				} else {
 					const aboutDialogDetails = createBrowserAboutDialogDetails(this.productService);
-					await this.impl.value.about(aboutDialogDetails.title, aboutDialogDetails.details, aboutDialogDetails.detailsToCopy);
+					await this.impl.value.about(
+						aboutDialogDetails.title,
+						aboutDialogDetails.details,
+						aboutDialogDetails.detailsToCopy
+					);
 				}
 			} catch (error) {
 				result = error;

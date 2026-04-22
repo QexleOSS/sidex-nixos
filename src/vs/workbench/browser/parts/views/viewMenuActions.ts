@@ -6,13 +6,15 @@
 import { IAction } from '../../../../base/common/actions.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
-import { getActionBarActions, PrimaryAndSecondaryActions } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
+import {
+	getActionBarActions,
+	PrimaryAndSecondaryActions
+} from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
 import { MenuId, IMenuActionOptions, IMenuService, IMenu } from '../../../../platform/actions/common/actions.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IViewDescriptorService, ViewContainer, ViewContainerLocationToString } from '../../../common/views.js';
 
 export class ViewMenuActions extends Disposable {
-
 	private readonly menu: IMenu;
 
 	private readonly _onDidChange = this._register(new Emitter<void>());
@@ -23,14 +25,18 @@ export class ViewMenuActions extends Disposable {
 		private readonly contextMenuId: MenuId | undefined,
 		private readonly options: IMenuActionOptions | undefined,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IMenuService private readonly menuService: IMenuService,
+		@IMenuService private readonly menuService: IMenuService
 	) {
 		super();
-		this.menu = this._register(menuService.createMenu(menuId, contextKeyService, { emitEventsForSubmenuChanges: true }));
-		this._register(this.menu.onDidChange(() => {
-			this.actions = undefined;
-			this._onDidChange.fire();
-		}));
+		this.menu = this._register(
+			menuService.createMenu(menuId, contextKeyService, { emitEventsForSubmenuChanges: true })
+		);
+		this._register(
+			this.menu.onDidChange(() => {
+				this.actions = undefined;
+				this._onDidChange.fire();
+			})
+		);
 	}
 
 	private actions: PrimaryAndSecondaryActions | undefined;
@@ -64,13 +70,31 @@ export class ViewContainerMenuActions extends ViewMenuActions {
 		viewContainer: ViewContainer,
 		@IViewDescriptorService viewDescriptorService: IViewDescriptorService,
 		@IContextKeyService contextKeyService: IContextKeyService,
-		@IMenuService menuService: IMenuService,
+		@IMenuService menuService: IMenuService
 	) {
 		const scopedContextKeyService = contextKeyService.createScoped(element);
 		scopedContextKeyService.createKey('viewContainer', viewContainer.id);
-		const viewContainerLocationKey = scopedContextKeyService.createKey('viewContainerLocation', ViewContainerLocationToString(viewDescriptorService.getViewContainerLocation(viewContainer)!));
-		super(MenuId.ViewContainerTitle, MenuId.ViewContainerTitleContext, { shouldForwardArgs: true, renderShortTitle: true }, scopedContextKeyService, menuService);
+		const viewContainerLocationKey = scopedContextKeyService.createKey(
+			'viewContainerLocation',
+			ViewContainerLocationToString(viewDescriptorService.getViewContainerLocation(viewContainer)!)
+		);
+		super(
+			MenuId.ViewContainerTitle,
+			MenuId.ViewContainerTitleContext,
+			{ shouldForwardArgs: true, renderShortTitle: true },
+			scopedContextKeyService,
+			menuService
+		);
 		this._register(scopedContextKeyService);
-		this._register(Event.filter(viewDescriptorService.onDidChangeContainerLocation, e => e.viewContainer === viewContainer)(() => viewContainerLocationKey.set(ViewContainerLocationToString(viewDescriptorService.getViewContainerLocation(viewContainer)!))));
+		this._register(
+			Event.filter(
+				viewDescriptorService.onDidChangeContainerLocation,
+				e => e.viewContainer === viewContainer
+			)(() =>
+				viewContainerLocationKey.set(
+					ViewContainerLocationToString(viewDescriptorService.getViewContainerLocation(viewContainer)!)
+				)
+			)
+		);
 	}
 }

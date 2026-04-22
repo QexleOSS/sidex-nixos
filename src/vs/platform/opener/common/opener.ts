@@ -12,7 +12,6 @@ import { createDecorator } from '../../instantiation/common/instantiation.js';
 export const IOpenerService = createDecorator<IOpenerService>('openerService');
 
 export type OpenInternalOptions = {
-
 	/**
 	 * Signals that the intent is to open an editor to the side
 	 * of the currently active editor.
@@ -59,7 +58,11 @@ export interface IOpener {
 }
 
 export interface IExternalOpener {
-	openExternal(href: string, ctx: { sourceUri: URI; preferredOpenerId?: string }, token: CancellationToken): Promise<boolean>;
+	openExternal(
+		href: string,
+		ctx: { sourceUri: URI; preferredOpenerId?: string },
+		token: CancellationToken
+	): Promise<boolean>;
 	dispose?(): void;
 }
 
@@ -72,7 +75,6 @@ export interface IExternalUriResolver {
 }
 
 export interface IOpenerService {
-
 	readonly _serviceBrand: undefined;
 
 	/**
@@ -125,7 +127,9 @@ export interface IOpenerService {
  * component that is not aware of selections.
  */
 export function withSelection(uri: URI, selection: ITextEditorSelection): URI {
-	return uri.with({ fragment: `${selection.startLineNumber},${selection.startColumn}${selection.endLineNumber ? `-${selection.endLineNumber}${selection.endColumn ? `,${selection.endColumn}` : ''}` : ''}` });
+	return uri.with({
+		fragment: `${selection.startLineNumber},${selection.startColumn}${selection.endLineNumber ? `-${selection.endLineNumber}${selection.endColumn ? `,${selection.endColumn}` : ''}` : ''}`
+	});
 }
 
 /**

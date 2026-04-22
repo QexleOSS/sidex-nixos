@@ -7,7 +7,26 @@ import { KeyMod, KeyCode, KeyChord } from '../../../base/common/keyCodes.js';
 import { ServicesAccessor } from '../../../platform/instantiation/common/instantiation.js';
 import { KeybindingsRegistry, KeybindingWeight } from '../../../platform/keybinding/common/keybindingsRegistry.js';
 import { List } from '../../../base/browser/ui/list/listWidget.js';
-import { WorkbenchListFocusContextKey, IListService, WorkbenchListSupportsMultiSelectContextKey, ListWidget, WorkbenchListHasSelectionOrFocus, getSelectionKeyboardEvent, WorkbenchListWidget, WorkbenchListSelectionNavigation, WorkbenchTreeElementCanCollapse, WorkbenchTreeElementHasParent, WorkbenchTreeElementHasChild, WorkbenchTreeElementCanExpand, RawWorkbenchListFocusContextKey, WorkbenchTreeFindOpen, WorkbenchListSupportsFind, WorkbenchListScrollAtBottomContextKey, WorkbenchListScrollAtTopContextKey, WorkbenchTreeStickyScrollFocused } from '../../../platform/list/browser/listService.js';
+import {
+	WorkbenchListFocusContextKey,
+	IListService,
+	WorkbenchListSupportsMultiSelectContextKey,
+	ListWidget,
+	WorkbenchListHasSelectionOrFocus,
+	getSelectionKeyboardEvent,
+	WorkbenchListWidget,
+	WorkbenchListSelectionNavigation,
+	WorkbenchTreeElementCanCollapse,
+	WorkbenchTreeElementHasParent,
+	WorkbenchTreeElementHasChild,
+	WorkbenchTreeElementCanExpand,
+	RawWorkbenchListFocusContextKey,
+	WorkbenchTreeFindOpen,
+	WorkbenchListSupportsFind,
+	WorkbenchListScrollAtBottomContextKey,
+	WorkbenchListScrollAtTopContextKey,
+	WorkbenchTreeStickyScrollFocused
+} from '../../../platform/list/browser/listService.js';
 import { PagedList } from '../../../base/browser/ui/list/listPaging.js';
 import { equals, range } from '../../../base/common/arrays.js';
 import { ContextKeyExpr } from '../../../platform/contextkey/common/contextkey.js';
@@ -35,7 +54,10 @@ function ensureDOMFocus(widget: ListWidget | undefined): void {
 	}
 }
 
-async function updateFocus(widget: WorkbenchListWidget, updateFocusFn: (widget: WorkbenchListWidget) => void | Promise<void>): Promise<void> {
+async function updateFocus(
+	widget: WorkbenchListWidget,
+	updateFocusFn: (widget: WorkbenchListWidget) => void | Promise<void>
+): Promise<void> {
 	if (!WorkbenchListSelectionNavigation.getValue(widget.contextKeyService)) {
 		return updateFocusFn(widget);
 	}
@@ -55,7 +77,10 @@ async function updateFocus(widget: WorkbenchListWidget, updateFocusFn: (widget: 
 	widget.setSelection(newFocus, fakeKeyboardEvent);
 }
 
-async function navigate(widget: WorkbenchListWidget | undefined, updateFocusFn: (widget: WorkbenchListWidget) => void | Promise<void>): Promise<void> {
+async function navigate(
+	widget: WorkbenchListWidget | undefined,
+	updateFocusFn: (widget: WorkbenchListWidget) => void | Promise<void>
+): Promise<void> {
 	if (!widget) {
 		return;
 	}
@@ -145,7 +170,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: WorkbenchListFocusContextKey,
 	primary: KeyCode.PageDown,
-	handler: (accessor) => {
+	handler: accessor => {
 		navigate(accessor.get(IListService).lastFocusedList, async widget => {
 			const fakeKeyboardEvent = new KeyboardEvent('keydown');
 			await widget.focusNextPage(fakeKeyboardEvent);
@@ -158,7 +183,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: WorkbenchListFocusContextKey,
 	primary: KeyCode.PageUp,
-	handler: (accessor) => {
+	handler: accessor => {
 		navigate(accessor.get(IListService).lastFocusedList, async widget => {
 			const fakeKeyboardEvent = new KeyboardEvent('keydown');
 			await widget.focusPreviousPage(fakeKeyboardEvent);
@@ -171,7 +196,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: WorkbenchListFocusContextKey,
 	primary: KeyCode.Home,
-	handler: (accessor) => {
+	handler: accessor => {
 		navigate(accessor.get(IListService).lastFocusedList, async widget => {
 			const fakeKeyboardEvent = new KeyboardEvent('keydown');
 			await widget.focusFirst(fakeKeyboardEvent);
@@ -184,7 +209,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: WorkbenchListFocusContextKey,
 	primary: KeyCode.End,
-	handler: (accessor) => {
+	handler: accessor => {
 		navigate(accessor.get(IListService).lastFocusedList, async widget => {
 			const fakeKeyboardEvent = new KeyboardEvent('keydown');
 			await widget.focusLast(fakeKeyboardEvent);
@@ -197,7 +222,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: WorkbenchListFocusContextKey,
 	primary: KeyMod.Alt | KeyCode.Home,
-	handler: (accessor) => {
+	handler: accessor => {
 		navigate(accessor.get(IListService).lastFocusedList, async widget => {
 			const fakeKeyboardEvent = new KeyboardEvent('keydown', { altKey: true });
 			await widget.focusFirst(fakeKeyboardEvent);
@@ -210,7 +235,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: WorkbenchListFocusContextKey,
 	primary: KeyMod.Alt | KeyCode.End,
-	handler: (accessor) => {
+	handler: accessor => {
 		navigate(accessor.get(IListService).lastFocusedList, async widget => {
 			const fakeKeyboardEvent = new KeyboardEvent('keydown', { altKey: true });
 			await widget.focusLast(fakeKeyboardEvent);
@@ -219,7 +244,6 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 });
 
 function expandMultiSelection(focused: WorkbenchListWidget, previousFocus: unknown): void {
-
 	// List
 	if (focused instanceof List || focused instanceof PagedList || focused instanceof Table) {
 		const list = focused;
@@ -249,14 +273,20 @@ function expandMultiSelection(focused: WorkbenchListWidget, previousFocus: unkno
 		const fakeKeyboardEvent = new KeyboardEvent('keydown', { shiftKey: true });
 
 		if (selection && selection.indexOf(focus) >= 0) {
-			list.setSelection(selection.filter(s => s !== previousFocus), fakeKeyboardEvent);
+			list.setSelection(
+				selection.filter(s => s !== previousFocus),
+				fakeKeyboardEvent
+			);
 		} else {
 			list.setSelection(selection.concat(focus), fakeKeyboardEvent);
 		}
 	}
 }
 
-function revealFocusedStickyScroll(tree: ObjectTree<unknown, unknown> | DataTree<unknown, unknown> | AsyncDataTree<unknown, unknown>, postRevealAction?: (focus: unknown) => void): void {
+function revealFocusedStickyScroll(
+	tree: ObjectTree<unknown, unknown> | DataTree<unknown, unknown> | AsyncDataTree<unknown, unknown>,
+	postRevealAction?: (focus: unknown) => void
+): void {
 	const focus = tree.getStickyScrollFocus();
 
 	if (focus.length === 0) {
@@ -335,13 +365,16 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 KeybindingsRegistry.registerCommandAndKeybindingRule({
 	id: 'list.collapse',
 	weight: KeybindingWeight.WorkbenchContrib,
-	when: ContextKeyExpr.and(WorkbenchListFocusContextKey, ContextKeyExpr.or(WorkbenchTreeElementCanCollapse, WorkbenchTreeElementHasParent)),
+	when: ContextKeyExpr.and(
+		WorkbenchListFocusContextKey,
+		ContextKeyExpr.or(WorkbenchTreeElementCanCollapse, WorkbenchTreeElementHasParent)
+	),
 	primary: KeyCode.LeftArrow,
 	mac: {
 		primary: KeyCode.LeftArrow,
 		secondary: [KeyMod.CtrlCmd | KeyCode.UpArrow]
 	},
-	handler: (accessor) => {
+	handler: accessor => {
 		const widget = accessor.get(IListService).lastFocusedList;
 
 		if (!widget || !(widget instanceof ObjectTree || widget instanceof DataTree || widget instanceof AsyncDataTree)) {
@@ -379,7 +412,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 		primary: KeyCode.LeftArrow,
 		secondary: [KeyMod.CtrlCmd | KeyCode.UpArrow]
 	},
-	handler: (accessor) => {
+	handler: accessor => {
 		const widget = accessor.get(IListService).lastFocusedList;
 
 		if (!widget || !(widget instanceof ObjectTree || widget instanceof DataTree || widget instanceof AsyncDataTree)) {
@@ -399,7 +432,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 		primary: KeyMod.CtrlCmd | KeyCode.LeftArrow,
 		secondary: [KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.UpArrow]
 	},
-	handler: (accessor) => {
+	handler: accessor => {
 		const focused = accessor.get(IListService).lastFocusedList;
 
 		if (focused && !(focused instanceof List || focused instanceof PagedList || focused instanceof Table)) {
@@ -429,12 +462,11 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	}
 });
 
-
 KeybindingsRegistry.registerCommandAndKeybindingRule({
 	id: 'list.focusParent',
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: WorkbenchListFocusContextKey,
-	handler: (accessor) => {
+	handler: accessor => {
 		const widget = accessor.get(IListService).lastFocusedList;
 
 		if (!widget || !(widget instanceof ObjectTree || widget instanceof DataTree || widget instanceof AsyncDataTree)) {
@@ -460,9 +492,12 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 KeybindingsRegistry.registerCommandAndKeybindingRule({
 	id: 'list.expand',
 	weight: KeybindingWeight.WorkbenchContrib,
-	when: ContextKeyExpr.and(WorkbenchListFocusContextKey, ContextKeyExpr.or(WorkbenchTreeElementCanExpand, WorkbenchTreeElementHasChild)),
+	when: ContextKeyExpr.and(
+		WorkbenchListFocusContextKey,
+		ContextKeyExpr.or(WorkbenchTreeElementCanExpand, WorkbenchTreeElementHasChild)
+	),
 	primary: KeyCode.RightArrow,
-	handler: (accessor) => {
+	handler: accessor => {
 		const widget = accessor.get(IListService).lastFocusedList;
 
 		if (!widget) {
@@ -564,7 +599,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 		primary: KeyCode.Enter,
 		secondary: [KeyMod.CtrlCmd | KeyCode.DownArrow]
 	},
-	handler: (accessor) => {
+	handler: accessor => {
 		selectElement(accessor, false);
 	}
 });
@@ -578,7 +613,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 		primary: KeyCode.Enter,
 		secondary: [KeyMod.CtrlCmd | KeyCode.DownArrow]
 	},
-	handler: (accessor) => {
+	handler: accessor => {
 		const widget = accessor.get(IListService).lastFocusedList;
 
 		if (!widget || !(widget instanceof ObjectTree || widget instanceof DataTree || widget instanceof AsyncDataTree)) {
@@ -603,7 +638,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: ContextKeyExpr.and(WorkbenchListFocusContextKey, WorkbenchListSupportsMultiSelectContextKey),
 	primary: KeyMod.CtrlCmd | KeyCode.KeyA,
-	handler: (accessor) => {
+	handler: accessor => {
 		const focused = accessor.get(IListService).lastFocusedList;
 
 		// List
@@ -671,7 +706,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: WorkbenchListFocusContextKey,
 	primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Enter,
-	handler: (accessor) => {
+	handler: accessor => {
 		const widget = accessor.get(IListService).lastFocusedList;
 
 		if (!widget) {
@@ -709,18 +744,18 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 
 		// Check if a tree element is focused
 		const focus = lastFocusedList.getFocus();
-		if (!focus || (focus.length === 0)) {
+		if (!focus || focus.length === 0) {
 			return;
 		}
 
 		// As the tree does not know anything about the rendered DOM elements
 		// we have to traverse the dom to find the HTMLElements
 		const treeDOM = lastFocusedList.getHTMLElement();
-		// eslint-disable-next-line no-restricted-syntax
+
 		const scrollableElement = treeDOM.querySelector('.monaco-scrollable-element');
-		// eslint-disable-next-line no-restricted-syntax
+
 		const listRows = scrollableElement?.querySelector('.monaco-list-rows');
-		// eslint-disable-next-line no-restricted-syntax
+
 		const focusedElement = listRows?.querySelector('.focused');
 		if (!focusedElement) {
 			return;
@@ -730,7 +765,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 		if (elementWithHover) {
 			accessor.get(IHoverService).showManagedHover(elementWithHover);
 		}
-	},
+	}
 });
 
 function getCustomHoverForElement(element: HTMLElement): HTMLElement | undefined {
@@ -741,8 +776,10 @@ function getCustomHoverForElement(element: HTMLElement): HTMLElement | undefined
 
 	// Only consider children that are not action items or have a tabindex
 	// as these element are focusable and the user is able to trigger them already
-	// eslint-disable-next-line no-restricted-syntax
-	const noneFocusableElementWithHover = element.querySelector('[custom-hover="true"]:not([tabindex]):not(.action-item)');
+
+	const noneFocusableElementWithHover = element.querySelector(
+		'[custom-hover="true"]:not([tabindex]):not(.action-item)'
+	);
 	if (noneFocusableElementWithHover) {
 		return noneFocusableElementWithHover as HTMLElement;
 	}
@@ -755,7 +792,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: WorkbenchListFocusContextKey,
 	primary: KeyCode.Space,
-	handler: (accessor) => {
+	handler: accessor => {
 		const focused = accessor.get(IListService).lastFocusedList;
 
 		// Tree only
@@ -778,7 +815,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib + 50, // priorities over file explorer
 	when: WorkbenchTreeStickyScrollFocused,
 	primary: KeyCode.Space,
-	handler: (accessor) => {
+	handler: accessor => {
 		const widget = accessor.get(IListService).lastFocusedList;
 
 		if (!widget || !(widget instanceof ObjectTree || widget instanceof DataTree || widget instanceof AsyncDataTree)) {
@@ -794,7 +831,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: ContextKeyExpr.and(WorkbenchListFocusContextKey, WorkbenchListHasSelectionOrFocus),
 	primary: KeyCode.Escape,
-	handler: (accessor) => {
+	handler: accessor => {
 		const widget = accessor.get(IListService).lastFocusedList;
 
 		if (!widget) {
@@ -823,7 +860,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 
 CommandsRegistry.registerCommand({
 	id: 'list.triggerTypeNavigation',
-	handler: (accessor) => {
+	handler: accessor => {
 		const widget = accessor.get(IListService).lastFocusedList;
 		widget?.triggerTypeNavigation();
 	}
@@ -831,7 +868,7 @@ CommandsRegistry.registerCommand({
 
 CommandsRegistry.registerCommand({
 	id: 'list.toggleFindMode',
-	handler: (accessor) => {
+	handler: accessor => {
 		const widget = accessor.get(IListService).lastFocusedList;
 
 		if (widget instanceof AbstractTree || widget instanceof AsyncDataTree) {
@@ -843,12 +880,13 @@ CommandsRegistry.registerCommand({
 
 CommandsRegistry.registerCommand({
 	id: 'list.toggleFindMatchType',
-	handler: (accessor) => {
+	handler: accessor => {
 		const widget = accessor.get(IListService).lastFocusedList;
 
 		if (widget instanceof AbstractTree || widget instanceof AsyncDataTree) {
 			const tree = widget;
-			tree.findMatchType = tree.findMatchType === TreeFindMatchType.Contiguous ? TreeFindMatchType.Fuzzy : TreeFindMatchType.Contiguous;
+			tree.findMatchType =
+				tree.findMatchType === TreeFindMatchType.Contiguous ? TreeFindMatchType.Fuzzy : TreeFindMatchType.Contiguous;
 		}
 	}
 });
@@ -863,7 +901,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	when: ContextKeyExpr.and(RawWorkbenchListFocusContextKey, WorkbenchListSupportsFind),
 	primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.KeyF,
 	secondary: [KeyCode.F3],
-	handler: (accessor) => {
+	handler: accessor => {
 		const widget = accessor.get(IListService).lastFocusedList;
 
 		// List
@@ -884,7 +922,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	weight: KeybindingWeight.WorkbenchContrib,
 	when: ContextKeyExpr.and(RawWorkbenchListFocusContextKey, WorkbenchTreeFindOpen),
 	primary: KeyCode.Escape,
-	handler: (accessor) => {
+	handler: accessor => {
 		const widget = accessor.get(IListService).lastFocusedList;
 
 		if (widget instanceof AbstractTree || widget instanceof AsyncDataTree) {
@@ -900,9 +938,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	// Since the default keybindings for list.scrollUp and widgetNavigation.focusPrevious
 	// are both Ctrl+UpArrow, we disable this command when the scrollbar is at
 	// top-most position. This will give chance for widgetNavigation.focusPrevious to execute
-	when: ContextKeyExpr.and(
-		WorkbenchListFocusContextKey,
-		WorkbenchListScrollAtTopContextKey?.negate()),
+	when: ContextKeyExpr.and(WorkbenchListFocusContextKey, WorkbenchListScrollAtTopContextKey?.negate()),
 	primary: KeyMod.CtrlCmd | KeyCode.UpArrow,
 	handler: accessor => {
 		const focused = accessor.get(IListService).lastFocusedList;
@@ -919,9 +955,7 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	id: 'list.scrollDown',
 	weight: KeybindingWeight.WorkbenchContrib,
 	// same as above
-	when: ContextKeyExpr.and(
-		WorkbenchListFocusContextKey,
-		WorkbenchListScrollAtBottomContextKey?.negate()),
+	when: ContextKeyExpr.and(WorkbenchListFocusContextKey, WorkbenchListScrollAtBottomContextKey?.negate()),
 	primary: KeyMod.CtrlCmd | KeyCode.DownArrow,
 	handler: accessor => {
 		const focused = accessor.get(IListService).lastFocusedList;
@@ -964,23 +998,33 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	}
 });
 
-registerAction2(class ToggleStickyScroll extends Action2 {
-	constructor() {
-		super({
-			id: 'tree.toggleStickyScroll',
-			title: {
-				...localize2('toggleTreeStickyScroll', "Toggle Tree Sticky Scroll"),
-				mnemonicTitle: localize({ key: 'mitoggleTreeStickyScroll', comment: ['&& denotes a mnemonic'] }, "&&Toggle Tree Sticky Scroll"),
-			},
-			category: 'View',
-			metadata: { description: localize('toggleTreeStickyScrollDescription', "Toggles Sticky Scroll widget at the top of tree structures such as the File Explorer and Debug variables View.") },
-			f1: true
-		});
-	}
+registerAction2(
+	class ToggleStickyScroll extends Action2 {
+		constructor() {
+			super({
+				id: 'tree.toggleStickyScroll',
+				title: {
+					...localize2('toggleTreeStickyScroll', 'Toggle Tree Sticky Scroll'),
+					mnemonicTitle: localize(
+						{ key: 'mitoggleTreeStickyScroll', comment: ['&& denotes a mnemonic'] },
+						'&&Toggle Tree Sticky Scroll'
+					)
+				},
+				category: 'View',
+				metadata: {
+					description: localize(
+						'toggleTreeStickyScrollDescription',
+						'Toggles Sticky Scroll widget at the top of tree structures such as the File Explorer and Debug variables View.'
+					)
+				},
+				f1: true
+			});
+		}
 
-	run(accessor: ServicesAccessor) {
-		const configurationService = accessor.get(IConfigurationService);
-		const newValue = !configurationService.getValue<boolean>('workbench.tree.enableStickyScroll');
-		configurationService.updateValue('workbench.tree.enableStickyScroll', newValue);
+		run(accessor: ServicesAccessor) {
+			const configurationService = accessor.get(IConfigurationService);
+			const newValue = !configurationService.getValue<boolean>('workbench.tree.enableStickyScroll');
+			configurationService.updateValue('workbench.tree.enableStickyScroll', newValue);
+		}
 	}
-});
+);

@@ -13,9 +13,21 @@ import { ISelectOptionItem } from '../../../../base/browser/ui/selectBox/selectB
 import { SelectActionViewItem } from '../../../../base/browser/ui/actionbar/actionViewItems.js';
 import { defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { IColorTheme, IThemeService } from '../../../../platform/theme/common/themeService.js';
-import { peekViewBorder, peekViewTitleBackground, peekViewTitleForeground, peekViewTitleInfoForeground, PeekViewWidget } from '../../../../editor/contrib/peekView/browser/peekView.js';
+import {
+	peekViewBorder,
+	peekViewTitleBackground,
+	peekViewTitleForeground,
+	peekViewTitleInfoForeground,
+	PeekViewWidget
+} from '../../../../editor/contrib/peekView/browser/peekView.js';
 import { editorBackground } from '../../../../platform/theme/common/colorRegistry.js';
-import { IMenu, IMenuService, MenuId, MenuItemAction, MenuRegistry } from '../../../../platform/actions/common/actions.js';
+import {
+	IMenu,
+	IMenuService,
+	MenuId,
+	MenuItemAction,
+	MenuRegistry
+} from '../../../../platform/actions/common/actions.js';
 import { ICodeEditor, IEditorMouseEvent, MouseTargetType } from '../../../../editor/browser/editorBrowser.js';
 import { EditorAction, registerEditorAction } from '../../../../editor/browser/editorExtensions.js';
 import { IInstantiationService, ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
@@ -24,17 +36,35 @@ import { EmbeddedDiffEditorWidget } from '../../../../editor/browser/widget/diff
 import { IEditorContribution, ScrollType } from '../../../../editor/common/editorCommon.js';
 import { IQuickDiffModelService, QuickDiffModel } from './quickDiffModel.js';
 import { Disposable, DisposableStore, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
-import { ContextKeyExpr, IContextKey, IContextKeyService, RawContextKey } from '../../../../platform/contextkey/common/contextkey.js';
+import {
+	ContextKeyExpr,
+	IContextKey,
+	IContextKeyService,
+	RawContextKey
+} from '../../../../platform/contextkey/common/contextkey.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { rot } from '../../../../base/common/numbers.js';
 import { ISplice } from '../../../../base/common/sequence.js';
-import { ChangeType, getChangeHeight, getChangeType, getChangeTypeColor, getModifiedEndLineNumber, IQuickDiffService, lineIntersectsChange, QuickDiff, QuickDiffChange } from '../common/quickDiff.js';
+import {
+	ChangeType,
+	getChangeHeight,
+	getChangeType,
+	getChangeTypeColor,
+	getModifiedEndLineNumber,
+	IQuickDiffService,
+	lineIntersectsChange,
+	QuickDiff,
+	QuickDiffChange
+} from '../common/quickDiff.js';
 import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
 import { TextCompareEditorActiveContext } from '../../../common/contextkeys.js';
 import { EditorContextKeys } from '../../../../editor/common/editorContextKeys.js';
 import { KeybindingsRegistry, KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { IChange } from '../../../../editor/common/diff/legacyLinesDiffComputer.js';
-import { AccessibilitySignal, IAccessibilitySignalService } from '../../../../platform/accessibilitySignal/browser/accessibilitySignalService.js';
+import {
+	AccessibilitySignal,
+	IAccessibilitySignalService
+} from '../../../../platform/accessibilitySignal/browser/accessibilitySignalService.js';
 import { IAccessibilityService } from '../../../../platform/accessibility/common/accessibility.js';
 import { Iterable } from '../../../../base/common/iterator.js';
 import { basename } from '../../../../base/common/resources.js';
@@ -65,15 +95,18 @@ export class QuickDiffPickerViewItem extends SelectActionViewItem<IQuickDiffSele
 		action: IAction,
 		@IContextViewService contextViewService: IContextViewService,
 		@IThemeService themeService: IThemeService,
-		@IConfigurationService configurationService: IConfigurationService,
+		@IConfigurationService configurationService: IConfigurationService
 	) {
 		const styles = { ...defaultSelectBoxStyles };
 		const theme = themeService.getColorTheme();
 		const editorBackgroundColor = theme.getColor(editorBackground);
 		const peekTitleColor = theme.getColor(peekViewTitleBackground);
 		const opaqueTitleColor = peekTitleColor?.makeOpaque(editorBackgroundColor!) ?? editorBackgroundColor!;
-		styles.selectBackground = opaqueTitleColor.lighten(.6).toString();
-		super(null, action, [], 0, contextViewService, styles, { ariaLabel: nls.localize('remotes', 'Switch quick diff base'), useCustomDrawn: !hasNativeContextMenu(configurationService) });
+		styles.selectBackground = opaqueTitleColor.lighten(0.6).toString();
+		super(null, action, [], 0, contextViewService, styles, {
+			ariaLabel: nls.localize('remotes', 'Switch quick diff base'),
+			useCustomDrawn: !hasNativeContextMenu(configurationService)
+		});
 	}
 
 	public setSelection(quickDiffs: QuickDiff[], providerId: string) {
@@ -93,9 +126,8 @@ export class QuickDiffPickerViewItem extends SelectActionViewItem<IQuickDiffSele
 }
 
 export class QuickDiffPickerBaseAction extends Action {
-
 	public static readonly ID = 'quickDiff.base.switch';
-	public static readonly LABEL = nls.localize('quickDiff.base.switch', "Switch Quick Diff Base");
+	public static readonly LABEL = nls.localize('quickDiff.base.switch', 'Switch Quick Diff Base');
 
 	constructor(private readonly callback: (event?: IQuickDiffSelectItem) => void) {
 		super(QuickDiffPickerBaseAction.ID, QuickDiffPickerBaseAction.LABEL, undefined, undefined);
@@ -107,7 +139,6 @@ export class QuickDiffPickerBaseAction extends Action {
 }
 
 class QuickDiffWidgetActionRunner extends ActionRunner {
-
 	protected override runAction(action: IAction, context: unknown[]): Promise<void> {
 		if (action instanceof MenuItemAction) {
 			return action.run(...context);
@@ -118,7 +149,6 @@ class QuickDiffWidgetActionRunner extends ActionRunner {
 }
 
 class QuickDiffWidgetEditorAction extends Action {
-
 	private editor: ICodeEditor;
 	private action: EditorAction;
 	private instantiationService: IInstantiationService;
@@ -140,12 +170,13 @@ class QuickDiffWidgetEditorAction extends Action {
 	}
 
 	override run(): Promise<void> {
-		return Promise.resolve(this.instantiationService.invokeFunction(accessor => this.action.run(accessor, this.editor, null)));
+		return Promise.resolve(
+			this.instantiationService.invokeFunction(accessor => this.action.run(accessor, this.editor, null))
+		);
 	}
 }
 
 class QuickDiffWidget extends PeekViewWidget {
-
 	private diffEditor!: EmbeddedDiffEditorWidget;
 	private title: string;
 	private menu: IMenu | undefined;
@@ -165,7 +196,11 @@ class QuickDiffWidget extends PeekViewWidget {
 		@IContextKeyService private contextKeyService: IContextKeyService,
 		@IQuickDiffService private readonly quickDiffService: IQuickDiffService
 	) {
-		super(editor, { isResizeable: true, frameWidth: 1, keepEditorSelection: true, className: 'dirty-diff' }, instantiationService);
+		super(
+			editor,
+			{ isResizeable: true, frameWidth: 1, keepEditorSelection: true, className: 'dirty-diff' },
+			instantiationService
+		);
 
 		this._disposables.add(themeService.onDidColorThemeChange(this._applyTheme, this));
 		this._applyTheme(themeService.getColorTheme());
@@ -173,7 +208,8 @@ class QuickDiffWidget extends PeekViewWidget {
 		if (!Iterable.isEmpty(this.model.originalTextModels)) {
 			contextKeyService = contextKeyService.createOverlay([
 				['originalResourceScheme', Iterable.first(this.model.originalTextModels)?.uri.scheme],
-				['originalResourceSchemes', Iterable.map(this.model.originalTextModels, textModel => textModel.uri.scheme)]]);
+				['originalResourceSchemes', Iterable.map(this.model.originalTextModels, textModel => textModel.uri.scheme)]
+			]);
 		}
 
 		this.create();
@@ -232,7 +268,8 @@ class QuickDiffWidget extends PeekViewWidget {
 		const editorHeightInLines = Math.floor(editorHeight / lineHeight);
 		const height = Math.min(
 			getChangeHeight(change) + 2 /* arrow, frame, header */ + 6 /* 3 lines above/below the change */,
-			Math.floor(editorHeightInLines / 3));
+			Math.floor(editorHeightInLines / 3)
+		);
 
 		this.renderTitle();
 		this.updateDropdown();
@@ -256,7 +293,7 @@ class QuickDiffWidget extends PeekViewWidget {
 			// In order to account for the 1px border-top of the content element we
 			// have to add 1px. The pixel value needs to be expressed as a fraction
 			// of the line height.
-			this.show(position, height + (1 / lineHeight));
+			this.show(position, height + 1 / lineHeight);
 			this.editor.setPosition(position);
 			this.editor.focus();
 		}
@@ -268,17 +305,18 @@ class QuickDiffWidget extends PeekViewWidget {
 
 		let detail: string;
 		if (!this.shouldUseDropdown()) {
-			const label = this.model.quickDiffs
-				.find(quickDiff => quickDiff.id === this._providerId)?.label ?? '';
+			const label = this.model.quickDiffs.find(quickDiff => quickDiff.id === this._providerId)?.label ?? '';
 
-			detail = this.model.changes.length > 1
-				? nls.localize('changes', "{0} - {1} of {2} changes", label, providerIndex + 1, providerChanges.length)
-				: nls.localize('change', "{0} - {1} of {2} change", label, providerIndex + 1, providerChanges.length);
+			detail =
+				this.model.changes.length > 1
+					? nls.localize('changes', '{0} - {1} of {2} changes', label, providerIndex + 1, providerChanges.length)
+					: nls.localize('change', '{0} - {1} of {2} change', label, providerIndex + 1, providerChanges.length);
 			this.dropdownContainer!.style.display = 'none';
 		} else {
-			detail = this.model.changes.length > 1
-				? nls.localize('multiChanges', "{0} of {1} changes", providerIndex + 1, providerChanges.length)
-				: nls.localize('multiChange', "{0} of {1} change", providerIndex + 1, providerChanges.length);
+			detail =
+				this.model.changes.length > 1
+					? nls.localize('multiChanges', '{0} of {1} changes', providerIndex + 1, providerChanges.length)
+					: nls.localize('multiChange', '{0} of {1} change', providerIndex + 1, providerChanges.length);
 			this.dropdownContainer!.style.display = 'inherit';
 		}
 
@@ -291,22 +329,30 @@ class QuickDiffWidget extends PeekViewWidget {
 			return;
 		}
 		let closestGreaterIndex = this._index < this.model.changes.length - 1 ? this._index + 1 : 0;
-		for (let i = closestGreaterIndex; i !== this._index; i < this.model.changes.length - 1 ? i++ : i = 0) {
+		for (let i = closestGreaterIndex; i !== this._index; i < this.model.changes.length - 1 ? i++ : (i = 0)) {
 			if (this.model.changes[i].providerId === newProviderId) {
 				closestGreaterIndex = i;
 				break;
 			}
 		}
 		let closestLesserIndex = this._index > 0 ? this._index - 1 : this.model.changes.length - 1;
-		for (let i = closestLesserIndex; i !== this._index; i > 0 ? i-- : i = this.model.changes.length - 1) {
+		for (let i = closestLesserIndex; i !== this._index; i > 0 ? i-- : (i = this.model.changes.length - 1)) {
 			if (this.model.changes[i].providerId === newProviderId) {
 				closestLesserIndex = i;
 				break;
 			}
 		}
-		const closestIndex = Math.abs(this.model.changes[closestGreaterIndex].change.modifiedEndLineNumber - this.model.changes[this._index].change.modifiedEndLineNumber)
-			< Math.abs(this.model.changes[closestLesserIndex].change.modifiedEndLineNumber - this.model.changes[this._index].change.modifiedEndLineNumber)
-			? closestGreaterIndex : closestLesserIndex;
+		const closestIndex =
+			Math.abs(
+				this.model.changes[closestGreaterIndex].change.modifiedEndLineNumber -
+					this.model.changes[this._index].change.modifiedEndLineNumber
+			) <
+			Math.abs(
+				this.model.changes[closestLesserIndex].change.modifiedEndLineNumber -
+					this.model.changes[this._index].change.modifiedEndLineNumber
+			)
+				? closestGreaterIndex
+				: closestLesserIndex;
 		this.showChange(closestIndex, false);
 	}
 
@@ -319,8 +365,18 @@ class QuickDiffWidget extends PeekViewWidget {
 		if (!this._actionbarWidget) {
 			return;
 		}
-		const previous = this.instantiationService.createInstance(QuickDiffWidgetEditorAction, this.editor, new ShowPreviousChangeAction(this.editor), ThemeIcon.asClassName(gotoPreviousLocation));
-		const next = this.instantiationService.createInstance(QuickDiffWidgetEditorAction, this.editor, new ShowNextChangeAction(this.editor), ThemeIcon.asClassName(gotoNextLocation));
+		const previous = this.instantiationService.createInstance(
+			QuickDiffWidgetEditorAction,
+			this.editor,
+			new ShowPreviousChangeAction(this.editor),
+			ThemeIcon.asClassName(gotoPreviousLocation)
+		);
+		const next = this.instantiationService.createInstance(
+			QuickDiffWidgetEditorAction,
+			this.editor,
+			new ShowNextChangeAction(this.editor),
+			ThemeIcon.asClassName(gotoNextLocation)
+		);
 
 		this._disposables.add(previous);
 		this._disposables.add(next);
@@ -333,7 +389,18 @@ class QuickDiffWidget extends PeekViewWidget {
 		this._actionbarWidget.clear();
 		this._actionbarWidget.push(actions.reverse(), { label: false, icon: true });
 		this._actionbarWidget.push([next, previous], { label: false, icon: true });
-		this._actionbarWidget.push(this._disposables.add(new Action('peekview.close', nls.localize('label.close', "Close"), ThemeIcon.asClassName(Codicon.close), true, () => this.dispose())), { label: false, icon: true });
+		this._actionbarWidget.push(
+			this._disposables.add(
+				new Action(
+					'peekview.close',
+					nls.localize('label.close', 'Close'),
+					ThemeIcon.asClassName(Codicon.close),
+					true,
+					() => this.dispose()
+				)
+			),
+			{ label: false, icon: true }
+		);
 	}
 
 	private updateDropdown(): void {
@@ -348,9 +415,10 @@ class QuickDiffWidget extends PeekViewWidget {
 			.filter(c => change.change2.modified.intersectsOrTouches(c.change2.modified))
 			.map(c => c.providerId);
 
-		return this.model.quickDiffs
-			.filter(quickDiff => quickDiffsWithChange.includes(quickDiff.id) &&
-				this.quickDiffService.isQuickDiffProviderVisible(quickDiff.id));
+		return this.model.quickDiffs.filter(
+			quickDiff =>
+				quickDiffsWithChange.includes(quickDiff.id) && this.quickDiffService.isQuickDiffProviderVisible(quickDiff.id)
+		);
 	}
 
 	protected override _fillHead(container: HTMLElement): void {
@@ -370,11 +438,13 @@ class QuickDiffWidget extends PeekViewWidget {
 		this._disposables.add(actionRunner);
 
 		// close widget on successful action
-		this._disposables.add(actionRunner.onDidRun(e => {
-			if (!(e.action instanceof QuickDiffWidgetEditorAction) && !e.error) {
-				this.dispose();
-			}
-		}));
+		this._disposables.add(
+			actionRunner.onDidRun(e => {
+				if (!(e.action instanceof QuickDiffWidgetEditorAction) && !e.error) {
+					this.dispose();
+				}
+			})
+		);
 
 		return {
 			...super._getActionBarOptions(),
@@ -404,7 +474,13 @@ class QuickDiffWidget extends PeekViewWidget {
 			stickyScroll: { enabled: false }
 		};
 
-		this.diffEditor = this.instantiationService.createInstance(EmbeddedDiffEditorWidget, container, options, {}, this.editor);
+		this.diffEditor = this.instantiationService.createInstance(
+			EmbeddedDiffEditorWidget,
+			container,
+			options,
+			{},
+			this.editor
+		);
 		this._disposables.add(this.diffEditor);
 	}
 
@@ -430,13 +506,16 @@ class QuickDiffWidget extends PeekViewWidget {
 	private revealChange(change: IChange): void {
 		let start: number, end: number;
 
-		if (change.modifiedEndLineNumber === 0) { // deletion
+		if (change.modifiedEndLineNumber === 0) {
+			// deletion
 			start = change.modifiedStartLineNumber;
 			end = change.modifiedStartLineNumber + 1;
-		} else if (change.originalEndLineNumber > 0) { // modification
+		} else if (change.originalEndLineNumber > 0) {
+			// modification
 			start = change.modifiedStartLineNumber - 1;
 			end = change.modifiedEndLineNumber + 1;
-		} else { // insertion
+		} else {
+			// insertion
 			start = change.modifiedStartLineNumber;
 			end = change.modifiedEndLineNumber;
 		}
@@ -479,7 +558,6 @@ class QuickDiffWidget extends PeekViewWidget {
 }
 
 export class QuickDiffEditorController extends Disposable implements IEditorContribution {
-
 	public static readonly ID = 'editor.contrib.quickdiff';
 
 	static get(editor: ICodeEditor): QuickDiffEditorController | null {
@@ -510,7 +588,9 @@ export class QuickDiffEditorController extends Disposable implements IEditorCont
 			this.isQuickDiffVisible = isQuickDiffVisible.bindTo(contextKeyService);
 			this._register(editor.onDidChangeModel(() => this.close()));
 
-			const onDidChangeGutterAction = Event.filter(configurationService.onDidChangeConfiguration, e => e.affectsConfiguration('scm.diffDecorationsGutterAction'));
+			const onDidChangeGutterAction = Event.filter(configurationService.onDidChangeConfiguration, e =>
+				e.affectsConfiguration('scm.diffDecorationsGutterAction')
+			);
 			this._register(onDidChangeGutterAction(this.onDidChangeGutterAction, this));
 			this.onDidChangeGutterAction();
 		}
@@ -547,7 +627,7 @@ export class QuickDiffEditorController extends Disposable implements IEditorCont
 	}
 
 	canNavigate(): boolean {
-		return !this.widget || (this.widget?.index === -1) || (!!this.model && this.model.changes.length > 1);
+		return !this.widget || this.widget?.index === -1 || (!!this.model && this.model.changes.length > 1);
 	}
 
 	refresh(): void {
@@ -570,9 +650,14 @@ export class QuickDiffEditorController extends Disposable implements IEditorCont
 
 		let index: number;
 		if (this.editor.hasModel() && (typeof lineNumber === 'number' || !this.widget.providerId)) {
-			index = this.model.findNextClosestChange(typeof lineNumber === 'number' ? lineNumber : this.editor.getPosition().lineNumber, true, this.widget.providerId);
+			index = this.model.findNextClosestChange(
+				typeof lineNumber === 'number' ? lineNumber : this.editor.getPosition().lineNumber,
+				true,
+				this.widget.providerId
+			);
 		} else {
-			const providerChanges: number[] = this.model.quickDiffChanges.get(this.widget.providerId) ?? this.model.quickDiffChanges.values().next().value!;
+			const providerChanges: number[] =
+				this.model.quickDiffChanges.get(this.widget.providerId) ?? this.model.quickDiffChanges.values().next().value!;
 			const mapIndex = providerChanges.findIndex(value => value === this.widget!.index);
 			index = providerChanges[rot(mapIndex + 1, providerChanges.length)];
 		}
@@ -590,9 +675,14 @@ export class QuickDiffEditorController extends Disposable implements IEditorCont
 
 		let index: number;
 		if (this.editor.hasModel() && (typeof lineNumber === 'number' || !this.widget.providerId)) {
-			index = this.model.findPreviousClosestChange(typeof lineNumber === 'number' ? lineNumber : this.editor.getPosition().lineNumber, true, this.widget.providerId);
+			index = this.model.findPreviousClosestChange(
+				typeof lineNumber === 'number' ? lineNumber : this.editor.getPosition().lineNumber,
+				true,
+				this.widget.providerId
+			);
 		} else {
-			const providerChanges: number[] = this.model.quickDiffChanges.get(this.widget.providerId) ?? this.model.quickDiffChanges.values().next().value!;
+			const providerChanges: number[] =
+				this.model.quickDiffChanges.get(this.widget.providerId) ?? this.model.quickDiffChanges.values().next().value!;
 			const mapIndex = providerChanges.findIndex(value => value === this.widget!.index);
 			index = providerChanges[rot(mapIndex - 1, providerChanges.length)];
 		}
@@ -643,20 +733,21 @@ export class QuickDiffEditorController extends Disposable implements IEditorCont
 		const disposables = new DisposableStore();
 		disposables.add(Event.once(this.widget.onDidClose)(this.close, this));
 		const onDidModelChange = Event.chain(this.model.onDidChange, $ =>
-			$.filter(e => e.diff.length > 0)
-				.map(e => e.diff)
+			$.filter(e => e.diff.length > 0).map(e => e.diff)
 		);
 
 		onDidModelChange(this.onDidModelChange, this, disposables);
 
 		disposables.add(modelRef);
 		disposables.add(this.widget);
-		disposables.add(toDisposable(() => {
-			this.model = null;
-			this.widget = null;
-			this.isQuickDiffVisible.set(false);
-			this.editor.focus();
-		}));
+		disposables.add(
+			toDisposable(() => {
+				this.model = null;
+				this.widget = null;
+				this.isQuickDiffVisible.set(false);
+				this.editor.focus();
+			})
+		);
 
 		this.session = disposables;
 		return true;
@@ -705,7 +796,8 @@ export class QuickDiffEditorController extends Disposable implements IEditorCont
 		const gutterOffsetX = data.offsetX - offsetLeftInGutter;
 
 		// TODO@joao TODO@alex TODO@martin this is such that we don't collide with folding
-		if (gutterOffsetX < -3 || gutterOffsetX > 3) { // dirty diff decoration on hover is 6px wide
+		if (gutterOffsetX < -3 || gutterOffsetX > 3) {
+			// dirty diff decoration on hover is 6px wide
 			return;
 		}
 
@@ -743,8 +835,7 @@ export class QuickDiffEditorController extends Disposable implements IEditorCont
 		}
 
 		try {
-			const index = modelRef.object.changes
-				.findIndex(change => lineIntersectsChange(lineNumber, change.change));
+			const index = modelRef.object.changes.findIndex(change => lineIntersectsChange(lineNumber, change.change));
 
 			if (index < 0) {
 				return;
@@ -767,13 +858,16 @@ export class QuickDiffEditorController extends Disposable implements IEditorCont
 }
 
 export class ShowPreviousChangeAction extends EditorAction {
-
 	constructor(private readonly outerEditor?: ICodeEditor) {
 		super({
 			id: 'editor.action.dirtydiff.previous',
-			label: nls.localize2('show previous change', "Show Previous Change"),
+			label: nls.localize2('show previous change', 'Show Previous Change'),
 			precondition: TextCompareEditorActiveContext.toNegated(),
-			kbOpts: { kbExpr: EditorContextKeys.editorTextFocus, primary: KeyMod.Shift | KeyMod.Alt | KeyCode.F3, weight: KeybindingWeight.EditorContrib }
+			kbOpts: {
+				kbExpr: EditorContextKeys.editorTextFocus,
+				primary: KeyMod.Shift | KeyMod.Alt | KeyCode.F3,
+				weight: KeybindingWeight.EditorContrib
+			}
 		});
 	}
 
@@ -800,13 +894,16 @@ export class ShowPreviousChangeAction extends EditorAction {
 registerEditorAction(ShowPreviousChangeAction);
 
 export class ShowNextChangeAction extends EditorAction {
-
 	constructor(private readonly outerEditor?: ICodeEditor) {
 		super({
 			id: 'editor.action.dirtydiff.next',
-			label: nls.localize2('show next change', "Show Next Change"),
+			label: nls.localize2('show next change', 'Show Next Change'),
 			precondition: TextCompareEditorActiveContext.toNegated(),
-			kbOpts: { kbExpr: EditorContextKeys.editorTextFocus, primary: KeyMod.Alt | KeyCode.F3, weight: KeybindingWeight.EditorContrib }
+			kbOpts: {
+				kbExpr: EditorContextKeys.editorTextFocus,
+				primary: KeyMod.Alt | KeyCode.F3,
+				weight: KeybindingWeight.EditorContrib
+			}
 		});
 	}
 
@@ -833,13 +930,19 @@ export class ShowNextChangeAction extends EditorAction {
 registerEditorAction(ShowNextChangeAction);
 
 export class GotoPreviousChangeAction extends EditorAction {
-
 	constructor() {
 		super({
 			id: 'workbench.action.editor.previousChange',
-			label: nls.localize2('move to previous change', "Go to Previous Change"),
-			precondition: ContextKeyExpr.and(TextCompareEditorActiveContext.toNegated(), quickDiffDecorationCount.notEqualsTo(0)),
-			kbOpts: { kbExpr: EditorContextKeys.editorTextFocus, primary: KeyMod.Shift | KeyMod.Alt | KeyCode.F5, weight: KeybindingWeight.EditorContrib }
+			label: nls.localize2('move to previous change', 'Go to Previous Change'),
+			precondition: ContextKeyExpr.and(
+				TextCompareEditorActiveContext.toNegated(),
+				quickDiffDecorationCount.notEqualsTo(0)
+			),
+			kbOpts: {
+				kbExpr: EditorContextKeys.editorTextFocus,
+				primary: KeyMod.Shift | KeyMod.Alt | KeyCode.F5,
+				weight: KeybindingWeight.EditorContrib
+			}
 		});
 	}
 
@@ -873,13 +976,19 @@ export class GotoPreviousChangeAction extends EditorAction {
 registerEditorAction(GotoPreviousChangeAction);
 
 export class GotoNextChangeAction extends EditorAction {
-
 	constructor() {
 		super({
 			id: 'workbench.action.editor.nextChange',
-			label: nls.localize2('move to next change', "Go to Next Change"),
-			precondition: ContextKeyExpr.and(TextCompareEditorActiveContext.toNegated(), quickDiffDecorationCount.notEqualsTo(0)),
-			kbOpts: { kbExpr: EditorContextKeys.editorTextFocus, primary: KeyMod.Alt | KeyCode.F5, weight: KeybindingWeight.EditorContrib }
+			label: nls.localize2('move to next change', 'Go to Next Change'),
+			precondition: ContextKeyExpr.and(
+				TextCompareEditorActiveContext.toNegated(),
+				quickDiffDecorationCount.notEqualsTo(0)
+			),
+			kbOpts: {
+				kbExpr: EditorContextKeys.editorTextFocus,
+				primary: KeyMod.Alt | KeyCode.F5,
+				weight: KeybindingWeight.EditorContrib
+			}
 		});
 	}
 
@@ -916,7 +1025,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarGoMenu, {
 	group: '7_change_nav',
 	command: {
 		id: 'editor.action.dirtydiff.next',
-		title: nls.localize({ key: 'miGotoNextChange', comment: ['&& denotes a mnemonic'] }, "Next &&Change")
+		title: nls.localize({ key: 'miGotoNextChange', comment: ['&& denotes a mnemonic'] }, 'Next &&Change')
 	},
 	order: 1
 });
@@ -925,7 +1034,7 @@ MenuRegistry.appendMenuItem(MenuId.MenubarGoMenu, {
 	group: '7_change_nav',
 	command: {
 		id: 'editor.action.dirtydiff.previous',
-		title: nls.localize({ key: 'miGotoPreviousChange', comment: ['&& denotes a mnemonic'] }, "Previous &&Change")
+		title: nls.localize({ key: 'miGotoPreviousChange', comment: ['&& denotes a mnemonic'] }, 'Previous &&Change')
 	},
 	order: 2
 });
@@ -973,27 +1082,49 @@ KeybindingsRegistry.registerCommandAndKeybindingRule({
 	}
 });
 
-function setPositionAndSelection(change: IChange, editor: ICodeEditor, accessibilityService: IAccessibilityService, codeEditorService: ICodeEditorService) {
+function setPositionAndSelection(
+	change: IChange,
+	editor: ICodeEditor,
+	accessibilityService: IAccessibilityService,
+	codeEditorService: ICodeEditorService
+) {
 	const position = new Position(change.modifiedStartLineNumber, 1);
 	editor.setPosition(position);
 	editor.revealPositionInCenter(position);
 	if (accessibilityService.isScreenReaderOptimized()) {
-		editor.setSelection({ startLineNumber: change.modifiedStartLineNumber, startColumn: 0, endLineNumber: change.modifiedStartLineNumber, endColumn: Number.MAX_VALUE });
+		editor.setSelection({
+			startLineNumber: change.modifiedStartLineNumber,
+			startColumn: 0,
+			endLineNumber: change.modifiedStartLineNumber,
+			endColumn: Number.MAX_VALUE
+		});
 		codeEditorService.getActiveCodeEditor()?.writeScreenReaderContent('diff-navigation');
 	}
 }
 
-async function playAccessibilitySymbolForChange(change: IChange, accessibilitySignalService: IAccessibilitySignalService) {
+async function playAccessibilitySymbolForChange(
+	change: IChange,
+	accessibilitySignalService: IAccessibilitySignalService
+) {
 	const changeType = getChangeType(change);
 	switch (changeType) {
 		case ChangeType.Add:
-			accessibilitySignalService.playSignal(AccessibilitySignal.diffLineInserted, { allowManyInParallel: true, source: 'quickDiffDecoration' });
+			accessibilitySignalService.playSignal(AccessibilitySignal.diffLineInserted, {
+				allowManyInParallel: true,
+				source: 'quickDiffDecoration'
+			});
 			break;
 		case ChangeType.Delete:
-			accessibilitySignalService.playSignal(AccessibilitySignal.diffLineDeleted, { allowManyInParallel: true, source: 'quickDiffDecoration' });
+			accessibilitySignalService.playSignal(AccessibilitySignal.diffLineDeleted, {
+				allowManyInParallel: true,
+				source: 'quickDiffDecoration'
+			});
 			break;
 		case ChangeType.Modify:
-			accessibilitySignalService.playSignal(AccessibilitySignal.diffLineModified, { allowManyInParallel: true, source: 'quickDiffDecoration' });
+			accessibilitySignalService.playSignal(AccessibilitySignal.diffLineModified, {
+				allowManyInParallel: true,
+				source: 'quickDiffDecoration'
+			});
 			break;
 	}
 }

@@ -34,7 +34,6 @@ export interface ITextModelService {
 }
 
 export interface ITextModelContentProvider {
-
 	/**
 	 * Given a resource, return the content of the resource as `ITextModel`.
 	 */
@@ -42,7 +41,6 @@ export interface ITextModelContentProvider {
 }
 
 export interface ITextEditorModel extends IResolvableEditorModel {
-
 	/**
 	 * Emitted when the text model is about to be disposed.
 	 */
@@ -76,7 +74,6 @@ export interface ITextEditorModel extends IResolvableEditorModel {
 }
 
 export interface IResolvedTextEditorModel extends ITextEditorModel {
-
 	/**
 	 * Same as ITextEditorModel#textEditorModel, but never null.
 	 */

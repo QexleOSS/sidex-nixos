@@ -7,7 +7,6 @@ import { IDisposable } from '../../../../../base/common/lifecycle.js';
 import { NativeEditContext } from './nativeEditContext.js';
 
 class NativeEditContextRegistryImpl {
-
 	private _nativeEditContextMapping: Map<string, NativeEditContext> = new Map();
 
 	register(ownerID: string, nativeEditContext: NativeEditContext): IDisposable {

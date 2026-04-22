@@ -23,8 +23,7 @@ export class ExtHostDataChannels implements IExtHostDataChannels {
 
 	private readonly _channels = new Map<string, DataChannelImpl<any>>();
 
-	constructor() {
-	}
+	constructor() {}
 
 	createDataChannel<T>(extension: IExtensionDescription, channelId: string): vscode.DataChannel<T> {
 		checkProposedApiEnabled(extension, 'dataChannels');

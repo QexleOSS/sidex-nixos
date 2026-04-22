@@ -18,7 +18,10 @@ import { IPathService } from '../../path/common/pathService.js';
 import { UntitledTextEditorInput } from './untitledTextEditorInput.js';
 import { IWorkbenchContribution } from '../../../common/contributions.js';
 import { IWorkingCopyIdentifier, NO_TYPE_ID } from '../../workingCopy/common/workingCopy.js';
-import { IWorkingCopyEditorHandler, IWorkingCopyEditorService } from '../../workingCopy/common/workingCopyEditorService.js';
+import {
+	IWorkingCopyEditorHandler,
+	IWorkingCopyEditorService
+} from '../../workingCopy/common/workingCopyEditorService.js';
 import { IUntitledTextEditorService } from './untitledTextEditorService.js';
 
 interface ISerializedUntitledTextEditorInput {
@@ -28,12 +31,11 @@ interface ISerializedUntitledTextEditorInput {
 }
 
 export class UntitledTextEditorInputSerializer implements IEditorSerializer {
-
 	constructor(
 		@IFilesConfigurationService private readonly filesConfigurationService: IFilesConfigurationService,
 		@IWorkbenchEnvironmentService private readonly environmentService: IWorkbenchEnvironmentService,
 		@IPathService private readonly pathService: IPathService
-	) { }
+	) {}
 
 	canSerialize(editorInput: EditorInput): boolean {
 		return this.filesConfigurationService.isHotExitEnabled && !editorInput.isDisposed();
@@ -79,13 +81,17 @@ export class UntitledTextEditorInputSerializer implements IEditorSerializer {
 			const languageId = deserialized.modeId;
 			const encoding = deserialized.encoding;
 
-			return accessor.get(ITextEditorService).createTextEditor({ resource, languageId, encoding, forceUntitled: true }) as UntitledTextEditorInput;
+			return accessor
+				.get(ITextEditorService)
+				.createTextEditor({ resource, languageId, encoding, forceUntitled: true }) as UntitledTextEditorInput;
 		});
 	}
 }
 
-export class UntitledTextEditorWorkingCopyEditorHandler extends Disposable implements IWorkbenchContribution, IWorkingCopyEditorHandler {
-
+export class UntitledTextEditorWorkingCopyEditorHandler
+	extends Disposable
+	implements IWorkbenchContribution, IWorkingCopyEditorHandler
+{
 	static readonly ID = 'workbench.contrib.untitledTextEditorWorkingCopyEditorHandler';
 
 	constructor(
@@ -118,7 +124,11 @@ export class UntitledTextEditorWorkingCopyEditorHandler extends Disposable imple
 		// If the untitled has an associated resource,
 		// ensure to restore the local resource it had
 		if (this.untitledTextEditorService.isUntitledWithAssociatedResource(workingCopy.resource)) {
-			editorInputResource = toLocalResource(workingCopy.resource, this.environmentService.remoteAuthority, this.pathService.defaultUriScheme);
+			editorInputResource = toLocalResource(
+				workingCopy.resource,
+				this.environmentService.remoteAuthority,
+				this.pathService.defaultUriScheme
+			);
 		} else {
 			editorInputResource = workingCopy.resource;
 		}

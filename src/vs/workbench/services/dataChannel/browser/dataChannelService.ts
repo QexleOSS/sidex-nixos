@@ -5,7 +5,11 @@
 
 import { Emitter } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
-import { IDataChannelService, CoreDataChannel, IDataChannelEvent } from '../../../../platform/dataChannel/common/dataChannel.js';
+import {
+	IDataChannelService,
+	CoreDataChannel,
+	IDataChannelEvent
+} from '../../../../platform/dataChannel/common/dataChannel.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 
 export class DataChannelService extends Disposable implements IDataChannelService {
@@ -27,7 +31,7 @@ class CoreDataChannelImpl<T> implements CoreDataChannel<T> {
 	constructor(
 		private readonly channelId: string,
 		private readonly _onDidSendData: Emitter<IDataChannelEvent>
-	) { }
+	) {}
 
 	sendData(data: T): void {
 		this._onDidSendData.fire({

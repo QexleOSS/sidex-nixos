@@ -9,7 +9,12 @@ import { URI } from '../../../base/common/uri.js';
 import { IExtensionDescription } from '../../../platform/extensions/common/extensions.js';
 import { createDecorator } from '../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../platform/log/common/log.js';
-import { ExtHostLocalizationShape, IStringDetails, MainContext, MainThreadLocalizationShape } from './extHost.protocol.js';
+import {
+	ExtHostLocalizationShape,
+	IStringDetails,
+	MainContext,
+	MainThreadLocalizationShape
+} from './extHost.protocol.js';
 import { IExtHostInitDataService } from './extHostInitDataService.js';
 import { IExtHostRpcService } from './extHostRpcService.js';
 
@@ -35,7 +40,7 @@ export class ExtHostLocalizationService implements ExtHostLocalizationShape {
 	getMessage(extensionId: string, details: IStringDetails): string {
 		const { message, args, comment } = details;
 		if (this.isDefaultLanguage) {
-			return format2(message, (args ?? {}));
+			return format2(message, args ?? {});
 		}
 
 		let key = message;
@@ -46,7 +51,7 @@ export class ExtHostLocalizationService implements ExtHostLocalizationShape {
 		if (!str) {
 			this.logService.warn(`Using default string since no string found in i18n bundle that has the key: ${key}`);
 		}
-		return format2(str ?? message, (args ?? {}));
+		return format2(str ?? message, args ?? {});
 	}
 
 	getBundle(extensionId: string): { [key: string]: string } | undefined {
@@ -58,9 +63,7 @@ export class ExtHostLocalizationService implements ExtHostLocalizationShape {
 	}
 
 	async initializeLocalizedMessages(extension: IExtensionDescription): Promise<void> {
-		if (this.isDefaultLanguage
-			|| (!extension.l10n && !extension.isBuiltin)
-		) {
+		if (this.isDefaultLanguage || (!extension.l10n && !extension.isBuiltin)) {
 			return;
 		}
 
@@ -81,7 +84,9 @@ export class ExtHostLocalizationService implements ExtHostLocalizationShape {
 			// 'contents.bundle' is a well-known key in the language pack json file that contains the _code_ translations for the extension
 			contents = extension.isBuiltin ? result.contents?.bundle : result;
 		} catch (e) {
-			this.logService.error(`Failed to load translations for ${extension.identifier.value} from ${bundleUri}: ${e.message}`);
+			this.logService.error(
+				`Failed to load translations for ${extension.identifier.value} from ${bundleUri}: ${e.message}`
+			);
 			return;
 		}
 
@@ -106,4 +111,4 @@ export class ExtHostLocalizationService implements ExtHostLocalizationShape {
 }
 
 export const IExtHostLocalizationService = createDecorator<IExtHostLocalizationService>('IExtHostLocalizationService');
-export interface IExtHostLocalizationService extends ExtHostLocalizationService { }
+export interface IExtHostLocalizationService extends ExtHostLocalizationService {}

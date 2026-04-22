@@ -31,12 +31,12 @@ export const collectTestStateCounts = (isRunning: boolean, results: ReadonlyArra
 		failed,
 		runSoFar: passed + failed,
 		totalWillBeRun: passed + failed + queued + running,
-		skipped,
+		skipped
 	};
 };
 
 export const getTestProgressText = ({ isRunning, passed, runSoFar, totalWillBeRun, skipped, failed }: CountSummary) => {
-	let percent = passed / runSoFar * 100;
+	let percent = (passed / runSoFar) * 100;
 	if (failed > 0) {
 		// fix: prevent from rounding to 100 if there's any failed test
 		percent = Math.min(percent, 99.9);
@@ -48,16 +48,41 @@ export const getTestProgressText = ({ isRunning, passed, runSoFar, totalWillBeRu
 		if (runSoFar === 0) {
 			return localize('testProgress.runningInitial', 'Running tests...');
 		} else if (skipped === 0) {
-			return localize('testProgress.running', 'Running tests, {0}/{1} passed ({2}%)', passed, totalWillBeRun, percent.toPrecision(3));
+			return localize(
+				'testProgress.running',
+				'Running tests, {0}/{1} passed ({2}%)',
+				passed,
+				totalWillBeRun,
+				percent.toPrecision(3)
+			);
 		} else {
-			return localize('testProgressWithSkip.running', 'Running tests, {0}/{1} tests passed ({2}%, {3} skipped)', passed, totalWillBeRun, percent.toPrecision(3), skipped);
+			return localize(
+				'testProgressWithSkip.running',
+				'Running tests, {0}/{1} tests passed ({2}%, {3} skipped)',
+				passed,
+				totalWillBeRun,
+				percent.toPrecision(3),
+				skipped
+			);
 		}
 	} else {
 		if (skipped === 0) {
-			return localize('testProgress.completed', '{0}/{1} tests passed ({2}%)', passed, runSoFar, percent.toPrecision(3));
+			return localize(
+				'testProgress.completed',
+				'{0}/{1} tests passed ({2}%)',
+				passed,
+				runSoFar,
+				percent.toPrecision(3)
+			);
 		} else {
-			return localize('testProgressWithSkip.completed', '{0}/{1} tests passed ({2}%, {3} skipped)', passed, runSoFar, percent.toPrecision(3), skipped);
+			return localize(
+				'testProgressWithSkip.completed',
+				'{0}/{1} tests passed ({2}%, {3} skipped)',
+				passed,
+				runSoFar,
+				percent.toPrecision(3),
+				skipped
+			);
 		}
 	}
 };
-

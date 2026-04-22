@@ -7,7 +7,10 @@ import type { IViewportRange, IBufferRange, IBufferLine, IBuffer, IBufferCellPos
 import { IRange } from '../../../../../editor/common/core/range.js';
 import { OperatingSystem } from '../../../../../base/common/platform.js';
 import { IPath, posix, win32 } from '../../../../../base/common/path.js';
-import { ITerminalCapabilityStore, TerminalCapability } from '../../../../../platform/terminal/common/capabilities/capabilities.js';
+import {
+	ITerminalCapabilityStore,
+	TerminalCapability
+} from '../../../../../platform/terminal/common/capabilities/capabilities.js';
 import { ITerminalLogService } from '../../../../../platform/terminal/common/terminal.js';
 
 /**
@@ -39,7 +42,7 @@ export function convertLinkRangeToBuffer(
 	let startOffset = 0;
 	const startWrappedLineCount = Math.ceil(range.startColumn / bufferWidth);
 	for (let y = 0; y < Math.min(startWrappedLineCount); y++) {
-		const lineLength = Math.min(bufferWidth, (range.startColumn - 1) - y * bufferWidth);
+		const lineLength = Math.min(bufferWidth, range.startColumn - 1 - y * bufferWidth);
 		let lineOffset = 0;
 		const line = lines[y];
 		// Sanity check for line, apparently this can happen but it's not clear under what
@@ -71,7 +74,7 @@ export function convertLinkRangeToBuffer(
 	let endOffset = 0;
 	const endWrappedLineCount = Math.ceil(range.endColumn / bufferWidth);
 	for (let y = Math.max(0, startWrappedLineCount - 1); y < endWrappedLineCount; y++) {
-		const start = (y === startWrappedLineCount - 1 ? (range.startColumn - 1 + startOffset) % bufferWidth : 0);
+		const start = y === startWrappedLineCount - 1 ? (range.startColumn - 1 + startOffset) % bufferWidth : 0;
 		const lineLength = Math.min(bufferWidth, range.endColumn + startOffset - y * bufferWidth);
 		let lineOffset = 0;
 		const line = lines[y];
@@ -153,7 +156,12 @@ export function getXtermLineContent(buffer: IBuffer, lineStart: number, lineEnd:
 	return content;
 }
 
-export function getXtermRangesByAttr(buffer: IBuffer, lineStart: number, lineEnd: number, cols: number): IBufferRange[] {
+export function getXtermRangesByAttr(
+	buffer: IBuffer,
+	lineStart: number,
+	lineEnd: number,
+	cols: number
+): IBufferRange[] {
 	let bufferRangeStart: IBufferCellPosition | undefined = undefined;
 	let lastFgAttr: number = -1;
 	let lastBgAttr: number = -1;
@@ -170,16 +178,8 @@ export function getXtermRangesByAttr(buffer: IBuffer, lineStart: number, lineEnd
 			}
 			// HACK: Re-construct the attributes from fg and bg, this is hacky as it relies
 			// upon the internal buffer bit layout
-			const thisFgAttr = (
-				cell.isBold() |
-				cell.isInverse() |
-				cell.isStrikethrough() |
-				cell.isUnderline()
-			);
-			const thisBgAttr = (
-				cell.isDim() |
-				cell.isItalic()
-			);
+			const thisFgAttr = cell.isBold() | cell.isInverse() | cell.isStrikethrough() | cell.isUnderline();
+			const thisBgAttr = cell.isDim() | cell.isItalic();
 			if (lastFgAttr === -1 || lastBgAttr === -1) {
 				bufferRangeStart = { x, y };
 			} else {
@@ -200,7 +200,6 @@ export function getXtermRangesByAttr(buffer: IBuffer, lineStart: number, lineEnd
 	return ranges;
 }
 
-
 // export function positionIsInRange(position: IBufferCellPosition, range: IBufferRange): boolean {
 // 	if (position.y < range.start.y || position.y > range.end.y) {
 // 		return false;
@@ -218,7 +217,13 @@ export function getXtermRangesByAttr(buffer: IBuffer, lineStart: number, lineEnd
  * For shells with the CommandDetection capability, the cwd for a command relative to the line of
  * the particular link can be used to narrow down the result for an exact file match.
  */
-export function updateLinkWithRelativeCwd(capabilities: ITerminalCapabilityStore, y: number, text: string, osPath: IPath, logService: ITerminalLogService): string[] | undefined {
+export function updateLinkWithRelativeCwd(
+	capabilities: ITerminalCapabilityStore,
+	y: number,
+	text: string,
+	osPath: IPath,
+	logService: ITerminalLogService
+): string[] | undefined {
 	const cwd = capabilities.get(TerminalCapability.CommandDetection)?.getCwdForLine(y);
 	logService.trace('terminalLinkHelpers#updateLinkWithRelativeCwd cwd', cwd);
 	if (!cwd) {

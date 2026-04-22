@@ -18,9 +18,7 @@ export async function loadNlsMessages(): Promise<void> {
 		}
 		const nlsEntries: Array<{ key: string; msg: string }> = await indexRes.json();
 
-		const translations =
-			await loadFromDisk(extensionId) ??
-			await loadFromGallery(extensionId);
+		const translations = (await loadFromDisk(extensionId)) ?? (await loadFromGallery(extensionId));
 
 		if (!translations) {
 			return;
@@ -41,7 +39,7 @@ async function loadFromDisk(extensionId: string): Promise<Translations | null> {
 			return null;
 		}
 		const raw = await invoke<string>('read_file', {
-			path: `${homedir}/.sidex/extensions/${extensionId}/translations/main.i18n.json`,
+			path: `${homedir}/.sidex/extensions/${extensionId}/translations/main.i18n.json`
 		});
 		return parseBundle(raw);
 	} catch {
@@ -55,11 +53,15 @@ async function loadFromGallery(extensionId: string): Promise<Translations | null
 		return null;
 	}
 	try {
-		const meta = await fetch(`https://open-vsx.org/api/${publisher}/${name}/latest`).then(r => r.ok ? r.json() : null);
+		const meta = await fetch(`https://open-vsx.org/api/${publisher}/${name}/latest`).then(r =>
+			r.ok ? r.json() : null
+		);
 		if (!meta?.version) {
 			return null;
 		}
-		const res = await fetch(`https://open-vsx.org/vscode/unpkg/${publisher}/${name}/${meta.version}/extension/translations/main.i18n.json`);
+		const res = await fetch(
+			`https://open-vsx.org/vscode/unpkg/${publisher}/${name}/${meta.version}/extension/translations/main.i18n.json`
+		);
 		return res.ok ? parseBundle(await res.text()) : null;
 	} catch {
 		return null;

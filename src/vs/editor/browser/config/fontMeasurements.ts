@@ -35,7 +35,6 @@ export interface ISerializedFontInfo {
 }
 
 export class FontMeasurementsImpl extends Disposable {
-
 	private readonly _cache = new Map<number, FontMeasurementsCache>();
 
 	private _evictUntrustedReadingsTimeout = -1;
@@ -130,26 +129,34 @@ export class FontMeasurementsImpl extends Disposable {
 		if (!cache.has(bareFontInfo)) {
 			let readConfig = this._actualReadFontInfo(targetWindow, bareFontInfo);
 
-			if (readConfig.typicalHalfwidthCharacterWidth <= 2 || readConfig.typicalFullwidthCharacterWidth <= 2 || readConfig.spaceWidth <= 2 || readConfig.maxDigitWidth <= 2) {
+			if (
+				readConfig.typicalHalfwidthCharacterWidth <= 2 ||
+				readConfig.typicalFullwidthCharacterWidth <= 2 ||
+				readConfig.spaceWidth <= 2 ||
+				readConfig.maxDigitWidth <= 2
+			) {
 				// Hey, it's Bug 14341 ... we couldn't read
-				readConfig = new FontInfo({
-					pixelRatio: PixelRatio.getInstance(targetWindow).value,
-					fontFamily: readConfig.fontFamily,
-					fontWeight: readConfig.fontWeight,
-					fontSize: readConfig.fontSize,
-					fontFeatureSettings: readConfig.fontFeatureSettings,
-					fontVariationSettings: readConfig.fontVariationSettings,
-					lineHeight: readConfig.lineHeight,
-					letterSpacing: readConfig.letterSpacing,
-					isMonospace: readConfig.isMonospace,
-					typicalHalfwidthCharacterWidth: Math.max(readConfig.typicalHalfwidthCharacterWidth, 5),
-					typicalFullwidthCharacterWidth: Math.max(readConfig.typicalFullwidthCharacterWidth, 5),
-					canUseHalfwidthRightwardsArrow: readConfig.canUseHalfwidthRightwardsArrow,
-					spaceWidth: Math.max(readConfig.spaceWidth, 5),
-					middotWidth: Math.max(readConfig.middotWidth, 5),
-					wsmiddotWidth: Math.max(readConfig.wsmiddotWidth, 5),
-					maxDigitWidth: Math.max(readConfig.maxDigitWidth, 5),
-				}, false);
+				readConfig = new FontInfo(
+					{
+						pixelRatio: PixelRatio.getInstance(targetWindow).value,
+						fontFamily: readConfig.fontFamily,
+						fontWeight: readConfig.fontWeight,
+						fontSize: readConfig.fontSize,
+						fontFeatureSettings: readConfig.fontFeatureSettings,
+						fontVariationSettings: readConfig.fontVariationSettings,
+						lineHeight: readConfig.lineHeight,
+						letterSpacing: readConfig.letterSpacing,
+						isMonospace: readConfig.isMonospace,
+						typicalHalfwidthCharacterWidth: Math.max(readConfig.typicalHalfwidthCharacterWidth, 5),
+						typicalFullwidthCharacterWidth: Math.max(readConfig.typicalFullwidthCharacterWidth, 5),
+						canUseHalfwidthRightwardsArrow: readConfig.canUseHalfwidthRightwardsArrow,
+						spaceWidth: Math.max(readConfig.spaceWidth, 5),
+						middotWidth: Math.max(readConfig.middotWidth, 5),
+						wsmiddotWidth: Math.max(readConfig.wsmiddotWidth, 5),
+						maxDigitWidth: Math.max(readConfig.maxDigitWidth, 5)
+					},
+					false
+				);
 			}
 
 			this._writeToCache(targetWindow, bareFontInfo, readConfig);
@@ -157,7 +164,12 @@ export class FontMeasurementsImpl extends Disposable {
 		return cache.get(bareFontInfo);
 	}
 
-	private _createRequest(chr: string, type: CharWidthRequestType, all: CharWidthRequest[], monospace: CharWidthRequest[] | null): CharWidthRequest {
+	private _createRequest(
+		chr: string,
+		type: CharWidthRequestType,
+		all: CharWidthRequest[],
+		monospace: CharWidthRequest[] | null
+	): CharWidthRequest {
 		const result = new CharWidthRequest(chr, type);
 		all.push(result);
 		monospace?.push(result);
@@ -190,7 +202,7 @@ export class FontMeasurementsImpl extends Disposable {
 		const middot = this._createRequest('·', CharWidthRequestType.Regular, all, monospace);
 
 		// U+2E31 - WORD SEPARATOR MIDDLE DOT
-		const wsmiddotWidth = this._createRequest(String.fromCharCode(0x2E31), CharWidthRequestType.Regular, all, null);
+		const wsmiddotWidth = this._createRequest(String.fromCharCode(0x2e31), CharWidthRequestType.Regular, all, null);
 
 		// monospace test: some characters
 		const monospaceTestChars = '|/-_ilm%';
@@ -202,9 +214,20 @@ export class FontMeasurementsImpl extends Disposable {
 
 		readCharWidths(targetWindow, bareFontInfo, all);
 
-		const maxDigitWidth = Math.max(digit0.width, digit1.width, digit2.width, digit3.width, digit4.width, digit5.width, digit6.width, digit7.width, digit8.width, digit9.width);
+		const maxDigitWidth = Math.max(
+			digit0.width,
+			digit1.width,
+			digit2.width,
+			digit3.width,
+			digit4.width,
+			digit5.width,
+			digit6.width,
+			digit7.width,
+			digit8.width,
+			digit9.width
+		);
 
-		let isMonospace = (bareFontInfo.fontFeatureSettings === EditorFontLigatures.OFF);
+		let isMonospace = bareFontInfo.fontFeatureSettings === EditorFontLigatures.OFF;
 		const referenceWidth = monospace[0].width;
 		for (let i = 1, len = monospace.length; isMonospace && i < len; i++) {
 			const diff = referenceWidth - monospace[i].width;
@@ -224,29 +247,31 @@ export class FontMeasurementsImpl extends Disposable {
 			canUseHalfwidthRightwardsArrow = false;
 		}
 
-		return new FontInfo({
-			pixelRatio: PixelRatio.getInstance(targetWindow).value,
-			fontFamily: bareFontInfo.fontFamily,
-			fontWeight: bareFontInfo.fontWeight,
-			fontSize: bareFontInfo.fontSize,
-			fontFeatureSettings: bareFontInfo.fontFeatureSettings,
-			fontVariationSettings: bareFontInfo.fontVariationSettings,
-			lineHeight: bareFontInfo.lineHeight,
-			letterSpacing: bareFontInfo.letterSpacing,
-			isMonospace: isMonospace,
-			typicalHalfwidthCharacterWidth: typicalHalfwidthCharacter.width,
-			typicalFullwidthCharacterWidth: typicalFullwidthCharacter.width,
-			canUseHalfwidthRightwardsArrow: canUseHalfwidthRightwardsArrow,
-			spaceWidth: space.width,
-			middotWidth: middot.width,
-			wsmiddotWidth: wsmiddotWidth.width,
-			maxDigitWidth: maxDigitWidth
-		}, true);
+		return new FontInfo(
+			{
+				pixelRatio: PixelRatio.getInstance(targetWindow).value,
+				fontFamily: bareFontInfo.fontFamily,
+				fontWeight: bareFontInfo.fontWeight,
+				fontSize: bareFontInfo.fontSize,
+				fontFeatureSettings: bareFontInfo.fontFeatureSettings,
+				fontVariationSettings: bareFontInfo.fontVariationSettings,
+				lineHeight: bareFontInfo.lineHeight,
+				letterSpacing: bareFontInfo.letterSpacing,
+				isMonospace: isMonospace,
+				typicalHalfwidthCharacterWidth: typicalHalfwidthCharacter.width,
+				typicalFullwidthCharacterWidth: typicalFullwidthCharacter.width,
+				canUseHalfwidthRightwardsArrow: canUseHalfwidthRightwardsArrow,
+				spaceWidth: space.width,
+				middotWidth: middot.width,
+				wsmiddotWidth: wsmiddotWidth.width,
+				maxDigitWidth: maxDigitWidth
+			},
+			true
+		);
 	}
 }
 
 class FontMeasurementsCache {
-
 	private readonly _keys: { [key: string]: BareFontInfo };
 	private readonly _values: { [key: string]: FontInfo };
 

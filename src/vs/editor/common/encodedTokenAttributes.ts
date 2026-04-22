@@ -20,7 +20,7 @@ export const enum FontStyle {
 	Italic = 1,
 	Bold = 2,
 	Underline = 4,
-	Strikethrough = 8,
+	Strikethrough = 8
 }
 
 /**
@@ -81,7 +81,7 @@ export const enum MetadataConsts {
 	// use the first 8 bits for control purposes
 	SEMANTIC_USE_ITALIC /*        */ = 0b00000000_00000000_00000000_00000001,
 	SEMANTIC_USE_BOLD /*          */ = 0b00000000_00000000_00000000_00000010,
-	SEMANTIC_USE_UNDERLINE  /*    */ = 0b00000000_00000000_00000000_00000100,
+	SEMANTIC_USE_UNDERLINE /*    */ = 0b00000000_00000000_00000000_00000100,
 	SEMANTIC_USE_STRIKETHROUGH /* */ = 0b00000000_00000000_00000000_00001000,
 	SEMANTIC_USE_FOREGROUND /*    */ = 0b00000000_00000000_00000000_00010000,
 	SEMANTIC_USE_BACKGROUND /*    */ = 0b00000000_00000000_00000000_00100000,
@@ -97,7 +97,6 @@ export const enum MetadataConsts {
 /**
  */
 export class TokenMetadata {
-
 	public static getLanguageId(metadata: number): LanguageId {
 		return (metadata & MetadataConsts.LANGUAGEID_MASK) >>> MetadataConsts.LANGUAGEID_OFFSET;
 	}
@@ -163,7 +162,6 @@ export class TokenMetadata {
 		}
 		if (textDecoration) {
 			result += `text-decoration:${textDecoration};`;
-
 		}
 		return result;
 	}
@@ -177,7 +175,7 @@ export class TokenMetadata {
 			italic: Boolean(fontStyle & FontStyle.Italic),
 			bold: Boolean(fontStyle & FontStyle.Bold),
 			underline: Boolean(fontStyle & FontStyle.Underline),
-			strikethrough: Boolean(fontStyle & FontStyle.Strikethrough),
+			strikethrough: Boolean(fontStyle & FontStyle.Strikethrough)
 		};
 	}
 }

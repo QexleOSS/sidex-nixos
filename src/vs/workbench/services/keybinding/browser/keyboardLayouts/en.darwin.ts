@@ -6,7 +6,6 @@
 import { KeyboardLayoutContribution } from './_.contribution.js';
 import { IKeymapInfo } from '../../common/keymapInfo.js';
 
-
 export const EN_US_DARWIN_LAYOUT: IKeymapInfo = {
 	layout: { id: 'com.apple.keylayout.US', lang: 'en', localizedName: 'U.S.', isUSStandard: true },
 	secondaryLayouts: [
@@ -16,7 +15,7 @@ export const EN_US_DARWIN_LAYOUT: IKeymapInfo = {
 		{ id: 'com.apple.inputmethod.Kotoeri.Japanese', lang: 'ja', localizedName: 'Hiragana' },
 		{ id: 'com.apple.keylayout.Australian', lang: 'en', localizedName: 'Australian' },
 		{ id: 'com.apple.keylayout.Canadian', lang: 'en', localizedName: 'Canadian English' },
-		{ id: 'com.apple.keylayout.Brazilian', lang: 'pt', localizedName: 'Brazilian' },
+		{ id: 'com.apple.keylayout.Brazilian', lang: 'pt', localizedName: 'Brazilian' }
 	],
 	mapping: {
 		KeyA: ['a', 'A', 'å', 'Å', 0],
@@ -66,7 +65,7 @@ export const EN_US_DARWIN_LAYOUT: IKeymapInfo = {
 		BracketRight: [']', '}', '‘', '’', 0],
 		Backslash: ['\\', '|', '«', '»', 0],
 		Semicolon: [';', ':', '…', 'Ú', 0],
-		Quote: ['\'', '"', 'æ', 'Æ', 0],
+		Quote: ["'", '"', 'æ', 'Æ', 0],
 		Backquote: ['`', '~', '`', '`', 4],
 		Comma: [',', '<', '≤', '¯', 0],
 		Period: ['.', '>', '≥', '˘', 0],

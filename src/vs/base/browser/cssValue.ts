@@ -81,12 +81,13 @@ type InlineCssTemplateValue = CssFragment | Color;
  * All expressions in the template must be css safe values.
  */
 export function inline(strings: TemplateStringsArray, ...values: InlineCssTemplateValue[]): CssFragment {
-	return asFragment(strings.reduce((result, str, i) => {
-		const value = values[i] || '';
-		return result + str + value;
-	}, ''));
+	return asFragment(
+		strings.reduce((result, str, i) => {
+			const value = values[i] || '';
+			return result + str + value;
+		}, '')
+	);
 }
-
 
 export class Builder {
 	private readonly _parts: CssFragment[] = [];

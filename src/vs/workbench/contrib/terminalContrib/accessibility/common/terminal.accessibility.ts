@@ -8,9 +8,7 @@ export const enum TerminalAccessibilityCommandId {
 	AccessibleBufferGoToNextCommand = 'workbench.action.terminal.accessibleBufferGoToNextCommand',
 	AccessibleBufferGoToPreviousCommand = 'workbench.action.terminal.accessibleBufferGoToPreviousCommand',
 	ScrollToBottomAccessibleView = 'workbench.action.terminal.scrollToBottomAccessibleView',
-	ScrollToTopAccessibleView = 'workbench.action.terminal.scrollToTopAccessibleView',
+	ScrollToTopAccessibleView = 'workbench.action.terminal.scrollToTopAccessibleView'
 }
 
-export const defaultTerminalAccessibilityCommandsToSkipShell = [
-	TerminalAccessibilityCommandId.FocusAccessibleBuffer
-];
+export const defaultTerminalAccessibilityCommandsToSkipShell = [TerminalAccessibilityCommandId.FocusAccessibleBuffer];

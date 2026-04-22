@@ -43,7 +43,7 @@ export class ObservableMemento<T> extends ObservableValue<T> implements IDisposa
 		private readonly opts: IObservableMementoOpts<T>,
 		private readonly storageScope: StorageScope,
 		private readonly storageTarget: StorageTarget,
-		@IStorageService private readonly storageService: IStorageService,
+		@IStorageService private readonly storageService: IStorageService
 	) {
 		const getStorageValue = (): T => {
 			const fromStorage = storageService.get(opts.key, storageScope);
@@ -58,19 +58,26 @@ export class ObservableMemento<T> extends ObservableValue<T> implements IDisposa
 		};
 
 		const initialValue = getStorageValue();
-		super(new DebugNameData(undefined, `storage/${opts.key}`, undefined), initialValue, strictEquals, DebugLocation.ofCaller());
+		super(
+			new DebugNameData(undefined, `storage/${opts.key}`, undefined),
+			initialValue,
+			strictEquals,
+			DebugLocation.ofCaller()
+		);
 
 		const didChange = storageService.onDidChangeValue(storageScope, opts.key, this._store);
-		this._store.add(didChange((e) => {
-			if (e.external && e.key === opts.key) {
-				this._noStorageUpdateNeeded = true;
-				try {
-					this.set(getStorageValue(), undefined);
-				} finally {
-					this._noStorageUpdateNeeded = false;
+		this._store.add(
+			didChange(e => {
+				if (e.external && e.key === opts.key) {
+					this._noStorageUpdateNeeded = true;
+					try {
+						this.set(getStorageValue(), undefined);
+					} finally {
+						this._noStorageUpdateNeeded = false;
+					}
 				}
-			}
-		}));
+			})
+		);
 	}
 
 	protected override _setValue(newValue: T): void {
